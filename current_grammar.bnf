@@ -1,7 +1,7 @@
 TYPE           ::= ("const")? ("ref")? "int" | "float" | "string" ;
 IDENTIFIER     ::= ("0"..."9" | "A"..."Z" | "a"..."z" | "_")+ ;
 ANY_TYPE       ::= (TYPE | ("const")? ("ref")? IDENTIFIER) ;
-STRING         ::= "\'" ("A"..."Z" | "a"..."z" | "\n" | "\r" | "\t" | "\b")+  "\'" ;
+STRING         ::= "\'" ("A"..."Z" | "a"..."z" | "\n" | "\r" | "\t" | "\b")+  "\'"
                  | "\"" ("A"..."Z" | "a"..."z" | "\n" | "\r" | "\t" | "\b")+  "\"" ;
 NUMBER         ::= "-"? ("0"..."9" | "'")* "."? ("0"..."9" | "'")+ ("e" ("0"..."9" | "'")+)? ;
 
@@ -23,7 +23,6 @@ bitshift       ::= addition (("<<" | ">>") addition)* ;
 addition       ::= multiplication (("-" | "+" | "%") multiplication)* ;
 multiplication ::= unary (("/" | "*") unary)* ;
 unary          ::= ("!" | "-" | "~" | "++" | "--") unary
-                 | unary ("++" | "--")
                  | call ;
 call           ::= primary ("(" arguments? ")" | "." IDENTIFIER)* ;
 arguments      ::= expression ("," expression)* ;
@@ -63,10 +62,10 @@ classDecl      ::= "class" IDENTIFIER "{" (("private" | "public" | "protected") 
 
 
 exprStmt       ::= expression ";" ;
-forStmt        ::= "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement
+forStmt        ::= "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
 ifStmt         ::= "if" expression statement ( "else" statement )? ;
 whileStmt      ::= "while" expression statement ;
-switchStmt     ::= "switch" expression "{" ("case" expression ":" statement)* ("default" ":" expression)? "}"
+switchStmt     ::= "switch" expression "{" ("case" expression ":" statement)* ("default" ":" expression)? "}" ;
 breakStmt      ::= "break" ";" ;
 continueStmt   ::= "continue" ";" ;
 returnStmt     ::= "return" expression? ";" ;

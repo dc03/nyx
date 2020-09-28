@@ -4,6 +4,8 @@
 #  define AST_HPP
 
 #include <memory>
+#include <optional>
+#include <utility>
 #include <vector>
 #include "Token.hpp"
 
@@ -57,9 +59,7 @@ struct ContinueStmt;
 template <typename T>
 struct ExpressionStmt;
 template <typename T>
-struct ForStmt;
-template <typename T>
-struct FuncStmt;
+struct FunctionStmt;
 template <typename T>
 struct IfStmt;
 template <typename T>
@@ -89,13 +89,13 @@ struct Visitor {
 	T visit(ThisExpr<T>& expr) = 0;
 	T visit(UnaryExpr<T>& expr) = 0;
 	T visit(VariableExpr<T>& expr) = 0;
+
 	T visit(BlockStmt<T>& stmt) = 0;
 	T visit(BreakStmt<T>& stmt) = 0;
 	T visit(ClassStmt<T>& stmt) = 0;
 	T visit(ContinueStmt<T>& stmt) = 0;
 	T visit(ExpressionStmt<T>& stmt) = 0;
-	T visit(ForStmt<T>& stmt) = 0;
-	T visit(FuncStmt<T>& stmt) = 0;
+	T visit(FunctionStmt<T>& stmt) = 0;
 	T visit(IfStmt<T>& stmt) = 0;
 	T visit(ImportStmt<T>& stmt) = 0;
 	T visit(ReturnStmt<T>& stmt) = 0;
@@ -116,6 +116,8 @@ struct Stmt {
 	virtual T accept(Visitor<T>& visitor) = 0;
 	virtual ~Stmt() = default;
 };
+
+// Expression node definitions
 
 template <typename T>
 struct AssignExpr final: public Expr<T> {
@@ -273,5 +275,184 @@ struct VariableExpr final: public Expr<T> {
 	}
 };
 
+// End of expression node definitions
+
+// Statement node definitions
+
+template <typename T>
+struct BlockStmt final: public Stmt<T> {
+	std::vector<stmt_node_t<T>> stmts;
+
+	BlockStmt(std::vector<stmt_node_t<T>> stmts):
+		stmts{std::move(stmts)} {}
+
+	T accept(Visitor<T>& visitor) override final {
+		return visitor.visit(*this);
+	}
+};
+
+template <typename T>
+struct BreakStmt final: public Stmt<T> {
+	Token keyword;
+
+	BreakStmt(Token keyword):
+		keyword{keyword} {}
+
+	T accept(Visitor<T>& visitor) override final {
+		return visitor.visit(*this);
+	}
+};
+
+enum class VisibilityType {
+	PRIVATE,
+	PROTECTED,
+	PUBLIC
+}
+
+template <typename T>
+struct ClassStmt final: public Stmt<T> {
+	Token name;
+	std::vector<std::pair<stmt_node_t<T>,VisibilityType>> members;
+	std::vector<std::pair<stmt_node_t<T>,VisibilityType>> methods;
+
+	ClassStmt(Token name, std::vector<std::pair<stmt_node_t<T>,VisibilityType>> members, std::vector<std::pair<stmt_node_t<T>,VisibilityType>> methods):
+		name{name}, members{std::move(members)}, methods{std::move(methods)} {}
+
+	T accept(Visitor<T>& visitor) override final {
+		return visitor.visit(*this);
+	}
+};
+
+template <typename T>
+struct ContinueStmt final: public Stmt<T> {
+	Token keyword;
+
+	ContinueStmt(Token keyword):
+		keyword{keyword} {}
+
+	T accept(Visitor<T>& visitor) override final {
+		return visitor.visit(*this);
+	}
+};
+
+template <typename T>
+struct ExpressionStmt final: public Stmt<T> {
+	expr_node_t<T> expr;
+
+	ExpressionStmt(expr_node_t<T> expr):
+		expr{std::move(expr)} {}
+
+	T accept(Visitor<T>& visitor) override final {
+		return visitor.visit(*this);
+	}
+};
+
+template <typename T>
+struct FunctionStmt final: public Stmt<T> {
+	Token name;
+	std::vector<expr_node_t<T>> params;
+	std::vector<stmt_node_t<T>> body;
+
+	FunctionStmt(Token name, std::vector<expr_node_t<T>> params, std::vector<stmt_node_t<T>> body):
+		name{name}, params{std::move(params)}, body{std::move(body)} {}
+
+	T accept(Visitor<T>& visitor) override final {
+		return visitor.visit(*this);
+	}
+};
+
+template <typename T>
+struct IfStmt final: public Stmt<T> {
+	expr_node_t<T> condition;
+	stmt_node_t<T> thenBranch;
+	stmt_node_t<T> elseBranch;
+
+	IfStmt(expr_node_t<T> condition, stmt_node_t<T> thenBranch, stmt_node_t<T> elseBranch):
+		condition{std::move(condition)}, thenBranch{std::move(thenBranch)},elseBranch{std::move(elseBranch)} {}
+
+	T accept(Visitor<T>& visitor) override final {
+		return visitor.visit(*this);
+	}
+};
+
+template <typename T>
+struct ImportStmt final: public Stmt<T> {
+	Token name;
+
+	ImportStmt(Token name):
+		name{name} {}
+
+	T accept(Visitor<T>& visitor) override final {
+		return visitor.visit(*this);
+	}
+};
+
+template <typename T>
+struct ReturnStmt final: public Stmt<T> {
+	Token keyword;
+	expr_node_t<T> value;
+
+	ReturnStmt(Token keyword, expr_node_t<T> value):
+		keyword{keyword}, value{std::move(value)} {}
+
+	T accept(Visitor<T>& visitor) override final {
+		return visitor.visit(*this);
+	}
+};
+
+template <typename T>
+struct SwitchStmt final: public Stmt<T> {
+	expr_node_t<T> condition;
+	std::vector<std::pair<expr_node_t<T>,stmt_node_t<T>>> cases;
+	std::optional<std::pair<expr_node_t<T>,stmt_node_t<T>>> default_case;
+
+	SwitchStmt(expr_node_t<T> condition, std::vector<std::pair<expr_node_t<T>,stmt_node_t<T>>> cases, std::optional<std::pair<expr_node_t<T>,stmt_node_t<T>>> default_case):
+		condition{std::move(condition)}, cases{std::move(cases)}, default_case{std::move(default_case)} {}
+
+	T accept(Visitor<T>& visitor) override final {
+		return visitor.visit(*this);
+	}
+};
+
+template <typename T>
+struct TypeStmt final: public Stmt<T> {
+	Token name;
+	Token type;
+
+	TypeStmt(Token name, Token type):
+		name{name}, type{type} {}
+
+	T accept(Visitor<T>& visitor) override final {
+		return visitor.visit(*this);
+	}
+};
+
+template <typename T>
+struct VarStmt final: public Stmt<T> {
+	Token name;
+	expr_node_t<T> initializer;
+
+	VarStmt(Token name, expr_node_t<T> initializer):
+		name{name}, initializer{std::move(initializer)} {}
+
+	T accept(Visitor<T>& visitor) override final {
+		return visitor.visit(*this);
+	}
+};
+
+template <typename T>
+struct WhileStmt final: public Stmt<T> {
+	expr_node_t<T> condition;
+	stmt_node_t<T> body;
+
+	WhileStmt(expr_node_t<T> condition, stmt_node_t<T> body):
+		condition{std::move(condition)}, body{std::move(body)} {}
+
+	T accept(Visitor<T>& visitor) override final {
+		return visitor.visit(*this);
+	}
+};
+
+// End of statement node definitions
 
 #endif
