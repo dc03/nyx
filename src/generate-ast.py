@@ -44,9 +44,11 @@ def declare_base(file, base_name):
     tab(file, 1).write('virtual ~' + base_name + '() = default;\n')
     file.write('};\n\n')
 
+
 def declare_derived(file, base_name, derived_name, ctor_args, members):
     file.write('template <typename T>\n')
-    file.write('struct ' + derived_name + ' final: public ' + base_name + '<T> {\n')
+    file.write('struct ' + derived_name +
+               ' final: public ' + base_name + '<T> {\n')
 
     for member in members.split(','):
         tab(file, 1).write(member.strip() + ';\n')
@@ -63,6 +65,13 @@ def declare_derived(file, base_name, derived_name, ctor_args, members):
     tab(file, 1).write('}\n')
     # Accept method
     file.write('};\n\n')
+
+x = 0
+
+def decl_expr(ctor_args, members):
+    global x
+    declare_derived(file, 'Expr', Exprs[x], ctor_args, members)
+    x += 1
 
 if __name__ == '__main__':
     with open('AST.hpp', 'wt') as file:
@@ -95,53 +104,41 @@ if __name__ == '__main__':
         declare_base(file, 'Expr')
         declare_base(file, 'Stmt')
 
-        declare_derived(file, 'Expr', Exprs[0],
-            'target{target}, value{std::move(value)}',
-            'Token target, expr_node_t<T> value')
+        decl_expr('target{target}, value{std::move(value)}',
+                  'Token target, expr_node_t<T> value')
 
-        declare_derived(file, 'Expr', Exprs[1],
-            'left{std::move(left)}, oper{oper}, right{std::move(right)}',
-            'expr_node_t<T> left, Token oper, expr_node_t<T> right')
+        decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}',
+                  'expr_node_t<T> left, Token oper, expr_node_t<T> right')
 
-        declare_derived(file, 'Expr', Exprs[2],
-            'function{std::move(function)}, paren{paren}, args{std::move(args)}',
-            'expr_node_t<T> function, Token paren, std::vector<expr_node_t<T>> args')
+        decl_expr('function{std::move(function)}, paren{paren}, args{std::move(args)}',
+                  'expr_node_t<T> function, Token paren, std::vector<expr_node_t<T>> args')
 
-        declare_derived(file, 'Expr', Exprs[3],
-            'object{std::move(object)}, name{name}',
-            'expr_node_t<T> object, Token name')
-        
-        declare_derived(file, 'Expr', Exprs[4],
-            'expr{std::move(expr)}',
-            'expr_node_t<T> expr')
+        decl_expr('object{std::move(object)}, name{name}',
+                  'expr_node_t<T> object, Token name')
 
-        declare_derived(file, 'Expr', Exprs[5],
-            'value{std::move(value)}',
-            'T value')
+        decl_expr('expr{std::move(expr)}',
+                  'expr_node_t<T> expr')
 
-        declare_derived(file, 'Expr', Exprs[6],
-            'left{std::move(left)}, oper{oper}, right{std::move(right)}',
-            'expr_node_t<T> left, Token oper, expr_node_t<T> right')
+        decl_expr('value{std::move(value)}',
+                  'T value')
 
-        declare_derived(file, 'Expr', Exprs[7],
-            'object{std::move(object)}, name{name}, value{std::move(value)}',
-            'expr_node_t<T> object, Token name, expr_node_t<T> value')
+        decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}',
+                  'expr_node_t<T> left, Token oper, expr_node_t<T> right')
 
-        declare_derived(file, 'Expr', Exprs[8],
-            'keyword{keyword}, name{name}',
-            'Token keyword, Token name')
+        decl_expr('object{std::move(object)}, name{name}, value{std::move(value)}',
+                  'expr_node_t<T> object, Token name, expr_node_t<T> value')
 
-        declare_derived(file, 'Expr', Exprs[9],
-            'keyword{keyword}',
-            'Token keyword')
+        decl_expr('keyword{keyword}, name{name}',
+                  'Token keyword, Token name')
 
-        declare_derived(file, 'Expr', Exprs[10],
-            'operator{operator}, right{std::move(right)}',
-            'Token operator, expr_node_t<T> right')
+        decl_expr('keyword{keyword}',
+                  'Token keyword')
 
-        declare_derived(file, 'Expr', Exprs[11],
-            'name{name}',
-            'Token name')
+        decl_expr('operator{operator}, right{std::move(right)}',
+                  'Token operator, expr_node_t<T> right')
+
+        decl_expr('name{name}',
+                  'Token name')
 
         file.write('\n')
         end_file(file)
