@@ -1,20 +1,20 @@
 fn go(x: int, a: int, b: int) -> int {
     if x == 0 {
-        return a;
+        return a
     } else if x == 1 {
-        return b;
+        return b
     }
 
     return go(x - 1, b, a + b)
 }
 
 fn fibonacci(x: int) -> int {
-    return go(x, 0, 1);
+    return go(x, 0, 1)
 }
 
 fn main() -> int {
-    var x: int;
-    print("Enter a number: ");
-    read(x);
-    print("The fibonacci number at " + str(x) + " is: " + str(fibonacci(x)));
+    var x: int
+    print("Enter a number: ")
+    read(x)
+    print("The fibonacci number at " + str(x) + " is: " + str(fibonacci(x)))
 }

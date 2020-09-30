@@ -194,8 +194,9 @@ if __name__ == '__main__':
         decl_stmt('expr{std::move(expr)}',
                   'expr_node_t<T> expr')
 
-        decl_stmt('name{name}, params{std::move(params)}, body{std::move(body)}',
-                  'Token name, std::vector<expr_node_t<T>> params, std::vector<stmt_node_t<T>> body')
+        decl_stmt('name{name}, return_type{return_type}, params{std::move(params)}, body{std::move(body)}',
+                  'Token name, Token return_type, std::vector<std::pair<Token,Token>> params, ' +
+                  'std::vector<stmt_node_t<T>> body')
         
         decl_stmt('condition{std::move(condition)}, thenBranch{std::move(thenBranch)},' + 
                   'elseBranch{std::move(elseBranch)}',
@@ -214,8 +215,8 @@ if __name__ == '__main__':
         decl_stmt('name{name}, type{type}',
                   'Token name, Token type')
 
-        decl_stmt('name{name}, initializer{std::move(initializer)}',
-                  'Token name, expr_node_t<T> initializer')
+        decl_stmt('name{name}, type{type}, initializer{std::move(initializer)}',
+                  'Token name, Token type, expr_node_t<T> initializer')
         
         decl_stmt('condition{std::move(condition)}, body{std::move(body)}',
                   'expr_node_t<T> condition, stmt_node_t<T> body')

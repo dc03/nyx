@@ -4,13 +4,14 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/include/",
-                "/usr/include/c++/10.2.0/",
-                "/usr/include/c++/10.2.0/bits/",
-                "/usr/include/c++/10.2.0/x86_64-pc-linux-gnu/",
-                "/usr/include/c++/10.2.0/x86_64-pc-linux-gnu/32/",
-                "/usr/lib/gcc/x86_64-pc-linux-gnu/10.2.0/include/",
-                "/usr/include/bits/"
+                "/usr/include/bits",
+                "/usr/include",
+                "/usr/include/c++/10.2.0",
+                "/usr/include/c++/10.2.0/bits",
+                "/usr/include/c++/10.2.0/x86_64-pc-linux-gnu",
+                "/usr/include/c++/10.2.0/x86_64-pc-linux-gnu/32",
+                "/usr/lib/gcc/x86_64-pc-linux-gnu/10.2.0/include",
+                "/usr/include/bits"
             ],
             "defines": [],
             "cStandard": "c18",

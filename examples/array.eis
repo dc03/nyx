@@ -1,9 +1,12 @@
-fn main() -> int {
-    var y: const int = 5;
-    var x: [int, y] = { 1, 2, 3, 4, 5 };
+/* This is a
+ * multiline comment
+ */
+ fn main() -> int {
+    var y: const int = 5 // This is a normal comment
+    var x: [int, y] = { 1, 2, 3, 4, 5 }
     for (var i = 0; i < x.size; i++) {
-        print(str(i) + " ");
+        print(str(i) + " ")
     }
 
-    return 0;
+    return 0
 }

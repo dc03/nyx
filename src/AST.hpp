@@ -350,11 +350,12 @@ struct ExpressionStmt final: public Stmt<T> {
 template <typename T>
 struct FunctionStmt final: public Stmt<T> {
 	Token name;
-	std::vector<expr_node_t<T>> params;
+	Token return_type;
+	std::vector<std::pair<Token,Token>> params;
 	std::vector<stmt_node_t<T>> body;
 
-	FunctionStmt(Token name, std::vector<expr_node_t<T>> params, std::vector<stmt_node_t<T>> body):
-		name{name}, params{std::move(params)}, body{std::move(body)} {}
+	FunctionStmt(Token name, Token return_type, std::vector<std::pair<Token,Token>> params, std::vector<stmt_node_t<T>> body):
+		name{name}, return_type{return_type}, params{std::move(params)}, body{std::move(body)} {}
 
 	T accept(Visitor<T>& visitor) override final {
 		return visitor.visit(*this);
@@ -430,10 +431,11 @@ struct TypeStmt final: public Stmt<T> {
 template <typename T>
 struct VarStmt final: public Stmt<T> {
 	Token name;
+	Token type;
 	expr_node_t<T> initializer;
 
-	VarStmt(Token name, expr_node_t<T> initializer):
-		name{name}, initializer{std::move(initializer)} {}
+	VarStmt(Token name, Token type, expr_node_t<T> initializer):
+		name{name}, type{type}, initializer{std::move(initializer)} {}
 
 	T accept(Visitor<T>& visitor) override final {
 		return visitor.visit(*this);

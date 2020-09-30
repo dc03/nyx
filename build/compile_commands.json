@@ -1,0 +1,22 @@
+[
+{
+  "directory": "/home/dc/Programs/C++/eis/build",
+  "command": "/bin/c++ -g -std=gnu++17 -o CMakeFiles/eis.dir/src/eis.cpp.o -c /home/dc/Programs/C++/eis/src/eis.cpp",
+  "file": "/home/dc/Programs/C++/eis/src/eis.cpp"
+},
+{
+  "directory": "/home/dc/Programs/C++/eis/build",
+  "command": "/bin/c++ -g -std=gnu++17 -o CMakeFiles/eis.dir/src/ErrorLogger/ErrorLogger.cpp.o -c /home/dc/Programs/C++/eis/src/ErrorLogger/ErrorLogger.cpp",
+  "file": "/home/dc/Programs/C++/eis/src/ErrorLogger/ErrorLogger.cpp"
+},
+{
+  "directory": "/home/dc/Programs/C++/eis/build",
+  "command": "/bin/c++ -g -std=gnu++17 -o CMakeFiles/eis.dir/src/Scanner/Scanner.cpp.o -c /home/dc/Programs/C++/eis/src/Scanner/Scanner.cpp",
+  "file": "/home/dc/Programs/C++/eis/src/Scanner/Scanner.cpp"
+},
+{
+  "directory": "/home/dc/Programs/C++/eis/build",
+  "command": "/bin/c++ -g -std=gnu++17 -o CMakeFiles/eis.dir/src/Scanner/Trie.cpp.o -c /home/dc/Programs/C++/eis/src/Scanner/Trie.cpp",
+  "file": "/home/dc/Programs/C++/eis/src/Scanner/Trie.cpp"
+}
+]

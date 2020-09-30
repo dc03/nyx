@@ -59,6 +59,55 @@ build CMakeFiles/edit_cache.util: CUSTOM_COMMAND
 build edit_cache: phony CMakeFiles/edit_cache.util
 
 # =============================================================================
+# Object build statements for EXECUTABLE target eis
+
+
+#############################################
+# Order-only phony target for eis
+
+build cmake_object_order_depends_target_eis: phony || CMakeFiles/eis.dir
+
+build CMakeFiles/eis.dir/src/eis.cpp.o: CXX_COMPILER__eis_Debug ../src/eis.cpp || cmake_object_order_depends_target_eis
+  DEP_FILE = CMakeFiles/eis.dir/src/eis.cpp.o.d
+  FLAGS = -g -std=gnu++17
+  OBJECT_DIR = CMakeFiles/eis.dir
+  OBJECT_FILE_DIR = CMakeFiles/eis.dir/src
+
+build CMakeFiles/eis.dir/src/ErrorLogger/ErrorLogger.cpp.o: CXX_COMPILER__eis_Debug ../src/ErrorLogger/ErrorLogger.cpp || cmake_object_order_depends_target_eis
+  DEP_FILE = CMakeFiles/eis.dir/src/ErrorLogger/ErrorLogger.cpp.o.d
+  FLAGS = -g -std=gnu++17
+  OBJECT_DIR = CMakeFiles/eis.dir
+  OBJECT_FILE_DIR = CMakeFiles/eis.dir/src/ErrorLogger
+
+build CMakeFiles/eis.dir/src/Scanner/Scanner.cpp.o: CXX_COMPILER__eis_Debug ../src/Scanner/Scanner.cpp || cmake_object_order_depends_target_eis
+  DEP_FILE = CMakeFiles/eis.dir/src/Scanner/Scanner.cpp.o.d
+  FLAGS = -g -std=gnu++17
+  OBJECT_DIR = CMakeFiles/eis.dir
+  OBJECT_FILE_DIR = CMakeFiles/eis.dir/src/Scanner
+
+build CMakeFiles/eis.dir/src/Scanner/Trie.cpp.o: CXX_COMPILER__eis_Debug ../src/Scanner/Trie.cpp || cmake_object_order_depends_target_eis
+  DEP_FILE = CMakeFiles/eis.dir/src/Scanner/Trie.cpp.o.d
+  FLAGS = -g -std=gnu++17
+  OBJECT_DIR = CMakeFiles/eis.dir
+  OBJECT_FILE_DIR = CMakeFiles/eis.dir/src/Scanner
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target eis
+
+
+#############################################
+# Link the executable eis
+
+build eis: CXX_EXECUTABLE_LINKER__eis_Debug CMakeFiles/eis.dir/src/eis.cpp.o CMakeFiles/eis.dir/src/ErrorLogger/ErrorLogger.cpp.o CMakeFiles/eis.dir/src/Scanner/Scanner.cpp.o CMakeFiles/eis.dir/src/Scanner/Trie.cpp.o
+  FLAGS = -g
+  OBJECT_DIR = CMakeFiles/eis.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_FILE = eis
+  TARGET_PDB = eis.dbg
+
+# =============================================================================
 # Target aliases.
 
 # =============================================================================
@@ -69,7 +118,7 @@ build edit_cache: phony CMakeFiles/edit_cache.util
 #############################################
 # Folder: /home/dc/Programs/C++/eis/build
 
-build all: phony
+build all: phony eis
 
 # =============================================================================
 # Built-in targets

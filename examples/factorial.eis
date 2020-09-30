@@ -1,19 +1,19 @@
 fn go(x: int, acc: int) -> int {
     if x > 1 {
-        return go(x - 1, acc * x);
+        return go(x - 1, acc * x)
     } else {
-        return acc;
+        return acc
     }
 }
 
 fn factorial(x: int) -> int {
-    return go(x, 1);
+    return go(x, 1)
 }
 
 fn main() -> int {
-    var x: int;
-    print("Enter the number to take the factorial of: ");
-    read(x);
-    print("The factorial of " + str(x) + " is: " + str(factorial(x)));
-    return 0;
+    var x: int
+    print("Enter the number to take the factorial of: ")
+    read(x)
+    print("The factorial of " + str(x) + " is: " + str(factorial(x)))
+    return 0
 }

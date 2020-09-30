@@ -1,9 +1,9 @@
 TYPE           ::= ("const")? ("ref")? "int" | "float" | "string" ;
-IDENTIFIER     ::= ("0"..."9" | "A"..."Z" | "a"..."z" | "_")+ ;
+IDENTIFIER     ::= ("A"..."Z" | "a"..."z" | "_") ("0"..."9" | "A"..."Z" | "a"..."z" | "_")* ;
 ANY_TYPE       ::= (TYPE | ("const")? ("ref")? IDENTIFIER) ;
-STRING         ::= "\'" ("A"..."Z" | "a"..."z" | "\n" | "\r" | "\t" | "\b")+  "\'"
-                 | "\"" ("A"..."Z" | "a"..."z" | "\n" | "\r" | "\t" | "\b")+  "\"" ;
-NUMBER         ::= "-"? ("0"..."9" | "'")* "."? ("0"..."9" | "'")+ ("e" ("0"..."9" | "'")+)? ;
+STRING         ::= "\'" ("A"..."Z" | "a"..."z" | "\n" | "\r" | "\t" | "\b" | "\\")+  "\'"
+                 | "\"" ("A"..."Z" | "a"..."z" | "\n" | "\r" | "\t" | "\b" | "\\")+  "\"" ;
+NUMBER         ::= ("0"..."9" | "'")* "."? ("0"..."9" | "'")+ ("e" ("0"..."9" | "'")+)? ;
 
 program        ::= declaration* EOF;
 
@@ -48,25 +48,25 @@ statement      ::= exprStmt
                  | returnStmt
                  | block ;
 
-import         ::= "import" IDENTIFIER ";" ;
+import         ::= "import" IDENTIFIER (";"|"\n");
 
-varDecl        ::= ("var" | "val") IDENTIFIER ((":" (ANY_TYPE | "[" ANY_TYPE "," NUMBER "]"))? "=" expression)? ";" ;
+varDecl        ::= ("var" | "val") IDENTIFIER ((":" (ANY_TYPE | "[" ANY_TYPE "," NUMBER "]"))? "=" expression)? (";"|"\n");
 
 funcDecl       ::= "fn" "(" arguments? ")" "->" ANY_TYPE "{" body "}" ;
 template_args  ::= (IDENTIFIER ",")* IDENTIFIER ;
 arguments      ::= (IDENTIFIER ":" ANY_TYPE)* ;
 body           ::= (varDecl | statement)* ;
 
-typeDecl       ::= "type" IDENTIFIER "=" ANY_TYPE ";" ;
+typeDecl       ::= "type" IDENTIFIER "=" ANY_TYPE (";"|"\n") ;
 classDecl      ::= "class" IDENTIFIER "{" (("private" | "public" | "protected") (varDecl | funcDecl))* "}" ;
 
 
-exprStmt       ::= expression ";" ;
+exprStmt       ::= expression (";"|"\n");
 forStmt        ::= "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
 ifStmt         ::= "if" expression statement ( "else" statement )? ;
 whileStmt      ::= "while" expression statement ;
 switchStmt     ::= "switch" expression "{" ("case" expression ":" statement)* ("default" ":" expression)? "}" ;
-breakStmt      ::= "break" ";" ;
-continueStmt   ::= "continue" ";" ;
-returnStmt     ::= "return" expression? ";" ;
+breakStmt      ::= "break" (";"|"\n") ;
+continueStmt   ::= "continue" (";"|"\n");
+returnStmt     ::= "return" expression? (";"|"\n") ;
 block          ::= "{" ( varDecl | statement )* "}" ;

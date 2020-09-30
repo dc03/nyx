@@ -1,0 +1,8 @@
+# ninja log v5
+1017	1144	1601464828050682516	eis	ef13988a8973a98a
+4	1017	1601464827924014620	CMakeFiles/eis.dir/src/Scanner/Scanner.cpp.o	9b8d0d127ae1506d
+5	1174	1601463608812472609	CMakeFiles/eis.dir/src/Scanner/Trie.cpp.o	4f0e8c92dbcea70d
+3	867	1601463608505770849	CMakeFiles/eis.dir/src/ErrorLogger/ErrorLogger.cpp.o	b3fb73fec682cff5
+0	1124	1601463487420780095	CMakeFiles/eis.dir/src/eis.cpp.o	539cd56380f09efe
+2	947	1601465218902074395	CMakeFiles/eis.dir/src/Scanner/Scanner.cpp.o	9b8d0d127ae1506d
+948	1066	1601465219018729940	eis	ef13988a8973a98a
