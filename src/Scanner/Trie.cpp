@@ -1,8 +1,7 @@
 #include "Trie.hpp"
 
 [[nodiscard]] constexpr std::size_t Trie::get_index(char ch) const noexcept {
-    assert(((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) &&
-           "Only english characters allowed for now.");
+    assert((std::isalnum(ch) || ch == '_') && "Only english characters allowed for now.");
 
     if (ch >= 'a' && ch <= 'z') {
         return ch - 'a';

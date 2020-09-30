@@ -13,6 +13,6 @@ int main(int argc, char *argv[]) {
     Scanner scanner{source};
     const std::vector<Token> tokens{scanner.scan()};
     for (const auto& token : tokens) {
-        std::cout << token.lexeme << "\t\t|\t" << token.line << '\n';
+        std::cout << (token.lexeme == "\n" ? "\\n" : token.lexeme) << "\t\t|\t" << token.line << '\n';
     }
 }

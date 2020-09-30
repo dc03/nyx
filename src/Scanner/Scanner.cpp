@@ -32,7 +32,7 @@ Scanner::Scanner(const std::string_view source): Scanner() {
     this->source = source;
 }
 
-bool Scanner::is_at_end() {
+bool Scanner::is_at_end() const noexcept {
     return current >= source.length();
 }
 
@@ -132,8 +132,6 @@ void Scanner::string(const char delim) {
         }
     }
 
-    advance(); // Consume the closing delimiter
-
     using namespace std::string_literals;
     if (is_at_end()) {
         std::string message{"Unexpected end of file while reading string, did you"
@@ -141,27 +139,29 @@ void Scanner::string(const char delim) {
         error(message.c_str(), line, source.substr(start, (current - start)));
     }
 
-    // std::string lexeme{source.substr(start + 1, (current - (start + 2)))};
+    advance(); // Consume the closing delimiter
     tokens.push_back(Token{TokenType::STRING, lexeme, line, start, current});
 }
 
 void Scanner::multiline_comment() {
     while(!is_at_end() && !(peek() == '*' && peek_next() == '/')) {
-        if (peek() == '\n') {
-            line++;
-        } else if (match('/') && match('*')) {
+        if (match('/') && match('*')) {
             multiline_comment();
+        } else {
+            if (peek() == '\n') {
+                line++;
+            }
+            advance();
         }
-        advance();
     }
-
-    advance(); // *
-    advance(); // /
 
     if (is_at_end()) {
         error("Unexpected end of file while reading comment, did you forget the closing '*/'?",
               line, source.substr(start, (current - start)));
     }
+
+    advance(); // *
+    advance(); // /
 }
 
 void Scanner::scan_token() {

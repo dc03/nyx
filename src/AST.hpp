@@ -307,7 +307,7 @@ enum class VisibilityType {
 	PRIVATE,
 	PROTECTED,
 	PUBLIC
-}
+};
 
 template <typename T>
 struct ClassStmt final: public Stmt<T> {

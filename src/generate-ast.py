@@ -182,7 +182,7 @@ if __name__ == '__main__':
         tab(file, 1).write('PRIVATE,\n')
         tab(file, 1).write('PROTECTED,\n')
         tab(file, 1).write('PUBLIC\n')
-        file.write('}\n\n')
+        file.write('};\n\n')
 
         decl_stmt('name{name}, members{std::move(members)}, methods{std::move(methods)}',
                   'Token name, std::vector<std::pair<stmt_node_t<T>,VisibilityType>> members, ' +
