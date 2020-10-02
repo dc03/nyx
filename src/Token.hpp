@@ -1,5 +1,7 @@
 #pragma once
 
+/* See LICENSE at project root for license details */
+
 #ifndef TOKEN_HPP
 #  define TOKEN_HPP
 

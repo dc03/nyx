@@ -1,5 +1,7 @@
 #pragma once
 
+/* See LICENSE at project root for license details */
+
 #ifndef AST_HPP
 #  define AST_HPP
 
@@ -7,6 +9,7 @@
 #include <optional>
 #include <utility>
 #include <vector>
+
 #include "Token.hpp"
 
 template <typename T>
@@ -77,32 +80,32 @@ struct WhileStmt;
 
 template <typename T>
 struct Visitor {
-	T visit(AssignExpr<T>& expr) = 0;
-	T visit(BinaryExpr<T>& expr) = 0;
-	T visit(CallExpr<T>& expr) = 0;
-	T visit(GetExpr<T>& expr) = 0;
-	T visit(GroupingExpr<T>& expr) = 0;
-	T visit(LiteralExpr<T>& expr) = 0;
-	T visit(LogicalExpr<T>& expr) = 0;
-	T visit(SetExpr<T>& expr) = 0;
-	T visit(SuperExpr<T>& expr) = 0;
-	T visit(ThisExpr<T>& expr) = 0;
-	T visit(UnaryExpr<T>& expr) = 0;
-	T visit(VariableExpr<T>& expr) = 0;
+	virtual T visit(AssignExpr<T>& expr) = 0;
+	virtual T visit(BinaryExpr<T>& expr) = 0;
+	virtual T visit(CallExpr<T>& expr) = 0;
+	virtual T visit(GetExpr<T>& expr) = 0;
+	virtual T visit(GroupingExpr<T>& expr) = 0;
+	virtual T visit(LiteralExpr<T>& expr) = 0;
+	virtual T visit(LogicalExpr<T>& expr) = 0;
+	virtual T visit(SetExpr<T>& expr) = 0;
+	virtual T visit(SuperExpr<T>& expr) = 0;
+	virtual T visit(ThisExpr<T>& expr) = 0;
+	virtual T visit(UnaryExpr<T>& expr) = 0;
+	virtual T visit(VariableExpr<T>& expr) = 0;
 
-	T visit(BlockStmt<T>& stmt) = 0;
-	T visit(BreakStmt<T>& stmt) = 0;
-	T visit(ClassStmt<T>& stmt) = 0;
-	T visit(ContinueStmt<T>& stmt) = 0;
-	T visit(ExpressionStmt<T>& stmt) = 0;
-	T visit(FunctionStmt<T>& stmt) = 0;
-	T visit(IfStmt<T>& stmt) = 0;
-	T visit(ImportStmt<T>& stmt) = 0;
-	T visit(ReturnStmt<T>& stmt) = 0;
-	T visit(SwitchStmt<T>& stmt) = 0;
-	T visit(TypeStmt<T>& stmt) = 0;
-	T visit(VarStmt<T>& stmt) = 0;
-	T visit(WhileStmt<T>& stmt) = 0;
+	virtual T visit(BlockStmt<T>& stmt) = 0;
+	virtual T visit(BreakStmt<T>& stmt) = 0;
+	virtual T visit(ClassStmt<T>& stmt) = 0;
+	virtual T visit(ContinueStmt<T>& stmt) = 0;
+	virtual T visit(ExpressionStmt<T>& stmt) = 0;
+	virtual T visit(FunctionStmt<T>& stmt) = 0;
+	virtual T visit(IfStmt<T>& stmt) = 0;
+	virtual T visit(ImportStmt<T>& stmt) = 0;
+	virtual T visit(ReturnStmt<T>& stmt) = 0;
+	virtual T visit(SwitchStmt<T>& stmt) = 0;
+	virtual T visit(TypeStmt<T>& stmt) = 0;
+	virtual T visit(VarStmt<T>& stmt) = 0;
+	virtual T visit(WhileStmt<T>& stmt) = 0;
 };
 
 template <typename T>
@@ -252,11 +255,11 @@ struct ThisExpr final: public Expr<T> {
 
 template <typename T>
 struct UnaryExpr final: public Expr<T> {
-	Token operator;
+	Token oper;
 	expr_node_t<T> right;
 
-	UnaryExpr(Token operator, expr_node_t<T> right):
-		operator{operator}, right{std::move(right)} {}
+	UnaryExpr(Token oper, expr_node_t<T> right):
+		oper{oper}, right{std::move(right)} {}
 
 	T accept(Visitor<T>& visitor) override final {
 		return visitor.visit(*this);

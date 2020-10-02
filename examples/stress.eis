@@ -7,3 +7,5 @@ class FooXS {
     var foo: int;asdlkfj
 }
 var num = 2340398.234e234098;
+"This is not correct
+wow is it not really?

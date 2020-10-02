@@ -1,8 +1,10 @@
+# See LICENSE at project root for license details
 from typing import *
 
 
 def make_header(file, guard: str) -> None:
     file.write('#pragma once\n\n')
+    file.write('/* See LICENSE at project root for license details */\n\n')
     file.write('#ifndef ' + guard + '\n')
     file.write('#  define ' + guard + '\n\n')
     return None
@@ -35,13 +37,13 @@ def declare_visitor(file, visitor: str, exprs: List[str], stmts: List[str], expr
     file.write('struct ' + visitor + ' {\n')
     for expr in exprs:
         tab(file, 1).write(
-            'T visit(' + expr + '<T>& ' + expr_base.lower() + ') = 0;\n')
+            'virtual T visit(' + expr + '<T>& ' + expr_base.lower() + ') = 0;\n')
 
     file.write('\n')
 
     for stmt in stmts:
         tab(file, 1).write(
-            'T visit(' + stmt + '<T>& ' + stmt_base.lower() + ') = 0;\n')
+            'virtual T visit(' + stmt + '<T>& ' + stmt_base.lower() + ') = 0;\n')
     file.write('};\n\n')
     return None
 
@@ -103,7 +105,7 @@ if __name__ == '__main__':
         file.write('#include <optional>\n')
         file.write('#include <utility>\n')
         file.write('#include <vector>\n')
-        file.write('#include "Token.hpp"\n\n')
+        file.write('\n#include "Token.hpp"\n\n')
         forward_declare(file, ['Expr', 'Stmt'])
         file.write('\n')
         declare_alias(file, 'expr_node_t', 'Expr')
@@ -163,8 +165,8 @@ if __name__ == '__main__':
         decl_expr('keyword{keyword}',
                   'Token keyword')
 
-        decl_expr('operator{operator}, right{std::move(right)}',
-                  'Token operator, expr_node_t<T> right')
+        decl_expr('oper{oper}, right{std::move(right)}',
+                  'Token oper, expr_node_t<T> right')
 
         decl_expr('name{name}',
                   'Token name')

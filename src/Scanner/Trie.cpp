@@ -1,3 +1,4 @@
+/* See LICENSE at project root for license details */
 #include "Trie.hpp"
 
 [[nodiscard]] constexpr std::size_t Trie::get_index(char ch) const noexcept {

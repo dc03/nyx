@@ -1,5 +1,7 @@
 #pragma once
 
+/* See LICENSE at project root for license details */
+
 #ifndef TOKEN_TYPES_HPP
 #  define TOKEN_TYPES_HPP
 
@@ -8,7 +10,7 @@ enum class TokenType {
     //
     COMMA,
     // 
-    DOT, EQUAL, PLUS_EQUAL, MINUS_EQUAL, STAR_EQUAL, SLASH_EQUAL, 
+    EQUAL, PLUS_EQUAL, MINUS_EQUAL, STAR_EQUAL, SLASH_EQUAL, 
     QUESTION,COLON,
     //
     LOGIC_OR,
@@ -34,7 +36,7 @@ enum class TokenType {
     //
     NOT, BIT_NOT, PLUS_PLUS, MINUS_MINUS,
     //
-    LEFT_PAREN, RIGHT_PAREN,
+    DOT, LEFT_PAREN, RIGHT_PAREN,
     LEFT_INDEX, RIGHT_INDEX,
     LEFT_BRACE, RIGHT_BRACE,
     

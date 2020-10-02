@@ -1,5 +1,7 @@
 #pragma once
 
+/* See LICENSE at project root for license details */
+
 #ifndef ERROR_LOGGER_HPP
 #  define ERROR_LOGGER_HPP
 
@@ -12,10 +14,10 @@ struct ErrorLogger {
 
 extern ErrorLogger logger;
 
-void error(const char *message, std::size_t line);
-void runtime_error(const char *message, std::size_t line);
+void error(const std::string_view message, std::size_t line);
+void runtime_error(const std::string_view message, std::size_t line);
 
-void error(const char *message, std::size_t line_number, std::string_view line);
-void runtime_error(const char *message, std::size_t line_number, std::string_view line);
+void error(const std::string_view message, std::size_t line_number, std::string_view line);
+void runtime_error(const std::string_view message, std::size_t line_number, std::string_view line);
 
 #endif

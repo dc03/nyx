@@ -1,5 +1,7 @@
 #pragma once
 
+/* See LICENSE at project root for license details */
+
 #ifndef TRIE_HPP
 #  define TRIE_HPP
 

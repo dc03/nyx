@@ -1,3 +1,4 @@
+/* See LICENSE at project root for license details */
 #include <cctype>
 
 #include "../ErrorLogger/ErrorLogger.hpp"
@@ -136,7 +137,7 @@ void Scanner::string(const char delim) {
     if (is_at_end()) {
         std::string message{"Unexpected end of file while reading string, did you"
                             " forget the closing '"s + std::string{delim} + "'?"};
-        error(message.c_str(), line, source.substr(start, (current - start)));
+        error(message, line, source.substr(start, (current - start)));
     }
 
     advance(); // Consume the closing delimiter
@@ -273,7 +274,7 @@ void Scanner::scan_token() {
             }
 
             using namespace std::string_literals;
-            error(("Unrecognized character "s + std::string{ch} + " in input").c_str(), line);
+            error(("Unrecognized character "s + std::string{ch} + " in input"), line);
         }
     }
 }

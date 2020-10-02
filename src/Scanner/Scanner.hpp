@@ -1,5 +1,7 @@
 #pragma once
 
+/* See LICENSE at project root for license details */
+
 #ifndef SCANNER_HPP
 #  define SCANNER_HPP
 
