@@ -36,7 +36,7 @@ class Scanner {
 
     void number();
     void identifier();
-    void string(const char delim);
+    void string(const char delimiter);
     void multiline_comment();
 
     void add_token(const TokenType type);

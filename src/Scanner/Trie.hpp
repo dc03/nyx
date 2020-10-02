@@ -13,7 +13,7 @@
 
 #include "../TokenTypes.hpp"
 
-static inline constexpr std::size_t num_alphabets{52};
+static inline constexpr std::size_t num_alphabets{52 + 1 + 10};
 
 struct Node {
     using ptr_t = std::unique_ptr<Node>;
@@ -38,11 +38,11 @@ struct Node {
 class Trie {
     Node::ptr_t head{nullptr};
 
-    [[nodiscard]] constexpr std::size_t get_index(char ch) const noexcept;
+    [[nodiscard]] static std::size_t get_index(char ch) noexcept;
 
   public:
-    void insert(const std::string_view key, TokenType type);
-    [[nodiscard]] TokenType search(const std::string_view key) const noexcept;
+    void insert(std::string_view key, TokenType type);
+    [[nodiscard]] TokenType search(std::string_view key) const noexcept;
 };
 
 #endif

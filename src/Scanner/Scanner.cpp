@@ -110,9 +110,9 @@ void Scanner::identifier() {
     }
 }
 
-void Scanner::string(const char delim) {
+void Scanner::string(const char delimiter) {
     std::string lexeme{}; // I think this should be fine because of SSO leading to an allocation only after ~24 chars.
-    while (!is_at_end() && peek() != delim) {
+    while (!is_at_end() && peek() != delimiter) {
         if (peek() == '\n') {
             line++;
             advance();
@@ -136,12 +136,12 @@ void Scanner::string(const char delim) {
     using namespace std::string_literals;
     if (is_at_end()) {
         std::string message{"Unexpected end of file while reading string, did you"
-                            " forget the closing '"s + std::string{delim} + "'?"};
+                            " forget the closing '"s + std::string{delimiter} + "'?"};
         error(message, line, source.substr(start, (current - start)));
     }
 
     advance(); // Consume the closing delimiter
-    tokens.push_back(Token{TokenType::STRING, lexeme, line, start, current});
+    tokens.emplace_back(TokenType::STRING_VALUE, lexeme, line, start, current);
 }
 
 void Scanner::multiline_comment() {
@@ -179,8 +179,8 @@ void Scanner::scan_token() {
         case ',': add_token(TokenType::COMMA); break;
         case '?': add_token(TokenType::QUESTION); break;
         case ':': add_token(TokenType::COLON); break;
-        case '|': add_token(match('|') ? TokenType::LOGIC_OR : TokenType::BIT_OR); break;
-        case '&': add_token(match('&') ? TokenType::LOGIC_AND : TokenType::BIT_AND); break;
+        case '|': add_token(match('|') ? TokenType::OR : TokenType::BIT_OR); break;
+        case '&': add_token(match('&') ? TokenType::AND : TokenType::BIT_AND); break;
         case '^': add_token(TokenType::BIT_XOR); break;
 
         case '!': add_equals(TokenType::NOT_EQUAL, TokenType::NOT); break;

@@ -11,12 +11,12 @@ expression     ::= assignment;
 assignment     ::= (call ".")? IDENTIFIER ("=" | "+=" | "-=" | "*=" | "/=") assignment
                  | comma;
 comma          ::= ternary ((",") ternary)* ;
-ternary        ::= bit_or ("?" bit_or ":" ternary)* ;
-bitor          ::= bit_xor ("|" bit_xor)* ;
-bitxor         ::= bit_and ("^" bit_and)* ;
-bitand         ::= equality ("&" equality)* ;
+ternary        ::= logic_or ("?" logic_or ":" ternary)* ;
 logic_or       ::= logic_and (("or" | "||") logic_and)* ;
-logic_and      ::= equality (("and" | "&&") equality)* ;
+logic_and      ::= bit_or (("and" | "&&") bit_or)* ;
+bit_or         ::= bit_xor ("|" bit_xor)* ;
+bit_xor        ::= bit_and ("^" bit_and)* ;
+bit_and        ::= equality ("&" equality)* ;
 equality       ::= comparison (("!=" | "==") comparison)* ;
 comparison     ::= bitshift ((">" | ">=" | "<" | "<=") bitshift)* ;
 bitshift       ::= addition (("<<" | ">>") addition)* ;
@@ -28,7 +28,7 @@ call           ::= primary ("(" arguments? ")" | "." IDENTIFIER)* ;
 arguments      ::= expression ("," expression)* ;
 primary        ::= "false" | "true" | "null"
                  | NUMBER | STRING | IDENTIFIER | IDENTIFIER "[" expression "]"
-                 | "typeof" IDENTIFIER
+                 | "typeof" expression
                  | "(" expression ")" ;
 
 declaration    ::= statement

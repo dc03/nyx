@@ -28,7 +28,7 @@ def declare_alias(file, alias: str, name: str) -> None:
 
 
 def tab(file, n: int):
-    file.write('\t' * n)
+    file.write('    ' * n)
     return file
 
 
@@ -112,8 +112,8 @@ if __name__ == '__main__':
         declare_alias(file, 'stmt_node_t', 'Stmt')
         # Base class and alias declarations complete
 
-        Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Get', 'Grouping', 'Literal',
-                            'Logical', 'Set', 'Super', 'This', 'Unary', 'Variable']
+        Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Literal',
+                            'Logical', 'Set', 'Super', 'Ternary', 'This', 'Unary', 'Variable']
         Stmts: List[str] = ['Block', 'Break', 'Class', 'Continue', 'Expression', 'Function',
                             'If', 'Import', 'Return', 'Switch', 'Type', 'Var', 'While']
         Exprs: List[str] = [x + 'Expr' for x in Exprs]
@@ -144,6 +144,9 @@ if __name__ == '__main__':
         decl_expr('function{std::move(function)}, paren{paren}, args{std::move(args)}',
                   'expr_node_t<T> function, Token paren, std::vector<expr_node_t<T>> args')
 
+        decl_expr('exprs{std::move(exprs)}',
+                  'std::vector<expr_node_t<T>> exprs')
+
         decl_expr('object{std::move(object)}, name{name}',
                   'expr_node_t<T> object, Token name')
 
@@ -161,6 +164,9 @@ if __name__ == '__main__':
 
         decl_expr('keyword{keyword}, name{name}',
                   'Token keyword, Token name')
+
+        decl_expr('left{std::move(left)}, question{question}, middle{std::move(middle)}, right{std::move(right)}',
+                  'expr_node_t<T> left, Token question, expr_node_t<T> middle, expr_node_t<T> right')
 
         decl_expr('keyword{keyword}',
                   'Token keyword')
@@ -188,7 +194,7 @@ if __name__ == '__main__':
 
         decl_stmt('name{name}, members{std::move(members)}, methods{std::move(methods)}',
                   'Token name, std::vector<std::pair<stmt_node_t<T>,VisibilityType>> members, ' +
-                   'std::vector<std::pair<stmt_node_t<T>,VisibilityType>> methods')
+                  'std::vector<std::pair<stmt_node_t<T>,VisibilityType>> methods')
 
         decl_stmt('keyword{keyword}',
                   'Token keyword')
@@ -199,13 +205,13 @@ if __name__ == '__main__':
         decl_stmt('name{name}, return_type{return_type}, params{std::move(params)}, body{std::move(body)}',
                   'Token name, Token return_type, std::vector<std::pair<Token,Token>> params, ' +
                   'std::vector<stmt_node_t<T>> body')
-        
-        decl_stmt('condition{std::move(condition)}, thenBranch{std::move(thenBranch)},' + 
+
+        decl_stmt('condition{std::move(condition)}, thenBranch{std::move(thenBranch)},' +
                   'elseBranch{std::move(elseBranch)}',
                   'expr_node_t<T> condition, stmt_node_t<T> thenBranch, stmt_node_t<T> elseBranch')
 
         decl_stmt('name{name}',
-                 'Token name')
+                  'Token name')
 
         decl_stmt('keyword{keyword}, value{std::move(value)}',
                   'Token keyword, expr_node_t<T> value')
@@ -219,7 +225,7 @@ if __name__ == '__main__':
 
         decl_stmt('name{name}, type{type}, initializer{std::move(initializer)}',
                   'Token name, Token type, expr_node_t<T> initializer')
-        
+
         decl_stmt('condition{std::move(condition)}, body{std::move(body)}',
                   'expr_node_t<T> condition, stmt_node_t<T> body')
 

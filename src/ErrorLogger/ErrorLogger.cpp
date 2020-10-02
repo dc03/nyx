@@ -21,7 +21,7 @@ void error(const std::string_view message, std::size_t line_number, std::string_
     for (char ch : line) {
         std::cerr << ch;
         if (ch == '\n') {
-            std::cout << " >| ";
+            std::cerr << " >| ";
         }
     }
     std::cerr << '\n';
@@ -34,7 +34,7 @@ void runtime_error(const std::string_view message, std::size_t line_number, std:
     for (char ch : line) {
         std::cerr << ch;
         if (ch == '\n') {
-            std::cout << " >| ";
+            std::cerr << " >| ";
         }
     }
     std::cerr << '\n';

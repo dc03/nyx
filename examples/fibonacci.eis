@@ -16,5 +16,5 @@ fn main() -> int {
     var x: int
     print("Enter a number: ")
     read(x)
-    print("The fibonacci number at " + str(x) + " is: " + str(fibonacci(x)))
+    print("The fibonacci literal at " + str(x) + " is: " + str(fibonacci(x)))
 }
