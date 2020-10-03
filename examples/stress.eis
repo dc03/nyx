@@ -13,3 +13,4 @@ typeof (5 + 6)
 */*/*/
 5 + 6
 5, 6, 7
+array.foo.sf(bar, baz, (quux[5]))

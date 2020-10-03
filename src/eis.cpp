@@ -13,12 +13,18 @@ int main(int argc, char *argv[]) {
     std::string source{std::istreambuf_iterator<char>{file},
                        std::istreambuf_iterator<char>{}};
     Scanner scanner{source};
-    Parser<std::variant<int, double, std::string, bool, std::nullptr_t>> parser{scanner.scan()};
-    try {
+    using T = std::variant<int, double, std::string, bool, std::nullptr_t>;
+    Parser<T> parser{scanner.scan()};
+    //try {
         parser.expression();
         parser.expression();
-    } catch (ParseException &err) {
-        std::cerr << err.what();
-    }
+        auto &&foo = parser.expression();
+        if (foo->to_string() == "CallExpr") {
+            auto &&bar = dynamic_cast<CallExpr<T>*>(foo.get());
+            std::cout << bar->function->to_string();
+        }
+    //} catch (ParseException &err) {
+     //   std::cerr << err.what();
+   // }
     return 0;
 }

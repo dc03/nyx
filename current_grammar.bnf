@@ -1,6 +1,6 @@
-TYPE           ::= ("const")? ("ref")? "int" | "float" | "string" ;
+BUILTIN        ::= ("const")? ("ref")? "int" | "float" | "string" ;
 IDENTIFIER     ::= ("A"..."Z" | "a"..."z" | "_") ("0"..."9" | "A"..."Z" | "a"..."z" | "_")* ;
-ANY_TYPE       ::= (TYPE | ("const")? ("ref")? IDENTIFIER) ;
+ANY_TYPE       ::= (BUILTIN | ("const")? ("ref")? IDENTIFIER | "[" ANY_TYPE "," NUMBER "]" | "typeof" expression) ;
 STRING         ::= "\'" ("A"..."Z" | "a"..."z" | "\n" | "\r" | "\t" | "\b" | "\\")+  "\'"
                  | "\"" ("A"..."Z" | "a"..."z" | "\n" | "\r" | "\t" | "\b" | "\\")+  "\"" ;
 NUMBER         ::= ("0"..."9" | "'")* "."? ("0"..."9" | "'")+ ("e" ("0"..."9" | "'")+)? ;
@@ -27,8 +27,7 @@ unary          ::= ("!" | "-" | "~" | "++" | "--") unary
 call           ::= primary ("(" arguments? ")" | "." IDENTIFIER)* ;
 arguments      ::= expression ("," expression)* ;
 primary        ::= "false" | "true" | "null"
-                 | NUMBER | STRING | IDENTIFIER | IDENTIFIER "[" expression "]"
-                 | "typeof" expression
+                 | NUMBER | STRING | IDENTIFIER | expression "[" expression "]"
                  | "(" expression ")" ;
 
 declaration    ::= statement
@@ -50,7 +49,7 @@ statement      ::= exprStmt
 
 import         ::= "import" IDENTIFIER (";"|"\n");
 
-varDecl        ::= ("var" | "val") IDENTIFIER ((":" (ANY_TYPE | "[" ANY_TYPE "," NUMBER "]"))? "=" expression)? (";"|"\n");
+varDecl        ::= ("var" | "val") IDENTIFIER ((":" ANY_TYPE)? "=" expression)? (";"|"\n");
 
 funcDecl       ::= "fn" "(" arguments? ")" "->" ANY_TYPE "{" body "}" ;
 template_args  ::= (IDENTIFIER ",")* IDENTIFIER ;

@@ -1,1 +1,0 @@
-/usr/bin/c++  -g   CMakeFiles/eis.dir/src/eis.cpp.o CMakeFiles/eis.dir/src/ErrorLogger/ErrorLogger.cpp.o CMakeFiles/eis.dir/src/Scanner/Scanner.cpp.o CMakeFiles/eis.dir/src/Scanner/Trie.cpp.o  -o eis 

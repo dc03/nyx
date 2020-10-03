@@ -34,7 +34,7 @@ struct ParsePrecedence {
         SUM,        // + -
         PRODUCT,    // % / *
         UNARY,      // ! ~ ++ --
-        CALL,       // . ()
+        CALL,       // . () []
         PRIMARY
     };
 };
@@ -89,6 +89,10 @@ class Parser {
     expr_node_t<T> comma(bool, expr_node_t<T> left);
     expr_node_t<T> and_(bool, expr_node_t<T> left);
     expr_node_t<T> or_(bool, expr_node_t<T> left);
+    expr_node_t<T> index(bool, expr_node_t<T> object);
+    expr_node_t<T> variable(bool);
+    expr_node_t<T> dot(bool, expr_node_t<T> left);
+    expr_node_t<T> call(bool, expr_node_t<T> function);
 };
 
 template <typename T>
@@ -132,16 +136,16 @@ inline Parser<T>::Parser(const std::vector<Token> &tokens): tokens{tokens} {
     add_rule(TokenType::BIT_NOT,       {&Parser<T>::unary, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::PLUS_PLUS,     {&Parser<T>::unary, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::MINUS_MINUS,   {&Parser<T>::unary, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::DOT,           {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::LEFT_PAREN,    {&Parser<T>::grouping, nullptr, ParsePrecedence::CALL});
+    add_rule(TokenType::DOT,           {nullptr, &Parser<T>::dot, ParsePrecedence::CALL});
+    add_rule(TokenType::LEFT_PAREN,    {&Parser<T>::grouping, &Parser<T>::call, ParsePrecedence::CALL});
     add_rule(TokenType::RIGHT_PAREN,   {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::LEFT_INDEX,    {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::LEFT_INDEX,    {nullptr, &Parser<T>::index, ParsePrecedence::CALL});
     add_rule(TokenType::RIGHT_INDEX,   {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::LEFT_BRACE,    {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::RIGHT_BRACE,   {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::SEMICOLON,     {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::ARROW,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::IDENTIFIER,    {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::IDENTIFIER,    {&Parser<T>::variable, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::STRING_VALUE,  {&Parser<T>::literal, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::INT_VALUE,     {&Parser<T>::literal, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::FLOAT_VALUE,   {&Parser<T>::literal, nullptr, ParsePrecedence::NONE});
@@ -168,7 +172,7 @@ inline Parser<T>::Parser(const std::vector<Token> &tokens): tokens{tokens} {
     add_rule(TokenType::STRING,        {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::TRUE,          {&Parser<T>::literal, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::TYPE,          {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::TYPEOF,        {&Parser<T>::unary, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::TYPEOF,        {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::VAL,           {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::VAR,           {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::WHILE,         {nullptr, nullptr, ParsePrecedence::NONE});
@@ -321,13 +325,7 @@ inline expr_node_t<T> Parser<T>::grouping(bool) {
 
 template <typename T>
 inline expr_node_t<T> Parser<T>::unary(bool) {
-    expr_node_t<T> expr = [this]() {
-        if (previous().type == TokenType::TYPEOF) {
-            return expression();
-        } else {
-            return parse_precedence(get_rule(previous().type).precedence);
-        }
-    }();
+    expr_node_t<T> expr = parse_precedence(get_rule(previous().type).precedence);
     return expr_node_t<T>{allocate(UnaryExpr<T>, previous(), std::move(expr))};
 }
 
@@ -356,13 +354,51 @@ inline expr_node_t<T> Parser<T>::comma(bool, expr_node_t<T> left) {
 template <typename T>
 inline expr_node_t<T> Parser<T>::and_(bool, expr_node_t<T> left) {
     expr_node_t<T> right = parse_precedence(ParsePrecedence::LOGIC_AND);
-    return expr_node_t<T>{allocate(BinaryExpr<T>, std::move(left), std::move(right))};
+    return expr_node_t<T>{allocate(BinaryExpr<T>, std::move(left), previous(), std::move(right))};
 }
 
 template <typename T>
 inline expr_node_t<T> Parser<T>::or_(bool, expr_node_t<T> left) {
     expr_node_t<T> right = parse_precedence(ParsePrecedence::LOGIC_OR);
-    return expr_node_t<T>{allocate(BinaryExpr<T>, std::move(left), std::move(right))};
+    return expr_node_t<T>{allocate(BinaryExpr<T>, std::move(left), previous(), std::move(right))};
+}
+
+template <typename T>
+inline expr_node_t<T> Parser<T>::index(bool, expr_node_t<T> object) {
+    expr_node_t<T> index = expression();
+    consume("Expected ']' after array subscript index", TokenType::RIGHT_INDEX);
+    return expr_node_t<T>{allocate(IndexExpr<T>, std::move(object), previous(), std::move(index))};
+}
+
+template <typename T>
+inline expr_node_t<T> Parser<T>::variable(bool) {
+    return expr_node_t<T>{allocate(VariableExpr<T>, previous())};
+}
+
+template <typename T>
+inline expr_node_t<T> Parser<T>::dot(bool, expr_node_t<T> left) {
+    consume("Expected identifier after '.'", TokenType::IDENTIFIER);
+    Token name = previous();
+    if (match(TokenType::EQUAL)) {
+        expr_node_t<T> value = expression();
+        return expr_node_t<T>{allocate(SetExpr<T>, std::move(left), std::move(name), std::move(value))};
+    }  else {
+        return expr_node_t<T>{allocate(GetExpr<T>, std::move(left), std::move(name))};
+    }
+}
+
+template <typename T>
+inline expr_node_t<T> Parser<T>::call(bool, expr_node_t<T> function) {
+    Token paren = previous();
+    std::vector<expr_node_t<T>> args{};
+    if (!match(TokenType::RIGHT_PAREN)) {
+        do {
+            args.emplace_back(parse_precedence(ParsePrecedence::ASSIGNMENT));
+        } while (match(TokenType::COMMA));
+
+    }
+    consume("Expected ')' after function call", TokenType::RIGHT_PAREN);
+    return expr_node_t<T>{allocate(CallExpr<T>, std::move(function), std::move(paren), std::move(args))};
 }
 
 #endif
