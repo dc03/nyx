@@ -19,27 +19,29 @@ class Scanner {
     std::size_t line{1};
     std::size_t start{};
     std::size_t current{};
+    std::size_t paren_count{};
     std::vector<Token> tokens{};
     std::string_view source{};
     Trie keywords{};
 
   public:
     Scanner();
-    Scanner(const std::string_view source);
+    explicit Scanner(std::string_view source);
 
-    bool is_at_end() const noexcept;
+    [[nodiscard]] bool is_at_end() const noexcept;
 
     char advance();
-    char peek() const noexcept;
-    char peek_next() const noexcept;
-    bool match(const char ch);
+    [[nodiscard]] char peek() const noexcept;
+    [[nodiscard]] char peek_next() const noexcept;
+    [[nodiscard]] const Token &previous() const noexcept;
+    bool match(char ch);
 
     void number();
     void identifier();
-    void string(const char delimiter);
+    void string(char delimiter);
     void multiline_comment();
 
-    void add_token(const TokenType type);
+    void add_token(TokenType type);
     void scan_token();
     const std::vector<Token> &scan();
 };

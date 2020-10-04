@@ -50,7 +50,7 @@ def declare_visitor(file, visitor: str, exprs: List[str], stmts: List[str], expr
 
     for type in types:
         tab(file, 1).write(
-            'virtual T visit(' + type + '<T>& ' + stmt_base.lower() + ') = 0;\n')
+            'virtual T visit(' + type + '<T>& ' + type_base.lower() + ') = 0;\n')
 
     file.write('};\n\n')
     return None
@@ -59,7 +59,8 @@ def declare_visitor(file, visitor: str, exprs: List[str], stmts: List[str], expr
 def declare_base(file, base_name: str) -> None:
     file.write('template <typename T>\n')
     file.write('struct ' + base_name + ' {\n')
-    tab(file, 1).write('virtual std::string_view to_string() = 0;\n')
+    tab(file, 1).write('virtual std::string_view string_tag() = 0;\n')
+    tab(file, 1).write('virtual NodeType type_tag() = 0;\n')
     tab(file, 1).write('virtual T accept(Visitor<T>& visitor) = 0;\n')
     tab(file, 1).write('virtual ~' + base_name + '() = default;\n')
     file.write('};\n\n')
@@ -77,10 +78,15 @@ def declare_derived(file, base_name: str, derived_name: str, ctor_args: str, mem
         file.write('\n')
         # Class members
 
-    tab(file, 1).write('std::string_view to_string() override final {\n')
+    tab(file, 1).write('std::string_view string_tag() override final {\n')
     tab(file, 2).write('return "' + derived_name + '";\n')
     tab(file, 1).write('}\n\n')
-    # to_string() method
+    # string_tag() method
+
+    tab(file, 1).write('NodeType type_tag() override final {\n')
+    tab(file, 2).write('return NodeType::' + derived_name + ';\n')
+    tab(file, 1).write('}\n\n')
+    # type_tag() method
 
     tab(file, 1).write(derived_name + '(' + members + ')' + (':\n' if ctor_args != '' else '\n'))
     tab(file, 2).write(ctor_args + ' {}\n')
@@ -91,6 +97,26 @@ def declare_derived(file, base_name: str, derived_name: str, ctor_args: str, mem
     tab(file, 2).write('return visitor.visit(*this);\n')
     tab(file, 1).write('}\n')
     # Accept method
+    file.write('};\n\n')
+    return None
+
+
+def declare_tag_enum(file, exprs: List[str], stmts: List[str], types: List[str]) -> None:
+    file.write('enum class NodeType {\n')
+    for expr in exprs:
+        tab(file, 1).write(expr + ',\n')
+    file.write('\n')
+
+    for stmt in stmts:
+        tab(file, 1).write(stmt + ',\n')
+    file.write('\n')
+
+    for i in range(len(types)):
+        tab(file, 1).write(types[i])
+        if i < len(types) - 1:
+            file.write(',')
+        file.write('\n')
+
     file.write('};\n\n')
     return None
 
@@ -134,9 +160,11 @@ if __name__ == '__main__':
         Stmts: List[str] = ['Block', 'Break', 'Class', 'Continue', 'Expression', 'Function',
                             'If', 'Import', 'Return', 'Switch', 'Type', 'Var', 'While']
         Types: List[str] = ['Primitive', 'UserDefined', 'List']
+
         Exprs: List[str] = [x + 'Expr' for x in Exprs]
         Stmts: List[str] = [x + 'Stmt' for x in Stmts]
         Types: List[str] = [x + 'Type' for x in Types]
+
         file.write('\n// Expression nodes\n\n')
         forward_declare(file, Exprs)
         file.write('\n// Statement nodes\n\n')
@@ -147,12 +175,14 @@ if __name__ == '__main__':
         # Forward declarations complete
 
         declare_visitor(file, 'Visitor', Exprs, Stmts, 'Expr', 'Stmt', Types, 'Type')
+        declare_tag_enum(file, Exprs, Stmts, Types)
         # Visitor declaration complete
 
         declare_base(file, 'Expr')
         declare_base(file, 'Stmt')
 
         file.write('enum class TypeType {\n')
+        tab(file, 1).write('BOOL,\n')
         tab(file, 1).write('INT,\n')
         tab(file, 1).write('FLOAT,\n')
         tab(file, 1).write('STRING,\n')
@@ -178,8 +208,8 @@ if __name__ == '__main__':
 
         declare_derived(file, 'Type', Types[1], 'name{name}', 'Token name')
 
-        declare_derived(file, 'Type', Types[2], 'contained{std::move(contained)}',
-                        'type_node_t<T> contained')
+        declare_derived(file, 'Type', Types[2], 'contained{std::move(contained)}, size{std::move(size)}',
+                        'type_node_t<T> contained, expr_node_t<T> size')
 
         file.write('// End of type node definitions\n\n')
 

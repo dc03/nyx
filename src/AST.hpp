@@ -130,26 +130,65 @@ struct Visitor {
     virtual T visit(VarStmt<T>& stmt) = 0;
     virtual T visit(WhileStmt<T>& stmt) = 0;
 
-    virtual T visit(PrimitiveType<T>& stmt) = 0;
-    virtual T visit(UserDefinedType<T>& stmt) = 0;
-    virtual T visit(ListType<T>& stmt) = 0;
+    virtual T visit(PrimitiveType<T>& type) = 0;
+    virtual T visit(UserDefinedType<T>& type) = 0;
+    virtual T visit(ListType<T>& type) = 0;
+};
+
+enum class NodeType {
+    AssignExpr,
+    BinaryExpr,
+    CallExpr,
+    CommaExpr,
+    GetExpr,
+    GroupingExpr,
+    IndexExpr,
+    LiteralExpr,
+    LogicalExpr,
+    SetExpr,
+    SuperExpr,
+    TernaryExpr,
+    ThisExpr,
+    UnaryExpr,
+    VariableExpr,
+
+    BlockStmt,
+    BreakStmt,
+    ClassStmt,
+    ContinueStmt,
+    ExpressionStmt,
+    FunctionStmt,
+    IfStmt,
+    ImportStmt,
+    ReturnStmt,
+    SwitchStmt,
+    TypeStmt,
+    VarStmt,
+    WhileStmt,
+
+    PrimitiveType,
+    UserDefinedType,
+    ListType
 };
 
 template <typename T>
 struct Expr {
-    virtual std::string_view to_string() = 0;
+    virtual std::string_view string_tag() = 0;
+    virtual NodeType type_tag() = 0;
     virtual T accept(Visitor<T>& visitor) = 0;
     virtual ~Expr() = default;
 };
 
 template <typename T>
 struct Stmt {
-    virtual std::string_view to_string() = 0;
+    virtual std::string_view string_tag() = 0;
+    virtual NodeType type_tag() = 0;
     virtual T accept(Visitor<T>& visitor) = 0;
     virtual ~Stmt() = default;
 };
 
 enum class TypeType {
+    BOOL,
     INT,
     FLOAT,
     STRING,
@@ -171,8 +210,12 @@ struct Type {
 
 template <typename T>
 struct PrimitiveType final: public Type<T> {
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "PrimitiveType";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::PrimitiveType;
     }
 
     PrimitiveType()
@@ -187,8 +230,12 @@ template <typename T>
 struct UserDefinedType final: public Type<T> {
     Token name;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "UserDefinedType";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::UserDefinedType;
     }
 
     UserDefinedType(Token name):
@@ -202,13 +249,18 @@ struct UserDefinedType final: public Type<T> {
 template <typename T>
 struct ListType final: public Type<T> {
     type_node_t<T> contained;
+    expr_node_t<T> size;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "ListType";
     }
 
-    ListType(type_node_t<T> contained):
-        contained{std::move(contained)} {}
+    NodeType type_tag() override final {
+        return NodeType::ListType;
+    }
+
+    ListType(type_node_t<T> contained, expr_node_t<T> size):
+        contained{std::move(contained)}, size{std::move(size)} {}
 
     T accept(Visitor<T>& visitor) override final {
         return visitor.visit(*this);
@@ -224,8 +276,12 @@ struct AssignExpr final: public Expr<T> {
     Token target;
     expr_node_t<T> value;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "AssignExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::AssignExpr;
     }
 
     AssignExpr(Token target, expr_node_t<T> value):
@@ -242,8 +298,12 @@ struct BinaryExpr final: public Expr<T> {
     Token oper;
     expr_node_t<T> right;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "BinaryExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::BinaryExpr;
     }
 
     BinaryExpr(expr_node_t<T> left, Token oper, expr_node_t<T> right):
@@ -260,8 +320,12 @@ struct CallExpr final: public Expr<T> {
     Token paren;
     std::vector<expr_node_t<T>> args;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "CallExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::CallExpr;
     }
 
     CallExpr(expr_node_t<T> function, Token paren, std::vector<expr_node_t<T>> args):
@@ -276,8 +340,12 @@ template <typename T>
 struct CommaExpr final: public Expr<T> {
     std::vector<expr_node_t<T>> exprs;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "CommaExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::CommaExpr;
     }
 
     CommaExpr(std::vector<expr_node_t<T>> exprs):
@@ -293,8 +361,12 @@ struct GetExpr final: public Expr<T> {
     expr_node_t<T> object;
     Token name;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "GetExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::GetExpr;
     }
 
     GetExpr(expr_node_t<T> object, Token name):
@@ -309,8 +381,12 @@ template <typename T>
 struct GroupingExpr final: public Expr<T> {
     expr_node_t<T> expr;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "GroupingExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::GroupingExpr;
     }
 
     GroupingExpr(expr_node_t<T> expr):
@@ -327,8 +403,12 @@ struct IndexExpr final: public Expr<T> {
     Token oper;
     expr_node_t<T> index;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "IndexExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::IndexExpr;
     }
 
     IndexExpr(expr_node_t<T> object, Token oper, expr_node_t<T> index):
@@ -343,8 +423,12 @@ template <typename T>
 struct LiteralExpr final: public Expr<T> {
     T value;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "LiteralExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::LiteralExpr;
     }
 
     LiteralExpr(T value):
@@ -361,8 +445,12 @@ struct LogicalExpr final: public Expr<T> {
     Token oper;
     expr_node_t<T> right;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "LogicalExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::LogicalExpr;
     }
 
     LogicalExpr(expr_node_t<T> left, Token oper, expr_node_t<T> right):
@@ -379,8 +467,12 @@ struct SetExpr final: public Expr<T> {
     Token name;
     expr_node_t<T> value;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "SetExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::SetExpr;
     }
 
     SetExpr(expr_node_t<T> object, Token name, expr_node_t<T> value):
@@ -396,8 +488,12 @@ struct SuperExpr final: public Expr<T> {
     Token keyword;
     Token name;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "SuperExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::SuperExpr;
     }
 
     SuperExpr(Token keyword, Token name):
@@ -415,8 +511,12 @@ struct TernaryExpr final: public Expr<T> {
     expr_node_t<T> middle;
     expr_node_t<T> right;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "TernaryExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::TernaryExpr;
     }
 
     TernaryExpr(expr_node_t<T> left, Token question, expr_node_t<T> middle, expr_node_t<T> right):
@@ -431,8 +531,12 @@ template <typename T>
 struct ThisExpr final: public Expr<T> {
     Token keyword;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "ThisExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::ThisExpr;
     }
 
     ThisExpr(Token keyword):
@@ -448,8 +552,12 @@ struct UnaryExpr final: public Expr<T> {
     Token oper;
     expr_node_t<T> right;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "UnaryExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::UnaryExpr;
     }
 
     UnaryExpr(Token oper, expr_node_t<T> right):
@@ -464,8 +572,12 @@ template <typename T>
 struct VariableExpr final: public Expr<T> {
     Token name;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "VariableExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::VariableExpr;
     }
 
     VariableExpr(Token name):
@@ -484,8 +596,12 @@ template <typename T>
 struct BlockStmt final: public Stmt<T> {
     std::vector<stmt_node_t<T>> stmts;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "BlockStmt";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::BlockStmt;
     }
 
     BlockStmt(std::vector<stmt_node_t<T>> stmts):
@@ -500,8 +616,12 @@ template <typename T>
 struct BreakStmt final: public Stmt<T> {
     Token keyword;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "BreakStmt";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::BreakStmt;
     }
 
     BreakStmt(Token keyword):
@@ -524,8 +644,12 @@ struct ClassStmt final: public Stmt<T> {
     std::vector<std::pair<stmt_node_t<T>,VisibilityType>> members;
     std::vector<std::pair<stmt_node_t<T>,VisibilityType>> methods;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "ClassStmt";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::ClassStmt;
     }
 
     ClassStmt(Token name, std::vector<std::pair<stmt_node_t<T>,VisibilityType>> members, std::vector<std::pair<stmt_node_t<T>,VisibilityType>> methods):
@@ -540,8 +664,12 @@ template <typename T>
 struct ContinueStmt final: public Stmt<T> {
     Token keyword;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "ContinueStmt";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::ContinueStmt;
     }
 
     ContinueStmt(Token keyword):
@@ -556,8 +684,12 @@ template <typename T>
 struct ExpressionStmt final: public Stmt<T> {
     expr_node_t<T> expr;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "ExpressionStmt";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::ExpressionStmt;
     }
 
     ExpressionStmt(expr_node_t<T> expr):
@@ -575,8 +707,12 @@ struct FunctionStmt final: public Stmt<T> {
     std::vector<std::pair<Token,type_node_t<T>>> params;
     std::vector<stmt_node_t<T>> body;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "FunctionStmt";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::FunctionStmt;
     }
 
     FunctionStmt(Token name, type_node_t<T> return_type, std::vector<std::pair<Token,type_node_t<T>>> params, std::vector<stmt_node_t<T>> body):
@@ -593,8 +729,12 @@ struct IfStmt final: public Stmt<T> {
     stmt_node_t<T> thenBranch;
     stmt_node_t<T> elseBranch;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "IfStmt";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::IfStmt;
     }
 
     IfStmt(expr_node_t<T> condition, stmt_node_t<T> thenBranch, stmt_node_t<T> elseBranch):
@@ -609,8 +749,12 @@ template <typename T>
 struct ImportStmt final: public Stmt<T> {
     Token name;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "ImportStmt";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::ImportStmt;
     }
 
     ImportStmt(Token name):
@@ -626,8 +770,12 @@ struct ReturnStmt final: public Stmt<T> {
     Token keyword;
     expr_node_t<T> value;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "ReturnStmt";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::ReturnStmt;
     }
 
     ReturnStmt(Token keyword, expr_node_t<T> value):
@@ -644,8 +792,12 @@ struct SwitchStmt final: public Stmt<T> {
     std::vector<std::pair<expr_node_t<T>,stmt_node_t<T>>> cases;
     std::optional<std::pair<expr_node_t<T>,stmt_node_t<T>>> default_case;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "SwitchStmt";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::SwitchStmt;
     }
 
     SwitchStmt(expr_node_t<T> condition, std::vector<std::pair<expr_node_t<T>,stmt_node_t<T>>> cases, std::optional<std::pair<expr_node_t<T>,stmt_node_t<T>>> default_case):
@@ -661,8 +813,12 @@ struct TypeStmt final: public Stmt<T> {
     Token name;
     type_node_t<T> type;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "TypeStmt";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::TypeStmt;
     }
 
     TypeStmt(Token name, type_node_t<T> type):
@@ -679,8 +835,12 @@ struct VarStmt final: public Stmt<T> {
     type_node_t<T> type;
     expr_node_t<T> initializer;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "VarStmt";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::VarStmt;
     }
 
     VarStmt(Token name, type_node_t<T> type, expr_node_t<T> initializer):
@@ -696,8 +856,12 @@ struct WhileStmt final: public Stmt<T> {
     expr_node_t<T> condition;
     stmt_node_t<T> body;
 
-    std::string_view to_string() override final {
+    std::string_view string_tag() override final {
         return "WhileStmt";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::WhileStmt;
     }
 
     WhileStmt(expr_node_t<T> condition, stmt_node_t<T> body):

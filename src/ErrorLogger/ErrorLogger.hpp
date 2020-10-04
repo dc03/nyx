@@ -7,17 +7,19 @@
 
 #include <string_view>
 
+#include "../Token.hpp"
+
 struct ErrorLogger {
     bool had_error{false};
     bool had_runtime_error{false};
+    std::string_view source{};
+    void set_source(std::string_view file_source);
 };
 
 extern ErrorLogger logger;
 
-void error(const std::string_view message, std::size_t line);
-void runtime_error(const std::string_view message, std::size_t line);
-
-void error(const std::string_view message, std::size_t line_number, std::string_view line);
-void runtime_error(const std::string_view message, std::size_t line_number, std::string_view line);
+void error(std::string_view message, const Token &where);
+void runtime_error(std::string_view message, const Token &where);
+void note(std::string_view message);
 
 #endif
