@@ -5,10 +5,7 @@
 #ifndef SCANNER_HPP
 #  define SCANNER_HPP
 
-#include <array>
-#include <stdexcept>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 #include "../Token.hpp"

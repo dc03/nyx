@@ -1,4 +1,6 @@
 /* See LICENSE at project root for license details */
+#include <algorithm>
+#include <cassert>
 #include <cctype>
 
 #include "../ErrorLogger/ErrorLogger.hpp"
@@ -6,18 +8,18 @@
 
 Scanner::Scanner() {
     const char *words[]{
-        "and", "bool", "break", "class", "const", "continue", "else", "false", "float",
+        "and", "bool", "break", "case", "class", "const", "continue", "default", "else", "false", "float",
         "fn", "for", "if", "import", "int", "null", "or", "protected", "private",
-        "public", "ref", "return", "string", "super", "this", "true", "type", "typeof", "val",
+        "public", "ref", "return", "string", "super", "switch", "this", "true", "type", "typeof", "val",
         "var", "while"
     };
 
     TokenType types[]{
-        TokenType::AND, TokenType::BOOL, TokenType::BREAK, TokenType::CLASS, TokenType::CONST,
-        TokenType::CONTINUE, TokenType::ELSE, TokenType::FALSE, TokenType::FLOAT,
+        TokenType::AND, TokenType::BOOL, TokenType::BREAK, TokenType::CASE, TokenType::CLASS, TokenType::CONST,
+        TokenType::CONTINUE, TokenType::DEFAULT, TokenType::ELSE, TokenType::FALSE, TokenType::FLOAT,
         TokenType::FN, TokenType::FOR, TokenType::IF, TokenType::IMPORT, TokenType::INT,
         TokenType::NULL_, TokenType::OR, TokenType::PROTECTED, TokenType::PRIVATE,
-        TokenType::PUBLIC, TokenType::REF, TokenType::RETURN, TokenType::STRING, TokenType::SUPER,
+        TokenType::PUBLIC, TokenType::REF, TokenType::RETURN, TokenType::STRING, TokenType::SUPER, TokenType::SWITCH,
         TokenType::THIS, TokenType::TRUE, TokenType::TYPE, TokenType::TYPEOF, TokenType::VAL, TokenType::VAR,
         TokenType::WHILE
     };
@@ -255,7 +257,13 @@ void Scanner::scan_token() {
         case '\r':
         case '\b': break;
         case '\n': {
-            auto is_allowed = [](const Token &token) {
+            auto is_allowed = [this](const Token &token) {
+                if (std::all_of(token.lexeme.begin(), token.lexeme.end(), static_cast<int(*)(int)>(std::isalpha))) {
+                    if (keywords.search(token.lexeme) != TokenType::NONE) {
+                        return true;
+                    }
+                }
+
                 switch (token.type) {
                     case TokenType::FLOAT_VALUE:
                     case TokenType::INT_VALUE:
@@ -268,7 +276,7 @@ void Scanner::scan_token() {
                         return false;
                 }
             };
-            if (paren_count == 0 && (tokens.size() >= 2 && is_allowed(previous()))) {
+            if (paren_count == 0 && !tokens.empty() && is_allowed(previous())) {
                 add_token(TokenType::END_OF_LINE);
             }
             line++;

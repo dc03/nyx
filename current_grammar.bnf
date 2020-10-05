@@ -1,8 +1,11 @@
-BUILTIN        ::= ("const")? ("ref")? "int" | "float" | "string" ;
+BUILTIN        ::= ("const")? ("ref")? "int" | "float" | "string" | "bool";
 IDENTIFIER     ::= ("A"..."Z" | "a"..."z" | "_") ("0"..."9" | "A"..."Z" | "a"..."z" | "_")* ;
-ANY_TYPE       ::= (BUILTIN | ("const")? ("ref")? IDENTIFIER | "[" ANY_TYPE "," NUMBER "]" | "typeof" expression) ;
-STRING         ::= "\'" ("A"..."Z" | "a"..."z" | "\n" | "\r" | "\t" | "\b" | "\\")+  "\'"
-                 | "\"" ("A"..."Z" | "a"..."z" | "\n" | "\r" | "\t" | "\b" | "\\")+  "\"" ;
+ANY_TYPE       ::= BUILTIN
+                 | ("const")? ("ref")? IDENTIFIER
+                 | ("const")? ("ref")? "[" ANY_TYPE "," expression "]"
+                 | "typeof" expression;
+STRING         ::= "\'" ("A"..."Z" | "a"..."z" | "\\n" | "\\r" | "\\t" | "\\b" | "\\")+  "\'"
+                 | "\"" ("A"..."Z" | "a"..."z" | "\\n" | "\\r" | "\\t" | "\\b" | "\\")+  "\"" ;
 NUMBER         ::= ("0"..."9" | "'")* "."? ("0"..."9" | "'")+ ("e" ("0"..."9" | "'")+)? ;
 
 program        ::= declaration* EOF;
@@ -28,6 +31,7 @@ call           ::= primary ("(" arguments? ")" | "." IDENTIFIER)* ;
 arguments      ::= expression ("," expression)* ;
 primary        ::= "false" | "true" | "null"
                  | NUMBER | STRING | IDENTIFIER | expression "[" expression "]"
+                 | "super" "." IDENTIFIER | "this"
                  | "(" expression ")" ;
 
 declaration    ::= statement
@@ -47,25 +51,25 @@ statement      ::= exprStmt
                  | returnStmt
                  | block ;
 
-import         ::= "import" IDENTIFIER (";"|"\n");
+import         ::= "import" IDENTIFIER (";"|"\n"); //
 
-varDecl        ::= ("var" | "val") IDENTIFIER ((":" ANY_TYPE)? "=" expression)? (";"|"\n");
+varDecl        ::= ("var" | "val") IDENTIFIER ((":" ANY_TYPE)? "=" expression)? (";"|"\n"); //
 
-funcDecl       ::= "fn" "(" arguments? ")" "->" ANY_TYPE "{" body "}" ;
-template_args  ::= (IDENTIFIER ",")* IDENTIFIER ;
-arguments      ::= (IDENTIFIER ":" ANY_TYPE)* ;
-body           ::= (varDecl | statement)* ;
+funcDecl       ::= "fn" IDENTIFIER "(" arguments? ")" "->" ANY_TYPE "{" body "}" ; //
+template_args  ::= (IDENTIFIER ",")* IDENTIFIER ; //
+arguments      ::= (IDENTIFIER ":" ANY_TYPE)* ; //
+body           ::= (varDecl | statement)* ; //
 
-typeDecl       ::= "type" IDENTIFIER "=" ANY_TYPE (";"|"\n") ;
-classDecl      ::= "class" IDENTIFIER "{" (("private" | "public" | "protected") (varDecl | funcDecl))* "}" ;
+typeDecl       ::= "type" IDENTIFIER "=" ANY_TYPE (";"|"\n") ; //
+classDecl      ::= "class" IDENTIFIER "{" (("private" | "public" | "protected") (varDecl | funcDecl | "~" funcDecl))* "}" ;
 
 
-exprStmt       ::= expression (";"|"\n");
+exprStmt       ::= expression (";"|"\n"); //
 forStmt        ::= "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
-ifStmt         ::= "if" expression statement ( "else" statement )? ;
-whileStmt      ::= "while" expression statement ;
+ifStmt         ::= "if" expression statement ( "else" statement )? ; //
+whileStmt      ::= "while" expression statement ; //
 switchStmt     ::= "switch" expression "{" ("case" expression ":" statement)* ("default" ":" expression)? "}" ;
-breakStmt      ::= "break" (";"|"\n") ;
-continueStmt   ::= "continue" (";"|"\n");
-returnStmt     ::= "return" expression? (";"|"\n") ;
-block          ::= "{" ( varDecl | statement )* "}" ;
+breakStmt      ::= "break" (";"|"\n") ; //
+continueStmt   ::= "continue" (";"|"\n"); //
+returnStmt     ::= "return" expression? (";"|"\n") ; //
+block          ::= "{" ( varDecl | statement )* "}" ; //

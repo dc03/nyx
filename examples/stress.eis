@@ -1,16 +1,120 @@
-/*/*/*
 "This is a multiline\n
 \t\b\b\b\b\\\\string"
 // @#$
-var _x0z:type = type_wow;
-class Foo {
-    var x : int;
-}
 
 (5 + 6 - 4 + 3 * (5 - 6))
-typeof (5 + 6)
 ++(5 + 6)
-*/*/*/
+x + 6
+
+
+
 5 + 6
+
+
+
 5, 6, 7
-array.foo.sf(bar, baz, (quux[5]))
+array.foo.sf(bar,
+             baz,
+             (quux[
+             5]
+             )
+
+            )
+
+x = 5
+x += 5
+x -= 5
+x *= 5
+x /= 5
+x, y, z
+x, y = 5, z = 6
+x ? y : z
+!!x
+~~x
+++x
+--x
+x.y.z = 5
+x.y.z += 5
+x.y.z -= 5
+x.y.z *= 5
+x.y.z /= 5
+x.y.z, a.b.c, e.d.f
+x.y.z ? a.b.c : e.d.f
+!!x.y.z
+~~x.y.z
+++x.y.z
+--x.y.z
+x.y.z(5, 6, 7, arr[foo])
+
+import foo
+
+var x: const ref int = foo.foo()
+val y: int = 5
+
+fn bar(x: int, y: string) -> Foo {
+    print("Hello world")
+    return Foo(5)
+}
+
+type Bar = Baz
+class StructA {
+    public var x: int
+    public fn StructA() -> StructA {
+        x = 5
+    }
+    public fn ~StructA() -> null {
+    }
+}
+
+for (var i: int = 0; i < 5; ++i) {
+    break
+    continue
+    print("hello world")
+}
+
+if 5 == 6 {
+    print("How")
+} else if 5 != 6 {
+    print("Yes")
+}
+
+while x < 5 {
+    print(x)
+    ++x
+}
+
+switch (x) {
+    case 5: {
+        print(x)
+        break
+    }
+    case 6: {
+        print(x + 1)
+        break
+    }
+    default: {
+        print("Default case")
+        break
+    }
+}
+
+fn foo(x: int) -> int {
+    return x
+}
+
+for (; i < 5; ++i) {
+    break
+    continue
+}
+
+{
+    print("Hello world");
+}
+/*/*/*
+break
+class F }
+fn bar(x:) -> }
+switch (foo) {
+    case foo: break
+}
+*/*/*/

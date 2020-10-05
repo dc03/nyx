@@ -3,8 +3,9 @@
  */
  fn main() -> int {
     var y: const int = 5 // This is a normal comment
-    var x: [int, y] = { 1, 2, 3, 4, 5 }
+    var x: [int, y]
     for (var i = 0; i < x.size; i++) {
+        x[i] = i
         print(str(i) + " ")
     }
 

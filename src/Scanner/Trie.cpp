@@ -1,4 +1,8 @@
 /* See LICENSE at project root for license details */
+#include <algorithm>
+#include <cassert>
+#include <cctype>
+
 #include "Trie.hpp"
 
 [[nodiscard]] std::size_t Trie::get_index(char ch) noexcept {

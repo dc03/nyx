@@ -159,7 +159,7 @@ if __name__ == '__main__':
                             'Logical', 'Set', 'Super', 'Ternary', 'This', 'Unary', 'Variable']
         Stmts: List[str] = ['Block', 'Break', 'Class', 'Continue', 'Expression', 'Function',
                             'If', 'Import', 'Return', 'Switch', 'Type', 'Var', 'While']
-        Types: List[str] = ['Primitive', 'UserDefined', 'List']
+        Types: List[str] = ['Primitive', 'UserDefined', 'List', 'Typeof']
 
         Exprs: List[str] = [x + 'Expr' for x in Exprs]
         Stmts: List[str] = [x + 'Stmt' for x in Stmts]
@@ -187,16 +187,23 @@ if __name__ == '__main__':
         tab(file, 1).write('FLOAT,\n')
         tab(file, 1).write('STRING,\n')
         tab(file, 1).write('CLASS,\n')
-        tab(file, 1).write('LIST\n')
+        tab(file, 1).write('LIST,\n')
+        tab(file, 1).write('TYPEOF,\n')
+        tab(file, 1).write('NULL_\n')
         file.write('};\n\n')
 
         file.write('template <typename T>\n')
         file.write('struct Type {\n')
+        tab(file, 1).write('virtual std::string_view string_tag() = 0;\n')
+        tab(file, 1).write('virtual NodeType type_tag() = 0;\n')
+        tab(file, 1).write('virtual T accept(Visitor<T>& visitor) = 0;\n')
+        tab(file, 1).write('virtual ~Type() = default;\n')
+        file.write('};\n\n')
+
+        file.write('struct SharedData {\n')
         tab(file, 1).write('TypeType type;\n')
         tab(file, 1).write('bool is_const;\n')
         tab(file, 1).write('bool is_ref;\n\n')
-        tab(file, 1).write('virtual T accept(Visitor<T>& visitor) = 0;\n')
-        tab(file, 1).write('virtual ~Type() = default;\n')
         file.write('};\n\n')
         # Type base node definition
 
@@ -204,12 +211,17 @@ if __name__ == '__main__':
 
         file.write('// Type node definitions\n\n')
 
-        declare_derived(file, 'Type', Types[0], '', '')
+        declare_derived(file, 'Type', Types[0], 'data{data}', 'SharedData data')
 
-        declare_derived(file, 'Type', Types[1], 'name{name}', 'Token name')
+        declare_derived(file, 'Type', Types[1], 'data{data}, name{name}',
+                        'SharedData data, Token name')
 
-        declare_derived(file, 'Type', Types[2], 'contained{std::move(contained)}, size{std::move(size)}',
-                        'type_node_t<T> contained, expr_node_t<T> size')
+        declare_derived(file, 'Type', Types[2],
+                        'data{data}, contained{std::move(contained)}, size{std::move(size)}',
+                        'SharedData data, type_node_t<T> contained, expr_node_t<T> size')
+
+        declare_derived(file, 'Type', Types[3],
+                        'expr{std::move(expr)}', 'expr_node_t<T> expr')
 
         file.write('// End of type node definitions\n\n')
 
@@ -272,12 +284,16 @@ if __name__ == '__main__':
         file.write('enum class VisibilityType {\n')
         tab(file, 1).write('PRIVATE,\n')
         tab(file, 1).write('PROTECTED,\n')
-        tab(file, 1).write('PUBLIC\n')
+        tab(file, 1).write('PUBLIC,\n')
+        tab(file, 1).write('PRIVATE_DTOR,\n')
+        tab(file, 1).write('PROTECTED_DTOR,\n')
+        tab(file, 1).write('PUBLIC_DTOR\n')
         file.write('};\n\n')
 
-        decl_stmt('name{name}, members{std::move(members)}, methods{std::move(methods)}',
-                  'Token name, std::vector<std::pair<stmt_node_t<T>,VisibilityType>> members, ' +
-                  'std::vector<std::pair<stmt_node_t<T>,VisibilityType>> methods')
+        decl_stmt('name{name}, has_ctor{has_ctor}, has_dtor{has_dtor}, members{std::move(members)}, ' +
+                  'methods{std::move(methods)}',
+                  'Token name, bool has_ctor, bool has_dtor, std::vector<std::pair<stmt_node_t<T>,' +
+                  'VisibilityType>> members, std::vector<std::pair<stmt_node_t<T>,VisibilityType>> methods')
 
         decl_stmt('keyword{keyword}',
                   'Token keyword')
@@ -287,7 +303,7 @@ if __name__ == '__main__':
 
         decl_stmt('name{name}, return_type{std::move(return_type)}, params{std::move(params)}, body{std::move(body)}',
                   'Token name, type_node_t<T> return_type, std::vector<std::pair<Token,type_node_t<T>>> params, ' +
-                  'std::vector<stmt_node_t<T>> body')
+                  'stmt_node_t<T> body')
 
         decl_stmt('condition{std::move(condition)}, thenBranch{std::move(thenBranch)},' +
                   'elseBranch{std::move(elseBranch)}',
@@ -301,7 +317,7 @@ if __name__ == '__main__':
 
         decl_stmt('condition{std::move(condition)}, cases{std::move(cases)}, default_case{std::move(default_case)}',
                   'expr_node_t<T> condition, std::vector<std::pair<expr_node_t<T>,stmt_node_t<T>>> cases, ' +
-                  'std::optional<std::pair<expr_node_t<T>,stmt_node_t<T>>> default_case')
+                  'std::optional<stmt_node_t<T>> default_case')
 
         decl_stmt('name{name}, type{std::move(type)}',
                   'Token name, type_node_t<T> type')

@@ -97,6 +97,8 @@ template <typename T>
 struct UserDefinedType;
 template <typename T>
 struct ListType;
+template <typename T>
+struct TypeofType;
 
 template <typename T>
 struct Visitor {
@@ -133,6 +135,7 @@ struct Visitor {
     virtual T visit(PrimitiveType<T>& type) = 0;
     virtual T visit(UserDefinedType<T>& type) = 0;
     virtual T visit(ListType<T>& type) = 0;
+    virtual T visit(TypeofType<T>& type) = 0;
 };
 
 enum class NodeType {
@@ -168,7 +171,8 @@ enum class NodeType {
 
     PrimitiveType,
     UserDefinedType,
-    ListType
+    ListType,
+    TypeofType
 };
 
 template <typename T>
@@ -193,23 +197,32 @@ enum class TypeType {
     FLOAT,
     STRING,
     CLASS,
-    LIST
+    LIST,
+    TYPEOF,
+    NULL_
 };
 
 template <typename T>
 struct Type {
+    virtual std::string_view string_tag() = 0;
+    virtual NodeType type_tag() = 0;
+    virtual T accept(Visitor<T>& visitor) = 0;
+    virtual ~Type() = default;
+};
+
+struct SharedData {
     TypeType type;
     bool is_const;
     bool is_ref;
 
-    virtual T accept(Visitor<T>& visitor) = 0;
-    virtual ~Type() = default;
 };
 
 // Type node definitions
 
 template <typename T>
 struct PrimitiveType final: public Type<T> {
+    SharedData data;
+
     std::string_view string_tag() override final {
         return "PrimitiveType";
     }
@@ -218,8 +231,8 @@ struct PrimitiveType final: public Type<T> {
         return NodeType::PrimitiveType;
     }
 
-    PrimitiveType()
-         {}
+    PrimitiveType(SharedData data):
+        data{data} {}
 
     T accept(Visitor<T>& visitor) override final {
         return visitor.visit(*this);
@@ -228,6 +241,7 @@ struct PrimitiveType final: public Type<T> {
 
 template <typename T>
 struct UserDefinedType final: public Type<T> {
+    SharedData data;
     Token name;
 
     std::string_view string_tag() override final {
@@ -238,8 +252,8 @@ struct UserDefinedType final: public Type<T> {
         return NodeType::UserDefinedType;
     }
 
-    UserDefinedType(Token name):
-        name{name} {}
+    UserDefinedType(SharedData data, Token name):
+        data{data}, name{name} {}
 
     T accept(Visitor<T>& visitor) override final {
         return visitor.visit(*this);
@@ -248,6 +262,7 @@ struct UserDefinedType final: public Type<T> {
 
 template <typename T>
 struct ListType final: public Type<T> {
+    SharedData data;
     type_node_t<T> contained;
     expr_node_t<T> size;
 
@@ -259,8 +274,28 @@ struct ListType final: public Type<T> {
         return NodeType::ListType;
     }
 
-    ListType(type_node_t<T> contained, expr_node_t<T> size):
-        contained{std::move(contained)}, size{std::move(size)} {}
+    ListType(SharedData data, type_node_t<T> contained, expr_node_t<T> size):
+        data{data}, contained{std::move(contained)}, size{std::move(size)} {}
+
+    T accept(Visitor<T>& visitor) override final {
+        return visitor.visit(*this);
+    }
+};
+
+template <typename T>
+struct TypeofType final: public Type<T> {
+    expr_node_t<T> expr;
+
+    std::string_view string_tag() override final {
+        return "TypeofType";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::TypeofType;
+    }
+
+    TypeofType(expr_node_t<T> expr):
+        expr{std::move(expr)} {}
 
     T accept(Visitor<T>& visitor) override final {
         return visitor.visit(*this);
@@ -635,12 +670,17 @@ struct BreakStmt final: public Stmt<T> {
 enum class VisibilityType {
     PRIVATE,
     PROTECTED,
-    PUBLIC
+    PUBLIC,
+    PRIVATE_DTOR,
+    PROTECTED_DTOR,
+    PUBLIC_DTOR
 };
 
 template <typename T>
 struct ClassStmt final: public Stmt<T> {
     Token name;
+    bool has_ctor;
+    bool has_dtor;
     std::vector<std::pair<stmt_node_t<T>,VisibilityType>> members;
     std::vector<std::pair<stmt_node_t<T>,VisibilityType>> methods;
 
@@ -652,8 +692,8 @@ struct ClassStmt final: public Stmt<T> {
         return NodeType::ClassStmt;
     }
 
-    ClassStmt(Token name, std::vector<std::pair<stmt_node_t<T>,VisibilityType>> members, std::vector<std::pair<stmt_node_t<T>,VisibilityType>> methods):
-        name{name}, members{std::move(members)}, methods{std::move(methods)} {}
+    ClassStmt(Token name, bool has_ctor, bool has_dtor, std::vector<std::pair<stmt_node_t<T>,VisibilityType>> members, std::vector<std::pair<stmt_node_t<T>,VisibilityType>> methods):
+        name{name}, has_ctor{has_ctor}, has_dtor{has_dtor}, members{std::move(members)}, methods{std::move(methods)} {}
 
     T accept(Visitor<T>& visitor) override final {
         return visitor.visit(*this);
@@ -705,7 +745,7 @@ struct FunctionStmt final: public Stmt<T> {
     Token name;
     type_node_t<T> return_type;
     std::vector<std::pair<Token,type_node_t<T>>> params;
-    std::vector<stmt_node_t<T>> body;
+    stmt_node_t<T> body;
 
     std::string_view string_tag() override final {
         return "FunctionStmt";
@@ -715,7 +755,7 @@ struct FunctionStmt final: public Stmt<T> {
         return NodeType::FunctionStmt;
     }
 
-    FunctionStmt(Token name, type_node_t<T> return_type, std::vector<std::pair<Token,type_node_t<T>>> params, std::vector<stmt_node_t<T>> body):
+    FunctionStmt(Token name, type_node_t<T> return_type, std::vector<std::pair<Token,type_node_t<T>>> params, stmt_node_t<T> body):
         name{name}, return_type{std::move(return_type)}, params{std::move(params)}, body{std::move(body)} {}
 
     T accept(Visitor<T>& visitor) override final {
@@ -790,7 +830,7 @@ template <typename T>
 struct SwitchStmt final: public Stmt<T> {
     expr_node_t<T> condition;
     std::vector<std::pair<expr_node_t<T>,stmt_node_t<T>>> cases;
-    std::optional<std::pair<expr_node_t<T>,stmt_node_t<T>>> default_case;
+    std::optional<stmt_node_t<T>> default_case;
 
     std::string_view string_tag() override final {
         return "SwitchStmt";
@@ -800,7 +840,7 @@ struct SwitchStmt final: public Stmt<T> {
         return NodeType::SwitchStmt;
     }
 
-    SwitchStmt(expr_node_t<T> condition, std::vector<std::pair<expr_node_t<T>,stmt_node_t<T>>> cases, std::optional<std::pair<expr_node_t<T>,stmt_node_t<T>>> default_case):
+    SwitchStmt(expr_node_t<T> condition, std::vector<std::pair<expr_node_t<T>,stmt_node_t<T>>> cases, std::optional<stmt_node_t<T>> default_case):
         condition{std::move(condition)}, cases{std::move(cases)}, default_case{std::move(default_case)} {}
 
     T accept(Visitor<T>& visitor) override final {
