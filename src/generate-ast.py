@@ -17,13 +17,11 @@ def end_file(file) -> None:
 
 def forward_declare(file, names: List[str]) -> None:
     for name in names:
-        file.write('template <typename T>\n')
         file.write('struct ' + name + ';\n')
 
 
 def declare_alias(file, alias: str, name: str) -> None:
-    file.write('template <typename T>\n')
-    file.write('using ' + alias + ' = std::unique_ptr<' + name + '<T>>;\n')
+    file.write('using ' + alias + ' = std::unique_ptr<' + name + '>;\n')
     return None
 
 
@@ -34,43 +32,40 @@ def tab(file, n: int):
 
 def declare_visitor(file, visitor: str, exprs: List[str], stmts: List[str], expr_base: str, stmt_base: str,
                     types: List[str], type_base: str) -> None:
-    file.write('template <typename T>\n')
     file.write('struct ' + visitor + ' {\n')
     for expr in exprs:
         tab(file, 1).write(
-            'virtual T visit(' + expr + '<T>& ' + expr_base.lower() + ') = 0;\n')
+            'virtual T visit(' + expr + '& ' + expr_base.lower() + ') = 0;\n')
 
     file.write('\n')
 
     for stmt in stmts:
         tab(file, 1).write(
-            'virtual T visit(' + stmt + '<T>& ' + stmt_base.lower() + ') = 0;\n')
+            'virtual T visit(' + stmt + '& ' + stmt_base.lower() + ') = 0;\n')
 
     file.write('\n')
 
     for type in types:
         tab(file, 1).write(
-            'virtual T visit(' + type + '<T>& ' + type_base.lower() + ') = 0;\n')
+            'virtual T visit(' + type + '& ' + type_base.lower() + ') = 0;\n')
 
     file.write('};\n\n')
     return None
 
 
 def declare_base(file, base_name: str) -> None:
-    file.write('template <typename T>\n')
     file.write('struct ' + base_name + ' {\n')
     tab(file, 1).write('virtual std::string_view string_tag() = 0;\n')
     tab(file, 1).write('virtual NodeType type_tag() = 0;\n')
-    tab(file, 1).write('virtual T accept(Visitor<T>& visitor) = 0;\n')
+    tab(file, 1).write('virtual T accept(Visitor& visitor) = 0;\n')
     tab(file, 1).write('virtual ~' + base_name + '() = default;\n')
     file.write('};\n\n')
     return None
 
 
 def declare_derived(file, base_name: str, derived_name: str, ctor_args: str, members: str) -> None:
-    file.write('template <typename T>\n')
     file.write('struct ' + derived_name +
-               ' final: public ' + base_name + '<T> {\n')
+               ' final: public ' + base_name + ' {\n')
 
     if members != '':
         for member in members.split(', '):
@@ -93,7 +88,7 @@ def declare_derived(file, base_name: str, derived_name: str, ctor_args: str, mem
     file.write('\n')
     # Class constructor
 
-    tab(file, 1).write('T accept(Visitor<T>& visitor) override final {\n')
+    tab(file, 1).write('T accept(Visitor& visitor) override final {\n')
     tab(file, 2).write('return visitor.visit(*this);\n')
     tab(file, 1).write('}\n')
     # Accept method
@@ -144,10 +139,13 @@ if __name__ == '__main__':
         make_header(file, 'AST_HPP')
         file.write('#include <memory>\n')
         file.write('#include <optional>\n')
+        file.write('#include <string>\n')
         file.write('#include <string_view>\n')
         file.write('#include <utility>\n')
+        file.write('#include <variant>\n')
         file.write('#include <vector>\n')
         file.write('\n#include "Token.hpp"\n\n')
+        file.write('using T = std::variant<int, double, std::string, bool, std::nullptr_t>;\n\n')
         forward_declare(file, ['Expr', 'Stmt', 'Type'])
         file.write('\n')
         declare_alias(file, 'expr_node_t', 'Expr')
@@ -192,11 +190,10 @@ if __name__ == '__main__':
         tab(file, 1).write('NULL_\n')
         file.write('};\n\n')
 
-        file.write('template <typename T>\n')
         file.write('struct Type {\n')
         tab(file, 1).write('virtual std::string_view string_tag() = 0;\n')
         tab(file, 1).write('virtual NodeType type_tag() = 0;\n')
-        tab(file, 1).write('virtual T accept(Visitor<T>& visitor) = 0;\n')
+        tab(file, 1).write('virtual T accept(Visitor& visitor) = 0;\n')
         tab(file, 1).write('virtual ~Type() = default;\n')
         file.write('};\n\n')
 
@@ -218,56 +215,56 @@ if __name__ == '__main__':
 
         declare_derived(file, 'Type', Types[2],
                         'data{data}, contained{std::move(contained)}, size{std::move(size)}',
-                        'SharedData data, type_node_t<T> contained, expr_node_t<T> size')
+                        'SharedData data, type_node_t contained, expr_node_t size')
 
         declare_derived(file, 'Type', Types[3],
-                        'expr{std::move(expr)}', 'expr_node_t<T> expr')
+                        'expr{std::move(expr)}', 'expr_node_t expr')
 
         file.write('// End of type node definitions\n\n')
 
         file.write('// Expression node definitions\n\n')
 
         decl_expr('target{target}, value{std::move(value)}',
-                  'Token target, expr_node_t<T> value')
+                  'Token target, expr_node_t value')
 
         decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}',
-                  'expr_node_t<T> left, Token oper, expr_node_t<T> right')
+                  'expr_node_t left, Token oper, expr_node_t right')
 
         decl_expr('function{std::move(function)}, paren{paren}, args{std::move(args)}',
-                  'expr_node_t<T> function, Token paren, std::vector<expr_node_t<T>> args')
+                  'expr_node_t function, Token paren, std::vector<expr_node_t> args')
 
         decl_expr('exprs{std::move(exprs)}',
-                  'std::vector<expr_node_t<T>> exprs')
+                  'std::vector<expr_node_t> exprs')
 
         decl_expr('object{std::move(object)}, name{name}',
-                  'expr_node_t<T> object, Token name')
+                  'expr_node_t object, Token name')
 
         decl_expr('expr{std::move(expr)}',
-                  'expr_node_t<T> expr')
+                  'expr_node_t expr')
 
         decl_expr('object{std::move(object)}, oper{oper}, index{std::move(index)}',
-                  'expr_node_t<T> object, Token oper, expr_node_t<T> index')
+                  'expr_node_t object, Token oper, expr_node_t index')
 
         decl_expr('value{std::move(value)}',
                   'T value')
 
         decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}',
-                  'expr_node_t<T> left, Token oper, expr_node_t<T> right')
+                  'expr_node_t left, Token oper, expr_node_t right')
 
         decl_expr('object{std::move(object)}, name{name}, value{std::move(value)}',
-                  'expr_node_t<T> object, Token name, expr_node_t<T> value')
+                  'expr_node_t object, Token name, expr_node_t value')
 
         decl_expr('keyword{keyword}, name{name}',
                   'Token keyword, Token name')
 
         decl_expr('left{std::move(left)}, question{question}, middle{std::move(middle)}, right{std::move(right)}',
-                  'expr_node_t<T> left, Token question, expr_node_t<T> middle, expr_node_t<T> right')
+                  'expr_node_t left, Token question, expr_node_t middle, expr_node_t right')
 
         decl_expr('keyword{keyword}',
                   'Token keyword')
 
         decl_expr('oper{oper}, right{std::move(right)}',
-                  'Token oper, expr_node_t<T> right')
+                  'Token oper, expr_node_t right')
 
         decl_expr('name{name}',
                   'Token name')
@@ -276,7 +273,7 @@ if __name__ == '__main__':
         file.write('// Statement node definitions\n\n')
 
         decl_stmt('stmts{std::move(stmts)}',
-                  'std::vector<stmt_node_t<T>> stmts')
+                  'std::vector<stmt_node_t> stmts')
 
         decl_stmt('keyword{keyword}',
                   'Token keyword')
@@ -292,44 +289,42 @@ if __name__ == '__main__':
 
         decl_stmt('name{name}, has_ctor{has_ctor}, has_dtor{has_dtor}, members{std::move(members)}, ' +
                   'methods{std::move(methods)}',
-                  'Token name, bool has_ctor, bool has_dtor, std::vector<std::pair<stmt_node_t<T>,' +
-                  'VisibilityType>> members, std::vector<std::pair<stmt_node_t<T>,VisibilityType>> methods')
+                  'Token name, bool has_ctor, bool has_dtor, std::vector<std::pair<stmt_node_t,' +
+                  'VisibilityType>> members, std::vector<std::pair<stmt_node_t,VisibilityType>> methods')
 
         decl_stmt('keyword{keyword}',
                   'Token keyword')
 
         decl_stmt('expr{std::move(expr)}',
-                  'expr_node_t<T> expr')
+                  'expr_node_t expr')
 
         decl_stmt('name{name}, return_type{std::move(return_type)}, params{std::move(params)}, body{std::move(body)}',
-                  'Token name, type_node_t<T> return_type, std::vector<std::pair<Token,type_node_t<T>>> params, ' +
-                  'stmt_node_t<T> body')
+                  'Token name, type_node_t return_type, std::vector<std::pair<Token,type_node_t>> params, ' +
+                  'stmt_node_t body')
 
         decl_stmt('condition{std::move(condition)}, thenBranch{std::move(thenBranch)},' +
                   'elseBranch{std::move(elseBranch)}',
-                  'expr_node_t<T> condition, stmt_node_t<T> thenBranch, stmt_node_t<T> elseBranch')
+                  'expr_node_t condition, stmt_node_t thenBranch, stmt_node_t elseBranch')
 
         decl_stmt('name{name}',
                   'Token name')
 
         decl_stmt('keyword{keyword}, value{std::move(value)}',
-                  'Token keyword, expr_node_t<T> value')
+                  'Token keyword, expr_node_t value')
 
         decl_stmt('condition{std::move(condition)}, cases{std::move(cases)}, default_case{std::move(default_case)}',
-                  'expr_node_t<T> condition, std::vector<std::pair<expr_node_t<T>,stmt_node_t<T>>> cases, ' +
-                  'std::optional<stmt_node_t<T>> default_case')
+                  'expr_node_t condition, std::vector<std::pair<expr_node_t,stmt_node_t>> cases, ' +
+                  'std::optional<stmt_node_t> default_case')
 
         decl_stmt('name{name}, type{std::move(type)}',
-                  'Token name, type_node_t<T> type')
+                  'Token name, type_node_t type')
 
         decl_stmt('name{name}, type{std::move(type)}, initializer{std::move(initializer)}',
-                  'Token name, type_node_t<T> type, expr_node_t<T> initializer')
+                  'Token name, type_node_t type, expr_node_t initializer')
 
         decl_stmt('condition{std::move(condition)}, body{std::move(body)}',
-                  'expr_node_t<T> condition, stmt_node_t<T> body')
+                  'expr_node_t condition, stmt_node_t body')
 
         file.write('// End of statement node definitions\n\n')
-
-        # varDecl, funcDecl, arguments
 
         end_file(file)

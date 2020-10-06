@@ -14,4 +14,4 @@ else()
 endif()
 
 add_executable(eis src/eis.cpp src/ErrorLogger/ErrorLogger.cpp
-                   src/Scanner/Scanner.cpp src/Scanner/Trie.cpp)
+                   src/Parser/Parser.cpp src/Scanner/Scanner.cpp src/Scanner/Trie.cpp)
