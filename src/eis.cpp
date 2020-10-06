@@ -6,6 +6,7 @@
 
 #include "ErrorLogger/ErrorLogger.hpp"
 #include "Parser/Parser.hpp"
+#include "Parser/TypeResolver.hpp"
 #include "Scanner/Scanner.hpp"
 
 int main(int, char *argv[]) {
@@ -19,5 +20,6 @@ int main(int, char *argv[]) {
     std::vector<VarStmt*> globals{};
     Parser parser{scanner.scan(), classes, functions, globals};
     auto &&foo = parser.program();
+    TypeResolver resolver{classes, functions, globals};
     return 0;
 }

@@ -1,3 +1,4 @@
+/* See LICENSE at project root for license details */
 #include <algorithm>
 #include <functional>
 #include <stdexcept>
@@ -5,6 +6,12 @@
 
 #include "../ErrorLogger/ErrorLogger.hpp"
 #include "Parser.hpp"
+
+struct ParseException : public std::invalid_argument {
+    Token token{};
+    explicit ParseException(Token token, const std::string_view error)
+            : std::invalid_argument(std::string{error.begin(), error.end()}), token{std::move(token)} {}
+};
 
 void Parser::add_rule(TokenType type, ParseRule rule) noexcept {
     rules[static_cast<std::size_t>(type)] = rule;

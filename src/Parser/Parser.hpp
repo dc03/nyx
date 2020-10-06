@@ -34,12 +34,6 @@ struct ParsePrecedence {
     };
 };
 
-struct ParseException : public std::invalid_argument {
-    Token token{};
-    explicit ParseException(Token token, const std::string_view error)
-            : std::invalid_argument(std::string{error.begin(), error.end()}), token{std::move(token)} {}
-};
-
 class Parser {
     using ExprPrefixParseFn = expr_node_t(Parser::*)(bool can_assign);
     using ExprInfixParseFn = expr_node_t(Parser::*)(bool can_assign, expr_node_t left);

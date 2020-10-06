@@ -10,12 +10,11 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#include <variant>
 #include <vector>
 
-#include "Token.hpp"
+#include "Parser/Object.hpp"
 
-using T = std::variant<int, double, std::string, bool, std::nullptr_t>;
+#include "Token.hpp"
 
 struct Expr;
 struct Stmt;
@@ -152,17 +151,6 @@ struct Stmt {
     virtual NodeType type_tag() = 0;
     virtual T accept(Visitor& visitor) = 0;
     virtual ~Stmt() = default;
-};
-
-enum class TypeType {
-    BOOL,
-    INT,
-    FLOAT,
-    STRING,
-    CLASS,
-    LIST,
-    TYPEOF,
-    NULL_
 };
 
 struct Type {

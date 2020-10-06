@@ -13,5 +13,5 @@ else()
     add_compile_options(-Wall -Wextra -pedantic -Werror)
 endif()
 
-add_executable(eis src/eis.cpp src/ErrorLogger/ErrorLogger.cpp
+add_executable(eis src/eis.cpp src/ErrorLogger/ErrorLogger.cpp src/Parser/TypeResolver.cpp src/Parser/Object.cpp
                    src/Parser/Parser.cpp src/Scanner/Scanner.cpp src/Scanner/Trie.cpp)
