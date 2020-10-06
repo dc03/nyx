@@ -1,1 +1,6 @@
-BasedOnStyle: LLVM
+#### This style was chosen for your .clang-format
+#BasedOnStyle: WebKit
+#AlignConsecutiveDeclarations: true
+#AllowShortBlocksOnASingleLine: true
+#BreakBeforeBraces: Attach
+#DerivePointerAlignment: true

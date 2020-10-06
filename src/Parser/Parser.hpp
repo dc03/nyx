@@ -60,6 +60,7 @@ class Parser {
     std::size_t current{};
     const std::vector<Token> &tokens{};
     ParseRule rules[static_cast<std::size_t>(TokenType::END_OF_FILE) + 1];
+
     bool in_class{false};
     bool in_loop{false};
     bool in_function{false};
@@ -92,41 +93,44 @@ class Parser {
     expr_node_t<T> parse_precedence(ParsePrecedence::of precedence);
     expr_node_t<T> expression();
 
-    expr_node_t<T> literal(bool);
-    expr_node_t<T> binary(bool, expr_node_t<T> left);
     expr_node_t<T> grouping(bool);
-    expr_node_t<T> unary(bool);
-    expr_node_t<T> ternary(bool, expr_node_t<T> left);
-    expr_node_t<T> comma(bool, expr_node_t<T> left);
-    expr_node_t<T> and_(bool, expr_node_t<T> left);
-    expr_node_t<T> or_(bool, expr_node_t<T> left);
-    expr_node_t<T> index(bool, expr_node_t<T> object);
-    expr_node_t<T> variable(bool can_assign);
-    expr_node_t<T> dot(bool can_assign, expr_node_t<T> left);
-    expr_node_t<T> call(bool, expr_node_t<T> function);
+    expr_node_t<T> literal(bool);
     expr_node_t<T> super(bool);
     expr_node_t<T> this_expr(bool);
+    expr_node_t<T> unary(bool);
+    expr_node_t<T> variable(bool can_assign);
 
+    expr_node_t<T> and_(bool, expr_node_t<T> left);
+    expr_node_t<T> binary(bool, expr_node_t<T> left);
+    expr_node_t<T> call(bool, expr_node_t<T> function);
+    expr_node_t<T> comma(bool, expr_node_t<T> left);
+    expr_node_t<T> dot(bool can_assign, expr_node_t<T> left);
+    expr_node_t<T> index(bool, expr_node_t<T> object);
+    expr_node_t<T> or_(bool, expr_node_t<T> left);
+    expr_node_t<T> ternary(bool, expr_node_t<T> left);
+
+    // Type parsing
     type_node_t<T> type();
     type_node_t<T> list_type(bool is_const, bool is_ref);
 
     // Statement parsing
-    stmt_node_t<T> statement();
-    stmt_node_t<T> expression_statement();
-    stmt_node_t<T> import_statement();
-    stmt_node_t<T> variable_declaration();
-    stmt_node_t<T> type_declaration();
-    stmt_node_t<T> if_statement();
-    stmt_node_t<T> while_statement();
-    stmt_node_t<T> block_statement();
     stmt_node_t<T> declaration();
+    stmt_node_t<T> class_declaration();
+    stmt_node_t<T> function_declaration();
+    stmt_node_t<T> import_statement();
+    stmt_node_t<T> type_declaration();
+    stmt_node_t<T> variable_declaration();
+
+    stmt_node_t<T> statement();
+    stmt_node_t<T> block_statement();
     stmt_node_t<T> break_statement();
     stmt_node_t<T> continue_statement();
-    stmt_node_t<T> return_statement();
-    stmt_node_t<T> function_declaration();
-    stmt_node_t<T> class_declaration();
-    stmt_node_t<T> switch_statement();
+    stmt_node_t<T> expression_statement();
     stmt_node_t<T> for_statement();
+    stmt_node_t<T> if_statement();
+    stmt_node_t<T> return_statement();
+    stmt_node_t<T> switch_statement();
+    stmt_node_t<T> while_statement();
 };
 
 template <typename T>
@@ -334,10 +338,6 @@ inline void Parser<T>::consume(std::string_view message, const Token &where, Arg
 template <typename T>
 inline expr_node_t<T> Parser<T>::parse_precedence(ParsePrecedence::of precedence) {
     using namespace std::string_literals;
-
-//    while (peek().type == TokenType::END_OF_LINE) {
-//        advance();
-//    }
     advance();
 
     ExprPrefixParseFn prefix = get_rule(previous().type).prefix;
@@ -378,6 +378,13 @@ inline expr_node_t<T> Parser<T>::expression() {
 }
 
 template <typename T>
+inline expr_node_t<T> Parser<T>::grouping(bool) {
+    expr_node_t<T> expr = expression();
+    consume("Expected ')' after parenthesized expression", TokenType::RIGHT_PAREN);
+    return expr_node_t<T>{allocate(GroupingExpr<T>, std::move(expr))};
+}
+
+template <typename T>
 inline expr_node_t<T> Parser<T>::literal(bool) {
     switch (previous().type) {
         case TokenType::INT_VALUE: {
@@ -401,62 +408,32 @@ inline expr_node_t<T> Parser<T>::literal(bool) {
     }
 }
 
+
 template <typename T>
-inline expr_node_t<T> Parser<T>::binary(bool, expr_node_t<T> left) {
-    expr_node_t<T> right = parse_precedence(ParsePrecedence::of(get_rule(previous().type).precedence + 1));
-    return expr_node_t<T>{allocate(BinaryExpr<T>, std::move(left), previous(), std::move(right))};
+inline expr_node_t<T> Parser<T>::super(bool) {
+    if (!(in_class && in_function)) {
+        sync_and_throw("Cannot use super expression outside a class");
+    }
+    Token super = previous();
+    consume("Expected '.' after 'super' keyword", TokenType::DOT);
+    consume("Expected name after '.' in super expression", TokenType::IDENTIFIER);
+    Token name = previous();
+    return expr_node_t<T>{allocate(SuperExpr<T>, std::move(super), std::move(name))};
 }
 
 template <typename T>
-inline expr_node_t<T> Parser<T>::grouping(bool) {
-    expr_node_t<T> expr = expression();
-    consume("Expected ')' after parenthesized expression", TokenType::RIGHT_PAREN);
-    return expr_node_t<T>{allocate(GroupingExpr<T>, std::move(expr))};
+inline expr_node_t<T> Parser<T>::this_expr(bool) {
+    if (!(in_class && in_function)) {
+        sync_and_throw("Cannot use this keyword outside a class");
+    }
+    Token keyword = previous();
+    return expr_node_t<T>{allocate(ThisExpr<T>, std::move(keyword))};
 }
 
 template <typename T>
 inline expr_node_t<T> Parser<T>::unary(bool) {
     expr_node_t<T> expr = parse_precedence(get_rule(previous().type).precedence);
     return expr_node_t<T>{allocate(UnaryExpr<T>, previous(), std::move(expr))};
-}
-
-template <typename T>
-inline expr_node_t<T> Parser<T>::ternary(bool, expr_node_t<T> left) {
-    Token question = previous();
-    expr_node_t<T> middle = parse_precedence(ParsePrecedence::LOGIC_OR);
-    consume("Expected colon in ternary expression", TokenType::COLON);
-    expr_node_t<T> right = parse_precedence(ParsePrecedence::LOGIC_OR);
-    return expr_node_t<T>{allocate(TernaryExpr<T>, std::move(left), question, std::move(middle), std::move(right))};
-}
-
-template <typename T>
-inline expr_node_t<T> Parser<T>::comma(bool, expr_node_t<T> left) {
-    std::vector<expr_node_t<T>> exprs{};
-    exprs.emplace_back(std::move(left));
-    do {
-        exprs.emplace_back(parse_precedence(ParsePrecedence::ASSIGNMENT));
-    } while (match(TokenType::COMMA));
-
-    return expr_node_t<T>{allocate(CommaExpr<T>, std::move(exprs))};
-}
-
-template <typename T>
-inline expr_node_t<T> Parser<T>::and_(bool, expr_node_t<T> left) {
-    expr_node_t<T> right = parse_precedence(ParsePrecedence::LOGIC_AND);
-    return expr_node_t<T>{allocate(LogicalExpr<T>, std::move(left), previous(), std::move(right))};
-}
-
-template <typename T>
-inline expr_node_t<T> Parser<T>::or_(bool, expr_node_t<T> left) {
-    expr_node_t<T> right = parse_precedence(ParsePrecedence::LOGIC_OR);
-    return expr_node_t<T>{allocate(LogicalExpr<T>, std::move(left), previous(), std::move(right))};
-}
-
-template <typename T>
-inline expr_node_t<T> Parser<T>::index(bool, expr_node_t<T> object) {
-    expr_node_t<T> index = expression();
-    consume("Expected ']' after array subscript index", TokenType::RIGHT_INDEX);
-    return expr_node_t<T>{allocate(IndexExpr<T>, std::move(object), previous(), std::move(index))};
 }
 
 template <typename T>
@@ -471,16 +448,15 @@ inline expr_node_t<T> Parser<T>::variable(bool can_assign) {
 }
 
 template <typename T>
-inline expr_node_t<T> Parser<T>::dot(bool can_assign, expr_node_t<T> left) {
-    consume("Expected identifier after '.'", TokenType::IDENTIFIER);
-    Token name = previous();
-    if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
-              TokenType::SLASH_EQUAL)) {
-        expr_node_t<T> value = expression();
-        return expr_node_t<T>{allocate(SetExpr<T>, std::move(left), std::move(name), std::move(value))};
-    }  else {
-        return expr_node_t<T>{allocate(GetExpr<T>, std::move(left), std::move(name))};
-    }
+inline expr_node_t<T> Parser<T>::and_(bool, expr_node_t<T> left) {
+    expr_node_t<T> right = parse_precedence(ParsePrecedence::LOGIC_AND);
+    return expr_node_t<T>{allocate(LogicalExpr<T>, std::move(left), previous(), std::move(right))};
+}
+
+template <typename T>
+inline expr_node_t<T> Parser<T>::binary(bool, expr_node_t<T> left) {
+    expr_node_t<T> right = parse_precedence(ParsePrecedence::of(get_rule(previous().type).precedence + 1));
+    return expr_node_t<T>{allocate(BinaryExpr<T>, std::move(left), previous(), std::move(right))};
 }
 
 template <typename T>
@@ -497,25 +473,51 @@ inline expr_node_t<T> Parser<T>::call(bool, expr_node_t<T> function) {
     return expr_node_t<T>{allocate(CallExpr<T>, std::move(function), std::move(paren), std::move(args))};
 }
 
+
 template <typename T>
-inline expr_node_t<T> Parser<T>::super(bool) {
-    if (!in_class) {
-        sync_and_throw("Cannot use super expression outside a class");
-    }
-    Token super = previous();
-    consume("Expected '.' after 'super' keyword", TokenType::DOT);
-    consume("Expected name after '.' in super expression", TokenType::IDENTIFIER);
-    Token name = previous();
-    return expr_node_t<T>{allocate(SuperExpr<T>, std::move(super), std::move(name))};
+inline expr_node_t<T> Parser<T>::comma(bool, expr_node_t<T> left) {
+    std::vector<expr_node_t<T>> exprs{};
+    exprs.emplace_back(std::move(left));
+    do {
+        exprs.emplace_back(parse_precedence(ParsePrecedence::ASSIGNMENT));
+    } while (match(TokenType::COMMA));
+
+    return expr_node_t<T>{allocate(CommaExpr<T>, std::move(exprs))};
 }
 
 template <typename T>
-inline expr_node_t<T> Parser<T>::this_expr(bool) {
-    if (!in_class) {
-        sync_and_throw("Cannot use this keyword outside a class");
+inline expr_node_t<T> Parser<T>::dot(bool can_assign, expr_node_t<T> left) {
+    consume("Expected identifier after '.'", TokenType::IDENTIFIER);
+    Token name = previous();
+    if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
+                            TokenType::SLASH_EQUAL)) {
+        expr_node_t<T> value = expression();
+        return expr_node_t<T>{allocate(SetExpr<T>, std::move(left), std::move(name), std::move(value))};
+    }  else {
+        return expr_node_t<T>{allocate(GetExpr<T>, std::move(left), std::move(name))};
     }
-    Token keyword = previous();
-    return expr_node_t<T>{allocate(ThisExpr<T>, std::move(keyword))};
+}
+
+template <typename T>
+inline expr_node_t<T> Parser<T>::index(bool, expr_node_t<T> object) {
+    expr_node_t<T> index = expression();
+    consume("Expected ']' after array subscript index", TokenType::RIGHT_INDEX);
+    return expr_node_t<T>{allocate(IndexExpr<T>, std::move(object), previous(), std::move(index))};
+}
+
+template <typename T>
+inline expr_node_t<T> Parser<T>::or_(bool, expr_node_t<T> left) {
+    expr_node_t<T> right = parse_precedence(ParsePrecedence::LOGIC_OR);
+    return expr_node_t<T>{allocate(LogicalExpr<T>, std::move(left), previous(), std::move(right))};
+}
+
+template <typename T>
+inline expr_node_t<T> Parser<T>::ternary(bool, expr_node_t<T> left) {
+    Token question = previous();
+    expr_node_t<T> middle = parse_precedence(ParsePrecedence::LOGIC_OR);
+    consume("Expected colon in ternary expression", TokenType::COLON);
+    expr_node_t<T> right = parse_precedence(ParsePrecedence::LOGIC_OR);
+    return expr_node_t<T>{allocate(TernaryExpr<T>, std::move(left), question, std::move(middle), std::move(right))};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -578,213 +580,20 @@ inline type_node_t<T> Parser<T>::list_type(bool is_const, bool is_ref) {
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-inline stmt_node_t<T> Parser<T>::statement() {
-//    while (peek().type == TokenType::END_OF_LINE) {
-//        advance();
-//    }
-    if (match(TokenType::IF)) {
-        return if_statement();
-    } else if (match(TokenType::WHILE)) {
-        return while_statement();
-    } else if (match(TokenType::LEFT_BRACE)) {
-        return block_statement();
-    } else if (match(TokenType::BREAK)) {
-        return break_statement();
-    } else if (match(TokenType::CONTINUE)) {
-        return continue_statement();
-    } else if (match(TokenType::RETURN)) {
-        return return_statement();
-    } else if (match(TokenType::SWITCH)) {
-        return switch_statement();
-    } else if (match(TokenType::FOR)) {
-        return for_statement();
-    } else {
-        return expression_statement();
-    }
-}
-
-template <typename T>
-inline stmt_node_t<T> Parser<T>::expression_statement() {
-    expr_node_t<T> expr = expression();
-    consume("Expected ';' or newline after expression", TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t<T>{allocate(ExpressionStmt<T>, std::move(expr))};
-}
-
-template <typename T>
-inline stmt_node_t<T> Parser<T>::import_statement() {
-    consume("Expected a name after 'import' keyword", TokenType::IDENTIFIER);
-    Token name = previous();
-    consume("Expected ';' or newline after imported file", previous(), TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t<T>{allocate(ImportStmt<T>, std::move(name))};
-}
-
-template <typename T>
-inline stmt_node_t<T> Parser<T>::variable_declaration() {
-    std::string message = "Expected variable name after 'var' keyword";
-    if (previous().type == TokenType::VAL) {
-        message[32] = 'l';
-    }
-    consume(message, previous(), TokenType::IDENTIFIER);
-    Token name = previous();
-    consume("Expected ':' after variable name", previous(), TokenType::COLON);
-    type_node_t<T> var_type = type();
-    expr_node_t<T> initializer = [this]() {
-        if (match(TokenType::EQUAL)) {
-            return expression();
-        } else {
-            return expr_node_t<T>{nullptr};
-        }
-    }();
-    consume("Expected ';' or newline after variable initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t<T>{allocate(VarStmt<T>, std::move(name), std::move(var_type), std::move(initializer))};
-}
-
-template <typename T>
-inline stmt_node_t<T> Parser<T>::type_declaration() {
-    consume("Expected type name after 'type' keyword", previous(), TokenType::IDENTIFIER);
-    Token name = previous();
-    consume("Expected '=' after type name", TokenType::EQUAL);
-    type_node_t<T> aliased = type();
-    consume("Expected ';' or newline after type alias", TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t<T>{allocate(TypeStmt<T>, std::move(name), std::move(aliased))};
-}
-
-template <typename T>
-inline stmt_node_t<T> Parser<T>::if_statement() {
-    expr_node_t<T> condition = expression();
-    stmt_node_t<T> then_branch = statement();
-    if (match(TokenType::ELSE)) {
-        stmt_node_t<T> else_branch = statement();
-        return stmt_node_t<T>{allocate(IfStmt<T>, std::move(condition), std::move(then_branch),
-                                       std::move(else_branch))};
-    } else {
-        return stmt_node_t<T>{allocate(IfStmt<T>, std::move(condition), std::move(then_branch), nullptr)};
-    }
-}
-
-template <typename T>
-inline stmt_node_t<T> Parser<T>::while_statement() {
-    expr_node_t<T> condition = expression();
-    bool in_loop_outer = in_loop;
-    in_loop = true;
-    stmt_node_t<T> body = statement();
-    in_loop = in_loop_outer;
-    return stmt_node_t<T>{allocate(WhileStmt<T>, std::move(condition), std::move(body))};
-}
-
-template <typename T>
-inline stmt_node_t<T> Parser<T>::block_statement() {
-    std::vector<stmt_node_t<T>> statements{};
-    while (!is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
-        if (match(TokenType::VAR, TokenType::VAL)) {
-            statements.emplace_back(variable_declaration());
-        } else {
-            statements.emplace_back(statement());
-        }
-    }
-    consume("Expected '}' after block", TokenType::RIGHT_BRACE);
-    return stmt_node_t<T>{allocate(BlockStmt<T>, std::move(statements))};
-}
-
-template <typename T>
 inline stmt_node_t<T> Parser<T>::declaration() {
-    if (match(TokenType::IMPORT)) {
-        return import_statement();
-    } else if (match(TokenType::VAR, TokenType::VAL)) {
-        return variable_declaration();
-    } else if (match(TokenType::TYPE)) {
-        return type_declaration();
+    if (match(TokenType::CLASS)) {
+        return class_declaration();
     } else if (match(TokenType::FN)) {
         return function_declaration();
-    } else if (match(TokenType::CLASS)) {
-        return class_declaration();
+    } else if (match(TokenType::IMPORT)) {
+        return import_statement();
+    } else if (match(TokenType::TYPE)) {
+        return type_declaration();
+    } else if (match(TokenType::VAR, TokenType::VAL)) {
+        return variable_declaration();
     } else {
         return statement();
     }
-}
-
-template <typename T>
-template <template <typename> typename Allocated>
-inline stmt_node_t<T> Parser<T>::single_token_statement(const std::string_view token, const bool condition,
-                                                        const std::string_view error_message) {
-    if (!condition) {
-        sync_and_throw(error_message);
-    }
-    Token keyword = previous();
-    using namespace std::string_literals;
-    const std::string consume_message = "Expected ';' or newline after "s + &token[0] + " keyword";
-    consume(consume_message, TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t<T>{allocate(Allocated<T>, std::move(keyword))};
-}
-
-template <typename T>
-inline stmt_node_t<T> Parser<T>::break_statement() {
-    return single_token_statement<BreakStmt>("break", (in_loop || in_switch),
-                                             "Cannot use 'break' outside a loop or switch.");
-}
-
-template <typename T>
-inline stmt_node_t<T> Parser<T>::continue_statement() {
-    return single_token_statement<ContinueStmt>("continue", in_loop, "Cannot use 'continue' outside a loop or switch");
-}
-
-template <typename T>
-inline stmt_node_t<T> Parser<T>::return_statement() {
-    if (!in_function) {
-        sync_and_throw("Cannot use 'return' keyword outside a function");
-    }
-
-    Token keyword = previous();
-
-    expr_node_t<T> return_value = [this]() {
-        if (peek().type != TokenType::SEMICOLON && peek().type != TokenType::END_OF_LINE) {
-            return expression();
-        } else {
-            return expr_node_t<T>{nullptr};
-        }
-    }();
-
-    consume("Expected ';' or newline after return statement", TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t<T>{allocate(ReturnStmt<T>, std::move(keyword), std::move(return_value))};
-}
-
-template <typename T>
-inline stmt_node_t<T> Parser<T>::function_declaration() {
-    consume("Expected function name after 'fn' keyword", TokenType::IDENTIFIER);
-    Token name = previous();
-
-    consume("Expected '(' after function name", TokenType::LEFT_PAREN);
-    std::vector<std::pair<Token,type_node_t<T>>> params{};
-    if (peek().type != TokenType::RIGHT_PAREN) {
-        do {
-            advance();
-            Token parameter_name = previous();
-            consume("Expected ':' after function parameter name", TokenType::COLON);
-            type_node_t<T> parameter_type = type();
-            params.emplace_back(std::move(parameter_name), std::move(parameter_type));
-        } while (match(TokenType::COMMA));
-    }
-    consume("Expected ')' after function parameters", TokenType::RIGHT_PAREN);
-
-    // Since the scanner can possibly emit end of lines here, they have to be consumed before continuing
-    //
-    // The reason I haven't put the logic to stop this in the scanner is that dealing with the state would
-    // not be that easy and just having to do this once in the parser is fine
-    while (peek().type == TokenType::END_OF_LINE) {
-        advance();
-    }
-
-    consume("Expected '->' after ')' to specify type", TokenType::ARROW);
-    type_node_t<T> return_type = type();
-    consume("Expected '{' after function return type", TokenType::LEFT_BRACE);
-
-    bool in_function_outer = in_function;
-    in_function = true;
-    stmt_node_t<T> body = block_statement();
-    in_function = in_function_outer;
-
-    return stmt_node_t<T>{allocate(FunctionStmt<T>, std::move(name), std::move(return_type), std::move(params),
-                                   std::move(body))};
 }
 
 template <typename T>
@@ -859,36 +668,150 @@ inline stmt_node_t<T> Parser<T>::class_declaration() {
 }
 
 template <typename T>
-inline stmt_node_t<T> Parser<T>::switch_statement() {
-    expr_node_t<T> condition = expression();
-    std::vector<std::pair<expr_node_t<T>,stmt_node_t<T>>> cases{};
-    std::optional<stmt_node_t<T>> default_case = std::nullopt;
-    consume("Expected '{' after switch statement condition", TokenType::LEFT_BRACE);
-    bool in_switch_outer = in_switch;
-    in_switch = true;
-    while (!is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
-        if (match(TokenType::CASE)) {
-            expr_node_t<T> expr = expression();
-            consume("Expected ':' after case expression", TokenType::COLON);
+inline stmt_node_t<T> Parser<T>::function_declaration() {
+    consume("Expected function name after 'fn' keyword", TokenType::IDENTIFIER);
+    Token name = previous();
 
-            stmt_node_t<T> stmt = statement();
-            cases.emplace_back(std::move(expr), std::move(stmt));
-        } else if (match(TokenType::DEFAULT) && default_case == std::nullopt) {
-            consume("Expected ':' after case expression", TokenType::COLON);
-            stmt_node_t<T> stmt = statement();
-            default_case = std::move(stmt);
-        } else if (default_case != std::nullopt) {
-            in_switch = in_switch_outer;
-            sync_and_throw("Cannot have more than one default cases in a switch");
-        } else {
-            in_switch = in_switch_outer;
-            sync_and_throw("Expected either 'case' or 'default' as start of switch statement cases");
-        }
+    consume("Expected '(' after function name", TokenType::LEFT_PAREN);
+    std::vector<std::pair<Token,type_node_t<T>>> params{};
+    if (peek().type != TokenType::RIGHT_PAREN) {
+        do {
+            advance();
+            Token parameter_name = previous();
+            consume("Expected ':' after function parameter name", TokenType::COLON);
+            type_node_t<T> parameter_type = type();
+            params.emplace_back(std::move(parameter_name), std::move(parameter_type));
+        } while (match(TokenType::COMMA));
+    }
+    consume("Expected ')' after function parameters", TokenType::RIGHT_PAREN);
+
+    // Since the scanner can possibly emit end of lines here, they have to be consumed before continuing
+    //
+    // The reason I haven't put the logic to stop this in the scanner is that dealing with the state would
+    // not be that easy and just having to do this once in the parser is fine
+    while (peek().type == TokenType::END_OF_LINE) {
+        advance();
     }
 
-    in_switch = in_switch_outer;
-    consume("Expected '}' at the end of switch statement", TokenType::RIGHT_BRACE);
-    return stmt_node_t<T>{allocate(SwitchStmt<T>, std::move(condition), std::move(cases), std::move(default_case))};
+    consume("Expected '->' after ')' to specify type", TokenType::ARROW);
+    type_node_t<T> return_type = type();
+    consume("Expected '{' after function return type", TokenType::LEFT_BRACE);
+
+    bool in_function_outer = in_function;
+    in_function = true;
+    stmt_node_t<T> body = block_statement();
+    in_function = in_function_outer;
+
+    return stmt_node_t<T>{allocate(FunctionStmt<T>, std::move(name), std::move(return_type), std::move(params),
+                                   std::move(body))};
+}
+
+template <typename T>
+inline stmt_node_t<T> Parser<T>::import_statement() {
+    consume("Expected a name after 'import' keyword", TokenType::IDENTIFIER);
+    Token name = previous();
+    consume("Expected ';' or newline after imported file", previous(), TokenType::SEMICOLON, TokenType::END_OF_LINE);
+    return stmt_node_t<T>{allocate(ImportStmt<T>, std::move(name))};
+}
+
+template <typename T>
+inline stmt_node_t<T> Parser<T>::type_declaration() {
+    consume("Expected type name after 'type' keyword", previous(), TokenType::IDENTIFIER);
+    Token name = previous();
+    consume("Expected '=' after type name", TokenType::EQUAL);
+    type_node_t<T> aliased = type();
+    consume("Expected ';' or newline after type alias", TokenType::SEMICOLON, TokenType::END_OF_LINE);
+    return stmt_node_t<T>{allocate(TypeStmt<T>, std::move(name), std::move(aliased))};
+}
+
+template <typename T>
+inline stmt_node_t<T> Parser<T>::variable_declaration() {
+    std::string message = "Expected variable name after 'var' keyword";
+    if (previous().type == TokenType::VAL) {
+        message[32] = 'l';
+    }
+    consume(message, previous(), TokenType::IDENTIFIER);
+    Token name = previous();
+    consume("Expected ':' after variable name", previous(), TokenType::COLON);
+    type_node_t<T> var_type = type();
+    expr_node_t<T> initializer = [this]() {
+        if (match(TokenType::EQUAL)) {
+            return expression();
+        } else {
+            return expr_node_t<T>{nullptr};
+        }
+    }();
+    consume("Expected ';' or newline after variable initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
+    return stmt_node_t<T>{allocate(VarStmt<T>, std::move(name), std::move(var_type), std::move(initializer))};
+}
+
+template <typename T>
+inline stmt_node_t<T> Parser<T>::statement() {
+    if (match(TokenType::LEFT_BRACE)) {
+        return block_statement();
+    } else if (match(TokenType::BREAK)) {
+        return break_statement();
+    } else if (match(TokenType::CONTINUE)) {
+        return continue_statement();
+    } else if (match(TokenType::FOR)) {
+        return for_statement();
+    } else if (match(TokenType::IF)) {
+        return if_statement();
+    } else if (match(TokenType::RETURN)) {
+        return return_statement();
+    } else if (match(TokenType::SWITCH)) {
+        return switch_statement();
+    } else if (match(TokenType::WHILE)) {
+        return while_statement();
+    } else {
+        return expression_statement();
+    }
+}
+
+template <typename T>
+inline stmt_node_t<T> Parser<T>::block_statement() {
+    std::vector<stmt_node_t<T>> statements{};
+    while (!is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
+        if (match(TokenType::VAR, TokenType::VAL)) {
+            statements.emplace_back(variable_declaration());
+        } else {
+            statements.emplace_back(statement());
+        }
+    }
+    consume("Expected '}' after block", TokenType::RIGHT_BRACE);
+    return stmt_node_t<T>{allocate(BlockStmt<T>, std::move(statements))};
+}
+
+template <typename T>
+template <template <typename> typename Allocated>
+inline stmt_node_t<T> Parser<T>::single_token_statement(const std::string_view token, const bool condition,
+                                                        const std::string_view error_message) {
+    if (!condition) {
+        sync_and_throw(error_message);
+    }
+    Token keyword = previous();
+    using namespace std::string_literals;
+    const std::string consume_message = "Expected ';' or newline after "s + &token[0] + " keyword";
+    consume(consume_message, TokenType::SEMICOLON, TokenType::END_OF_LINE);
+    return stmt_node_t<T>{allocate(Allocated<T>, std::move(keyword))};
+}
+
+template <typename T>
+inline stmt_node_t<T> Parser<T>::break_statement() {
+    return single_token_statement<BreakStmt>("break", (in_loop || in_switch),
+                                             "Cannot use 'break' outside a loop or switch.");
+}
+
+template <typename T>
+inline stmt_node_t<T> Parser<T>::continue_statement() {
+    return single_token_statement<ContinueStmt>("continue", in_loop, "Cannot use 'continue' outside a loop or switch");
+}
+
+template <typename T>
+inline stmt_node_t<T> Parser<T>::expression_statement() {
+    expr_node_t<T> expr = expression();
+    consume("Expected ';' or newline after expression", TokenType::SEMICOLON, TokenType::END_OF_LINE);
+    return stmt_node_t<T>{allocate(ExpressionStmt<T>, std::move(expr))};
 }
 
 template <typename T>
@@ -931,6 +854,82 @@ inline stmt_node_t<T> Parser<T>::for_statement() {
     in_loop = in_loop_outer;
 
     return stmt_node_t<T>{loop};
+}
+
+template <typename T>
+inline stmt_node_t<T> Parser<T>::if_statement() {
+    expr_node_t<T> condition = expression();
+    stmt_node_t<T> then_branch = statement();
+    if (match(TokenType::ELSE)) {
+        stmt_node_t<T> else_branch = statement();
+        return stmt_node_t<T>{allocate(IfStmt<T>, std::move(condition), std::move(then_branch),
+                                       std::move(else_branch))};
+    } else {
+        return stmt_node_t<T>{allocate(IfStmt<T>, std::move(condition), std::move(then_branch), nullptr)};
+    }
+}
+
+template <typename T>
+inline stmt_node_t<T> Parser<T>::return_statement() {
+    if (!in_function) {
+        sync_and_throw("Cannot use 'return' keyword outside a function");
+    }
+
+    Token keyword = previous();
+
+    expr_node_t<T> return_value = [this]() {
+        if (peek().type != TokenType::SEMICOLON && peek().type != TokenType::END_OF_LINE) {
+            return expression();
+        } else {
+            return expr_node_t<T>{nullptr};
+        }
+    }();
+
+    consume("Expected ';' or newline after return statement", TokenType::SEMICOLON, TokenType::END_OF_LINE);
+    return stmt_node_t<T>{allocate(ReturnStmt<T>, std::move(keyword), std::move(return_value))};
+}
+
+template <typename T>
+inline stmt_node_t<T> Parser<T>::switch_statement() {
+    expr_node_t<T> condition = expression();
+    std::vector<std::pair<expr_node_t<T>,stmt_node_t<T>>> cases{};
+    std::optional<stmt_node_t<T>> default_case = std::nullopt;
+    consume("Expected '{' after switch statement condition", TokenType::LEFT_BRACE);
+    bool in_switch_outer = in_switch;
+    in_switch = true;
+    while (!is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
+        if (match(TokenType::CASE)) {
+            expr_node_t<T> expr = expression();
+            consume("Expected ':' after case expression", TokenType::COLON);
+
+            stmt_node_t<T> stmt = statement();
+            cases.emplace_back(std::move(expr), std::move(stmt));
+        } else if (match(TokenType::DEFAULT) && default_case == std::nullopt) {
+            consume("Expected ':' after case expression", TokenType::COLON);
+            stmt_node_t<T> stmt = statement();
+            default_case = std::move(stmt);
+        } else if (default_case != std::nullopt) {
+            in_switch = in_switch_outer;
+            sync_and_throw("Cannot have more than one default cases in a switch");
+        } else {
+            in_switch = in_switch_outer;
+            sync_and_throw("Expected either 'case' or 'default' as start of switch statement cases");
+        }
+    }
+
+    in_switch = in_switch_outer;
+    consume("Expected '}' at the end of switch statement", TokenType::RIGHT_BRACE);
+    return stmt_node_t<T>{allocate(SwitchStmt<T>, std::move(condition), std::move(cases), std::move(default_case))};
+}
+
+template <typename T>
+inline stmt_node_t<T> Parser<T>::while_statement() {
+    expr_node_t<T> condition = expression();
+    bool in_loop_outer = in_loop;
+    in_loop = true;
+    stmt_node_t<T> body = statement();
+    in_loop = in_loop_outer;
+    return stmt_node_t<T>{allocate(WhileStmt<T>, std::move(condition), std::move(body))};
 }
 
 #endif
