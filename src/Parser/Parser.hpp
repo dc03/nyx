@@ -50,7 +50,6 @@ class Parser {
 
     std::vector<ClassStmt*> &classes;
     std::vector<FunctionStmt*> &functions;
-    std::vector<VarStmt*> &globals;
     std::size_t scope_depth{};
 
     bool in_class{false};
@@ -68,7 +67,7 @@ class Parser {
 
 public:
     explicit Parser(const std::vector<Token> &tokens, std::vector<ClassStmt*> &classes,
-                    std::vector<FunctionStmt*> &functions, std::vector<VarStmt*> &globals);
+                    std::vector<FunctionStmt*> &functions);
 
     [[nodiscard]] bool is_at_end() const noexcept;
     [[nodiscard]] const Token &previous() const noexcept;

@@ -17,9 +17,8 @@ int main(int, char *argv[]) {
     Scanner scanner{source};
     std::vector<ClassStmt*> classes{};
     std::vector<FunctionStmt*> functions{};
-    std::vector<VarStmt*> globals{};
-    Parser parser{scanner.scan(), classes, functions, globals};
+    Parser parser{scanner.scan(), classes, functions};
     auto &&foo = parser.program();
-    TypeResolver resolver{classes, functions, globals};
+    TypeResolver resolver{classes, functions};
     return 0;
 }

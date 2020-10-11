@@ -18,6 +18,7 @@ struct ErrorLogger {
 
 extern ErrorLogger logger;
 
+void warning(std::string_view message, const Token &where);
 void error(std::string_view message, const Token &where);
 void runtime_error(std::string_view message, const Token &where);
 void note(std::string_view message);

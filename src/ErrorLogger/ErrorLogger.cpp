@@ -9,9 +9,8 @@ void ErrorLogger::set_source(std::string_view file_source) {
     this->source = file_source;
 }
 
-void error(const std::string_view message, const Token &where) {
-    logger.had_error = true;
-    std::cerr << "\n!-| line " << where.line << " | Error: " << message << '\n';
+void print_message(const std::string_view message, const Token &where, const std::string_view prefix) {
+    std::cerr << "\n!-| line " << where.line << " | " << prefix << ": " << message << '\n';
     std::size_t line_start = where.start;
     std::size_t line_end = where.end;
     while (line_start > 0 && logger.source[line_start] != '\n') {
@@ -39,6 +38,15 @@ void error(const std::string_view message, const Token &where) {
         }
     }
     std::cerr << '\n';
+}
+
+void warning(std::string_view message, const Token &where) {
+    print_message(message, where, "Warning");
+}
+
+void error(const std::string_view message, const Token &where) {
+    logger.had_error = true;
+    print_message(message, where, "Error");
 }
 void runtime_error(const std::string_view message, const Token &where) {
     logger.had_runtime_error = true;

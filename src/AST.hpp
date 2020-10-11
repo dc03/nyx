@@ -12,17 +12,17 @@
 #include <utility>
 #include <vector>
 
-#include "Parser/Object.hpp"
+#include "Parser/VisitorTypes.hpp"
 
 #include "Token.hpp"
 
 struct Expr;
 struct Stmt;
-struct Type;
+struct BaseType;
 
 using expr_node_t = std::unique_ptr<Expr>;
 using stmt_node_t = std::unique_ptr<Stmt>;
-using type_node_t = std::unique_ptr<Type>;
+using type_node_t = std::unique_ptr<BaseType>;
 
 // Expression nodes
 
@@ -66,40 +66,40 @@ struct ListType;
 struct TypeofType;
 
 struct Visitor {
-    virtual T visit(AssignExpr& expr) = 0;
-    virtual T visit(BinaryExpr& expr) = 0;
-    virtual T visit(CallExpr& expr) = 0;
-    virtual T visit(CommaExpr& expr) = 0;
-    virtual T visit(GetExpr& expr) = 0;
-    virtual T visit(GroupingExpr& expr) = 0;
-    virtual T visit(IndexExpr& expr) = 0;
-    virtual T visit(LiteralExpr& expr) = 0;
-    virtual T visit(LogicalExpr& expr) = 0;
-    virtual T visit(SetExpr& expr) = 0;
-    virtual T visit(SuperExpr& expr) = 0;
-    virtual T visit(TernaryExpr& expr) = 0;
-    virtual T visit(ThisExpr& expr) = 0;
-    virtual T visit(UnaryExpr& expr) = 0;
-    virtual T visit(VariableExpr& expr) = 0;
+    virtual ExprVisitorType visit(AssignExpr& expr) = 0;
+    virtual ExprVisitorType visit(BinaryExpr& expr) = 0;
+    virtual ExprVisitorType visit(CallExpr& expr) = 0;
+    virtual ExprVisitorType visit(CommaExpr& expr) = 0;
+    virtual ExprVisitorType visit(GetExpr& expr) = 0;
+    virtual ExprVisitorType visit(GroupingExpr& expr) = 0;
+    virtual ExprVisitorType visit(IndexExpr& expr) = 0;
+    virtual ExprVisitorType visit(LiteralExpr& expr) = 0;
+    virtual ExprVisitorType visit(LogicalExpr& expr) = 0;
+    virtual ExprVisitorType visit(SetExpr& expr) = 0;
+    virtual ExprVisitorType visit(SuperExpr& expr) = 0;
+    virtual ExprVisitorType visit(TernaryExpr& expr) = 0;
+    virtual ExprVisitorType visit(ThisExpr& expr) = 0;
+    virtual ExprVisitorType visit(UnaryExpr& expr) = 0;
+    virtual ExprVisitorType visit(VariableExpr& expr) = 0;
 
-    virtual T visit(BlockStmt& stmt) = 0;
-    virtual T visit(BreakStmt& stmt) = 0;
-    virtual T visit(ClassStmt& stmt) = 0;
-    virtual T visit(ContinueStmt& stmt) = 0;
-    virtual T visit(ExpressionStmt& stmt) = 0;
-    virtual T visit(FunctionStmt& stmt) = 0;
-    virtual T visit(IfStmt& stmt) = 0;
-    virtual T visit(ImportStmt& stmt) = 0;
-    virtual T visit(ReturnStmt& stmt) = 0;
-    virtual T visit(SwitchStmt& stmt) = 0;
-    virtual T visit(TypeStmt& stmt) = 0;
-    virtual T visit(VarStmt& stmt) = 0;
-    virtual T visit(WhileStmt& stmt) = 0;
+    virtual StmtVisitorType visit(BlockStmt& stmt) = 0;
+    virtual StmtVisitorType visit(BreakStmt& stmt) = 0;
+    virtual StmtVisitorType visit(ClassStmt& stmt) = 0;
+    virtual StmtVisitorType visit(ContinueStmt& stmt) = 0;
+    virtual StmtVisitorType visit(ExpressionStmt& stmt) = 0;
+    virtual StmtVisitorType visit(FunctionStmt& stmt) = 0;
+    virtual StmtVisitorType visit(IfStmt& stmt) = 0;
+    virtual StmtVisitorType visit(ImportStmt& stmt) = 0;
+    virtual StmtVisitorType visit(ReturnStmt& stmt) = 0;
+    virtual StmtVisitorType visit(SwitchStmt& stmt) = 0;
+    virtual StmtVisitorType visit(TypeStmt& stmt) = 0;
+    virtual StmtVisitorType visit(VarStmt& stmt) = 0;
+    virtual StmtVisitorType visit(WhileStmt& stmt) = 0;
 
-    virtual T visit(PrimitiveType& type) = 0;
-    virtual T visit(UserDefinedType& type) = 0;
-    virtual T visit(ListType& type) = 0;
-    virtual T visit(TypeofType& type) = 0;
+    virtual BaseTypeVisitorType visit(PrimitiveType& basetype) = 0;
+    virtual BaseTypeVisitorType visit(UserDefinedType& basetype) = 0;
+    virtual BaseTypeVisitorType visit(ListType& basetype) = 0;
+    virtual BaseTypeVisitorType visit(TypeofType& basetype) = 0;
 };
 
 enum class NodeType {
@@ -142,36 +142,38 @@ enum class NodeType {
 struct Expr {
     virtual std::string_view string_tag() = 0;
     virtual NodeType type_tag() = 0;
-    virtual T accept(Visitor& visitor) = 0;
+    virtual ExprVisitorType accept(Visitor& visitor) = 0;
     virtual ~Expr() = default;
 };
 
 struct Stmt {
     virtual std::string_view string_tag() = 0;
     virtual NodeType type_tag() = 0;
-    virtual T accept(Visitor& visitor) = 0;
+    virtual StmtVisitorType accept(Visitor& visitor) = 0;
     virtual ~Stmt() = default;
 };
 
-struct Type {
-    virtual std::string_view string_tag() = 0;
-    virtual NodeType type_tag() = 0;
-    virtual T accept(Visitor& visitor) = 0;
-    virtual ~Type() = default;
-};
-
 struct SharedData {
-    TypeType type;
+    Type type;
     bool is_const;
     bool is_ref;
 
 };
 
-// Type node definitions
-
-struct PrimitiveType final: public Type {
+struct BaseType {
     SharedData data;
 
+    BaseType() = default;
+    BaseType(SharedData data): data{data} {}
+    virtual std::string_view string_tag() = 0;
+    virtual NodeType type_tag() = 0;
+    virtual BaseTypeVisitorType accept(Visitor& visitor) = 0;
+    virtual ~BaseType() = default;
+};
+
+// Type node definitions
+
+struct PrimitiveType final: public BaseType {
     std::string_view string_tag() override final {
         return "PrimitiveType";
     }
@@ -181,15 +183,14 @@ struct PrimitiveType final: public Type {
     }
 
     PrimitiveType(SharedData data):
-        data{data} {}
+        BaseType{data} {}
 
-    T accept(Visitor& visitor) override final {
+    BaseTypeVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
 
-struct UserDefinedType final: public Type {
-    SharedData data;
+struct UserDefinedType final: public BaseType {
     Token name;
 
     std::string_view string_tag() override final {
@@ -201,15 +202,14 @@ struct UserDefinedType final: public Type {
     }
 
     UserDefinedType(SharedData data, Token name):
-        data{data}, name{name} {}
+        BaseType{data}, name{name} {}
 
-    T accept(Visitor& visitor) override final {
+    BaseTypeVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
 
-struct ListType final: public Type {
-    SharedData data;
+struct ListType final: public BaseType {
     type_node_t contained;
     expr_node_t size;
 
@@ -222,14 +222,14 @@ struct ListType final: public Type {
     }
 
     ListType(SharedData data, type_node_t contained, expr_node_t size):
-        data{data}, contained{std::move(contained)}, size{std::move(size)} {}
+        BaseType{data}, contained{std::move(contained)}, size{std::move(size)} {}
 
-    T accept(Visitor& visitor) override final {
+    BaseTypeVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
 
-struct TypeofType final: public Type {
+struct TypeofType final: public BaseType {
     expr_node_t expr;
 
     std::string_view string_tag() override final {
@@ -243,7 +243,7 @@ struct TypeofType final: public Type {
     TypeofType(expr_node_t expr):
         expr{std::move(expr)} {}
 
-    T accept(Visitor& visitor) override final {
+    BaseTypeVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -267,7 +267,7 @@ struct AssignExpr final: public Expr {
     AssignExpr(Token target, expr_node_t value):
         target{target}, value{std::move(value)} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -288,7 +288,7 @@ struct BinaryExpr final: public Expr {
     BinaryExpr(expr_node_t left, Token oper, expr_node_t right):
         left{std::move(left)}, oper{oper}, right{std::move(right)} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -309,7 +309,7 @@ struct CallExpr final: public Expr {
     CallExpr(expr_node_t function, Token paren, std::vector<expr_node_t> args):
         function{std::move(function)}, paren{paren}, args{std::move(args)} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -328,7 +328,7 @@ struct CommaExpr final: public Expr {
     CommaExpr(std::vector<expr_node_t> exprs):
         exprs{std::move(exprs)} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -348,7 +348,7 @@ struct GetExpr final: public Expr {
     GetExpr(expr_node_t object, Token name):
         object{std::move(object)}, name{name} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -367,7 +367,7 @@ struct GroupingExpr final: public Expr {
     GroupingExpr(expr_node_t expr):
         expr{std::move(expr)} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -388,13 +388,15 @@ struct IndexExpr final: public Expr {
     IndexExpr(expr_node_t object, Token oper, expr_node_t index):
         object{std::move(object)}, oper{oper}, index{std::move(index)} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
 
 struct LiteralExpr final: public Expr {
-    T value;
+    LiteralValue value;
+    Token lexeme;
+    type_node_t type;
 
     std::string_view string_tag() override final {
         return "LiteralExpr";
@@ -404,10 +406,10 @@ struct LiteralExpr final: public Expr {
         return NodeType::LiteralExpr;
     }
 
-    LiteralExpr(T value):
-        value{std::move(value)} {}
+    LiteralExpr(LiteralValue value, Token lexeme, type_node_t type):
+        value{std::move(value)}, lexeme{std::move(lexeme)}, type{std::move(type)} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -428,7 +430,7 @@ struct LogicalExpr final: public Expr {
     LogicalExpr(expr_node_t left, Token oper, expr_node_t right):
         left{std::move(left)}, oper{oper}, right{std::move(right)} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -449,7 +451,7 @@ struct SetExpr final: public Expr {
     SetExpr(expr_node_t object, Token name, expr_node_t value):
         object{std::move(object)}, name{name}, value{std::move(value)} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -469,7 +471,7 @@ struct SuperExpr final: public Expr {
     SuperExpr(Token keyword, Token name):
         keyword{keyword}, name{name} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -491,7 +493,7 @@ struct TernaryExpr final: public Expr {
     TernaryExpr(expr_node_t left, Token question, expr_node_t middle, expr_node_t right):
         left{std::move(left)}, question{question}, middle{std::move(middle)}, right{std::move(right)} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -510,7 +512,7 @@ struct ThisExpr final: public Expr {
     ThisExpr(Token keyword):
         keyword{keyword} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -530,13 +532,14 @@ struct UnaryExpr final: public Expr {
     UnaryExpr(Token oper, expr_node_t right):
         oper{oper}, right{std::move(right)} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
 
 struct VariableExpr final: public Expr {
     Token name;
+    std::size_t scope_depth;
 
     std::string_view string_tag() override final {
         return "VariableExpr";
@@ -546,10 +549,10 @@ struct VariableExpr final: public Expr {
         return NodeType::VariableExpr;
     }
 
-    VariableExpr(Token name):
-        name{name} {}
+    VariableExpr(Token name, std::size_t scope_depth):
+        name{name}, scope_depth{scope_depth} {}
 
-    T accept(Visitor& visitor) override final {
+    ExprVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -572,7 +575,7 @@ struct BlockStmt final: public Stmt {
     BlockStmt(std::vector<stmt_node_t> stmts):
         stmts{std::move(stmts)} {}
 
-    T accept(Visitor& visitor) override final {
+    StmtVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -591,7 +594,7 @@ struct BreakStmt final: public Stmt {
     BreakStmt(Token keyword):
         keyword{keyword} {}
 
-    T accept(Visitor& visitor) override final {
+    StmtVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -623,7 +626,7 @@ struct ClassStmt final: public Stmt {
     ClassStmt(Token name, bool has_ctor, bool has_dtor, std::vector<std::pair<stmt_node_t,VisibilityType>> members, std::vector<std::pair<stmt_node_t,VisibilityType>> methods):
         name{name}, has_ctor{has_ctor}, has_dtor{has_dtor}, members{std::move(members)}, methods{std::move(methods)} {}
 
-    T accept(Visitor& visitor) override final {
+    StmtVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -642,7 +645,7 @@ struct ContinueStmt final: public Stmt {
     ContinueStmt(Token keyword):
         keyword{keyword} {}
 
-    T accept(Visitor& visitor) override final {
+    StmtVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -661,7 +664,7 @@ struct ExpressionStmt final: public Stmt {
     ExpressionStmt(expr_node_t expr):
         expr{std::move(expr)} {}
 
-    T accept(Visitor& visitor) override final {
+    StmtVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -683,7 +686,7 @@ struct FunctionStmt final: public Stmt {
     FunctionStmt(Token name, type_node_t return_type, std::vector<std::pair<Token,type_node_t>> params, stmt_node_t body):
         name{name}, return_type{std::move(return_type)}, params{std::move(params)}, body{std::move(body)} {}
 
-    T accept(Visitor& visitor) override final {
+    StmtVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -704,7 +707,7 @@ struct IfStmt final: public Stmt {
     IfStmt(expr_node_t condition, stmt_node_t thenBranch, stmt_node_t elseBranch):
         condition{std::move(condition)}, thenBranch{std::move(thenBranch)},elseBranch{std::move(elseBranch)} {}
 
-    T accept(Visitor& visitor) override final {
+    StmtVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -723,7 +726,7 @@ struct ImportStmt final: public Stmt {
     ImportStmt(Token name):
         name{name} {}
 
-    T accept(Visitor& visitor) override final {
+    StmtVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -743,7 +746,7 @@ struct ReturnStmt final: public Stmt {
     ReturnStmt(Token keyword, expr_node_t value):
         keyword{keyword}, value{std::move(value)} {}
 
-    T accept(Visitor& visitor) override final {
+    StmtVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -764,7 +767,7 @@ struct SwitchStmt final: public Stmt {
     SwitchStmt(expr_node_t condition, std::vector<std::pair<expr_node_t,stmt_node_t>> cases, std::optional<stmt_node_t> default_case):
         condition{std::move(condition)}, cases{std::move(cases)}, default_case{std::move(default_case)} {}
 
-    T accept(Visitor& visitor) override final {
+    StmtVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -784,7 +787,7 @@ struct TypeStmt final: public Stmt {
     TypeStmt(Token name, type_node_t type):
         name{name}, type{std::move(type)} {}
 
-    T accept(Visitor& visitor) override final {
+    StmtVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
@@ -805,12 +808,13 @@ struct VarStmt final: public Stmt {
     VarStmt(Token name, type_node_t type, expr_node_t initializer):
         name{name}, type{std::move(type)}, initializer{std::move(initializer)} {}
 
-    T accept(Visitor& visitor) override final {
+    StmtVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };
 
 struct WhileStmt final: public Stmt {
+    Token keyword;
     expr_node_t condition;
     stmt_node_t body;
 
@@ -822,10 +826,10 @@ struct WhileStmt final: public Stmt {
         return NodeType::WhileStmt;
     }
 
-    WhileStmt(expr_node_t condition, stmt_node_t body):
-        condition{std::move(condition)}, body{std::move(body)} {}
+    WhileStmt(Token keyword, expr_node_t condition, stmt_node_t body):
+        keyword{keyword}, condition{std::move(condition)}, body{std::move(body)} {}
 
-    T accept(Visitor& visitor) override final {
+    StmtVisitorType accept(Visitor& visitor) override final {
         return visitor.visit(*this);
     }
 };

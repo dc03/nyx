@@ -35,19 +35,19 @@ def declare_visitor(file, visitor: str, exprs: List[str], stmts: List[str], expr
     file.write('struct ' + visitor + ' {\n')
     for expr in exprs:
         tab(file, 1).write(
-            'virtual T visit(' + expr + '& ' + expr_base.lower() + ') = 0;\n')
+            'virtual ' + expr_base + 'VisitorType visit(' + expr + '& ' + expr_base.lower() + ') = 0;\n')
 
     file.write('\n')
 
     for stmt in stmts:
         tab(file, 1).write(
-            'virtual T visit(' + stmt + '& ' + stmt_base.lower() + ') = 0;\n')
+            'virtual ' + stmt_base + 'VisitorType visit(' + stmt + '& ' + stmt_base.lower() + ') = 0;\n')
 
     file.write('\n')
 
     for type in types:
         tab(file, 1).write(
-            'virtual T visit(' + type + '& ' + type_base.lower() + ') = 0;\n')
+            'virtual ' + type_base + 'VisitorType visit(' + type + '& ' + type_base.lower() + ') = 0;\n')
 
     file.write('};\n\n')
     return None
@@ -57,7 +57,7 @@ def declare_base(file, base_name: str) -> None:
     file.write('struct ' + base_name + ' {\n')
     tab(file, 1).write('virtual std::string_view string_tag() = 0;\n')
     tab(file, 1).write('virtual NodeType type_tag() = 0;\n')
-    tab(file, 1).write('virtual T accept(Visitor& visitor) = 0;\n')
+    tab(file, 1).write('virtual ' + base_name + 'VisitorType accept(Visitor& visitor) = 0;\n')
     tab(file, 1).write('virtual ~' + base_name + '() = default;\n')
     file.write('};\n\n')
     return None
@@ -88,7 +88,41 @@ def declare_derived(file, base_name: str, derived_name: str, ctor_args: str, mem
     file.write('\n')
     # Class constructor
 
-    tab(file, 1).write('T accept(Visitor& visitor) override final {\n')
+    tab(file, 1).write(base_name + 'VisitorType accept(Visitor& visitor) override final {\n')
+    tab(file, 2).write('return visitor.visit(*this);\n')
+    tab(file, 1).write('}\n')
+    # Accept method
+    file.write('};\n\n')
+    return None
+
+
+def declare_derived_type(file, base_name: str, derived_name: str, ctor_args: str, members: str, ctor_params: str) \
+        -> None:
+    file.write('struct ' + derived_name +
+               ' final: public ' + base_name + ' {\n')
+
+    if members != '':
+        for member in members.split(', '):
+            tab(file, 1).write(member.strip() + ';\n')
+        file.write('\n')
+        # Class members
+
+    tab(file, 1).write('std::string_view string_tag() override final {\n')
+    tab(file, 2).write('return "' + derived_name + '";\n')
+    tab(file, 1).write('}\n\n')
+    # string_tag() method
+
+    tab(file, 1).write('NodeType type_tag() override final {\n')
+    tab(file, 2).write('return NodeType::' + derived_name + ';\n')
+    tab(file, 1).write('}\n\n')
+    # type_tag() method
+
+    tab(file, 1).write(derived_name + '(' + ctor_params + ')' + (':\n' if ctor_args != '' else '\n'))
+    tab(file, 2).write(ctor_args + ' {}\n')
+    file.write('\n')
+    # Class constructor
+
+    tab(file, 1).write(base_name + 'VisitorType accept(Visitor& visitor) override final {\n')
     tab(file, 2).write('return visitor.visit(*this);\n')
     tab(file, 1).write('}\n')
     # Accept method
@@ -143,13 +177,13 @@ if __name__ == '__main__':
         file.write('#include <string_view>\n')
         file.write('#include <utility>\n')
         file.write('#include <vector>\n')
-        file.write('\n#include "Parser/Object.hpp"\n')
+        file.write('\n#include "Parser/VisitorTypes.hpp"\n')
         file.write('\n#include "Token.hpp"\n\n')
-        forward_declare(file, ['Expr', 'Stmt', 'Type'])
+        forward_declare(file, ['Expr', 'Stmt', 'BaseType'])
         file.write('\n')
         declare_alias(file, 'expr_node_t', 'Expr')
         declare_alias(file, 'stmt_node_t', 'Stmt')
-        declare_alias(file, 'type_node_t', 'Type')
+        declare_alias(file, 'type_node_t', 'BaseType')
         # Base class and alias declarations complete
 
         Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'Literal',
@@ -171,42 +205,47 @@ if __name__ == '__main__':
         file.write('\n')
         # Forward declarations complete
 
-        declare_visitor(file, 'Visitor', Exprs, Stmts, 'Expr', 'Stmt', Types, 'Type')
+        declare_visitor(file, 'Visitor', Exprs, Stmts, 'Expr', 'Stmt', Types, 'BaseType')
         declare_tag_enum(file, Exprs, Stmts, Types)
         # Visitor declaration complete
 
         declare_base(file, 'Expr')
         declare_base(file, 'Stmt')
 
-        file.write('struct Type {\n')
-        tab(file, 1).write('virtual std::string_view string_tag() = 0;\n')
-        tab(file, 1).write('virtual NodeType type_tag() = 0;\n')
-        tab(file, 1).write('virtual T accept(Visitor& visitor) = 0;\n')
-        tab(file, 1).write('virtual ~Type() = default;\n')
-        file.write('};\n\n')
-
         file.write('struct SharedData {\n')
-        tab(file, 1).write('TypeType type;\n')
+        tab(file, 1).write('Type type;\n')
         tab(file, 1).write('bool is_const;\n')
         tab(file, 1).write('bool is_ref;\n\n')
         file.write('};\n\n')
+
+        file.write('struct BaseType {\n')
+        tab(file, 1).write('SharedData data;\n\n')
+        tab(file, 1).write('BaseType() = default;\n')
+        tab(file, 1).write('BaseType(SharedData data): data{data} {}\n')
+        tab(file, 1).write('virtual std::string_view string_tag() = 0;\n')
+        tab(file, 1).write('virtual NodeType type_tag() = 0;\n')
+        tab(file, 1).write('virtual BaseTypeVisitorType accept(Visitor& visitor) = 0;\n')
+        tab(file, 1).write('virtual ~BaseType() = default;\n')
+        file.write('};\n\n')
+
         # Type base node definition
 
         # NOTE: Always make sure that these are in the same order as the lists
 
         file.write('// Type node definitions\n\n')
 
-        declare_derived(file, 'Type', Types[0], 'data{data}', 'SharedData data')
+        declare_derived_type(file, 'BaseType', Types[0], 'BaseType{data}', '', 'SharedData data')
 
-        declare_derived(file, 'Type', Types[1], 'data{data}, name{name}',
-                        'SharedData data, Token name')
+        declare_derived_type(file, 'BaseType', Types[1], 'BaseType{data}, name{name}',
+                             'Token name', 'SharedData data, Token name')
 
-        declare_derived(file, 'Type', Types[2],
-                        'data{data}, contained{std::move(contained)}, size{std::move(size)}',
-                        'SharedData data, type_node_t contained, expr_node_t size')
+        declare_derived_type(file, 'BaseType', Types[2],
+                             'BaseType{data}, contained{std::move(contained)}, size{std::move(size)}',
+                             'type_node_t contained, expr_node_t size',
+                             'SharedData data, type_node_t contained, expr_node_t size')
 
-        declare_derived(file, 'Type', Types[3],
-                        'expr{std::move(expr)}', 'expr_node_t expr')
+        declare_derived_type(file, 'BaseType', Types[3],
+                             'expr{std::move(expr)}', 'expr_node_t expr', 'expr_node_t expr')
 
         file.write('// End of type node definitions\n\n')
 
@@ -233,8 +272,8 @@ if __name__ == '__main__':
         decl_expr('object{std::move(object)}, oper{oper}, index{std::move(index)}',
                   'expr_node_t object, Token oper, expr_node_t index')
 
-        decl_expr('value{std::move(value)}',
-                  'T value')
+        decl_expr('value{std::move(value)}, lexeme{std::move(lexeme)}, type{std::move(type)}',
+                  'LiteralValue value, Token lexeme, type_node_t type')
 
         decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}',
                   'expr_node_t left, Token oper, expr_node_t right')
@@ -254,8 +293,8 @@ if __name__ == '__main__':
         decl_expr('oper{oper}, right{std::move(right)}',
                   'Token oper, expr_node_t right')
 
-        decl_expr('name{name}',
-                  'Token name')
+        decl_expr('name{name}, scope_depth{scope_depth}',
+                  'Token name, std::size_t scope_depth')
 
         file.write('// End of expression node definitions\n\n')
         file.write('// Statement node definitions\n\n')
@@ -310,8 +349,8 @@ if __name__ == '__main__':
         decl_stmt('name{name}, type{std::move(type)}, initializer{std::move(initializer)}',
                   'Token name, type_node_t type, expr_node_t initializer')
 
-        decl_stmt('condition{std::move(condition)}, body{std::move(body)}',
-                  'expr_node_t condition, stmt_node_t body')
+        decl_stmt('keyword{keyword}, condition{std::move(condition)}, body{std::move(body)}',
+                  'Token keyword, expr_node_t condition, stmt_node_t body')
 
         file.write('// End of statement node definitions\n\n')
 
