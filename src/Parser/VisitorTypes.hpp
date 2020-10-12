@@ -19,12 +19,13 @@ enum class Type {
     CLASS,
     LIST,
     TYPEOF,
-    NULL_
+    NULL_,
+    FUNCTION
 };
 
 struct Expr;
 struct BaseType;
-struct ClassStmt
+struct ClassStmt;
 struct FunctionStmt;
 
 using QualifiedTypeInfo = BaseType*;
@@ -36,8 +37,8 @@ struct ExprTypeInfo {
     Token lexeme{};
 
     ExprTypeInfo(QualifiedTypeInfo info, Token token);
-    ExprTypeInfo(FunctionStmt *func, Token token);
-    ExprTypeInfo(ClassStmt *class_, Token token);
+    ExprTypeInfo(QualifiedTypeInfo info, FunctionStmt *func, Token token);
+    ExprTypeInfo(QualifiedTypeInfo info, ClassStmt *class_, Token token);
 };
 
 struct LiteralValue {

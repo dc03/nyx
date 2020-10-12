@@ -264,12 +264,13 @@ expr_node_t Parser::parse_precedence(ParsePrecedence::of precedence) {
 
 expr_node_t Parser::and_(bool, expr_node_t left) {
     expr_node_t right = parse_precedence(ParsePrecedence::LOGIC_AND);
-    return expr_node_t{allocate(LogicalExpr, std::move(left), previous(), std::move(right))};
+    return expr_node_t{allocate_node(LogicalExpr, std::move(left), previous(), std::move(right))};
 }
 
 expr_node_t Parser::binary(bool, expr_node_t left) {
+    Token oper = previous();
     expr_node_t right = parse_precedence(ParsePrecedence::of(get_rule(previous().type).precedence + 1));
-    return expr_node_t{allocate(BinaryExpr, std::move(left), previous(), std::move(right))};
+    return expr_node_t{allocate_node(BinaryExpr, std::move(left), std::move(oper), std::move(right))};
 }
 
 expr_node_t Parser::call(bool, expr_node_t function) {
@@ -282,7 +283,7 @@ expr_node_t Parser::call(bool, expr_node_t function) {
 
     }
     consume("Expected ')' after function call", TokenType::RIGHT_PAREN);
-    return expr_node_t{allocate(CallExpr, std::move(function), std::move(paren), std::move(args))};
+    return expr_node_t{allocate_node(CallExpr, std::move(function), std::move(paren), std::move(args))};
 }
 
 expr_node_t Parser::comma(bool, expr_node_t left) {
@@ -292,7 +293,7 @@ expr_node_t Parser::comma(bool, expr_node_t left) {
         exprs.emplace_back(parse_precedence(ParsePrecedence::ASSIGNMENT));
     } while (match(TokenType::COMMA));
 
-    return expr_node_t{allocate(CommaExpr, std::move(exprs))};
+    return expr_node_t{allocate_node(CommaExpr, std::move(exprs))};
 }
 
 expr_node_t Parser::dot(bool can_assign, expr_node_t left) {
@@ -301,21 +302,21 @@ expr_node_t Parser::dot(bool can_assign, expr_node_t left) {
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                             TokenType::SLASH_EQUAL)) {
         expr_node_t value = expression();
-        return expr_node_t{allocate(SetExpr, std::move(left), std::move(name), std::move(value))};
-    }  else {
-        return expr_node_t{allocate(GetExpr, std::move(left), std::move(name))};
+        return expr_node_t{allocate_node(SetExpr, std::move(left), std::move(name), std::move(value))};
+    } else {
+        return expr_node_t{allocate_node(GetExpr, std::move(left), std::move(name))};
     }
 }
 
 expr_node_t Parser::index(bool, expr_node_t object) {
     expr_node_t index = expression();
     consume("Expected ']' after array subscript index", TokenType::RIGHT_INDEX);
-    return expr_node_t{allocate(IndexExpr, std::move(object), previous(), std::move(index))};
+    return expr_node_t{allocate_node(IndexExpr, std::move(object), previous(), std::move(index))};
 }
 
 expr_node_t Parser::or_(bool, expr_node_t left) {
     expr_node_t right = parse_precedence(ParsePrecedence::LOGIC_OR);
-    return expr_node_t{allocate(LogicalExpr, std::move(left), previous(), std::move(right))};
+    return expr_node_t{allocate_node(LogicalExpr, std::move(left), previous(), std::move(right))};
 }
 
 expr_node_t Parser::expression() {
@@ -325,36 +326,36 @@ expr_node_t Parser::expression() {
 expr_node_t Parser::grouping(bool) {
     expr_node_t expr = expression();
     consume("Expected ')' after parenthesized expression", TokenType::RIGHT_PAREN);
-    return expr_node_t{allocate(GroupingExpr, std::move(expr))};
+    return expr_node_t{allocate_node(GroupingExpr, std::move(expr))};
 }
 
 expr_node_t Parser::literal(bool) {
-    type_node_t type = type_node_t{allocate(PrimitiveType, SharedData{Type::INT, true, false})};
+    type_node_t type = type_node_t{allocate_node(PrimitiveType, SharedData{Type::INT, true, false})};
     switch (previous().type) {
         case TokenType::INT_VALUE: {
             int value = std::stoi(previous().lexeme);
-            return expr_node_t{allocate(LiteralExpr, value, previous(), std::move(type))};
+            return expr_node_t{allocate_node(LiteralExpr, value, previous(), std::move(type))};
         }
         case TokenType::FLOAT_VALUE: {
             double value = std::stod(previous().lexeme);
             type->data.type = Type::FLOAT;
-            return expr_node_t{allocate(LiteralExpr, value, previous(), std::move(type))};
+            return expr_node_t{allocate_node(LiteralExpr, value, previous(), std::move(type))};
         }
         case TokenType::STRING_VALUE: {
             type->data.type = Type::STRING;
-            return expr_node_t{allocate(LiteralExpr, previous().lexeme, previous(), std::move(type))};
+            return expr_node_t{allocate_node(LiteralExpr, previous().lexeme, previous(), std::move(type))};
         }
         case TokenType::FALSE: {
             type->data.type = Type::BOOL;
-            return expr_node_t{allocate(LiteralExpr, false, previous(), std::move(type))};
+            return expr_node_t{allocate_node(LiteralExpr, false, previous(), std::move(type))};
         }
         case TokenType::TRUE: {
             type->data.type = Type::BOOL;
-            return expr_node_t{allocate(LiteralExpr, true, previous(), std::move(type))};
+            return expr_node_t{allocate_node(LiteralExpr, true, previous(), std::move(type))};
         }
         case TokenType::NULL_: {
             type->data.type = Type::NULL_;
-            return expr_node_t{allocate(LiteralExpr, nullptr, previous(), std::move(type))};
+            return expr_node_t{allocate_node(LiteralExpr, nullptr, previous(), std::move(type))};
         }
 
         default:
@@ -371,7 +372,7 @@ expr_node_t Parser::super(bool) {
     consume("Expected '.' after 'super' keyword", TokenType::DOT);
     consume("Expected name after '.' in super expression", TokenType::IDENTIFIER);
     Token name = previous();
-    return expr_node_t{allocate(SuperExpr, std::move(super), std::move(name))};
+    return expr_node_t{allocate_node(SuperExpr, std::move(super), std::move(name))};
 }
 
 expr_node_t Parser::this_expr(bool) {
@@ -379,21 +380,21 @@ expr_node_t Parser::this_expr(bool) {
         sync_and_throw("Cannot use this keyword outside a class");
     }
     Token keyword = previous();
-    return expr_node_t{allocate(ThisExpr, std::move(keyword))};
+    return expr_node_t{allocate_node(ThisExpr, std::move(keyword))};
 }
 
 expr_node_t Parser::unary(bool) {
     expr_node_t expr = parse_precedence(get_rule(previous().type).precedence);
-    return expr_node_t{allocate(UnaryExpr, previous(), std::move(expr))};
+    return expr_node_t{allocate_node(UnaryExpr, previous(), std::move(expr))};
 }
 
 expr_node_t Parser::variable(bool can_assign) {
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                             TokenType::SLASH_EQUAL)) {
         expr_node_t value = expression();
-        return expr_node_t{allocate(AssignExpr, previous(), std::move(value))};
+        return expr_node_t{allocate_node(AssignExpr, previous(), std::move(value))};
     } else {
-        return expr_node_t{allocate(VariableExpr, previous(), 0)};
+        return expr_node_t{allocate_node(VariableExpr, previous(), 0)};
     }
 }
 
@@ -402,7 +403,7 @@ expr_node_t Parser::ternary(bool, expr_node_t left) {
     expr_node_t middle = parse_precedence(ParsePrecedence::LOGIC_OR);
     consume("Expected colon in ternary expression", TokenType::COLON);
     expr_node_t right = parse_precedence(ParsePrecedence::LOGIC_OR);
-    return expr_node_t{allocate(TernaryExpr, std::move(left), question, std::move(middle), std::move(right))};
+    return expr_node_t{allocate_node(TernaryExpr, std::move(left), question, std::move(middle), std::move(right))};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -440,13 +441,13 @@ type_node_t Parser::type() {
     SharedData data{type, is_const, is_ref};
     if (type == Type::CLASS) {
         Token name = previous();
-        return type_node_t{allocate(UserDefinedType, data, std::move(name))};
+        return type_node_t{allocate_node(UserDefinedType, data, std::move(name))};
     } else if (type == Type::LIST) {
         return list_type(is_const, is_ref);
     } else if (type == Type::TYPEOF) {
-        return type_node_t{allocate(TypeofType, expression())};
+        return type_node_t{allocate_node(TypeofType, expression())};
     } else {
-        return type_node_t{allocate(PrimitiveType, data)};
+        return type_node_t{allocate_node(PrimitiveType, data)};
     }
 }
 
@@ -456,8 +457,8 @@ type_node_t Parser::list_type(bool is_const, bool is_ref) {
     expr_node_t size = expression();
     consume("Expected ']' after array size", TokenType::RIGHT_INDEX);
     SharedData data{Type::LIST, is_const, is_ref};
-    return type_node_t{allocate(ListType, data, std::move(contained),
-                                std::move(size))};
+    return type_node_t{allocate_node(ListType, data, std::move(contained),
+                                     std::move(size))};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -554,8 +555,8 @@ stmt_node_t Parser::class_declaration() {
     in_class = in_class_outer;
 
     consume("Expected '}' at the end of class declaration", TokenType::RIGHT_BRACE);
-    auto *class_definition = allocate(ClassStmt, std::move(name), has_ctor, has_dtor, std::move(members),
-                                      std::move(methods));
+    auto *class_definition = allocate_node(ClassStmt, std::move(name), has_ctor, has_dtor, std::move(members),
+                                           std::move(methods));
     classes.push_back(class_definition);
 
     return stmt_node_t{class_definition};
@@ -604,8 +605,8 @@ stmt_node_t Parser::function_declaration() {
     stmt_node_t body = block_statement();
     in_function = in_function_outer;
 
-    auto *function_definition = allocate(FunctionStmt, std::move(name), std::move(return_type), std::move(params),
-                                         std::move(body));
+    auto *function_definition = allocate_node(FunctionStmt, std::move(name), std::move(return_type), std::move(params),
+                                              std::move(body));
 
     if (!in_class && scope_depth == 0) {
         functions.push_back(function_definition);
@@ -619,7 +620,7 @@ stmt_node_t Parser::import_statement() {
     Token name = previous();
     consume("Expected ';' or newline after imported file",
             previous(), TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t{allocate(ImportStmt, std::move(name))};
+    return stmt_node_t{allocate_node(ImportStmt, std::move(name))};
 }
 
 stmt_node_t Parser::type_declaration() {
@@ -628,7 +629,7 @@ stmt_node_t Parser::type_declaration() {
     consume("Expected '=' after type name", TokenType::EQUAL);
     type_node_t aliased = type();
     consume("Expected ';' or newline after type alias", TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t{allocate(TypeStmt, std::move(name), std::move(aliased))};
+    return stmt_node_t{allocate_node(TypeStmt, std::move(name), std::move(aliased))};
 }
 
 stmt_node_t Parser::variable_declaration() {
@@ -643,7 +644,7 @@ stmt_node_t Parser::variable_declaration() {
     expr_node_t initializer = match(TokenType::EQUAL) ? expression() : nullptr;
     consume("Expected ';' or newline after variable initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
 
-    auto *variable = allocate(VarStmt, std::move(name), std::move(var_type), std::move(initializer));
+    auto *variable = allocate_node(VarStmt, std::move(name), std::move(var_type), std::move(initializer));
     return stmt_node_t{variable};
 }
 
@@ -682,7 +683,7 @@ stmt_node_t Parser::block_statement() {
     }
 
     consume("Expected '}' after block", TokenType::RIGHT_BRACE);
-    return stmt_node_t{allocate(BlockStmt, std::move(statements))};
+    return stmt_node_t{allocate_node(BlockStmt, std::move(statements))};
 }
 
 template <typename Allocated>
@@ -695,7 +696,7 @@ stmt_node_t Parser::single_token_statement(const std::string_view token, const b
     using namespace std::string_literals;
     const std::string consume_message = "Expected ';' or newline after "s + &token[0] + " keyword";
     consume(consume_message, TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t{allocate(Allocated, std::move(keyword))};
+    return stmt_node_t{allocate_node(Allocated, std::move(keyword))};
 }
 
 stmt_node_t Parser::break_statement() {
@@ -711,7 +712,7 @@ stmt_node_t Parser::continue_statement() {
 stmt_node_t Parser::expression_statement() {
     expr_node_t expr = expression();
     consume("Expected ';' or newline after expression", TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t{allocate(ExpressionStmt, std::move(expr))};
+    return stmt_node_t{allocate_node(ExpressionStmt, std::move(expr))};
 }
 
 stmt_node_t Parser::for_statement() {
@@ -734,7 +735,7 @@ stmt_node_t Parser::for_statement() {
 
     stmt_node_t increment = nullptr;
     if (peek().type != TokenType::RIGHT_PAREN) {
-        increment = stmt_node_t{allocate(ExpressionStmt, expression())};
+        increment = stmt_node_t{allocate_node(ExpressionStmt, expression())};
     }
     consume("Expected ')' after for loop header", TokenType::RIGHT_PAREN);
 
@@ -745,16 +746,16 @@ stmt_node_t Parser::for_statement() {
     bool in_loop_outer = in_loop;
     in_loop = true;
 
-    auto *modified_body = allocate(BlockStmt, {});
+    auto *modified_body = allocate_node(BlockStmt, {});
 
     scope_depth_manager manager2{scope_depth};
     modified_body->stmts.emplace_back(statement()); // The actual body
     modified_body->stmts.emplace_back(std::move(increment));
 
-    stmt_node_t desugared_loop = stmt_node_t{allocate(WhileStmt, std::move(keyword), std::move(condition),
-                                                      stmt_node_t{modified_body})};
+    stmt_node_t desugared_loop = stmt_node_t{allocate_node(WhileStmt, std::move(keyword), std::move(condition),
+                                                           stmt_node_t{modified_body})};
 
-    auto *loop = allocate(BlockStmt, {});
+    auto *loop = allocate_node(BlockStmt, {});
     loop->stmts.emplace_back(std::move(initializer));
     loop->stmts.emplace_back(std::move(desugared_loop));
 
@@ -767,10 +768,10 @@ stmt_node_t Parser::if_statement() {
     stmt_node_t then_branch = statement();
     if (match(TokenType::ELSE)) {
         stmt_node_t else_branch = statement();
-        return stmt_node_t{allocate(IfStmt, std::move(condition), std::move(then_branch),
-                                    std::move(else_branch))};
+        return stmt_node_t{allocate_node(IfStmt, std::move(condition), std::move(then_branch),
+                                         std::move(else_branch))};
     } else {
-        return stmt_node_t{allocate(IfStmt, std::move(condition), std::move(then_branch), nullptr)};
+        return stmt_node_t{allocate_node(IfStmt, std::move(condition), std::move(then_branch), nullptr)};
     }
 }
 
@@ -790,7 +791,7 @@ stmt_node_t Parser::return_statement() {
     }();
 
     consume("Expected ';' or newline after return statement", TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t{allocate(ReturnStmt, std::move(keyword), std::move(return_value))};
+    return stmt_node_t{allocate_node(ReturnStmt, std::move(keyword), std::move(return_value))};
 }
 
 stmt_node_t Parser::switch_statement() {
@@ -824,7 +825,7 @@ stmt_node_t Parser::switch_statement() {
 
     in_switch = in_switch_outer;
     consume("Expected '}' at the end of switch statement", TokenType::RIGHT_BRACE);
-    return stmt_node_t{allocate(SwitchStmt, std::move(condition), std::move(cases), std::move(default_case))};
+    return stmt_node_t{allocate_node(SwitchStmt, std::move(condition), std::move(cases), std::move(default_case))};
 }
 
 stmt_node_t Parser::while_statement() {
@@ -842,5 +843,5 @@ stmt_node_t Parser::while_statement() {
     stmt_node_t body = statement();
     in_loop = in_loop_outer;
 
-    return stmt_node_t{allocate(WhileStmt, std::move(keyword), std::move(condition), std::move(body))};
+    return stmt_node_t{allocate_node(WhileStmt, std::move(keyword), std::move(condition), std::move(body))};
 }

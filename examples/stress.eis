@@ -1,3 +1,4 @@
+/*/*/*
 "This is a multiline\n
 \t\b\b\b\b\\\\string"
 // @#$
@@ -110,7 +111,7 @@ for (; i < 5; ++i) {
 {
     print("Hello world");
 }
-/*/*/*
+
 break
 class F }
 fn bar(x:) -> }
@@ -118,3 +119,22 @@ switch (foo) {
     case foo: break
 }
 */*/*/
+
+class Bar {
+    private var x: int
+}
+
+class Foo {
+    public var y: Bar
+
+    public fn xi(z: int) -> int {
+        return this.y.x * z
+    }
+
+    public fn Foo(x: int) -> Foo {
+        var new: Foo;
+        return new;
+    }
+}
+
+var foo = Foo(5);

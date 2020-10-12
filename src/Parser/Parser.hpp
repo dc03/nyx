@@ -11,7 +11,7 @@
 #include "../AST.hpp"
 #include "../Token.hpp"
 
-#define allocate(T, ...) new T{__VA_ARGS__}
+#define allocate_node(T, ...) new T{__VA_ARGS__}
 
 struct ParsePrecedence {
     enum of {

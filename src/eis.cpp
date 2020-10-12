@@ -20,5 +20,6 @@ int main(int, char *argv[]) {
     Parser parser{scanner.scan(), classes, functions};
     auto &&foo = parser.program();
     TypeResolver resolver{classes, functions};
+    resolver.check(foo);
     return 0;
 }

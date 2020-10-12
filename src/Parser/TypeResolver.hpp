@@ -28,10 +28,12 @@ class TypeResolver final: Visitor {
     bool in_loop{false};
     bool in_switch{false};
     ClassStmt *current_class{nullptr};
+    FunctionStmt *current_function{nullptr};
     std::size_t scope_depth{0};
 
-    template <typename T>
-    BaseType *make_new_type(Type type, bool is_const, bool is_ref);
+    template <typename T, typename ... Args>
+    BaseType *make_new_type(Type type, bool is_const, bool is_ref, Args&& ... args);
+    ExprTypeInfo resolve_class_access(ExprVisitorType &object, const Token& name);
 
 public:
     TypeResolver(const std::vector<ClassStmt*> &classes, const std::vector<FunctionStmt*> &functions);
