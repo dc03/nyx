@@ -480,6 +480,13 @@ stmt_node_t Parser::declaration() {
 
 stmt_node_t Parser::class_declaration() {
     consume("Expected class name after 'class' keyword", TokenType::IDENTIFIER);
+
+    for (auto *class_ : classes) {
+        if (class_->name.lexeme == previous().lexeme) {
+            sync_and_throw("Class already defined");
+        }
+    }
+
     Token name = previous();
     bool has_ctor{false};
     bool has_dtor{false};
@@ -556,6 +563,13 @@ stmt_node_t Parser::class_declaration() {
 
 stmt_node_t Parser::function_declaration() {
     consume("Expected function name after 'fn' keyword", TokenType::IDENTIFIER);
+
+    for (auto *func : functions) {
+        if (func->name.lexeme == previous().lexeme) {
+            sync_and_throw("Function already defined");
+        }
+    }
+
     Token name = previous();
     consume("Expected '(' after function name", TokenType::LEFT_PAREN);
 

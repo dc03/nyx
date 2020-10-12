@@ -214,7 +214,9 @@ ExprVisitorType TypeResolver::visit(GetExpr& expr) {
                 for (auto &member_decl : user_type->members) {
                     auto *member = dynamic_cast<VarStmt*>(member_decl.first.get());
                     if (member->name.lexeme == expr.name.lexeme) {
-
+                        if (in_class || (member_decl.second == VisibilityType::PUBLIC)) {
+                            return {member->type.get(), expr.name};
+                        }
                     }
                 }
             }
@@ -299,7 +301,7 @@ ExprVisitorType TypeResolver::visit(TernaryExpr& expr) {
 }
 
 ExprVisitorType TypeResolver::visit(ThisExpr& expr) {
-
+    return {current_class, expr.keyword};
 }
 
 ExprVisitorType TypeResolver::visit(UnaryExpr& expr) {
@@ -380,6 +382,7 @@ StmtVisitorType TypeResolver::visit(BreakStmt&) {}
 StmtVisitorType TypeResolver::visit(ClassStmt& stmt) {
     bool in_class_outer = in_class;
     in_class = true;
+    current_class = &stmt;
 
     in_class = in_class_outer;
 }
@@ -418,7 +421,10 @@ StmtVisitorType TypeResolver::visit(ReturnStmt& stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(SwitchStmt& stmt) {
+    bool in_switch_outer = in_switch;
+    in_switch = true;
 
+    in_switch = in_switch_outer;
 }
 
 StmtVisitorType TypeResolver::visit(TypeStmt&) {
@@ -454,6 +460,8 @@ StmtVisitorType TypeResolver::visit(VarStmt& stmt) {
 
 StmtVisitorType TypeResolver::visit(WhileStmt& stmt) {
     begin_scope();
+    bool in_loop_outer = in_loop;
+    in_loop = true;
 
     ExprTypeInfo condition = resolve(stmt.condition.get());
     if (one_of(condition.info->data.type, Type::CLASS, Type::LIST)) {
@@ -462,6 +470,7 @@ StmtVisitorType TypeResolver::visit(WhileStmt& stmt) {
 
     resolve(stmt.body.get());
 
+    in_loop = in_loop_outer;
     end_scope();
 }
 

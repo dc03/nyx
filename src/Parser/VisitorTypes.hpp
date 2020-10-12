@@ -24,6 +24,7 @@ enum class Type {
 
 struct Expr;
 struct BaseType;
+struct ClassStmt
 struct FunctionStmt;
 
 using QualifiedTypeInfo = BaseType*;
@@ -31,10 +32,12 @@ using QualifiedTypeInfo = BaseType*;
 struct ExprTypeInfo {
     QualifiedTypeInfo info{nullptr};
     FunctionStmt *func{nullptr};
+    ClassStmt *class_{nullptr};
     Token lexeme{};
 
     ExprTypeInfo(QualifiedTypeInfo info, Token token);
-    ExprTypeInfo(FunctionStmt *stmt, Token token);
+    ExprTypeInfo(FunctionStmt *func, Token token);
+    ExprTypeInfo(ClassStmt *class_, Token token);
 };
 
 struct LiteralValue {

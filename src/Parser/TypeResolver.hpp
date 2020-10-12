@@ -27,6 +27,7 @@ class TypeResolver final: Visitor {
     bool in_function{false};
     bool in_loop{false};
     bool in_switch{false};
+    ClassStmt *current_class{nullptr};
     std::size_t scope_depth{0};
 
     template <typename T>
