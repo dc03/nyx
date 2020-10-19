@@ -1,28 +1,23 @@
 /* See LICENSE at project root for license details */
+#include "Scanner.hpp"
+
+#include "../ErrorLogger/ErrorLogger.hpp"
+
 #include <algorithm>
 #include <cassert>
 #include <cctype>
 
-#include "../ErrorLogger/ErrorLogger.hpp"
-#include "Scanner.hpp"
-
 Scanner::Scanner() {
-    const char *words[]{
-        "and", "bool", "break", "case", "class", "const", "continue", "default", "else", "false", "float",
-        "fn", "for", "if", "import", "int", "null", "or", "protected", "private",
-        "public", "ref", "return", "string", "super", "switch", "this", "true", "type", "typeof", "val",
-        "var", "while"
-    };
+    const char *words[]{"and", "bool", "break", "case", "class", "const", "continue", "default", "else", "false",
+        "float", "fn", "for", "if", "import", "int", "null", "or", "protected", "private", "public", "ref", "return",
+        "string", "super", "switch", "this", "true", "type", "typeof", "val", "var", "while"};
 
-    TokenType types[]{
-        TokenType::AND, TokenType::BOOL, TokenType::BREAK, TokenType::CASE, TokenType::CLASS, TokenType::CONST,
-        TokenType::CONTINUE, TokenType::DEFAULT, TokenType::ELSE, TokenType::FALSE, TokenType::FLOAT,
-        TokenType::FN, TokenType::FOR, TokenType::IF, TokenType::IMPORT, TokenType::INT,
-        TokenType::NULL_, TokenType::OR, TokenType::PROTECTED, TokenType::PRIVATE,
-        TokenType::PUBLIC, TokenType::REF, TokenType::RETURN, TokenType::STRING, TokenType::SUPER, TokenType::SWITCH,
-        TokenType::THIS, TokenType::TRUE, TokenType::TYPE, TokenType::TYPEOF, TokenType::VAL, TokenType::VAR,
-        TokenType::WHILE
-    };
+    TokenType types[]{TokenType::AND, TokenType::BOOL, TokenType::BREAK, TokenType::CASE, TokenType::CLASS,
+        TokenType::CONST, TokenType::CONTINUE, TokenType::DEFAULT, TokenType::ELSE, TokenType::FALSE, TokenType::FLOAT,
+        TokenType::FN, TokenType::FOR, TokenType::IF, TokenType::IMPORT, TokenType::INT, TokenType::NULL_,
+        TokenType::OR, TokenType::PROTECTED, TokenType::PRIVATE, TokenType::PUBLIC, TokenType::REF, TokenType::RETURN,
+        TokenType::STRING, TokenType::SUPER, TokenType::SWITCH, TokenType::THIS, TokenType::TRUE, TokenType::TYPE,
+        TokenType::TYPEOF, TokenType::VAL, TokenType::VAR, TokenType::WHILE};
 
     static_assert(std::size(words) == std::size(types), "Size of array of keywords and their types have to be same.");
 
@@ -31,7 +26,7 @@ Scanner::Scanner() {
     }
 }
 
-Scanner::Scanner(const std::string_view source): Scanner() {
+Scanner::Scanner(const std::string_view source) : Scanner() {
     this->source = source;
 }
 
@@ -75,8 +70,7 @@ bool Scanner::match(const char ch) {
 }
 
 void Scanner::add_token(const TokenType type) {
-    tokens.push_back(Token{type, std::string{source.substr(start, (current - start))},
-                           line, start, current});
+    tokens.push_back(Token{type, std::string{source.substr(start, (current - start))}, line, start, current});
 }
 
 void Scanner::number() {
@@ -143,9 +137,10 @@ void Scanner::string(const char delimiter) {
     using namespace std::string_literals;
     if (is_at_end()) {
         std::string message{"Unexpected end of file while reading string, did you"
-                            " forget the closing '"s + std::string{delimiter} + "'?"};
-        error(message, Token{TokenType::STRING_VALUE,
-                             std::string{source.substr(start, (current - start))}, line, start, current});
+                            " forget the closing '"s +
+                            std::string{delimiter} + "'?"};
+        error(message,
+            Token{TokenType::STRING_VALUE, std::string{source.substr(start, (current - start))}, line, start, current});
     }
 
     advance(); // Consume the closing delimiter
@@ -153,7 +148,7 @@ void Scanner::string(const char delimiter) {
 }
 
 void Scanner::multiline_comment() {
-    while(!is_at_end() && !(peek() == '*' && peek_next() == '/')) {
+    while (!is_at_end() && !(peek() == '*' && peek_next() == '/')) {
         if (match('/') && match('*')) {
             multiline_comment();
         } else {
@@ -166,8 +161,7 @@ void Scanner::multiline_comment() {
 
     if (is_at_end()) {
         error("Unexpected end of file while reading comment, did you forget the closing '*/'?",
-              Token{TokenType::STRING_VALUE,
-                    std::string{source.substr(start, (current - start))}, line, start, current});
+            Token{TokenType::STRING_VALUE, std::string{source.substr(start, (current - start))}, line, start, current});
     }
 
     advance(); // *
@@ -183,7 +177,7 @@ void Scanner::scan_token() {
         }
     };
 
-    switch(char ch = advance(); ch) {
+    switch (char ch = advance(); ch) {
         case '.': add_token(TokenType::DOT); break;
         case ',': add_token(TokenType::COMMA); break;
         case '?': add_token(TokenType::QUESTION); break;
@@ -240,8 +234,14 @@ void Scanner::scan_token() {
         case '%': add_token(TokenType::MODULO); break;
         case '~': add_token(TokenType::BIT_NOT); break;
 
-        case '(': paren_count++; add_token(TokenType::LEFT_PAREN); break;
-        case ')': paren_count--; add_token(TokenType::RIGHT_PAREN); break;
+        case '(':
+            paren_count++;
+            add_token(TokenType::LEFT_PAREN);
+            break;
+        case ')':
+            paren_count--;
+            add_token(TokenType::RIGHT_PAREN);
+            break;
         case '[': add_token(TokenType::LEFT_INDEX); break;
         case ']': add_token(TokenType::RIGHT_INDEX); break;
         case '{': add_token(TokenType::LEFT_BRACE); break;
@@ -249,7 +249,7 @@ void Scanner::scan_token() {
 
         case '"': string('"'); break;
         case '\'': string('\''); break;
-        
+
         case ';': add_token(TokenType::SEMICOLON); break;
 
         case ' ':
@@ -258,7 +258,7 @@ void Scanner::scan_token() {
         case '\b': break;
         case '\n': {
             auto is_allowed = [this](const Token &token) {
-                if (std::all_of(token.lexeme.begin(), token.lexeme.end(), static_cast<int(*)(int)>(std::isalpha))) {
+                if (std::all_of(token.lexeme.begin(), token.lexeme.end(), static_cast<int (*)(int)>(std::isalpha))) {
                     if (keywords.search(token.lexeme) != TokenType::NONE) {
                         return true;
                     }
@@ -270,10 +270,8 @@ void Scanner::scan_token() {
                     case TokenType::STRING_VALUE:
                     case TokenType::IDENTIFIER:
                     case TokenType::RIGHT_PAREN:
-                    case TokenType::RIGHT_INDEX:
-                        return true;
-                    default:
-                        return false;
+                    case TokenType::RIGHT_INDEX: return true;
+                    default: return false;
                 }
             };
             if (paren_count == 0 && !tokens.empty() && is_allowed(previous())) {
@@ -306,8 +304,8 @@ void Scanner::scan_token() {
 
             using namespace std::string_literals;
             error(("Unrecognized character "s + std::string{ch} + " in input"),
-                  Token{TokenType::STRING_VALUE,
-                        std::string{source.substr(start, (current - start))}, line, start, current});
+                Token{TokenType::STRING_VALUE, std::string{source.substr(start, (current - start))}, line, start,
+                    current});
         }
     }
 }

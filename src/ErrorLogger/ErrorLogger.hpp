@@ -3,11 +3,11 @@
 /* See LICENSE at project root for license details */
 
 #ifndef ERROR_LOGGER_HPP
-#  define ERROR_LOGGER_HPP
+#    define ERROR_LOGGER_HPP
 
-#include <string_view>
+#    include "../Token.hpp"
 
-#include "../Token.hpp"
+#    include <string_view>
 
 struct ErrorLogger {
     bool had_error{false};

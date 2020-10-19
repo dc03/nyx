@@ -1,21 +1,22 @@
 /* See LICENSE at project root for license details */
+#include "Parser.hpp"
+
+#include "../ErrorLogger/ErrorLogger.hpp"
+
 #include <algorithm>
 #include <functional>
 #include <stdexcept>
 #include <utility>
 
-#include "../ErrorLogger/ErrorLogger.hpp"
-#include "Parser.hpp"
-
 struct ParseException : public std::invalid_argument {
     Token token{};
     explicit ParseException(Token token, const std::string_view error)
-            : std::invalid_argument(std::string{error.begin(), error.end()}), token{std::move(token)} {}
+        : std::invalid_argument(std::string{error.begin(), error.end()}), token{std::move(token)} {}
 };
 
 struct scope_depth_manager {
     std::size_t &scope_depth;
-    explicit scope_depth_manager(std::size_t &controlled): scope_depth{controlled} {
+    explicit scope_depth_manager(std::size_t &controlled) : scope_depth{controlled} {
         controlled++;
     }
     ~scope_depth_manager() {
@@ -27,8 +28,7 @@ void Parser::add_rule(TokenType type, ParseRule rule) noexcept {
     rules[static_cast<std::size_t>(type)] = rule;
 }
 
-[[nodiscard]] constexpr const typename Parser::ParseRule &
-Parser::get_rule(TokenType type) const noexcept {
+[[nodiscard]] constexpr const typename Parser::ParseRule &Parser::get_rule(TokenType type) const noexcept {
     return rules[static_cast<std::size_t>(type)];
 }
 
@@ -47,7 +47,7 @@ void Parser::synchronize() {
             return;
         }
 
-        switch(peek().type) {
+        switch (peek().type) {
             case TokenType::BREAK:
             case TokenType::CONTINUE:
             case TokenType::CLASS:
@@ -62,94 +62,93 @@ void Parser::synchronize() {
             case TokenType::TYPE:
             case TokenType::VAL:
             case TokenType::VAR:
-            case TokenType::WHILE:
-                return;
-            default:
-                ;
+            case TokenType::WHILE: return;
+            default:;
         }
 
         advance();
     }
 }
 
-Parser::Parser(const std::vector<Token> &tokens, std::vector<ClassStmt*> &classes,
-               std::vector<FunctionStmt*> &functions): tokens{tokens}, classes{classes}, functions{functions} {
-    add_rule(TokenType::COMMA,         {nullptr, &Parser::comma, ParsePrecedence::COMMA});
-    add_rule(TokenType::EQUAL,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::PLUS_EQUAL,    {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::MINUS_EQUAL,   {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::STAR_EQUAL,    {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::SLASH_EQUAL,   {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::QUESTION,      {nullptr, &Parser::ternary, ParsePrecedence::ASSIGNMENT});
-    add_rule(TokenType::COLON,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::BIT_OR,        {nullptr, &Parser::binary, ParsePrecedence::BIT_OR});
-    add_rule(TokenType::BIT_XOR,       {nullptr, &Parser::binary, ParsePrecedence::BIT_XOR});
-    add_rule(TokenType::BIT_AND,       {nullptr, &Parser::binary, ParsePrecedence::BIT_AND});
-    add_rule(TokenType::NOT_EQUAL,     {nullptr, &Parser::binary, ParsePrecedence::EQUALITY});
-    add_rule(TokenType::EQUAL_EQUAL,   {nullptr, &Parser::binary, ParsePrecedence::EQUALITY});
-    add_rule(TokenType::GREATER,       {nullptr, &Parser::binary, ParsePrecedence::ORDERING});
+Parser::Parser(
+    const std::vector<Token> &tokens, std::vector<ClassStmt *> &classes, std::vector<FunctionStmt *> &functions)
+    : tokens{tokens}, classes{classes}, functions{functions} {
+    add_rule(TokenType::COMMA, {nullptr, &Parser::comma, ParsePrecedence::COMMA});
+    add_rule(TokenType::EQUAL, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::PLUS_EQUAL, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::MINUS_EQUAL, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::STAR_EQUAL, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::SLASH_EQUAL, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::QUESTION, {nullptr, &Parser::ternary, ParsePrecedence::ASSIGNMENT});
+    add_rule(TokenType::COLON, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::BIT_OR, {nullptr, &Parser::binary, ParsePrecedence::BIT_OR});
+    add_rule(TokenType::BIT_XOR, {nullptr, &Parser::binary, ParsePrecedence::BIT_XOR});
+    add_rule(TokenType::BIT_AND, {nullptr, &Parser::binary, ParsePrecedence::BIT_AND});
+    add_rule(TokenType::NOT_EQUAL, {nullptr, &Parser::binary, ParsePrecedence::EQUALITY});
+    add_rule(TokenType::EQUAL_EQUAL, {nullptr, &Parser::binary, ParsePrecedence::EQUALITY});
+    add_rule(TokenType::GREATER, {nullptr, &Parser::binary, ParsePrecedence::ORDERING});
     add_rule(TokenType::GREATER_EQUAL, {nullptr, &Parser::binary, ParsePrecedence::ORDERING});
-    add_rule(TokenType::LESS,          {nullptr, &Parser::binary, ParsePrecedence::ORDERING});
-    add_rule(TokenType::LESS_EQUAL,    {nullptr, &Parser::binary, ParsePrecedence::ORDERING});
-    add_rule(TokenType::RIGHT_SHIFT,   {nullptr, &Parser::binary, ParsePrecedence::SHIFT});
-    add_rule(TokenType::LEFT_SHIFT,    {nullptr, &Parser::binary, ParsePrecedence::SHIFT});
-    add_rule(TokenType::MINUS,         {&Parser::unary, &Parser::binary, ParsePrecedence::SUM});
-    add_rule(TokenType::PLUS,          {&Parser::unary, &Parser::binary, ParsePrecedence::SUM});
-    add_rule(TokenType::MODULO,        {nullptr, &Parser::binary, ParsePrecedence::PRODUCT});
-    add_rule(TokenType::SLASH,         {nullptr, &Parser::binary, ParsePrecedence::PRODUCT});
-    add_rule(TokenType::STAR,          {nullptr, &Parser::binary, ParsePrecedence::PRODUCT});
-    add_rule(TokenType::NOT,           {&Parser::unary, nullptr, ParsePrecedence::UNARY});
-    add_rule(TokenType::BIT_NOT,       {&Parser::unary, nullptr, ParsePrecedence::UNARY});
-    add_rule(TokenType::PLUS_PLUS,     {&Parser::unary, nullptr, ParsePrecedence::UNARY});
-    add_rule(TokenType::MINUS_MINUS,   {&Parser::unary, nullptr, ParsePrecedence::UNARY});
-    add_rule(TokenType::DOT,           {nullptr, &Parser::dot, ParsePrecedence::CALL});
-    add_rule(TokenType::LEFT_PAREN,    {&Parser::grouping, &Parser::call, ParsePrecedence::CALL});
-    add_rule(TokenType::RIGHT_PAREN,   {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::LEFT_INDEX,    {nullptr, &Parser::index, ParsePrecedence::CALL});
-    add_rule(TokenType::RIGHT_INDEX,   {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::LEFT_BRACE,    {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::RIGHT_BRACE,   {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::SEMICOLON,     {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::ARROW,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::IDENTIFIER,    {&Parser::variable, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::STRING_VALUE,  {&Parser::literal, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::INT_VALUE,     {&Parser::literal, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::FLOAT_VALUE,   {&Parser::literal, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::AND,           {nullptr, &Parser::and_, ParsePrecedence::NONE});
-    add_rule(TokenType::BREAK,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::CASE,          {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::CLASS,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::CONST,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::CONTINUE,      {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::DEFAULT,       {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::ELSE,          {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::FALSE,         {&Parser::literal, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::FLOAT,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::FN,            {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::FOR,           {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::IF,            {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::IMPORT,        {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::INT,           {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::NULL_,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::OR,            {nullptr, &Parser::or_, ParsePrecedence::NONE});
-    add_rule(TokenType::PROTECTED,     {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::PRIVATE,       {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::PUBLIC,        {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::REF,           {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::RETURN,        {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::STRING,        {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::SUPER,         {&Parser::super, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::SWITCH,        {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::THIS,          {&Parser::this_expr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::TRUE,          {&Parser::literal, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::TYPE,          {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::TYPEOF,        {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::VAL,           {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::VAR,           {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::WHILE,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::NONE,          {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::END_OF_LINE,   {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::END_OF_FILE,   {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::LESS, {nullptr, &Parser::binary, ParsePrecedence::ORDERING});
+    add_rule(TokenType::LESS_EQUAL, {nullptr, &Parser::binary, ParsePrecedence::ORDERING});
+    add_rule(TokenType::RIGHT_SHIFT, {nullptr, &Parser::binary, ParsePrecedence::SHIFT});
+    add_rule(TokenType::LEFT_SHIFT, {nullptr, &Parser::binary, ParsePrecedence::SHIFT});
+    add_rule(TokenType::MINUS, {&Parser::unary, &Parser::binary, ParsePrecedence::SUM});
+    add_rule(TokenType::PLUS, {&Parser::unary, &Parser::binary, ParsePrecedence::SUM});
+    add_rule(TokenType::MODULO, {nullptr, &Parser::binary, ParsePrecedence::PRODUCT});
+    add_rule(TokenType::SLASH, {nullptr, &Parser::binary, ParsePrecedence::PRODUCT});
+    add_rule(TokenType::STAR, {nullptr, &Parser::binary, ParsePrecedence::PRODUCT});
+    add_rule(TokenType::NOT, {&Parser::unary, nullptr, ParsePrecedence::UNARY});
+    add_rule(TokenType::BIT_NOT, {&Parser::unary, nullptr, ParsePrecedence::UNARY});
+    add_rule(TokenType::PLUS_PLUS, {&Parser::unary, nullptr, ParsePrecedence::UNARY});
+    add_rule(TokenType::MINUS_MINUS, {&Parser::unary, nullptr, ParsePrecedence::UNARY});
+    add_rule(TokenType::DOT, {nullptr, &Parser::dot, ParsePrecedence::CALL});
+    add_rule(TokenType::LEFT_PAREN, {&Parser::grouping, &Parser::call, ParsePrecedence::CALL});
+    add_rule(TokenType::RIGHT_PAREN, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::LEFT_INDEX, {nullptr, &Parser::index, ParsePrecedence::CALL});
+    add_rule(TokenType::RIGHT_INDEX, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::LEFT_BRACE, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::RIGHT_BRACE, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::SEMICOLON, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::ARROW, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::IDENTIFIER, {&Parser::variable, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::STRING_VALUE, {&Parser::literal, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::INT_VALUE, {&Parser::literal, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::FLOAT_VALUE, {&Parser::literal, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::AND, {nullptr, &Parser::and_, ParsePrecedence::NONE});
+    add_rule(TokenType::BREAK, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::CASE, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::CLASS, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::CONST, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::CONTINUE, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::DEFAULT, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::ELSE, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::FALSE, {&Parser::literal, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::FLOAT, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::FN, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::FOR, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::IF, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::IMPORT, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::INT, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::NULL_, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::OR, {nullptr, &Parser::or_, ParsePrecedence::NONE});
+    add_rule(TokenType::PROTECTED, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::PRIVATE, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::PUBLIC, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::REF, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::RETURN, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::STRING, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::SUPER, {&Parser::super, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::SWITCH, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::THIS, {&Parser::this_expr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::TRUE, {&Parser::literal, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::TYPE, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::TYPEOF, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::VAL, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::VAR, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::WHILE, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::NONE, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::END_OF_LINE, {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::END_OF_FILE, {nullptr, nullptr, ParsePrecedence::NONE});
 }
 
 [[nodiscard]] bool Parser::is_at_end() const noexcept {
@@ -178,16 +177,16 @@ const Token &Parser::advance() {
     return peek().type == type;
 }
 
-template <typename ... Args>
-bool Parser::match(Args ... args) {
+template <typename... Args>
+bool Parser::match(Args... args) {
     std::array arr{std::forward<Args>(args)...};
 
     if (std::any_of(arr.begin(), arr.end(), [this](auto &&arg) { return check(arg); })) {
         advance();
 
-//        while (peek().type == TokenType::END_OF_LINE) {
-//            advance();
-//        }
+        //        while (peek().type == TokenType::END_OF_LINE) {
+        //            advance();
+        //        }
 
         return true;
     } else {
@@ -195,8 +194,8 @@ bool Parser::match(Args ... args) {
     }
 }
 
-template <typename ... Args>
-void Parser::consume(const std::string_view message, Args ... args) {
+template <typename... Args>
+void Parser::consume(const std::string_view message, Args... args) {
     if (!match(args...)) {
         error(message, peek());
         synchronize();
@@ -204,8 +203,8 @@ void Parser::consume(const std::string_view message, Args ... args) {
     }
 }
 
-template <typename ... Args>
-void Parser::consume(std::string_view message, const Token &where, Args ... args) {
+template <typename... Args>
+void Parser::consume(std::string_view message, const Token &where, Args... args) {
     if (!match(args...)) {
         error(message, where);
         synchronize();
@@ -254,7 +253,8 @@ expr_node_t Parser::parse_precedence(ParsePrecedence::of precedence) {
     }
 
     if (match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
-              TokenType::SLASH_EQUAL) && can_assign) {
+            TokenType::SLASH_EQUAL) &&
+        can_assign) {
         error("Invalid assignment target", previous());
         throw ParseException{previous(), "Invalid assignment target"};
     }
@@ -281,7 +281,6 @@ expr_node_t Parser::call(bool, expr_node_t function) {
         do {
             args.emplace_back(parse_precedence(ParsePrecedence::ASSIGNMENT));
         } while (match(TokenType::COMMA));
-
     }
     consume("Expected ')' after function call", TokenType::RIGHT_PAREN);
     return expr_node_t{allocate_node(CallExpr, std::move(function), std::move(paren), std::move(args))};
@@ -301,7 +300,7 @@ expr_node_t Parser::dot(bool can_assign, expr_node_t left) {
     consume("Expected identifier after '.'", TokenType::IDENTIFIER);
     Token name = previous();
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
-                            TokenType::SLASH_EQUAL)) {
+                          TokenType::SLASH_EQUAL)) {
         expr_node_t value = expression();
         return expr_node_t{allocate_node(SetExpr, std::move(left), std::move(name), std::move(value))};
     } else {
@@ -361,11 +360,9 @@ expr_node_t Parser::literal(bool) {
             return expr_node_t{allocate_node(LiteralExpr, nullptr, previous(), std::move(type))};
         }
 
-        default:
-            throw ParseException{previous(), "Unexpected TokenType passed to literal parser"};
+        default: throw ParseException{previous(), "Unexpected TokenType passed to literal parser"};
     }
 }
-
 
 expr_node_t Parser::super(bool) {
     if (!(in_class && in_function)) {
@@ -395,7 +392,7 @@ expr_node_t Parser::unary(bool) {
 expr_node_t Parser::variable(bool can_assign) {
     Token name = previous();
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
-                            TokenType::SLASH_EQUAL)) {
+                          TokenType::SLASH_EQUAL)) {
         expr_node_t value = expression();
         return expr_node_t{allocate_node(AssignExpr, std::move(name), std::move(value))};
     } else {
@@ -462,8 +459,7 @@ type_node_t Parser::list_type(bool is_const, bool is_ref) {
     expr_node_t size = expression();
     consume("Expected ']' after array size", TokenType::RIGHT_INDEX);
     SharedData data{Type::LIST, is_const, is_ref};
-    return type_node_t{allocate_node(ListType, data, std::move(contained),
-                                     std::move(size))};
+    return type_node_t{allocate_node(ListType, data, std::move(contained), std::move(size))};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -496,8 +492,8 @@ stmt_node_t Parser::class_declaration() {
     Token name = previous();
     bool has_ctor{false};
     bool has_dtor{false};
-    std::vector<std::pair<stmt_node_t,VisibilityType>> members{};
-    std::vector<std::pair<stmt_node_t,VisibilityType>> methods{};
+    std::vector<std::pair<stmt_node_t, VisibilityType>> members{};
+    std::vector<std::pair<stmt_node_t, VisibilityType>> methods{};
 
     scope_depth_manager manager{scope_depth};
 
@@ -505,8 +501,8 @@ stmt_node_t Parser::class_declaration() {
     bool in_class_outer = in_class;
     in_class = true;
     while (!is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
-        consume("Expected 'public', 'private' or 'protected' modifier before member declaration",
-                TokenType::PRIVATE, TokenType::PUBLIC, TokenType::PROTECTED);
+        consume("Expected 'public', 'private' or 'protected' modifier before member declaration", TokenType::PRIVATE,
+            TokenType::PUBLIC, TokenType::PROTECTED);
 
         VisibilityType visibility = [this]() {
             if (previous().type == TokenType::PUBLIC) {
@@ -529,24 +525,23 @@ stmt_node_t Parser::class_declaration() {
             }
 
             stmt_node_t method = function_declaration();
-            const Token &method_name = dynamic_cast<FunctionStmt*>(method.get())->name;
+            const Token &method_name = dynamic_cast<FunctionStmt *>(method.get())->name;
 
             if (method_name.lexeme == name.lexeme) {
                 if (found_dtor && !has_dtor) {
                     has_dtor = true;
                     switch (visibility) {
-                        case VisibilityType::PUBLIC:    visibility = VisibilityType::PUBLIC_DTOR; break;
-                        case VisibilityType::PRIVATE:   visibility = VisibilityType::PRIVATE_DTOR; break;
+                        case VisibilityType::PUBLIC: visibility = VisibilityType::PUBLIC_DTOR; break;
+                        case VisibilityType::PRIVATE: visibility = VisibilityType::PRIVATE_DTOR; break;
                         case VisibilityType::PROTECTED: visibility = VisibilityType::PROTECTED_DTOR; break;
 
-                        default:
-                            break;
+                        default: break;
                     }
                 } else if (!has_ctor) {
                     has_ctor = true;
                 } else {
                     constexpr const std::string_view message =
-                            "Cannot declare constructors or destructors more than once";
+                        "Cannot declare constructors or destructors more than once";
                     error(message, method_name);
                     throw ParseException{method_name, message};
                 }
@@ -560,8 +555,8 @@ stmt_node_t Parser::class_declaration() {
     in_class = in_class_outer;
 
     consume("Expected '}' at the end of class declaration", TokenType::RIGHT_BRACE);
-    auto *class_definition = allocate_node(ClassStmt, std::move(name), has_ctor, has_dtor, std::move(members),
-                                           std::move(methods));
+    auto *class_definition =
+        allocate_node(ClassStmt, std::move(name), has_ctor, has_dtor, std::move(members), std::move(methods));
     classes.push_back(class_definition);
 
     return stmt_node_t{class_definition};
@@ -581,7 +576,7 @@ stmt_node_t Parser::function_declaration() {
 
     scope_depth_manager manager{scope_depth};
 
-    std::vector<std::pair<Token,type_node_t>> params{};
+    std::vector<std::pair<Token, type_node_t>> params{};
     if (peek().type != TokenType::RIGHT_PAREN) {
         do {
             advance();
@@ -610,8 +605,8 @@ stmt_node_t Parser::function_declaration() {
     stmt_node_t body = block_statement();
     in_function = in_function_outer;
 
-    auto *function_definition = allocate_node(FunctionStmt, std::move(name), std::move(return_type), std::move(params),
-                                              std::move(body));
+    auto *function_definition =
+        allocate_node(FunctionStmt, std::move(name), std::move(return_type), std::move(params), std::move(body));
 
     if (!in_class && scope_depth == 0) {
         functions.push_back(function_definition);
@@ -623,8 +618,7 @@ stmt_node_t Parser::function_declaration() {
 stmt_node_t Parser::import_statement() {
     consume("Expected a name after 'import' keyword", TokenType::IDENTIFIER);
     Token name = previous();
-    consume("Expected ';' or newline after imported file",
-            previous(), TokenType::SEMICOLON, TokenType::END_OF_LINE);
+    consume("Expected ';' or newline after imported file", previous(), TokenType::SEMICOLON, TokenType::END_OF_LINE);
     return stmt_node_t{allocate_node(ImportStmt, std::move(name))};
 }
 
@@ -692,8 +686,8 @@ stmt_node_t Parser::block_statement() {
 }
 
 template <typename Allocated>
-stmt_node_t Parser::single_token_statement(const std::string_view token, const bool condition,
-                                                  const std::string_view error_message) {
+stmt_node_t Parser::single_token_statement(
+    const std::string_view token, const bool condition, const std::string_view error_message) {
     if (!condition) {
         sync_and_throw(error_message);
     }
@@ -705,13 +699,12 @@ stmt_node_t Parser::single_token_statement(const std::string_view token, const b
 }
 
 stmt_node_t Parser::break_statement() {
-    return single_token_statement<BreakStmt>("break", (in_loop || in_switch),
-                                             "Cannot use 'break' outside a loop or switch.");
+    return single_token_statement<BreakStmt>(
+        "break", (in_loop || in_switch), "Cannot use 'break' outside a loop or switch.");
 }
 
 stmt_node_t Parser::continue_statement() {
-    return single_token_statement<ContinueStmt>("continue", in_loop,
-                                                "Cannot use 'continue' outside a loop");
+    return single_token_statement<ContinueStmt>("continue", in_loop, "Cannot use 'continue' outside a loop");
 }
 
 stmt_node_t Parser::expression_statement() {
@@ -757,8 +750,8 @@ stmt_node_t Parser::for_statement() {
     modified_body->stmts.emplace_back(statement()); // The actual body
     modified_body->stmts.emplace_back(std::move(increment));
 
-    stmt_node_t desugared_loop = stmt_node_t{allocate_node(WhileStmt, std::move(keyword), std::move(condition),
-                                                           stmt_node_t{modified_body})};
+    stmt_node_t desugared_loop =
+        stmt_node_t{allocate_node(WhileStmt, std::move(keyword), std::move(condition), stmt_node_t{modified_body})};
 
     auto *loop = allocate_node(BlockStmt, {});
     loop->stmts.emplace_back(std::move(initializer));
@@ -773,8 +766,7 @@ stmt_node_t Parser::if_statement() {
     stmt_node_t then_branch = statement();
     if (match(TokenType::ELSE)) {
         stmt_node_t else_branch = statement();
-        return stmt_node_t{allocate_node(IfStmt, std::move(condition), std::move(then_branch),
-                                         std::move(else_branch))};
+        return stmt_node_t{allocate_node(IfStmt, std::move(condition), std::move(then_branch), std::move(else_branch))};
     } else {
         return stmt_node_t{allocate_node(IfStmt, std::move(condition), std::move(then_branch), nullptr)};
     }
@@ -801,7 +793,7 @@ stmt_node_t Parser::return_statement() {
 
 stmt_node_t Parser::switch_statement() {
     expr_node_t condition = expression();
-    std::vector<std::pair<expr_node_t,stmt_node_t>> cases{};
+    std::vector<std::pair<expr_node_t, stmt_node_t>> cases{};
     std::optional<stmt_node_t> default_case = std::nullopt;
     consume("Expected '{' after switch statement condition", TokenType::LEFT_BRACE);
 

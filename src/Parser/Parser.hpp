@@ -3,15 +3,18 @@
 /* See LICENSE at project root for license details */
 
 #ifndef PARSER_HPP
-#  define PARSER_HPP
+#    define PARSER_HPP
 
-#include <string_view>
-#include <vector>
+#    include "../AST.hpp"
+#    include "../Token.hpp"
 
-#include "../AST.hpp"
-#include "../Token.hpp"
+#    include <string_view>
+#    include <vector>
 
-#define allocate_node(T, ...) new T{__VA_ARGS__}
+#    define allocate_node(T, ...)                                                                                      \
+        new T {                                                                                                        \
+            __VA_ARGS__                                                                                                \
+        }
 
 struct ParsePrecedence {
     enum of {
@@ -35,8 +38,8 @@ struct ParsePrecedence {
 };
 
 class Parser {
-    using ExprPrefixParseFn = expr_node_t(Parser::*)(bool can_assign);
-    using ExprInfixParseFn = expr_node_t(Parser::*)(bool can_assign, expr_node_t left);
+    using ExprPrefixParseFn = expr_node_t (Parser::*)(bool can_assign);
+    using ExprInfixParseFn = expr_node_t (Parser::*)(bool can_assign, expr_node_t left);
 
     struct ParseRule {
         ExprPrefixParseFn prefix{};
@@ -48,8 +51,8 @@ class Parser {
     const std::vector<Token> &tokens{};
     ParseRule rules[static_cast<std::size_t>(TokenType::END_OF_FILE) + 1];
 
-    std::vector<ClassStmt*> &classes;
-    std::vector<FunctionStmt*> &functions;
+    std::vector<ClassStmt *> &classes;
+    std::vector<FunctionStmt *> &functions;
     std::size_t scope_depth{};
 
     bool in_class{false};
@@ -65,21 +68,21 @@ class Parser {
     stmt_node_t single_token_statement(std::string_view token, bool condition, std::string_view error_message);
     void sync_and_throw(std::string_view message);
 
-public:
-    explicit Parser(const std::vector<Token> &tokens, std::vector<ClassStmt*> &classes,
-                    std::vector<FunctionStmt*> &functions);
+  public:
+    explicit Parser(
+        const std::vector<Token> &tokens, std::vector<ClassStmt *> &classes, std::vector<FunctionStmt *> &functions);
 
     [[nodiscard]] bool is_at_end() const noexcept;
     [[nodiscard]] const Token &previous() const noexcept;
     const Token &advance();
     [[nodiscard]] const Token &peek() const noexcept;
     [[nodiscard]] bool check(TokenType type) const noexcept;
-    template <typename ... Args>
-    bool match(Args ... args);
-    template <typename ... Args>
-    void consume(std::string_view message, Args ... args);
-    template <typename ... Args>
-    void consume(std::string_view message, const Token &where, Args ... args);
+    template <typename... Args>
+    bool match(Args... args);
+    template <typename... Args>
+    void consume(std::string_view message, Args... args);
+    template <typename... Args>
+    void consume(std::string_view message, const Token &where, Args... args);
 
     std::vector<stmt_node_t> program();
 

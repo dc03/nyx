@@ -1,26 +1,31 @@
 /* See LICENSE at project root for license details */
+#include "TypeResolver.hpp"
+
+#include "../ErrorLogger/ErrorLogger.hpp"
+
 #include <algorithm>
 #include <stdexcept>
 #include <string_view>
 
-#include "../ErrorLogger/ErrorLogger.hpp"
-#include "TypeResolver.hpp"
-
-#define allocate_node(T, ...) new T{__VA_ARGS__}
+#define allocate_node(T, ...)                                                                                          \
+    new T {                                                                                                            \
+        __VA_ARGS__                                                                                                    \
+    }
 
 struct TypeException : public std::runtime_error {
-    explicit TypeException(std::string_view string): std::runtime_error{std::string{string}} {}
+    explicit TypeException(std::string_view string) : std::runtime_error{std::string{string}} {}
 };
 
-TypeResolver::TypeResolver(const std::vector<ClassStmt *> &classes, const std::vector<FunctionStmt *> &functions):
-    classes{classes}, functions{functions} {}
+TypeResolver::TypeResolver(const std::vector<ClassStmt *> &classes, const std::vector<FunctionStmt *> &functions)
+    : classes{classes}, functions{functions} {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
 bool convertible_to(QualifiedTypeInfo to, QualifiedTypeInfo from, const Token &where) {
     bool class_condition = [&to, &from]() {
         if (to->type_tag() == NodeType::UserDefinedType && from->type_tag() == NodeType::UserDefinedType) {
-            return dynamic_cast<UserDefinedType*>(to)->name.lexeme == dynamic_cast<UserDefinedType*>(from)->name.lexeme;
+            return dynamic_cast<UserDefinedType *>(to)->name.lexeme ==
+                   dynamic_cast<UserDefinedType *>(from)->name.lexeme;
         } else {
             return true;
         }
@@ -73,10 +78,11 @@ BaseTypeVisitorType TypeResolver::resolve(BaseType *type) {
     return type->accept(*this);
 }
 
-template <typename T, typename ... Args>
-BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Args&& ... args) {
-    if constexpr(sizeof...(args) > 0) {
-        type_scratch_space.emplace_back(allocate_node(T, SharedData{type, is_const, is_ref}, std::forward<Args>(args)...));
+template <typename T, typename... Args>
+BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Args &&... args) {
+    if constexpr (sizeof...(args) > 0) {
+        type_scratch_space.emplace_back(
+            allocate_node(T, SharedData{type, is_const, is_ref}, std::forward<Args>(args)...));
     } else {
         for (type_node_t &existing_type : type_scratch_space) {
             if (existing_type->data.type == type && existing_type->data.is_const == is_const &&
@@ -89,7 +95,7 @@ BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Arg
     return type_scratch_space.back().get();
 }
 
-ExprVisitorType TypeResolver::visit(AssignExpr& expr) {
+ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
     for (auto it = values.end(); it > values.begin(); it--) {
         if (it->lexeme == expr.target.lexeme) {
             ExprVisitorType value = resolve(expr.value.get());
@@ -108,14 +114,13 @@ ExprVisitorType TypeResolver::visit(AssignExpr& expr) {
     return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.target};
 }
 
-template <typename ... Args>
-bool one_of(Type type, Args ... args) {
+template <typename... Args>
+bool one_of(Type type, Args... args) {
     const std::array arr{args...};
-    return std::any_of(arr.begin(), arr.end(), [type](const auto &arg){
-        return type == arg; });
+    return std::any_of(arr.begin(), arr.end(), [type](const auto &arg) { return type == arg; });
 }
 
-ExprVisitorType TypeResolver::visit(BinaryExpr& expr) {
+ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
     ExprVisitorType left_expr = resolve(expr.left.get());
     ExprVisitorType right_expr = resolve(expr.right.get());
     switch (expr.oper.type) {
@@ -126,8 +131,7 @@ ExprVisitorType TypeResolver::visit(BinaryExpr& expr) {
         case TokenType::BIT_XOR:
         case TokenType::MODULO:
             if (left_expr.info->data.type != Type::INT || right_expr.info->data.type != Type::INT) {
-                error("Wrong types of arguments to bitwise binary operators (expected integral arguments)",
-                      expr.oper);
+                error("Wrong types of arguments to bitwise binary operators (expected integral arguments)", expr.oper);
             }
             return {left_expr.info, expr.oper};
         case TokenType::NOT_EQUAL:
@@ -189,9 +193,8 @@ ExprVisitorType TypeResolver::visit(BinaryExpr& expr) {
 
 bool is_inbuilt(VariableExpr *expr) {
     constexpr std::array inbuilt_functions{"print", "int", "str", "float"};
-    return std::any_of(inbuilt_functions.begin(), inbuilt_functions.end(), [&expr](const char *const arg) {
-        return expr->name.lexeme == arg;
-    });
+    return std::any_of(inbuilt_functions.begin(), inbuilt_functions.end(),
+        [&expr](const char *const arg) { return expr->name.lexeme == arg; });
 }
 
 ExprVisitorType TypeResolver::check_inbuilt(VariableExpr *function, const Token &oper, std::vector<expr_node_t> &args) {
@@ -203,13 +206,11 @@ ExprVisitorType TypeResolver::check_inbuilt(VariableExpr *function, const Token 
                 error("Cannot print object of user defined type", type.lexeme);
             }
         }
-        return ExprVisitorType{make_new_type<PrimitiveType>(Type::NULL_, true, false),
-                function->name};
+        return ExprVisitorType{make_new_type<PrimitiveType>(Type::NULL_, true, false), function->name};
     } else if (function->name.lexeme == "int" || function->name.lexeme == "float" ||
                function->name.lexeme == "string") {
         if (args.size() > 1) {
-            error("Cannot pass more than one argument to builtin function '"s + function->name.lexeme + "'"s,
-                  oper);
+            error("Cannot pass more than one argument to builtin function '"s + function->name.lexeme + "'"s, oper);
         } else if (args.empty()) {
             error("Cannot call builtin function '"s + function->name.lexeme + "' with zero arguments"s, oper);
         }
@@ -217,19 +218,20 @@ ExprVisitorType TypeResolver::check_inbuilt(VariableExpr *function, const Token 
         ExprVisitorType arg_type = resolve(args[0].get());
         if (!one_of(arg_type.info->data.type, Type::INT, Type::FLOAT, Type::STRING, Type::BOOL)) {
             error("Expected one of integral, floating, string or boolean arguments to be passed to builtin "
-                  "function '"s + function->name.lexeme + "'"s, oper);
+                  "function '"s +
+                      function->name.lexeme + "'"s,
+                oper);
         }
 
-        return ExprVisitorType{make_new_type<PrimitiveType>(Type::INT, true, false),
-                function->name};
+        return ExprVisitorType{make_new_type<PrimitiveType>(Type::INT, true, false), function->name};
     } else {
         throw TypeException{"Unreachable"};
     }
 }
 
-ExprVisitorType TypeResolver::visit(CallExpr& expr) {
+ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     if (expr.function->type_tag() == NodeType::VariableExpr) {
-        auto *function = dynamic_cast<VariableExpr*>(expr.function.get());
+        auto *function = dynamic_cast<VariableExpr *>(expr.function.get());
         if (is_inbuilt(function)) {
             return check_inbuilt(function, expr.paren, expr.args);
         }
@@ -258,7 +260,7 @@ ExprVisitorType TypeResolver::visit(CallExpr& expr) {
     } else {
         FunctionStmt *ctor = nullptr;
         for (auto &method_decl : callee.class_->methods) {
-            auto *method = dynamic_cast<FunctionStmt*>(method_decl.first.get());
+            auto *method = dynamic_cast<FunctionStmt *>(method_decl.first.get());
             if (method->name.lexeme == callee.class_->name.lexeme) {
                 if (method_decl.second == VisibilityType::PUBLIC ||
                     (in_class && current_class->name.lexeme == method->name.lexeme)) {
@@ -291,7 +293,7 @@ ExprVisitorType TypeResolver::visit(CallExpr& expr) {
     }
 }
 
-ExprVisitorType TypeResolver::visit(CommaExpr& expr) {
+ExprVisitorType TypeResolver::visit(CommaExpr &expr) {
     for (std::size_t i{0}; i < expr.exprs.size(); i++) {
         if (i == expr.exprs.size() - 1) {
             return resolve(expr.exprs[i].get());
@@ -303,7 +305,7 @@ ExprVisitorType TypeResolver::visit(CommaExpr& expr) {
     throw TypeException{"Unreachable"};
 }
 
-ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, const Token& name) {
+ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, const Token &name) {
     if (object.info->data.type == Type::LIST) {
         if (name.lexeme != "size") {
             error("Can only get 'size' attribute of a list", name);
@@ -329,7 +331,7 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
         }
 
         for (auto &member_decl : user_type->members) {
-            auto *member = dynamic_cast<VarStmt*>(member_decl.first.get());
+            auto *member = dynamic_cast<VarStmt *>(member_decl.first.get());
             if (member->name.lexeme == name.lexeme) {
                 if (member_decl.second == VisibilityType::PUBLIC ||
                     (in_class && current_class->name.lexeme == type->name.lexeme)) {
@@ -344,7 +346,7 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
         }
 
         for (auto &method_decl : user_type->methods) {
-            auto *method = dynamic_cast<FunctionStmt*>(method_decl.first.get());
+            auto *method = dynamic_cast<FunctionStmt *>(method_decl.first.get());
             if (method->name.lexeme == name.lexeme) {
                 if ((method_decl.second == VisibilityType::PUBLIC) ||
                     (in_class && current_class->name.lexeme == type->name.lexeme)) {
@@ -372,16 +374,16 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
     throw TypeException{"Unreachable"};
 }
 
-ExprVisitorType TypeResolver::visit(GetExpr& expr) {
+ExprVisitorType TypeResolver::visit(GetExpr &expr) {
     ExprVisitorType object = resolve(expr.object.get());
     return resolve_class_access(object, expr.name);
 }
 
-ExprVisitorType TypeResolver::visit(GroupingExpr& expr) {
+ExprVisitorType TypeResolver::visit(GroupingExpr &expr) {
     return resolve(expr.expr.get());
 }
 
-ExprVisitorType TypeResolver::visit(IndexExpr& expr) {
+ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
     ExprVisitorType list = resolve(expr.object.get());
 
     if (list.info->data.type != Type::LIST) {
@@ -400,18 +402,17 @@ ExprVisitorType TypeResolver::visit(IndexExpr& expr) {
         return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.oper};
     }
 
-    auto *contained_type = dynamic_cast<ListType*>(list.info)->contained.get();
+    auto *contained_type = dynamic_cast<ListType *>(list.info)->contained.get();
     return {contained_type, expr.oper};
 }
 
-ExprVisitorType TypeResolver::visit(LiteralExpr& expr) {
-    switch(expr.value.value.index()) {
+ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
+    switch (expr.value.value.index()) {
         case LiteralValue::INT:
         case LiteralValue::DOUBLE:
         case LiteralValue::STRING:
         case LiteralValue::BOOL:
-        case LiteralValue::NULL_:
-            return {expr.type.get(), expr.lexeme};
+        case LiteralValue::NULL_: return {expr.type.get(), expr.lexeme};
 
         default:
             error("Bug in parser with illegal type for literal value", expr.lexeme);
@@ -419,13 +420,13 @@ ExprVisitorType TypeResolver::visit(LiteralExpr& expr) {
     }
 }
 
-ExprVisitorType TypeResolver::visit(LogicalExpr& expr) {
+ExprVisitorType TypeResolver::visit(LogicalExpr &expr) {
     resolve(expr.left.get());
     resolve(expr.right.get());
     return {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
 }
 
-ExprVisitorType TypeResolver::visit(SetExpr& expr) {
+ExprVisitorType TypeResolver::visit(SetExpr &expr) {
     ExprVisitorType object = resolve(expr.object.get());
     ExprVisitorType attribute_type = resolve_class_access(object, expr.name);
     ExprVisitorType value_type = resolve(expr.value.get());
@@ -438,12 +439,12 @@ ExprVisitorType TypeResolver::visit(SetExpr& expr) {
     return {attribute_type.info, expr.name};
 }
 
-ExprVisitorType TypeResolver::visit(SuperExpr&) {
+ExprVisitorType TypeResolver::visit(SuperExpr &) {
     // TODO: Implement me
     throw TypeException{"Super expressions/inheritance not implemented yet"};
 }
 
-ExprVisitorType TypeResolver::visit(TernaryExpr& expr) {
+ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
     ExprVisitorType left = resolve(expr.left.get());
     ExprVisitorType middle = resolve(expr.middle.get());
     ExprVisitorType right = resolve(expr.right.get());
@@ -456,18 +457,16 @@ ExprVisitorType TypeResolver::visit(TernaryExpr& expr) {
     return {middle.info, expr.question};
 }
 
-ExprVisitorType TypeResolver::visit(ThisExpr& expr) {
-    return {make_new_type<UserDefinedType>(Type::CLASS, false, false, current_class->name),
-            expr.keyword};
+ExprVisitorType TypeResolver::visit(ThisExpr &expr) {
+    return {make_new_type<UserDefinedType>(Type::CLASS, false, false, current_class->name), expr.keyword};
 }
 
-ExprVisitorType TypeResolver::visit(UnaryExpr& expr) {
+ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
     ExprVisitorType right = resolve(expr.right.get());
-    switch(expr.oper.type) {
+    switch (expr.oper.type) {
         case TokenType::BIT_NOT:
             if (right.info->data.type != Type::INT) {
-                error("Wrong type of argument to bitwise unary operator (expected integral argument)",
-                      expr.oper);
+                error("Wrong type of argument to bitwise unary operator (expected integral argument)", expr.oper);
             }
             return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.oper};
         case TokenType::NOT:
@@ -477,15 +476,15 @@ ExprVisitorType TypeResolver::visit(UnaryExpr& expr) {
             return {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
         case TokenType::PLUS_PLUS:
         case TokenType::MINUS_MINUS:
-            if (right.info->data.is_const || (expr.right->type_tag() != NodeType::VariableExpr &&
-                                              expr.right->type_tag() != NodeType::GetExpr)) {
+            if (right.info->data.is_const ||
+                (expr.right->type_tag() != NodeType::VariableExpr && expr.right->type_tag() != NodeType::GetExpr)) {
                 if (expr.oper.type == TokenType::PLUS_PLUS) {
                     constexpr std::string_view message =
-                            "Expected non-const l-value type as argument for unary increment operator";
+                        "Expected non-const l-value type as argument for unary increment operator";
                     error(message, expr.oper);
                 } else if (expr.oper.type == TokenType::MINUS_MINUS) {
                     constexpr std::string_view message =
-                            "Expected non-const l-value type as argument for unary decrement operator";
+                        "Expected non-const l-value type as argument for unary decrement operator";
                     error(message, expr.oper);
                 }
                 return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.oper};
@@ -506,7 +505,7 @@ ExprVisitorType TypeResolver::visit(UnaryExpr& expr) {
     }
 }
 
-ExprVisitorType TypeResolver::visit(VariableExpr& expr) {
+ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
     for (auto it = values.end() - 1; !values.empty() && it >= values.begin(); it--) {
         if (it->lexeme == expr.name.lexeme) {
             expr.scope_depth = it->scope_depth;
@@ -532,8 +531,7 @@ ExprVisitorType TypeResolver::visit(VariableExpr& expr) {
     return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.name};
 }
 
-
-StmtVisitorType TypeResolver::visit(BlockStmt& stmt) {
+StmtVisitorType TypeResolver::visit(BlockStmt &stmt) {
     begin_scope();
     for (auto &statement : stmt.stmts) {
         if (statement != nullptr) {
@@ -543,9 +541,9 @@ StmtVisitorType TypeResolver::visit(BlockStmt& stmt) {
     end_scope();
 }
 
-StmtVisitorType TypeResolver::visit(BreakStmt&) {}
+StmtVisitorType TypeResolver::visit(BreakStmt &) {}
 
-StmtVisitorType TypeResolver::visit(ClassStmt& stmt) {
+StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
     bool in_class_outer = in_class;
     in_class = true;
     ClassStmt *class_outer = current_class;
@@ -563,13 +561,13 @@ StmtVisitorType TypeResolver::visit(ClassStmt& stmt) {
     current_class = class_outer;
 }
 
-StmtVisitorType TypeResolver::visit(ContinueStmt&) {}
+StmtVisitorType TypeResolver::visit(ContinueStmt &) {}
 
-StmtVisitorType TypeResolver::visit(ExpressionStmt& stmt) {
+StmtVisitorType TypeResolver::visit(ExpressionStmt &stmt) {
     resolve(stmt.expr.get());
 }
 
-StmtVisitorType TypeResolver::visit(FunctionStmt& stmt) {
+StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     bool in_function_outer = in_function;
     in_function = true;
     FunctionStmt *function_outer = current_function;
@@ -587,7 +585,7 @@ StmtVisitorType TypeResolver::visit(FunctionStmt& stmt) {
     current_function = function_outer;
 }
 
-StmtVisitorType TypeResolver::visit(IfStmt& stmt) {
+StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
     resolve(stmt.condition.get());
     resolve(stmt.thenBranch.get());
     if (stmt.elseBranch != nullptr) {
@@ -595,19 +593,19 @@ StmtVisitorType TypeResolver::visit(IfStmt& stmt) {
     }
 }
 
-StmtVisitorType TypeResolver::visit(ImportStmt&) {
+StmtVisitorType TypeResolver::visit(ImportStmt &) {
     // TODO: Implement me
     throw TypeException{"Import statements are not implemented yet"};
 }
 
-StmtVisitorType TypeResolver::visit(ReturnStmt& stmt) {
+StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
     ExprVisitorType return_value = resolve(stmt.value.get());
     if (!convertible_to(return_value.info, current_function->return_type.get(), stmt.keyword)) {
         error("Type of expression in return statement does not match return type of function", stmt.keyword);
     }
 }
 
-StmtVisitorType TypeResolver::visit(SwitchStmt& stmt) {
+StmtVisitorType TypeResolver::visit(SwitchStmt &stmt) {
     bool in_switch_outer = in_switch;
     in_switch = true;
 
@@ -628,15 +626,15 @@ StmtVisitorType TypeResolver::visit(SwitchStmt& stmt) {
     in_switch = in_switch_outer;
 }
 
-StmtVisitorType TypeResolver::visit(TypeStmt&) {
+StmtVisitorType TypeResolver::visit(TypeStmt &) {
     // TODO: Implement me
     throw TypeException{"Type statements are not implemented yet"};
 }
 
-StmtVisitorType TypeResolver::visit(VarStmt& stmt) {
+StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
     if (!in_class && std::any_of(values.crbegin(), values.crend(), [this, &stmt](const Value &value) {
-        return value.scope_depth == scope_depth && value.lexeme == stmt.name.lexeme;
-    })) {
+            return value.scope_depth == scope_depth && value.lexeme == stmt.name.lexeme;
+        })) {
         error("A variable with the same name has already been created in this scope", stmt.name);
     }
 
@@ -664,7 +662,7 @@ StmtVisitorType TypeResolver::visit(VarStmt& stmt) {
     }
 }
 
-StmtVisitorType TypeResolver::visit(WhileStmt& stmt) {
+StmtVisitorType TypeResolver::visit(WhileStmt &stmt) {
     begin_scope();
     bool in_loop_outer = in_loop;
     in_loop = true;
@@ -680,23 +678,23 @@ StmtVisitorType TypeResolver::visit(WhileStmt& stmt) {
     end_scope();
 }
 
-BaseTypeVisitorType TypeResolver::visit(PrimitiveType& type) {
+BaseTypeVisitorType TypeResolver::visit(PrimitiveType &type) {
     return &type;
 }
 
-BaseTypeVisitorType TypeResolver::visit(UserDefinedType& type) {
+BaseTypeVisitorType TypeResolver::visit(UserDefinedType &type) {
     return &type;
 }
 
-BaseTypeVisitorType TypeResolver::visit(ListType& type) {
+BaseTypeVisitorType TypeResolver::visit(ListType &type) {
     if (type.contained->type_tag() == NodeType::TypeofType) {
-        auto *contained = dynamic_cast<TypeofType*>(type.contained.get());
+        auto *contained = dynamic_cast<TypeofType *>(type.contained.get());
         return resolve(contained->expr.get()).info;
     } else {
         return &type;
     }
 }
 
-BaseTypeVisitorType TypeResolver::visit(TypeofType& type) {
+BaseTypeVisitorType TypeResolver::visit(TypeofType &type) {
     return resolve(type.expr.get()).info;
 }

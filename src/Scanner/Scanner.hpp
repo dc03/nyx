@@ -3,14 +3,14 @@
 /* See LICENSE at project root for license details */
 
 #ifndef SCANNER_HPP
-#  define SCANNER_HPP
+#    define SCANNER_HPP
 
-#include <string_view>
-#include <vector>
+#    include "../Token.hpp"
+#    include "../TokenTypes.hpp"
+#    include "Trie.hpp"
 
-#include "../Token.hpp"
-#include "../TokenTypes.hpp"
-#include "Trie.hpp"
+#    include <string_view>
+#    include <vector>
 
 class Scanner {
     std::size_t line{1};

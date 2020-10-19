@@ -35,19 +35,19 @@ def declare_visitor(file, visitor: str, exprs: List[str], stmts: List[str], expr
     file.write('struct ' + visitor + ' {\n')
     for expr in exprs:
         tab(file, 1).write(
-            'virtual ' + expr_base + 'VisitorType visit(' + expr + '& ' + expr_base.lower() + ') = 0;\n')
+            'virtual ' + expr_base + 'VisitorType visit(' + expr + ' &' + expr_base.lower() + ') = 0;\n')
 
     file.write('\n')
 
     for stmt in stmts:
         tab(file, 1).write(
-            'virtual ' + stmt_base + 'VisitorType visit(' + stmt + '& ' + stmt_base.lower() + ') = 0;\n')
+            'virtual ' + stmt_base + 'VisitorType visit(' + stmt + ' &' + stmt_base.lower() + ') = 0;\n')
 
     file.write('\n')
 
     for type in types:
         tab(file, 1).write(
-            'virtual ' + type_base + 'VisitorType visit(' + type + '& ' + type_base.lower() + ') = 0;\n')
+            'virtual ' + type_base + 'VisitorType visit(' + type + ' &' + type_base.lower() + ') = 0;\n')
 
     file.write('};\n\n')
     return None
@@ -57,7 +57,7 @@ def declare_base(file, base_name: str) -> None:
     file.write('struct ' + base_name + ' {\n')
     tab(file, 1).write('virtual std::string_view string_tag() = 0;\n')
     tab(file, 1).write('virtual NodeType type_tag() = 0;\n')
-    tab(file, 1).write('virtual ' + base_name + 'VisitorType accept(Visitor& visitor) = 0;\n')
+    tab(file, 1).write('virtual ' + base_name + 'VisitorType accept(Visitor &visitor) = 0;\n')
     tab(file, 1).write('virtual ~' + base_name + '() = default;\n')
     file.write('};\n\n')
     return None
@@ -88,7 +88,7 @@ def declare_derived(file, base_name: str, derived_name: str, ctor_args: str, mem
     file.write('\n')
     # Class constructor
 
-    tab(file, 1).write(base_name + 'VisitorType accept(Visitor& visitor) override final {\n')
+    tab(file, 1).write(base_name + 'VisitorType accept(Visitor &visitor) override final {\n')
     tab(file, 2).write('return visitor.visit(*this);\n')
     tab(file, 1).write('}\n')
     # Accept method
@@ -122,7 +122,7 @@ def declare_derived_type(file, base_name: str, derived_name: str, ctor_args: str
     file.write('\n')
     # Class constructor
 
-    tab(file, 1).write(base_name + 'VisitorType accept(Visitor& visitor) override final {\n')
+    tab(file, 1).write(base_name + 'VisitorType accept(Visitor &visitor) override final {\n')
     tab(file, 2).write('return visitor.visit(*this);\n')
     tab(file, 1).write('}\n')
     # Accept method

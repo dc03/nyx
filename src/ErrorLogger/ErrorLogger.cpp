@@ -1,7 +1,7 @@
 /* See LICENSE at project root for license details */
-#include <iostream>
-
 #include "ErrorLogger.hpp"
+
+#include <iostream>
 
 ErrorLogger logger{};
 

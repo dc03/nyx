@@ -3,12 +3,12 @@
 /* See LICENSE at project root for license details */
 
 #ifndef TRIE_HPP
-#  define TRIE_HPP
+#    define TRIE_HPP
 
-#include <memory>
-#include <string_view>
+#    include "../TokenTypes.hpp"
 
-#include "../TokenTypes.hpp"
+#    include <memory>
+#    include <string_view>
 
 static inline constexpr std::size_t num_alphabets{52 + 1 + 10};
 
@@ -27,7 +27,7 @@ struct Node {
         }
     }
 
-    Node(char value): Node() {
+    Node(char value) : Node() {
         this->value = value;
     }
 };
