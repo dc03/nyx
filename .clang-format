@@ -31,7 +31,7 @@ ConstructorInitializerAllOnOneLineOrOnePerLine: true
 Cpp11BracedListStyle: true
 FixNamespaceComments: true
 IncludeBlocks: Regroup
-IndentCaseLabels: false
+IndentCaseLabels: true
 IndentPPDirectives: AfterHash
 IndentWidth: 4
 IndentWrappedFunctionNames: false
