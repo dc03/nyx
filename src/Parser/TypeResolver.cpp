@@ -93,7 +93,9 @@ ExprVisitorType TypeResolver::visit(AssignExpr& expr) {
     for (auto it = values.end(); it > values.begin(); it--) {
         if (it->lexeme == expr.target.lexeme) {
             ExprVisitorType value = resolve(expr.value.get());
-            if (!convertible_to(it->info, value.info, expr.target)) {
+            if (value.info->data.is_const) {
+                error("Cannot assign to a const variable", expr.target);
+            } else if (!convertible_to(it->info, value.info, expr.target)) {
                 error("Cannot convert type of value to type of target", expr.target);
             }
             return {it->info, expr.target};
@@ -185,7 +187,54 @@ ExprVisitorType TypeResolver::visit(BinaryExpr& expr) {
     }
 }
 
+bool is_inbuilt(VariableExpr *expr) {
+    constexpr std::array inbuilt_functions{"print", "int", "str", "float"};
+    return std::any_of(inbuilt_functions.begin(), inbuilt_functions.end(), [&expr](const char *const arg) {
+        return expr->name.lexeme == arg;
+    });
+}
+
+ExprVisitorType TypeResolver::check_inbuilt(VariableExpr *function, const Token &oper, std::vector<expr_node_t> &args) {
+    using namespace std::string_literals;
+    if (function->name.lexeme == "print") {
+        for (auto &arg : args) {
+            ExprVisitorType type = resolve(arg.get());
+            if (type.info->data.type == Type::CLASS) {
+                error("Cannot print object of user defined type", type.lexeme);
+            }
+        }
+        return ExprVisitorType{make_new_type<PrimitiveType>(Type::NULL_, true, false),
+                function->name};
+    } else if (function->name.lexeme == "int" || function->name.lexeme == "float" ||
+               function->name.lexeme == "string") {
+        if (args.size() > 1) {
+            error("Cannot pass more than one argument to builtin function '"s + function->name.lexeme + "'"s,
+                  oper);
+        } else if (args.empty()) {
+            error("Cannot call builtin function '"s + function->name.lexeme + "' with zero arguments"s, oper);
+        }
+
+        ExprVisitorType arg_type = resolve(args[0].get());
+        if (!one_of(arg_type.info->data.type, Type::INT, Type::FLOAT, Type::STRING, Type::BOOL)) {
+            error("Expected one of integral, floating, string or boolean arguments to be passed to builtin "
+                  "function '"s + function->name.lexeme + "'"s, oper);
+        }
+
+        return ExprVisitorType{make_new_type<PrimitiveType>(Type::INT, true, false),
+                function->name};
+    } else {
+        throw TypeException{"Unreachable"};
+    }
+}
+
 ExprVisitorType TypeResolver::visit(CallExpr& expr) {
+    if (expr.function->type_tag() == NodeType::VariableExpr) {
+        auto *function = dynamic_cast<VariableExpr*>(expr.function.get());
+        if (is_inbuilt(function)) {
+            return check_inbuilt(function, expr.paren, expr.args);
+        }
+    }
+
     ExprVisitorType callee = resolve(expr.function.get());
     if (callee.func == nullptr && callee.class_ == nullptr) {
         error("Expected function to be called in call expression", callee.lexeme);
@@ -351,7 +400,8 @@ ExprVisitorType TypeResolver::visit(IndexExpr& expr) {
         return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.oper};
     }
 
-    return {list.info, expr.oper};
+    auto *contained_type = dynamic_cast<ListType*>(list.info)->contained.get();
+    return {contained_type, expr.oper};
 }
 
 ExprVisitorType TypeResolver::visit(LiteralExpr& expr) {
@@ -379,7 +429,10 @@ ExprVisitorType TypeResolver::visit(SetExpr& expr) {
     ExprVisitorType object = resolve(expr.object.get());
     ExprVisitorType attribute_type = resolve_class_access(object, expr.name);
     ExprVisitorType value_type = resolve(expr.value.get());
-    if (!convertible_to(attribute_type.info, value_type.info, expr.name)) {
+
+    if (attribute_type.info->data.is_const) {
+        error("Cannot assign to const attribute", expr.name);
+    } else if (!convertible_to(attribute_type.info, value_type.info, expr.name)) {
         error("Cannot convert value of assigned expresion to type of target", expr.name);
     }
     return {attribute_type.info, expr.name};
@@ -447,13 +500,14 @@ ExprVisitorType TypeResolver::visit(UnaryExpr& expr) {
             return {right.info, expr.oper};
 
         default:
+            using namespace std::string_literals;
             error("Bug in parser with illegal type for unary expression", expr.oper);
             throw TypeException{"Bug in parser with illegal type for unary expression"};
     }
 }
 
 ExprVisitorType TypeResolver::visit(VariableExpr& expr) {
-    for (auto it = values.end() - 1; it >= values.begin(); it--) {
+    for (auto it = values.end() - 1; !values.empty() && it >= values.begin(); it--) {
         if (it->lexeme == expr.name.lexeme) {
             expr.scope_depth = it->scope_depth;
             return {it->info, expr.name};
@@ -482,7 +536,9 @@ ExprVisitorType TypeResolver::visit(VariableExpr& expr) {
 StmtVisitorType TypeResolver::visit(BlockStmt& stmt) {
     begin_scope();
     for (auto &statement : stmt.stmts) {
-        resolve(statement.get());
+        if (statement != nullptr) {
+            resolve(statement.get());
+        }
     }
     end_scope();
 }
@@ -578,7 +634,7 @@ StmtVisitorType TypeResolver::visit(TypeStmt&) {
 }
 
 StmtVisitorType TypeResolver::visit(VarStmt& stmt) {
-    if (std::any_of(values.crbegin(), values.crend(), [this, &stmt](const Value &value) {
+    if (!in_class && std::any_of(values.crbegin(), values.crend(), [this, &stmt](const Value &value) {
         return value.scope_depth == scope_depth && value.lexeme == stmt.name.lexeme;
     })) {
         error("A variable with the same name has already been created in this scope", stmt.name);

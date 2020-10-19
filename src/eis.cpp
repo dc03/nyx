@@ -19,7 +19,9 @@ int main(int, char *argv[]) {
     std::vector<FunctionStmt*> functions{};
     Parser parser{scanner.scan(), classes, functions};
     auto &&foo = parser.program();
-    TypeResolver resolver{classes, functions};
-    resolver.check(foo);
+    if (!logger.had_error) {
+        TypeResolver resolver{classes, functions};
+        resolver.check(foo);
+    }
     return 0;
 }

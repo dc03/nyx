@@ -263,8 +263,9 @@ expr_node_t Parser::parse_precedence(ParsePrecedence::of precedence) {
 }
 
 expr_node_t Parser::and_(bool, expr_node_t left) {
+    Token oper = previous();
     expr_node_t right = parse_precedence(ParsePrecedence::LOGIC_AND);
-    return expr_node_t{allocate_node(LogicalExpr, std::move(left), previous(), std::move(right))};
+    return expr_node_t{allocate_node(LogicalExpr, std::move(left), std::move(oper), std::move(right))};
 }
 
 expr_node_t Parser::binary(bool, expr_node_t left) {
@@ -309,14 +310,16 @@ expr_node_t Parser::dot(bool can_assign, expr_node_t left) {
 }
 
 expr_node_t Parser::index(bool, expr_node_t object) {
+    Token oper = previous();
     expr_node_t index = expression();
     consume("Expected ']' after array subscript index", TokenType::RIGHT_INDEX);
-    return expr_node_t{allocate_node(IndexExpr, std::move(object), previous(), std::move(index))};
+    return expr_node_t{allocate_node(IndexExpr, std::move(object), std::move(oper), std::move(index))};
 }
 
 expr_node_t Parser::or_(bool, expr_node_t left) {
+    Token oper = previous();
     expr_node_t right = parse_precedence(ParsePrecedence::LOGIC_OR);
-    return expr_node_t{allocate_node(LogicalExpr, std::move(left), previous(), std::move(right))};
+    return expr_node_t{allocate_node(LogicalExpr, std::move(left), std::move(oper), std::move(right))};
 }
 
 expr_node_t Parser::expression() {
@@ -384,17 +387,19 @@ expr_node_t Parser::this_expr(bool) {
 }
 
 expr_node_t Parser::unary(bool) {
+    Token oper = previous();
     expr_node_t expr = parse_precedence(get_rule(previous().type).precedence);
-    return expr_node_t{allocate_node(UnaryExpr, previous(), std::move(expr))};
+    return expr_node_t{allocate_node(UnaryExpr, std::move(oper), std::move(expr))};
 }
 
 expr_node_t Parser::variable(bool can_assign) {
+    Token name = previous();
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                             TokenType::SLASH_EQUAL)) {
         expr_node_t value = expression();
-        return expr_node_t{allocate_node(AssignExpr, previous(), std::move(value))};
+        return expr_node_t{allocate_node(AssignExpr, std::move(name), std::move(value))};
     } else {
-        return expr_node_t{allocate_node(VariableExpr, previous(), 0)};
+        return expr_node_t{allocate_node(VariableExpr, std::move(name), 0)};
     }
 }
 

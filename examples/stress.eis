@@ -48,8 +48,9 @@ x.y.z ? a.b.c : e.d.f
 x.y.z(5, 6, 7, arr[foo])
 
 import foo
+*/*/*/
 
-var x: const ref int = foo.foo()
+var x: int = 5
 val y: int = 5
 
 fn bar(x: int, y: string) -> Foo {
@@ -57,11 +58,11 @@ fn bar(x: int, y: string) -> Foo {
     return Foo(5)
 }
 
-type Bar = Baz
+// type Bar = Baz
 class StructA {
     public var x: int
     public fn StructA() -> StructA {
-        x = 5
+        this.x = 5
     }
     public fn ~StructA() -> null {
     }
@@ -103,25 +104,27 @@ fn foo(x: int) -> int {
     return x
 }
 
-for (; i < 5; ++i) {
+for (var i: int = 0; i < 5; ++i) {
     break
     continue
 }
 
+ 
 {
     print("Hello world");
 }
 
-break
-class F }
-fn bar(x:) -> }
-switch (foo) {
-    case foo: break
+// break
+// class F }
+// fn bar(x:) -> }
+var goo = 4;
+switch (goo) {
+    case goo: break
 }
-*/*/*/
+// */*/*/
 
 class Bar {
-    private var x: int
+    public var x: int
 }
 
 class Foo {
@@ -132,9 +135,11 @@ class Foo {
     }
 
     public fn Foo(x: int) -> Foo {
-        var new: Foo;
-        return new;
+        var new: Foo
+        return new
     }
 }
 
-var foo = Foo(5);
+var foo = Foo(5)
+var z: [[int, foo], 5]
+z[0][0]
