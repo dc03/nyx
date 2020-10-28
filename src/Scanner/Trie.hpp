@@ -3,12 +3,12 @@
 /* See LICENSE at project root for license details */
 
 #ifndef TRIE_HPP
-#    define TRIE_HPP
+#define TRIE_HPP
 
-#    include "../TokenTypes.hpp"
+#include "../TokenTypes.hpp"
 
-#    include <memory>
-#    include <string_view>
+#include <memory>
+#include <string_view>
 
 static inline constexpr std::size_t num_alphabets{52 + 1 + 10};
 

@@ -3,13 +3,13 @@
 /* See LICENSE at project root for license details */
 
 #ifndef AST_TYPES_HPP
-#    define AST_TYPES_HPP
+#define AST_TYPES_HPP
 
-#    include "../Token.hpp"
+#include "../Token.hpp"
 
-#    include <memory>
-#    include <string>
-#    include <variant>
+#include <memory>
+#include <string>
+#include <variant>
 
 enum class Type { BOOL, INT, FLOAT, STRING, CLASS, LIST, TYPEOF, NULL_, FUNCTION };
 

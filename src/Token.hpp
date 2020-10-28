@@ -3,11 +3,11 @@
 /* See LICENSE at project root for license details */
 
 #ifndef TOKEN_HPP
-#    define TOKEN_HPP
+#define TOKEN_HPP
 
-#    include "TokenTypes.hpp"
+#include "TokenTypes.hpp"
 
-#    include <string>
+#include <string>
 
 struct Token {
     TokenType type;

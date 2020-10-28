@@ -3,18 +3,18 @@
 /* See LICENSE at project root for license details */
 
 #ifndef PARSER_HPP
-#    define PARSER_HPP
+#define PARSER_HPP
 
-#    include "../AST.hpp"
-#    include "../Token.hpp"
+#include "../AST.hpp"
+#include "../Token.hpp"
 
-#    include <string_view>
-#    include <vector>
+#include <string_view>
+#include <vector>
 
-#    define allocate_node(T, ...)                                                                                      \
-        new T {                                                                                                        \
-            __VA_ARGS__                                                                                                \
-        }
+#define allocate_node(T, ...)                                                                                          \
+    new T {                                                                                                            \
+        __VA_ARGS__                                                                                                    \
+    }
 
 struct ParsePrecedence {
     enum of {

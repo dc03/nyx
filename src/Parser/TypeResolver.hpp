@@ -3,13 +3,13 @@
 /* See LICENSE at project root for license details */
 
 #ifndef TYPE_RESOLVER_HPP
-#    define TYPE_RESOLVER_HPP
+#define TYPE_RESOLVER_HPP
 
-#    include "../AST.hpp"
+#include "../AST.hpp"
 
-#    include <string_view>
-#    include <unordered_map>
-#    include <vector>
+#include <string_view>
+#include <unordered_map>
+#include <vector>
 
 class TypeResolver final : Visitor {
     struct Value {

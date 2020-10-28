@@ -3,7 +3,7 @@
 /* See LICENSE at project root for license details */
 
 #ifndef TOKEN_TYPES_HPP
-#    define TOKEN_TYPES_HPP
+#define TOKEN_TYPES_HPP
 
 // Empty comments indicate precedence levels
 enum class TokenType {
