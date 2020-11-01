@@ -6,6 +6,7 @@
 #define PARSER_HPP
 
 #include "../AST.hpp"
+#include "../Module.hpp"
 #include "../Token.hpp"
 
 #include <string_view>
@@ -51,6 +52,7 @@ class Parser {
     const std::vector<Token> &tokens{};
     ParseRule rules[static_cast<std::size_t>(TokenType::END_OF_FILE) + 1];
 
+    Module &current_module;
     std::vector<ClassStmt *> &classes;
     std::vector<FunctionStmt *> &functions;
     std::size_t scope_depth{};
@@ -66,11 +68,10 @@ class Parser {
 
     template <typename Allocated>
     stmt_node_t single_token_statement(std::string_view token, bool condition, std::string_view error_message);
-    void sync_and_throw(std::string_view message);
+    void throw_parse_error(const std::string_view message) const;
 
   public:
-    explicit Parser(
-        const std::vector<Token> &tokens, std::vector<ClassStmt *> &classes, std::vector<FunctionStmt *> &functions);
+    explicit Parser(const std::vector<Token> &tokens, Module &module);
 
     [[nodiscard]] bool is_at_end() const noexcept;
     [[nodiscard]] const Token &previous() const noexcept;

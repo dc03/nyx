@@ -1,0 +1,8 @@
+class X {
+    public var x: int = 5;
+    public fn X() -> X {}
+}
+
+fn foo() -> int {
+    return 5
+}

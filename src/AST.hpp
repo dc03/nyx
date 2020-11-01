@@ -25,6 +25,7 @@ using type_node_t = std::unique_ptr<BaseType>;
 
 // Expression nodes
 
+struct AccessExpr;
 struct AssignExpr;
 struct BinaryExpr;
 struct CallExpr;
@@ -50,7 +51,6 @@ struct ContinueStmt;
 struct ExpressionStmt;
 struct FunctionStmt;
 struct IfStmt;
-struct ImportStmt;
 struct ReturnStmt;
 struct SwitchStmt;
 struct TypeStmt;
@@ -65,6 +65,7 @@ struct ListType;
 struct TypeofType;
 
 struct Visitor {
+    virtual ExprVisitorType visit(AccessExpr &expr) = 0;
     virtual ExprVisitorType visit(AssignExpr &expr) = 0;
     virtual ExprVisitorType visit(BinaryExpr &expr) = 0;
     virtual ExprVisitorType visit(CallExpr &expr) = 0;
@@ -88,7 +89,6 @@ struct Visitor {
     virtual StmtVisitorType visit(ExpressionStmt &stmt) = 0;
     virtual StmtVisitorType visit(FunctionStmt &stmt) = 0;
     virtual StmtVisitorType visit(IfStmt &stmt) = 0;
-    virtual StmtVisitorType visit(ImportStmt &stmt) = 0;
     virtual StmtVisitorType visit(ReturnStmt &stmt) = 0;
     virtual StmtVisitorType visit(SwitchStmt &stmt) = 0;
     virtual StmtVisitorType visit(TypeStmt &stmt) = 0;
@@ -102,6 +102,7 @@ struct Visitor {
 };
 
 enum class NodeType {
+    AccessExpr,
     AssignExpr,
     BinaryExpr,
     CallExpr,
@@ -125,7 +126,6 @@ enum class NodeType {
     ExpressionStmt,
     FunctionStmt,
     IfStmt,
-    ImportStmt,
     ReturnStmt,
     SwitchStmt,
     TypeStmt,
@@ -246,6 +246,25 @@ struct TypeofType final : public BaseType {
 // End of type node definitions
 
 // Expression node definitions
+
+struct AccessExpr final : public Expr {
+    Token module;
+    Token name;
+
+    std::string_view string_tag() override final {
+        return "AccessExpr";
+    }
+
+    NodeType type_tag() override final {
+        return NodeType::AccessExpr;
+    }
+
+    AccessExpr(Token module, Token name) : module{module}, name{name} {}
+
+    ExprVisitorType accept(Visitor &visitor) override final {
+        return visitor.visit(*this);
+    }
+};
 
 struct AssignExpr final : public Expr {
     Token target;
@@ -694,24 +713,6 @@ struct IfStmt final : public Stmt {
     }
 };
 
-struct ImportStmt final : public Stmt {
-    Token name;
-
-    std::string_view string_tag() override final {
-        return "ImportStmt";
-    }
-
-    NodeType type_tag() override final {
-        return NodeType::ImportStmt;
-    }
-
-    ImportStmt(Token name) : name{name} {}
-
-    StmtVisitorType accept(Visitor &visitor) override final {
-        return visitor.visit(*this);
-    }
-};
-
 struct ReturnStmt final : public Stmt {
     Token keyword;
     expr_node_t value;
@@ -734,7 +735,7 @@ struct ReturnStmt final : public Stmt {
 struct SwitchStmt final : public Stmt {
     expr_node_t condition;
     std::vector<std::pair<expr_node_t, stmt_node_t>> cases;
-    std::optional<stmt_node_t> default_case;
+    stmt_node_t default_case;
 
     std::string_view string_tag() override final {
         return "SwitchStmt";
@@ -744,8 +745,7 @@ struct SwitchStmt final : public Stmt {
         return NodeType::SwitchStmt;
     }
 
-    SwitchStmt(expr_node_t condition, std::vector<std::pair<expr_node_t, stmt_node_t>> cases,
-        std::optional<stmt_node_t> default_case)
+    SwitchStmt(expr_node_t condition, std::vector<std::pair<expr_node_t, stmt_node_t>> cases, stmt_node_t default_case)
         : condition{std::move(condition)}, cases{std::move(cases)}, default_case{std::move(default_case)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final {

@@ -25,10 +25,11 @@ struct ExprTypeInfo {
     FunctionStmt *func{nullptr};
     ClassStmt *class_{nullptr};
     Token lexeme{};
+    bool is_lvalue{};
 
-    ExprTypeInfo(QualifiedTypeInfo info, Token token);
-    ExprTypeInfo(QualifiedTypeInfo info, FunctionStmt *func, Token token);
-    ExprTypeInfo(QualifiedTypeInfo info, ClassStmt *class_, Token token);
+    ExprTypeInfo(QualifiedTypeInfo info, Token token, bool is_lvalue = false);
+    ExprTypeInfo(QualifiedTypeInfo info, FunctionStmt *func, Token token, bool is_lvalue = false);
+    ExprTypeInfo(QualifiedTypeInfo info, ClassStmt *class_, Token token, bool is_lvalue = false);
 };
 
 struct LiteralValue {

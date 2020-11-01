@@ -58,6 +58,7 @@ enum class TokenType {
     RIGHT_INDEX,
     LEFT_BRACE,
     RIGHT_BRACE,
+    DOUBLE_COLON,
 
     // Semicolon
     SEMICOLON,

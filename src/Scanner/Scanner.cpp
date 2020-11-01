@@ -149,8 +149,14 @@ void Scanner::string(const char delimiter) {
 
 void Scanner::multiline_comment() {
     while (!is_at_end() && !(peek() == '*' && peek_next() == '/')) {
-        if (match('/') && match('*')) {
-            multiline_comment();
+        if (match('/')) {
+            if (match('*')) {
+                multiline_comment();
+            } else if (match('/')) {
+                while (!is_at_end() && peek() != '\n') {
+                    advance();
+                }
+            }
         } else {
             if (peek() == '\n') {
                 line++;
@@ -181,7 +187,7 @@ void Scanner::scan_token() {
         case '.': add_token(TokenType::DOT); break;
         case ',': add_token(TokenType::COMMA); break;
         case '?': add_token(TokenType::QUESTION); break;
-        case ':': add_token(TokenType::COLON); break;
+        case ':': add_token(match(':') ? TokenType::DOUBLE_COLON : TokenType::COLON); break;
         case '|': add_token(match('|') ? TokenType::OR : TokenType::BIT_OR); break;
         case '&': add_token(match('&') ? TokenType::AND : TokenType::BIT_AND); break;
         case '^': add_token(TokenType::BIT_XOR); break;
@@ -316,6 +322,9 @@ const std::vector<Token> &Scanner::scan() {
         scan_token();
     }
 
+    if (tokens.back().type != TokenType::END_OF_LINE) {
+        tokens.emplace_back(TokenType::END_OF_LINE, "\n", line, 0, 0);
+    }
     tokens.emplace_back(TokenType::END_OF_FILE, "", line, 0, 0);
     return tokens;
 }

@@ -2,7 +2,7 @@ BUILTIN        ::= ("const")? ("ref")? "int" | "float" | "string" | "bool";
 IDENTIFIER     ::= ("A"..."Z" | "a"..."z" | "_") ("0"..."9" | "A"..."Z" | "a"..."z" | "_")* ;
 ANY_TYPE       ::= BUILTIN
                  | ("const")? ("ref")? IDENTIFIER
-                 | ("const")? ("ref")? "[" ANY_TYPE "," expression "]"
+                 | ("const")? ("ref")? "[" ANY_TYPE ("," expression)? "]"
                  | "typeof" expression;
 STRING         ::= "\'" ("A"..."Z" | "a"..."z" | "\\n" | "\\r" | "\\t" | "\\b" | "\\")+  "\'"
                  | "\"" ("A"..."Z" | "a"..."z" | "\\n" | "\\r" | "\\t" | "\\b" | "\\")+  "\"" ;
@@ -32,7 +32,8 @@ arguments      ::= expression ("," expression)* ;
 primary        ::= "false" | "true" | "null"
                  | NUMBER | STRING | IDENTIFIER | expression "[" expression "]"
                  | "super" "." IDENTIFIER | "this"
-                 | "(" expression ")" ;
+                 | "(" expression ")"
+                 | IDENTIFIER "::" IDENTIFIER ;
 
 declaration    ::= statement
                  | import
@@ -51,7 +52,7 @@ statement      ::= exprStmt
                  | returnStmt
                  | block ;
 
-import         ::= "import" IDENTIFIER (";"|"\n"); //
+import         ::= "import" STRING (";"|"\n"); //
 
 varDecl        ::= ("var" | "val") IDENTIFIER ((":" ANY_TYPE)? "=" expression)? (";"|"\n"); //
 

@@ -12,16 +12,18 @@
         __VA_ARGS__                                                                                                    \
     }
 
+#define unreachable() __builtin_unreachable()
+
 struct TypeException : public std::runtime_error {
     explicit TypeException(std::string_view string) : std::runtime_error{std::string{string}} {}
 };
 
-TypeResolver::TypeResolver(const std::vector<ClassStmt *> &classes, const std::vector<FunctionStmt *> &functions)
-    : classes{classes}, functions{functions} {}
+TypeResolver::TypeResolver(Module &module)
+    : current_module{module}, classes{module.classes}, functions{module.functions} {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool convertible_to(QualifiedTypeInfo to, QualifiedTypeInfo from, const Token &where) {
+bool convertible_to(QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lvalue, const Token &where) {
     bool class_condition = [&to, &from]() {
         if (to->type_tag() == NodeType::UserDefinedType && from->type_tag() == NodeType::UserDefinedType) {
             return dynamic_cast<UserDefinedType *>(to)->name.lexeme ==
@@ -35,7 +37,10 @@ bool convertible_to(QualifiedTypeInfo to, QualifiedTypeInfo from, const Token &w
     // returned
 
     if (to->data.is_ref) {
-        if (from->data.is_const) {
+        if (!from_lvalue) {
+            error("Cannot bind reference to non l-value type object", where);
+            return false;
+        } else if (from->data.is_const) {
             return from->data.type == to->data.type && from->data.is_const == to->data.is_const && class_condition;
         } else {
             return from->data.type == to->data.type && class_condition;
@@ -51,7 +56,9 @@ bool convertible_to(QualifiedTypeInfo to, QualifiedTypeInfo from, const Token &w
 
 void TypeResolver::check(std::vector<stmt_node_t> &program) {
     for (auto &stmt : program) {
-        resolve(stmt.get());
+        if (stmt != nullptr) {
+            resolve(stmt.get());
+        }
     }
 }
 
@@ -95,13 +102,37 @@ BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Arg
     return type_scratch_space.back().get();
 }
 
+ExprVisitorType TypeResolver::visit(AccessExpr &expr) {
+    for (auto &module : current_module.imported) {
+        std::string module_name = module.name.substr(0, module.name.find_last_of('.'));
+        if (module_name == expr.module.lexeme) {
+            for (FunctionStmt *func : module.functions) {
+                if (func->name.lexeme == expr.name.lexeme) {
+                    return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.name};
+                }
+            }
+
+            for (ClassStmt *class_ : module.classes) {
+                if (class_->name.lexeme == expr.name.lexeme) {
+                    return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), class_, expr.name};
+                }
+            }
+        }
+    }
+
+    error("No such function/class exists in any imported module", expr.name);
+    note("This error can lead to other warnings/errors that may be incorrect,"
+         " try to fix this error first");
+    return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.name};
+}
+
 ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
     for (auto it = values.end(); it > values.begin(); it--) {
         if (it->lexeme == expr.target.lexeme) {
             ExprVisitorType value = resolve(expr.value.get());
             if (value.info->data.is_const) {
                 error("Cannot assign to a const variable", expr.target);
-            } else if (!convertible_to(it->info, value.info, expr.target)) {
+            } else if (!convertible_to(it->info, value.info, value.is_lvalue, expr.target)) {
                 error("Cannot convert type of value to type of target", expr.target);
             }
             return {it->info, expr.target};
@@ -225,7 +256,7 @@ ExprVisitorType TypeResolver::check_inbuilt(VariableExpr *function, const Token 
 
         return ExprVisitorType{make_new_type<PrimitiveType>(Type::INT, true, false), function->name};
     } else {
-        throw TypeException{"Unreachable"};
+        unreachable();
     }
 }
 
@@ -251,12 +282,13 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     } else if (callee.func != nullptr) {
         for (std::size_t i{0}; i < expr.args.size(); i++) {
             ExprVisitorType argument = resolve(expr.args[i].get());
-            if (!convertible_to(callee.func->params[i].second.get(), argument.info, argument.lexeme)) {
+            if (!convertible_to(
+                    callee.func->params[i].second.get(), argument.info, argument.is_lvalue, argument.lexeme)) {
                 error("Type of argument is not convertible to type of parameter", argument.lexeme);
             }
         }
 
-        return {callee.func->return_type.get(), expr.paren};
+        return {callee.func->return_type.get(), callee.func, expr.paren};
     } else {
         FunctionStmt *ctor = nullptr;
         for (auto &method_decl : callee.class_->methods) {
@@ -279,11 +311,11 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         if (ctor != nullptr) {
             for (std::size_t i{0}; i < expr.args.size(); i++) {
                 ExprVisitorType argument = resolve(expr.args[i].get());
-                if (!convertible_to(ctor->params[i].second.get(), argument.info, argument.lexeme)) {
+                if (!convertible_to(ctor->params[i].second.get(), argument.info, argument.is_lvalue, argument.lexeme)) {
                     error("Type of argument is not convertible to type of parameter", argument.lexeme);
                 }
             }
-            return {ctor->return_type.get(), expr.paren};
+            return {ctor->return_type.get(), callee.class_, expr.paren};
         } else {
             error("No such class exists to be constructed", callee.lexeme);
             note("This error can lead to other warnings/errors that may be incorrect,"
@@ -294,15 +326,12 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(CommaExpr &expr) {
-    for (std::size_t i{0}; i < expr.exprs.size(); i++) {
-        if (i == expr.exprs.size() - 1) {
-            return resolve(expr.exprs[i].get());
-        }
+    auto it = begin(expr.exprs);
 
-        resolve(expr.exprs[i].get());
-    }
+    for (auto next = std::next(it); next != end(expr.exprs); it = next, ++next)
+        resolve(it->get());
 
-    throw TypeException{"Unreachable"};
+    return resolve(it->get());
 }
 
 ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, const Token &name) {
@@ -315,7 +344,8 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
         }
     } else if (object.info->data.type == Type::CLASS) {
         auto *type = dynamic_cast<UserDefinedType *>(object.info);
-        ClassStmt *user_type = nullptr;
+        ClassStmt *user_type = object.class_;
+
         for (ClassStmt *stored_type : classes) {
             if (stored_type->name.lexeme == type->name.lexeme) {
                 user_type = stored_type;
@@ -371,7 +401,7 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
         return {make_new_type<PrimitiveType>(Type::INT, true, false), name};
     }
 
-    throw TypeException{"Unreachable"};
+    unreachable();
 }
 
 ExprVisitorType TypeResolver::visit(GetExpr &expr) {
@@ -433,7 +463,7 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
 
     if (attribute_type.info->data.is_const) {
         error("Cannot assign to const attribute", expr.name);
-    } else if (!convertible_to(attribute_type.info, value_type.info, expr.name)) {
+    } else if (!convertible_to(attribute_type.info, value_type.info, value_type.is_lvalue, expr.name)) {
         error("Cannot convert value of assigned expresion to type of target", expr.name);
     }
     return {attribute_type.info, expr.name};
@@ -449,8 +479,8 @@ ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
     ExprVisitorType middle = resolve(expr.middle.get());
     ExprVisitorType right = resolve(expr.right.get());
 
-    if (!convertible_to(middle.info, right.info, expr.question) &&
-        !convertible_to(right.info, middle.info, expr.question)) {
+    if (!convertible_to(middle.info, right.info, right.is_lvalue, expr.question) &&
+        !convertible_to(right.info, middle.info, right.is_lvalue, expr.question)) {
         error("Expected equivalent expression types for branches of ternary expression", expr.question);
     }
 
@@ -509,7 +539,7 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
     for (auto it = values.end() - 1; !values.empty() && it >= values.begin(); it--) {
         if (it->lexeme == expr.name.lexeme) {
             expr.scope_depth = it->scope_depth;
-            return {it->info, expr.name};
+            return {it->info, it->class_, expr.name, true};
         }
     }
 
@@ -525,7 +555,7 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
         }
     }
 
-    error("No such variable/function in the current scope", expr.name);
+    error("No such variable/function in the current module's scope", expr.name);
     note("This error can lead to other warnings/errors that may be incorrect,"
          " try to fix this error first");
     return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.name};
@@ -593,14 +623,9 @@ StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
     }
 }
 
-StmtVisitorType TypeResolver::visit(ImportStmt &) {
-    // TODO: Implement me
-    throw TypeException{"Import statements are not implemented yet"};
-}
-
 StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
     ExprVisitorType return_value = resolve(stmt.value.get());
-    if (!convertible_to(return_value.info, current_function->return_type.get(), stmt.keyword)) {
+    if (!convertible_to(current_function->return_type.get(), return_value.info, return_value.is_lvalue, stmt.keyword)) {
         error("Type of expression in return statement does not match return type of function", stmt.keyword);
     }
 }
@@ -613,14 +638,14 @@ StmtVisitorType TypeResolver::visit(SwitchStmt &stmt) {
 
     for (auto &case_stmt : stmt.cases) {
         ExprVisitorType case_expr = resolve(case_stmt.first.get());
-        if (!convertible_to(case_expr.info, condition.info, case_expr.lexeme)) {
+        if (!convertible_to(case_expr.info, condition.info, condition.is_lvalue, case_expr.lexeme)) {
             error("Type of case expression cannot be converted to type of switch condition", case_expr.lexeme);
         }
         resolve(case_stmt.second.get());
     }
 
-    if (stmt.default_case != std::nullopt) {
-        resolve(stmt.default_case->get());
+    if (stmt.default_case != nullptr) {
+        resolve(stmt.default_case.get());
     }
 
     in_switch = in_switch_outer;
@@ -641,16 +666,16 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
     if (stmt.initializer != nullptr && stmt.type != nullptr) {
         QualifiedTypeInfo type = resolve(stmt.type.get());
         ExprVisitorType initializer = resolve(stmt.initializer.get());
-        if (!convertible_to(type, initializer.info, stmt.name)) {
+        if (!convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name)) {
             error("Cannot convert from initializer type to type of variable", stmt.name);
         }
         if (!in_class || in_function) {
-            values.push_back({stmt.name.lexeme, stmt.type.get(), scope_depth});
+            values.push_back({stmt.name.lexeme, stmt.type.get(), scope_depth, initializer.class_});
         }
     } else if (stmt.initializer != nullptr) {
         ExprVisitorType initializer = resolve(stmt.initializer.get());
         if (!in_class || in_function) {
-            values.push_back({stmt.name.lexeme, initializer.info, scope_depth});
+            values.push_back({stmt.name.lexeme, initializer.info, scope_depth, initializer.class_});
         }
     } else if (stmt.type != nullptr) {
         if (!in_class || in_function) {

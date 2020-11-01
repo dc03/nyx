@@ -5,11 +5,16 @@
 
 ErrorLogger logger{};
 
+void ErrorLogger::set_module_name(std::string_view name) {
+    this->module_name = name;
+}
+
 void ErrorLogger::set_source(std::string_view file_source) {
     this->source = file_source;
 }
 
 void print_message(const std::string_view message, const Token &where, const std::string_view prefix) {
+    std::cerr << "\n  | In module '" << logger.module_name << "',";
     std::cerr << "\n!-| line " << where.line << " | " << prefix << ": " << message << '\n';
     std::size_t line_start = where.start;
     std::size_t line_end = where.end;
@@ -27,7 +32,7 @@ void print_message(const std::string_view message, const Token &where, const std
             std::cerr << " >| ";
         }
     }
-    std::cout << "\n >| ";
+    std::cerr << "\n >| ";
     for (std::size_t i{line_start + 1}; i < line_end; i++) {
         if (i == where.start || line_start == where.start) {
             std::cerr << '^';
@@ -67,7 +72,7 @@ void runtime_error(const std::string_view message, const Token &where) {
             std::cerr << " >| ";
         }
     }
-    std::cout << "\n >| ";
+    std::cerr << "\n >| ";
     for (std::size_t i{line_start + 1}; i < line_end; i++) {
         if (i == where.start || line_start == where.start) {
             std::cerr << '^';

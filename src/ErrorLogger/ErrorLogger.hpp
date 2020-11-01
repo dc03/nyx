@@ -13,6 +13,8 @@ struct ErrorLogger {
     bool had_error{false};
     bool had_runtime_error{false};
     std::string_view source{};
+    std::string_view module_name{};
+    void set_module_name(std::string_view name);
     void set_source(std::string_view file_source);
 };
 

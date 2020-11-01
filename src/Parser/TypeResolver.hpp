@@ -6,6 +6,7 @@
 #define TYPE_RESOLVER_HPP
 
 #include "../AST.hpp"
+#include "../Module.hpp"
 
 #include <string_view>
 #include <unordered_map>
@@ -16,8 +17,10 @@ class TypeResolver final : Visitor {
         std::string_view lexeme{};
         QualifiedTypeInfo info{};
         std::size_t scope_depth{};
+        ClassStmt *class_{nullptr};
     };
 
+    Module &current_module;
     const std::vector<ClassStmt *> &classes;
     const std::vector<FunctionStmt *> &functions;
     std::vector<type_node_t> type_scratch_space{};
@@ -37,7 +40,7 @@ class TypeResolver final : Visitor {
     ExprVisitorType check_inbuilt(VariableExpr *function, const Token &oper, std::vector<expr_node_t> &args);
 
   public:
-    TypeResolver(const std::vector<ClassStmt *> &classes, const std::vector<FunctionStmt *> &functions);
+    TypeResolver(Module &module);
 
     void check(std::vector<stmt_node_t> &program);
     void begin_scope();
@@ -47,6 +50,7 @@ class TypeResolver final : Visitor {
     StmtVisitorType resolve(Stmt *stmt);
     BaseTypeVisitorType resolve(BaseType *type);
 
+    ExprVisitorType visit(AccessExpr &expr) override final;
     ExprVisitorType visit(AssignExpr &expr) override final;
     ExprVisitorType visit(BinaryExpr &expr) override final;
     ExprVisitorType visit(CallExpr &expr) override final;
@@ -70,7 +74,6 @@ class TypeResolver final : Visitor {
     StmtVisitorType visit(ExpressionStmt &stmt) override final;
     StmtVisitorType visit(FunctionStmt &stmt) override final;
     StmtVisitorType visit(IfStmt &stmt) override final;
-    StmtVisitorType visit(ImportStmt &stmt) override final;
     StmtVisitorType visit(ReturnStmt &stmt) override final;
     StmtVisitorType visit(SwitchStmt &stmt) override final;
     StmtVisitorType visit(TypeStmt &stmt) override final;

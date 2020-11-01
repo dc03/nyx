@@ -186,10 +186,10 @@ if __name__ == '__main__':
         declare_alias(file, 'type_node_t', 'BaseType')
         # Base class and alias declarations complete
 
-        Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'Literal',
+        Exprs: List[str] = ['Access', 'Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'Literal',
                             'Logical', 'Set', 'Super', 'Ternary', 'This', 'Unary', 'Variable']
         Stmts: List[str] = ['Block', 'Break', 'Class', 'Continue', 'Expression', 'Function',
-                            'If', 'Import', 'Return', 'Switch', 'Type', 'Var', 'While']
+                            'If', 'Return', 'Switch', 'Type', 'Var', 'While']
         Types: List[str] = ['Primitive', 'UserDefined', 'List', 'Typeof']
 
         Exprs: List[str] = [x + 'Expr' for x in Exprs]
@@ -250,6 +250,9 @@ if __name__ == '__main__':
         file.write('// End of type node definitions\n\n')
 
         file.write('// Expression node definitions\n\n')
+
+        decl_expr('module{module}, name{name}',
+                  'Token module, Token name')
 
         decl_expr('target{target}, value{std::move(value)}',
                   'Token target, expr_node_t value')
@@ -333,15 +336,12 @@ if __name__ == '__main__':
                   'elseBranch{std::move(elseBranch)}',
                   'expr_node_t condition, stmt_node_t thenBranch, stmt_node_t elseBranch')
 
-        decl_stmt('name{name}',
-                  'Token name')
-
         decl_stmt('keyword{keyword}, value{std::move(value)}',
                   'Token keyword, expr_node_t value')
 
         decl_stmt('condition{std::move(condition)}, cases{std::move(cases)}, default_case{std::move(default_case)}',
                   'expr_node_t condition, std::vector<std::pair<expr_node_t,stmt_node_t>> cases, ' +
-                  'std::optional<stmt_node_t> default_case')
+                  'stmt_node_t default_case')
 
         decl_stmt('name{name}, type{std::move(type)}',
                   'Token name, type_node_t type')
