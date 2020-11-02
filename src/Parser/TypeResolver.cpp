@@ -18,6 +18,29 @@ struct TypeException : public std::runtime_error {
     explicit TypeException(std::string_view string) : std::runtime_error{std::string{string}} {}
 };
 
+struct scoped_boolean_manager {
+    bool &scoped_bool;
+    bool previous_value{};
+    explicit scoped_boolean_manager(bool &controlled) : scoped_bool{controlled} {
+        previous_value = controlled;
+        controlled = true;
+    }
+
+    ~scoped_boolean_manager() {
+        scoped_bool = previous_value;
+    }
+};
+
+struct scoped_scope_manager {
+    TypeResolver &resolver;
+    scoped_scope_manager(TypeResolver &resolver) : resolver{resolver} {
+        resolver.begin_scope();
+    }
+    ~scoped_scope_manager() {
+        resolver.end_scope();
+    }
+};
+
 TypeResolver::TypeResolver(Module &module)
     : current_module{module}, classes{module.classes}, functions{module.functions} {}
 
@@ -33,18 +56,18 @@ bool convertible_to(QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lval
         }
     }();
     // The class condition is used to check if the names of the classes being converted between are same
-    // This is only useful if both to and from are class types, hence it is only checked if so otherwise just true is
-    // returned
+    // This is only useful if both to and from are class types, hence it is only checked if so
 
     if (to->data.is_ref) {
         if (!from_lvalue) {
             error("Cannot bind reference to non l-value type object", where);
             return false;
-        } else if (from->data.is_const) {
-            return from->data.type == to->data.type && from->data.is_const == to->data.is_const && class_condition;
-        } else {
-            return from->data.type == to->data.type && class_condition;
+        } else if (from->data.is_const && !to->data.is_const) {
+            error("Cannot bind non-const reference to constant object", where);
+            return false;
         }
+
+        return from->data.type == to->data.type && class_condition;
     } else if ((from->data.type == Type::FLOAT && to->data.type == Type::INT) ||
                (from->data.type == Type::INT && to->data.type == Type::FLOAT)) {
         warning("Implicit conversion from float to int", where);
@@ -57,7 +80,9 @@ bool convertible_to(QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lval
 void TypeResolver::check(std::vector<stmt_node_t> &program) {
     for (auto &stmt : program) {
         if (stmt != nullptr) {
-            resolve(stmt.get());
+            try {
+                resolve(stmt.get());
+            } catch (...) {}
         }
     }
 }
@@ -121,9 +146,7 @@ ExprVisitorType TypeResolver::visit(AccessExpr &expr) {
     }
 
     error("No such function/class exists in any imported module", expr.name);
-    note("This error can lead to other warnings/errors that may be incorrect,"
-         " try to fix this error first");
-    return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.name};
+    throw TypeException{"No such function/class exists in any imported module"};
 }
 
 ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
@@ -140,9 +163,7 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
     }
 
     error("No such variable in the current scope", expr.target);
-    note("This error can lead to other warnings/errors that may be incorrect,"
-         " try to fix this error first");
-    return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.target};
+    throw TypeException{"No such variable in the current scope"};
 }
 
 template <typename... Args>
@@ -209,11 +230,7 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
                 // Integral promotion
             } else {
                 error("Cannot use arithmetic operators on objects of incompatible types", expr.oper);
-                note("This error can lead to other warnings/errors that may be incorrect,"
-                     " try to fix this error first");
-                return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.oper};
-                // Returning int here (because it works with most operators) to prevent the type checker from freaking
-                // out too much
+                throw TypeException{"Cannot use arithmetic operators on objects of incompatible types"};
             }
 
         default:
@@ -223,7 +240,7 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
 }
 
 bool is_inbuilt(VariableExpr *expr) {
-    constexpr std::array inbuilt_functions{"print", "int", "str", "float"};
+    constexpr std::array inbuilt_functions{"print", "int", "string", "float"};
     return std::any_of(inbuilt_functions.begin(), inbuilt_functions.end(),
         [&expr](const char *const arg) { return expr->name.lexeme == arg; });
 }
@@ -242,8 +259,10 @@ ExprVisitorType TypeResolver::check_inbuilt(VariableExpr *function, const Token 
                function->name.lexeme == "string") {
         if (args.size() > 1) {
             error("Cannot pass more than one argument to builtin function '"s + function->name.lexeme + "'"s, oper);
+            throw TypeException{"Too many arguments"};
         } else if (args.empty()) {
             error("Cannot call builtin function '"s + function->name.lexeme + "' with zero arguments"s, oper);
+            throw TypeException{"No arguments"};
         }
 
         ExprVisitorType arg_type = resolve(args[0].get());
@@ -271,14 +290,10 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     ExprVisitorType callee = resolve(expr.function.get());
     if (callee.func == nullptr && callee.class_ == nullptr) {
         error("Expected function to be called in call expression", callee.lexeme);
-        note("This error can lead to other warnings/errors that may be incorrect,"
-             " try to fix this error first");
-        return {make_new_type<PrimitiveType>(Type::INT, true, false), callee.lexeme};
+        throw TypeException{"Expected function to be called in call expression"};
     } else if (callee.func != nullptr && callee.func->params.size() != expr.args.size()) {
         error("Number of arguments passed to function must match the number of parameters", expr.paren);
-        note("This error can lead to other warnings/errors that may be incorrect,"
-             " try to fix this error first");
-        return {make_new_type<PrimitiveType>(Type::INT, true, false), callee.lexeme};
+        throw TypeException{"Number of arguments passed to function must match the number of parameters"};
     } else if (callee.func != nullptr) {
         for (std::size_t i{0}; i < expr.args.size(); i++) {
             ExprVisitorType argument = resolve(expr.args[i].get());
@@ -318,9 +333,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
             return {ctor->return_type.get(), callee.class_, expr.paren};
         } else {
             error("No such class exists to be constructed", callee.lexeme);
-            note("This error can lead to other warnings/errors that may be incorrect,"
-                 " try to fix this error first");
-            return {make_new_type<PrimitiveType>(Type::INT, true, false), callee.lexeme};
+            throw TypeException{"No such class exists to be constructed"};
         }
     }
 }
@@ -338,9 +351,7 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
     if (object.info->data.type == Type::LIST) {
         if (name.lexeme != "size") {
             error("Can only get 'size' attribute of a list", name);
-            note("This error can lead to other warnings/errors that may be incorrect,"
-                 " try to fix this error first");
-            return {make_new_type<PrimitiveType>(Type::INT, true, false), name};
+            throw TypeException{"Can only get 'size' attribute of a list"};
         }
     } else if (object.info->data.type == Type::CLASS) {
         auto *type = dynamic_cast<UserDefinedType *>(object.info);
@@ -355,9 +366,7 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
 
         if (user_type == nullptr) {
             error("Cannot find class with the given name", type->name);
-            note("This error can lead to other warnings/errors that may be incorrect,"
-                 " try to fix this error first");
-            return {make_new_type<PrimitiveType>(Type::INT, true, false), name};
+            throw TypeException{"Cannot find class with the given name"};
         }
 
         for (auto &member_decl : user_type->members) {
@@ -391,14 +400,10 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
         }
 
         error("No such attribute exists in the class", name);
-        note("This error can lead to other warnings/errors that may be incorrect,"
-             " try to fix this error first");
-        return {make_new_type<PrimitiveType>(Type::INT, true, false), name};
+        throw TypeException{"No such attribute exists in the class"};
     } else {
         error("Expected class or list type to take attribute of", name);
-        note("This error can lead to other warnings/errors that may be incorrect,"
-             " try to fix this error first");
-        return {make_new_type<PrimitiveType>(Type::INT, true, false), name};
+        throw TypeException{"Expected class or list type to take attribute of"};
     }
 
     unreachable();
@@ -418,18 +423,14 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
 
     if (list.info->data.type != Type::LIST) {
         error("Expected list type for indexing", expr.oper);
-        note("This error can lead to other warnings/errors that may be incorrect,"
-             " try to fix this error first");
-        return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.oper};
+        throw TypeException{"Expected list type for indexing"};
     }
 
     ExprVisitorType index = resolve(expr.index.get());
 
     if (index.info->data.type != Type::INT) {
         error("Expected integral type for list index", expr.oper);
-        note("This error can lead to other warnings/errors that may be incorrect,"
-             " try to fix this error first");
-        return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.oper};
+        throw TypeException{"Expected integral type for list index"};
     }
 
     auto *contained_type = dynamic_cast<ListType *>(list.info)->contained.get();
@@ -536,6 +537,11 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
+    if (is_inbuilt(&expr)) {
+        error("Cannot use in-built function as an expression", expr.name);
+        throw TypeException{"Cannot use in-built function as an expression"};
+    }
+
     for (auto it = values.end() - 1; !values.empty() && it >= values.begin(); it--) {
         if (it->lexeme == expr.name.lexeme) {
             expr.scope_depth = it->scope_depth;
@@ -556,28 +562,34 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
     }
 
     error("No such variable/function in the current module's scope", expr.name);
-    note("This error can lead to other warnings/errors that may be incorrect,"
-         " try to fix this error first");
-    return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.name};
+    throw TypeException{"No such variable/function in the current module's scope"};
 }
 
 StmtVisitorType TypeResolver::visit(BlockStmt &stmt) {
-    begin_scope();
+    scoped_scope_manager manager{*this};
     for (auto &statement : stmt.stmts) {
         if (statement != nullptr) {
             resolve(statement.get());
         }
     }
-    end_scope();
 }
 
 StmtVisitorType TypeResolver::visit(BreakStmt &) {}
 
 StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
-    bool in_class_outer = in_class;
-    in_class = true;
-    ClassStmt *class_outer = current_class;
-    current_class = &stmt;
+    scoped_boolean_manager class_manager{in_class};
+
+    struct scoped_class_manager {
+        ClassStmt *&managed_class;
+        ClassStmt *previous_value{nullptr};
+        scoped_class_manager(ClassStmt *(&current_class), ClassStmt *stmt)
+            : managed_class{current_class}, previous_value{current_class} {
+            current_class = stmt;
+        }
+        ~scoped_class_manager() {
+            managed_class = previous_value;
+        }
+    } pointer_manager{current_class, &stmt};
 
     for (auto &member_decl : stmt.members) {
         resolve(member_decl.first.get());
@@ -586,9 +598,6 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
     for (auto &method_decl : stmt.methods) {
         resolve(method_decl.first.get());
     }
-
-    in_class = in_class_outer;
-    current_class = class_outer;
 }
 
 StmtVisitorType TypeResolver::visit(ContinueStmt &) {}
@@ -598,26 +607,33 @@ StmtVisitorType TypeResolver::visit(ExpressionStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
-    bool in_function_outer = in_function;
-    in_function = true;
-    FunctionStmt *function_outer = current_function;
-    current_function = &stmt;
-    begin_scope();
+    scoped_boolean_manager function_manager{in_function};
+
+    struct scoped_function_manager {
+        FunctionStmt *&managed_class;
+        FunctionStmt *previous_value{nullptr};
+        scoped_function_manager(FunctionStmt *(&current_class), FunctionStmt *stmt)
+            : managed_class{current_class}, previous_value{current_class} {
+            current_class = stmt;
+        }
+        ~scoped_function_manager() {
+            managed_class = previous_value;
+        }
+    } pointer_manager{current_function, &stmt};
+
+    scoped_scope_manager manager{*this};
 
     for (const auto &param : stmt.params) {
         values.push_back({param.first.lexeme, param.second.get(), scope_depth});
     }
 
     resolve(stmt.body.get());
-
-    end_scope();
-    in_function = in_function_outer;
-    current_function = function_outer;
 }
 
 StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
     resolve(stmt.condition.get());
     resolve(stmt.thenBranch.get());
+
     if (stmt.elseBranch != nullptr) {
         resolve(stmt.elseBranch.get());
     }
@@ -627,12 +643,16 @@ StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
     ExprVisitorType return_value = resolve(stmt.value.get());
     if (!convertible_to(current_function->return_type.get(), return_value.info, return_value.is_lvalue, stmt.keyword)) {
         error("Type of expression in return statement does not match return type of function", stmt.keyword);
+        using namespace std::string_literals;
+        std::string note_message = "The type being returned is '"s + stringify(return_value.info) +
+                                   "' whereas the function return type is '"s +
+                                   stringify(current_function->return_type.get()) + "'";
+        note(note_message);
     }
 }
 
 StmtVisitorType TypeResolver::visit(SwitchStmt &stmt) {
-    bool in_switch_outer = in_switch;
-    in_switch = true;
+    scoped_boolean_manager switch_manager{in_switch};
 
     ExprVisitorType condition = resolve(stmt.condition.get());
 
@@ -647,8 +667,6 @@ StmtVisitorType TypeResolver::visit(SwitchStmt &stmt) {
     if (stmt.default_case != nullptr) {
         resolve(stmt.default_case.get());
     }
-
-    in_switch = in_switch_outer;
 }
 
 StmtVisitorType TypeResolver::visit(TypeStmt &) {
@@ -670,7 +688,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
             error("Cannot convert from initializer type to type of variable", stmt.name);
         }
         if (!in_class || in_function) {
-            values.push_back({stmt.name.lexeme, stmt.type.get(), scope_depth, initializer.class_});
+            values.push_back({stmt.name.lexeme, type, scope_depth, initializer.class_});
         }
     } else if (stmt.initializer != nullptr) {
         ExprVisitorType initializer = resolve(stmt.initializer.get());
@@ -678,8 +696,9 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
             values.push_back({stmt.name.lexeme, initializer.info, scope_depth, initializer.class_});
         }
     } else if (stmt.type != nullptr) {
+        QualifiedTypeInfo type = resolve(stmt.type.get());
         if (!in_class || in_function) {
-            values.push_back({stmt.name.lexeme, stmt.type.get(), scope_depth});
+            values.push_back({stmt.name.lexeme, type, scope_depth});
         }
     } else {
         error("Expected type for variable", stmt.name);
@@ -688,9 +707,8 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(WhileStmt &stmt) {
-    begin_scope();
-    bool in_loop_outer = in_loop;
-    in_loop = true;
+    scoped_scope_manager manager{*this};
+    scoped_boolean_manager loop_manager{in_loop};
 
     ExprVisitorType condition = resolve(stmt.condition.get());
     if (one_of(condition.info->data.type, Type::CLASS, Type::LIST)) {
@@ -698,9 +716,6 @@ StmtVisitorType TypeResolver::visit(WhileStmt &stmt) {
     }
 
     resolve(stmt.body.get());
-
-    in_loop = in_loop_outer;
-    end_scope();
 }
 
 BaseTypeVisitorType TypeResolver::visit(PrimitiveType &type) {
@@ -721,5 +736,9 @@ BaseTypeVisitorType TypeResolver::visit(ListType &type) {
 }
 
 BaseTypeVisitorType TypeResolver::visit(TypeofType &type) {
-    return resolve(type.expr.get()).info;
+    BaseTypeVisitorType typeof_expr = copy_type(resolve(type.expr.get()).info);
+    typeof_expr->data.is_const = typeof_expr->data.is_const || type.data.is_const;
+    typeof_expr->data.is_ref = typeof_expr->data.is_ref || type.data.is_ref;
+    type_scratch_space.emplace_back(typeof_expr); // This is to make sure the newly synthesized type is managed properly
+    return typeof_expr;
 }

@@ -6,7 +6,7 @@ def make_header(file, guard: str) -> None:
     file.write('#pragma once\n\n')
     file.write('/* See LICENSE at project root for license details */\n\n')
     file.write('#ifndef ' + guard + '\n')
-    file.write('#  define ' + guard + '\n\n')
+    file.write('#define ' + guard + '\n\n')
     return None
 
 
@@ -171,14 +171,14 @@ def decl_stmt(ctor_args: str, members: str) -> None:
 if __name__ == '__main__':
     with open('AST.hpp', 'wt') as file:
         make_header(file, 'AST_HPP')
+        file.write('#include "Parser/VisitorTypes.hpp"\n')
+        file.write('#include "Token.hpp"\n\n')
         file.write('#include <memory>\n')
         file.write('#include <optional>\n')
         file.write('#include <string>\n')
         file.write('#include <string_view>\n')
         file.write('#include <utility>\n')
-        file.write('#include <vector>\n')
-        file.write('\n#include "Parser/VisitorTypes.hpp"\n')
-        file.write('\n#include "Token.hpp"\n\n')
+        file.write('#include <vector>\n\n')
         forward_declare(file, ['Expr', 'Stmt', 'BaseType'])
         file.write('\n')
         declare_alias(file, 'expr_node_t', 'Expr')
@@ -245,7 +245,8 @@ if __name__ == '__main__':
                              'SharedData data, type_node_t contained, expr_node_t size')
 
         declare_derived_type(file, 'BaseType', Types[3],
-                             'expr{std::move(expr)}', 'expr_node_t expr', 'expr_node_t expr')
+                             'BaseType{data}, expr{std::move(expr)}', 'expr_node_t expr',
+                             'SharedData data, expr_node_t expr')
 
         file.write('// End of type node definitions\n\n')
 
@@ -353,5 +354,10 @@ if __name__ == '__main__':
                   'Token keyword, expr_node_t condition, stmt_node_t body')
 
         file.write('// End of statement node definitions\n\n')
+
+        file.write('// Helper function to turn a given type node into a string\n')
+        file.write('std::string stringify(BaseType *node);\n\n')
+        file.write('// Helper function to copy a given type node (list size expressions are not copied however)\n')
+        file.write('BaseTypeVisitorType copy_type(BaseType *node);\n\n')
 
         end_file(file)

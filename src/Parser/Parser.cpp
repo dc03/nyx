@@ -138,12 +138,12 @@ Parser::Parser(const std::vector<Token> &tokens, Module &module)
     add_rule(TokenType::DEFAULT,       {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::ELSE,          {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::FALSE,         {&Parser::literal, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::FLOAT,         {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::FLOAT,         {&Parser::variable, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::FN,            {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::FOR,           {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::IF,            {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::IMPORT,        {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::INT,           {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::INT,           {&Parser::variable, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::NULL_,         {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::OR,            {nullptr, &Parser::or_, ParsePrecedence::NONE});
     add_rule(TokenType::PROTECTED,     {nullptr, nullptr, ParsePrecedence::NONE});
@@ -151,7 +151,7 @@ Parser::Parser(const std::vector<Token> &tokens, Module &module)
     add_rule(TokenType::PUBLIC,        {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::REF,           {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::RETURN,        {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::STRING,        {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::STRING,        {&Parser::variable, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::SUPER,         {&Parser::super, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::SWITCH,        {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::THIS,          {&Parser::this_expr, nullptr, ParsePrecedence::NONE});
@@ -453,9 +453,7 @@ type_node_t Parser::type() {
         } else {
             error("Unexpected token in type specifier", peek());
             note("The type needs to be one of: bool, int, float, string, an identifier or an array type");
-            advance();
-            const Token &erroneous = previous();
-            throw ParseException{erroneous, "Unexpected token in type specifier"};
+            throw ParseException{peek(), "Unexpected token in type specifier"};
         }
     }();
 
@@ -466,7 +464,7 @@ type_node_t Parser::type() {
     } else if (type == Type::LIST) {
         return list_type(is_const, is_ref);
     } else if (type == Type::TYPEOF) {
-        return type_node_t{allocate_node(TypeofType, expression())};
+        return type_node_t{allocate_node(TypeofType, data, expression())};
     } else {
         return type_node_t{allocate_node(PrimitiveType, data)};
     }

@@ -236,7 +236,7 @@ struct TypeofType final : public BaseType {
         return NodeType::TypeofType;
     }
 
-    TypeofType(expr_node_t expr) : expr{std::move(expr)} {}
+    TypeofType(SharedData data, expr_node_t expr) : BaseType{data}, expr{std::move(expr)} {}
 
     BaseTypeVisitorType accept(Visitor &visitor) override final {
         return visitor.visit(*this);
@@ -815,5 +815,11 @@ struct WhileStmt final : public Stmt {
 };
 
 // End of statement node definitions
+
+// Helper function to turn a given type node into a string
+std::string stringify(BaseType *node);
+
+// Helper function to copy a given type node (list size expressions are not copied however)
+BaseTypeVisitorType copy_type(BaseType *node);
 
 #endif

@@ -4,5 +4,8 @@ class X {
 }
 
 fn foo() -> int {
-    return 5
+    var x: string
+    var y: const typeof x
+    print(float())
+    return int(string(float(int(y))))
 }
