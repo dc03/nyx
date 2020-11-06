@@ -258,8 +258,8 @@ if __name__ == '__main__':
         decl_expr('target{target}, value{std::move(value)}',
                   'Token target, expr_node_t value')
 
-        decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}',
-                  'expr_node_t left, Token oper, expr_node_t right')
+        decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}, resolved_type{resolved_type}',
+                  'expr_node_t left, Token oper, expr_node_t right, ExprVisitorType resolved_type')
 
         decl_expr('function{std::move(function)}, paren{paren}, args{std::move(args)}',
                   'expr_node_t function, Token paren, std::vector<expr_node_t> args')
@@ -318,9 +318,9 @@ if __name__ == '__main__':
         tab(file, 1).write('PUBLIC_DTOR\n')
         file.write('};\n\n')
 
-        decl_stmt('name{name}, has_ctor{has_ctor}, has_dtor{has_dtor}, members{std::move(members)}, ' +
+        decl_stmt('name{name}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, ' +
                   'methods{std::move(methods)}',
-                  'Token name, bool has_ctor, bool has_dtor, std::vector<std::pair<stmt_node_t,' +
+                  'Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<std::pair<stmt_node_t,' +
                   'VisibilityType>> members, std::vector<std::pair<stmt_node_t,VisibilityType>> methods')
 
         decl_stmt('keyword{keyword}',

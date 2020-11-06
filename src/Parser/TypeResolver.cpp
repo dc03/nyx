@@ -103,7 +103,7 @@ ExprVisitorType TypeResolver::resolve(Expr *expr) {
 }
 
 StmtVisitorType TypeResolver::resolve(Stmt *stmt) {
-    return stmt->accept(*this);
+    stmt->accept(*this);
 }
 
 BaseTypeVisitorType TypeResolver::resolve(BaseType *type) {
@@ -150,7 +150,7 @@ ExprVisitorType TypeResolver::visit(AccessExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
-    for (auto it = values.end(); it > values.begin(); it--) {
+    for (auto it = values.end() - 1; it >= values.begin(); it--) {
         if (it->lexeme == expr.target.lexeme) {
             ExprVisitorType value = resolve(expr.value.get());
             if (value.info->data.is_const) {
@@ -185,6 +185,7 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             if (left_expr.info->data.type != Type::INT || right_expr.info->data.type != Type::INT) {
                 error("Wrong types of arguments to bitwise binary operators (expected integral arguments)", expr.oper);
             }
+            expr.resolved_type = {left_expr.info, expr.oper};
             return {left_expr.info, expr.oper};
         case TokenType::NOT_EQUAL:
         case TokenType::EQUAL_EQUAL:
@@ -192,9 +193,8 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
                 if (left_expr.info->data.type != right_expr.info->data.type) {
                     error("Cannot compare equality of objects of different types", expr.oper);
                 }
-                return {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
-                // It may seem illogical to return the correct answer even for mis-matching types, but it prevents
-                // propagation of random errors
+                expr.resolved_type = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+                return expr.resolved_type;
             }
             [[fallthrough]];
         case TokenType::GREATER:
@@ -206,16 +206,20 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
                 if (left_expr.info->data.type != right_expr.info->data.type) {
                     warning("Comparison between objects of types int and float", expr.oper);
                 }
-                return {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+                expr.resolved_type = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+                return expr.resolved_type;
             } else if (left_expr.info->data.type == Type::BOOL && right_expr.info->data.type == Type::BOOL) {
-                return {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+                expr.resolved_type = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+                return expr.resolved_type;
             } else {
                 error("Cannot compare objects of incompatible types", expr.oper);
-                return {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+                expr.resolved_type = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+                return expr.resolved_type;
             }
         case TokenType::PLUS:
             if (left_expr.info->data.type == Type::STRING && right_expr.info->data.type == Type::STRING) {
-                return {make_new_type<PrimitiveType>(Type::STRING, true, false), expr.oper};
+                expr.resolved_type = {make_new_type<PrimitiveType>(Type::STRING, true, false), expr.oper};
+                return expr.resolved_type;
             }
             [[fallthrough]];
         case TokenType::MINUS:
@@ -224,9 +228,11 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             if (one_of(left_expr.info->data.type, Type::INT, Type::FLOAT) &&
                 one_of(right_expr.info->data.type, Type::INT, Type::FLOAT)) {
                 if (left_expr.info->data.type == Type::INT && right_expr.info->data.type == Type::INT) {
-                    return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.oper};
+                    expr.resolved_type = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.oper};
+                    return expr.resolved_type;
                 }
-                return {make_new_type<PrimitiveType>(Type::FLOAT, true, false), expr.oper};
+                expr.resolved_type = {make_new_type<PrimitiveType>(Type::FLOAT, true, false), expr.oper};
+                return expr.resolved_type;
                 // Integral promotion
             } else {
                 error("Cannot use arithmetic operators on objects of incompatible types", expr.oper);
@@ -462,11 +468,17 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
     ExprVisitorType attribute_type = resolve_class_access(object, expr.name);
     ExprVisitorType value_type = resolve(expr.value.get());
 
-    if (attribute_type.info->data.is_const) {
+    if (object.info->data.is_const) {
+        error("Cannot assign to a const object", expr.name);
+    } else if (attribute_type.info->data.is_const) {
         error("Cannot assign to const attribute", expr.name);
-    } else if (!convertible_to(attribute_type.info, value_type.info, value_type.is_lvalue, expr.name)) {
-        error("Cannot convert value of assigned expresion to type of target", expr.name);
     }
+
+    if (!convertible_to(attribute_type.info, value_type.info, value_type.is_lvalue, expr.name)) {
+        error("Cannot convert value of assigned expresion to type of target", expr.name);
+        throw TypeException{"Cannot convert value of assigned expression to type of target"};
+    }
+
     return {attribute_type.info, expr.name};
 }
 
@@ -474,6 +486,7 @@ ExprVisitorType TypeResolver::visit(SuperExpr &) {
     // TODO: Implement me
     throw TypeException{"Super expressions/inheritance not implemented yet"};
 }
+
 
 ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
     ExprVisitorType left = resolve(expr.left.get());
@@ -569,7 +582,9 @@ StmtVisitorType TypeResolver::visit(BlockStmt &stmt) {
     scoped_scope_manager manager{*this};
     for (auto &statement : stmt.stmts) {
         if (statement != nullptr) {
-            resolve(statement.get());
+            try {
+                resolve(statement.get());
+            } catch (...) {}
         }
     }
 }
@@ -590,6 +605,41 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
             managed_class = previous_value;
         }
     } pointer_manager{current_class, &stmt};
+
+    // Creation of the implicit constructor
+    if (stmt.ctor == nullptr) {
+        stmt.ctor = allocate_node(FunctionStmt, stmt.name,
+            type_node_t{allocate_node(UserDefinedType, {Type::CLASS, false, false}, stmt.name)}, {},
+            stmt_node_t{allocate_node(BlockStmt, {})});
+        stmt.methods.emplace_back(stmt_node_t{stmt.ctor}, VisibilityType::PUBLIC);
+    }
+
+    std::size_t initialized_count = std::count_if(stmt.members.begin(), stmt.members.end(),
+        [](const auto &member) { return dynamic_cast<VarStmt *>(member.first.get())->initializer != nullptr; });
+
+    BlockStmt *ctor_body = dynamic_cast<BlockStmt *>(stmt.ctor->body.get());
+    ctor_body->stmts.reserve(initialized_count + ctor_body->stmts.size());
+
+    for (auto &member_declaration : stmt.members) {
+        VarStmt *member = dynamic_cast<VarStmt *>(member_declaration.first.get());
+        if (member->initializer != nullptr) {
+            using namespace std::string_literals;
+            // Transform the declaration of the member into an implicit assignment in the constructor
+            Expr *this_expr = allocate_node(ThisExpr, member->name);
+
+            if (member->type == nullptr) {
+                member->type = type_node_t{copy_type(resolve(member->initializer.get()).info)};
+            }
+
+            expr_node_t member_initializer{
+                allocate_node(SetExpr, expr_node_t{this_expr}, member->name, {std::move(member->initializer)})};
+            stmt_node_t member_init_stmt{allocate_node(ExpressionStmt, std::move(member_initializer))};
+
+            ctor_body->stmts.insert(ctor_body->stmts.begin(), std::move(member_init_stmt));
+
+            member->initializer = nullptr;
+        }
+    }
 
     for (auto &member_decl : stmt.members) {
         resolve(member_decl.first.get());

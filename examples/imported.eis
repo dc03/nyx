@@ -1,11 +1,12 @@
 class X {
     public var x: int = 5;
-    public fn X() -> X {}
+    public fn X() -> const X {}
 }
-
+/*
 fn foo() -> int {
     var x: string
     var y: const typeof x
-    print(float())
+    print(float("5.6" and "6.7"))
     return int(string(float(int(y))))
 }
+*/

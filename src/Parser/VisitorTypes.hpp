@@ -27,6 +27,7 @@ struct ExprTypeInfo {
     Token lexeme{};
     bool is_lvalue{};
 
+    ExprTypeInfo() = default;
     ExprTypeInfo(QualifiedTypeInfo info, Token token, bool is_lvalue = false);
     ExprTypeInfo(QualifiedTypeInfo info, FunctionStmt *func, Token token, bool is_lvalue = false);
     ExprTypeInfo(QualifiedTypeInfo info, ClassStmt *class_, Token token, bool is_lvalue = false);

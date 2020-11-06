@@ -164,3 +164,6 @@ print(yay.x)
 print(imported::foo())
 */*/*/
 import "imported.eis"
+
+var y = imported::X()
+y.x = 6

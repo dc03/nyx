@@ -129,7 +129,7 @@ Parser::Parser(const std::vector<Token> &tokens, Module &module)
     add_rule(TokenType::STRING_VALUE,  {&Parser::literal, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::INT_VALUE,     {&Parser::literal, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::FLOAT_VALUE,   {&Parser::literal, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::AND,           {nullptr, &Parser::and_, ParsePrecedence::NONE});
+    add_rule(TokenType::AND,           {nullptr, &Parser::and_, ParsePrecedence::LOGIC_AND});
     add_rule(TokenType::BREAK,         {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::CASE,          {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::CLASS,         {nullptr, nullptr, ParsePrecedence::NONE});
@@ -145,7 +145,7 @@ Parser::Parser(const std::vector<Token> &tokens, Module &module)
     add_rule(TokenType::IMPORT,        {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::INT,           {&Parser::variable, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::NULL_,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::OR,            {nullptr, &Parser::or_, ParsePrecedence::NONE});
+    add_rule(TokenType::OR,            {nullptr, &Parser::or_, ParsePrecedence::LOGIC_OR});
     add_rule(TokenType::PROTECTED,     {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::PRIVATE,       {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::PUBLIC,        {nullptr, nullptr, ParsePrecedence::NONE});
@@ -287,7 +287,7 @@ expr_node_t Parser::and_(bool, expr_node_t left) {
 expr_node_t Parser::binary(bool, expr_node_t left) {
     Token oper = previous();
     expr_node_t right = parse_precedence(ParsePrecedence::of(get_rule(previous().type).precedence + 1));
-    return expr_node_t{allocate_node(BinaryExpr, std::move(left), std::move(oper), std::move(right))};
+    return expr_node_t{allocate_node(BinaryExpr, std::move(left), std::move(oper), std::move(right), {})};
 }
 
 expr_node_t Parser::call(bool, expr_node_t function) {
@@ -511,8 +511,8 @@ stmt_node_t Parser::class_declaration() {
     }
 
     Token name = previous();
-    bool has_ctor{false};
-    bool has_dtor{false};
+    FunctionStmt *ctor{nullptr};
+    FunctionStmt *dtor{nullptr};
     std::vector<std::pair<stmt_node_t, VisibilityType>> members{};
     std::vector<std::pair<stmt_node_t, VisibilityType>> methods{};
 
@@ -548,8 +548,8 @@ stmt_node_t Parser::class_declaration() {
             const Token &method_name = dynamic_cast<FunctionStmt *>(method.get())->name;
 
             if (method_name.lexeme == name.lexeme) {
-                if (found_dtor && !has_dtor) {
-                    has_dtor = true;
+                if (found_dtor && dtor == nullptr) {
+                    dtor = dynamic_cast<FunctionStmt *>(method.get());
                     switch (visibility) {
                         case VisibilityType::PUBLIC: visibility = VisibilityType::PUBLIC_DTOR; break;
                         case VisibilityType::PRIVATE: visibility = VisibilityType::PRIVATE_DTOR; break;
@@ -557,8 +557,8 @@ stmt_node_t Parser::class_declaration() {
 
                         default: break;
                     }
-                } else if (!has_ctor) {
-                    has_ctor = true;
+                } else if (ctor == nullptr) {
+                    ctor = dynamic_cast<FunctionStmt *>(method.get());
                 } else {
                     constexpr const std::string_view message =
                         "Cannot declare constructors or destructors more than once";
@@ -574,7 +574,7 @@ stmt_node_t Parser::class_declaration() {
 
     consume("Expected '}' at the end of class declaration", TokenType::RIGHT_BRACE);
     auto *class_definition =
-        allocate_node(ClassStmt, std::move(name), has_ctor, has_dtor, std::move(members), std::move(methods));
+        allocate_node(ClassStmt, std::move(name), ctor, dtor, std::move(members), std::move(methods));
     classes.push_back(class_definition);
 
     return stmt_node_t{class_definition};

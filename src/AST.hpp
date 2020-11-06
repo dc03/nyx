@@ -289,6 +289,7 @@ struct BinaryExpr final : public Expr {
     expr_node_t left;
     Token oper;
     expr_node_t right;
+    ExprVisitorType resolved_type;
 
     std::string_view string_tag() override final {
         return "BinaryExpr";
@@ -298,8 +299,8 @@ struct BinaryExpr final : public Expr {
         return NodeType::BinaryExpr;
     }
 
-    BinaryExpr(expr_node_t left, Token oper, expr_node_t right)
-        : left{std::move(left)}, oper{oper}, right{std::move(right)} {}
+    BinaryExpr(expr_node_t left, Token oper, expr_node_t right, ExprVisitorType resolved_type)
+        : left{std::move(left)}, oper{oper}, right{std::move(right)}, resolved_type{resolved_type} {}
 
     ExprVisitorType accept(Visitor &visitor) override final {
         return visitor.visit(*this);
@@ -607,8 +608,8 @@ enum class VisibilityType { PRIVATE, PROTECTED, PUBLIC, PRIVATE_DTOR, PROTECTED_
 
 struct ClassStmt final : public Stmt {
     Token name;
-    bool has_ctor;
-    bool has_dtor;
+    FunctionStmt *ctor;
+    FunctionStmt *dtor;
     std::vector<std::pair<stmt_node_t, VisibilityType>> members;
     std::vector<std::pair<stmt_node_t, VisibilityType>> methods;
 
@@ -620,13 +621,10 @@ struct ClassStmt final : public Stmt {
         return NodeType::ClassStmt;
     }
 
-    ClassStmt(Token name, bool has_ctor, bool has_dtor, std::vector<std::pair<stmt_node_t, VisibilityType>> members,
+    ClassStmt(Token name, FunctionStmt *ctor, FunctionStmt *dtor,
+        std::vector<std::pair<stmt_node_t, VisibilityType>> members,
         std::vector<std::pair<stmt_node_t, VisibilityType>> methods)
-        : name{name},
-          has_ctor{has_ctor},
-          has_dtor{has_dtor},
-          members{std::move(members)},
-          methods{std::move(methods)} {}
+        : name{name}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, methods{std::move(methods)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final {
         return visitor.visit(*this);

@@ -88,3 +88,8 @@ void runtime_error(const std::string_view message, const Token &where) {
 void note(const std::string_view message) {
     std::cerr << "->| note: " << message << '\n';
 }
+
+void compile_error(std::string_view message) {
+    std::cerr << "\n  | In module '" << logger.module_name << "',";
+    std::cerr << "\n!-| Compile error: " << message << '\n';
+}
