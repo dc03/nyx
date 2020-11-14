@@ -53,7 +53,7 @@ struct LiteralValue {
 
     explicit LiteralValue(int value);
     explicit LiteralValue(double value);
-    explicit LiteralValue(std::string value);
+    explicit LiteralValue(const std::string &value);
     explicit LiteralValue(bool value);
     explicit LiteralValue(std::nullptr_t);
 

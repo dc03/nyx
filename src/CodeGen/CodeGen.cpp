@@ -8,12 +8,12 @@
 
 std::deque<RuntimeModule> Generator::compiled_modules{};
 
-RuntimeModule Generator::compile(Module &main_module) {
+RuntimeModule Generator::compile(Module &module) {
     RuntimeModule compiled{};
     current_chunk = &compiled.top_level_code;
-    current_module = &main_module;
+    current_module = &module;
 
-    for (auto &stmt : main_module.statements) {
+    for (auto &stmt : module.statements) {
         if (stmt != nullptr) {
             compile(stmt.get());
         }
@@ -102,6 +102,14 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(CommaExpr &expr) {
+    auto it = begin(expr.exprs);
+
+    for (auto next = std::next(it); next != end(expr.exprs); it = next, ++next) {
+        compile(it->get());
+        current_chunk->emit_instruction(Instruction::POP);
+    }
+
+    compile(it->get());
     return {};
 }
 
@@ -110,6 +118,7 @@ ExprVisitorType Generator::visit(GetExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(GroupingExpr &expr) {
+    compile(expr.expr.get());
     return {};
 }
 
@@ -149,6 +158,13 @@ ExprVisitorType Generator::visit(ThisExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(UnaryExpr &expr) {
+    compile(expr.right.get());
+    switch (expr.oper.type) {
+        case TokenType::BIT_NOT: current_chunk->emit_instruction(Instruction::BIT_NOT); break;
+        case TokenType::NOT: current_chunk->emit_instruction(Instruction::NOT); break;
+        case TokenType::MINUS: current_chunk->emit_instruction(Instruction::NEGATE); break;
+        default: error("Bug in parser with illegal type for unary expression", expr.oper); break;
+    }
     return {};
 }
 

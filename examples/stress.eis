@@ -171,8 +171,8 @@ y.x = 6
 for (var i = 0; i < 5; ++i) {
     print(i)
 }
-*/*/*/
 import "C.eis"
 import "A.eis"
 import "imported.eis"
-5 + 6
+*/*/*/
+2 <= (5, 6, 7)

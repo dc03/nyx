@@ -175,7 +175,12 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
         case TokenType::BIT_XOR:
         case TokenType::MODULO:
             if (left_expr.info->data.type != Type::INT || right_expr.info->data.type != Type::INT) {
-                error("Wrong types of arguments to bitwise binary operators (expected integral arguments)", expr.oper);
+                if (expr.oper.type == TokenType::MODULO) {
+                    error("Wrong types of arguments to modulo operator (expected integral arguments)", expr.oper);
+                } else {
+                    error(
+                        "Wrong types of arguments to bitwise binary operator (expected integral arguments)", expr.oper);
+                }
             }
             expr.resolved_type = {left_expr.info, expr.oper};
             return {left_expr.info, expr.oper};
@@ -534,7 +539,6 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
             return {right.info, expr.oper};
 
         default:
-            using namespace std::string_literals;
             error("Bug in parser with illegal type for unary expression", expr.oper);
             throw TypeException{"Bug in parser with illegal type for unary expression"};
     }

@@ -26,7 +26,7 @@ struct Value {
         explicit as(std::nullptr_t) { null = nullptr; }
     } as;
 
-    Value() = default;
+    Value() : tag{NULL_} {}
     Value(Value &&other) noexcept;
     Value &operator=(Value &&other) noexcept;
     Value(const Value &other);

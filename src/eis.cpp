@@ -46,7 +46,7 @@ int main(const int, const char *const argv[]) {
         main_compiled.top_level_code.emit_instruction(Instruction::HALT);
         VM vm{};
         vm.run(main_compiled);
-        std::cout << vm.stack[0].to_int();
+        // std::cout << vm.stack[0].to_int();
     }
     return 0;
 }

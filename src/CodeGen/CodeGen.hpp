@@ -19,7 +19,7 @@ class Generator : Visitor {
     static std::deque<RuntimeModule> compiled_modules;
 
     Generator() = default;
-    RuntimeModule compile(Module &main_module);
+    RuntimeModule compile(Module &module);
 
     ExprVisitorType compile(Expr *expr);
     StmtVisitorType compile(Stmt *stmt);

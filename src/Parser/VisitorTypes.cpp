@@ -5,7 +5,7 @@ LiteralValue::LiteralValue(int value) : tag{LiteralValue::INT}, as{value} {}
 LiteralValue::LiteralValue(bool value) : tag{LiteralValue::BOOL}, as{value} {}
 LiteralValue::LiteralValue(double value) : tag{LiteralValue::DOUBLE}, as{value} {}
 LiteralValue::LiteralValue(std::nullptr_t) : tag{LiteralValue::NULL_}, as{nullptr} {}
-LiteralValue::LiteralValue(std::string value) : tag{LiteralValue::STRING}, as{value} {}
+LiteralValue::LiteralValue(const std::string &value) : tag{LiteralValue::STRING}, as{value} {}
 LiteralValue::LiteralValue(LiteralValue &&other) noexcept {
     tag = other.tag;
     switch (other.tag) {
