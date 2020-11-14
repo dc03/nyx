@@ -11,6 +11,8 @@
 #include <stdexcept>
 #include <utility>
 
+std::deque<std::pair<Module, std::size_t>> Parser::parsed_modules{};
+
 struct ParseException : public std::invalid_argument {
     Token token{};
     explicit ParseException(Token token, const std::string_view error)
@@ -25,19 +27,13 @@ struct scoped_boolean_manager {
         controlled = true;
     }
 
-    ~scoped_boolean_manager() {
-        scoped_bool = previous_value;
-    }
+    ~scoped_boolean_manager() { scoped_bool = previous_value; }
 };
 
 struct scoped_integer_manager {
     std::size_t &scoped_int;
-    explicit scoped_integer_manager(std::size_t &controlled) : scoped_int{controlled} {
-        controlled++;
-    }
-    ~scoped_integer_manager() {
-        scoped_int--;
-    }
+    explicit scoped_integer_manager(std::size_t &controlled) : scoped_int{controlled} { controlled++; }
+    ~scoped_integer_manager() { scoped_int--; }
 };
 
 void Parser::add_rule(TokenType type, ParseRule rule) noexcept {
@@ -85,8 +81,8 @@ void Parser::synchronize() {
     }
 }
 
-Parser::Parser(const std::vector<Token> &tokens, Module &module)
-    : tokens{tokens}, current_module{module}, classes{module.classes}, functions{module.functions} {
+Parser::Parser(const std::vector<Token> &tokens, Module &module, std::size_t current_depth)
+    : tokens{tokens}, current_module{module}, current_module_depth{current_depth} {
     // clang-format off
     add_rule(TokenType::COMMA,         {nullptr, &Parser::comma, ParsePrecedence::COMMA});
     add_rule(TokenType::EQUAL,         {nullptr, nullptr, ParsePrecedence::NONE});
@@ -352,28 +348,29 @@ expr_node_t Parser::literal(bool) {
     switch (previous().type) {
         case TokenType::INT_VALUE: {
             int value = std::stoi(previous().lexeme);
-            return expr_node_t{allocate_node(LiteralExpr, value, previous(), std::move(type))};
+            return expr_node_t{allocate_node(LiteralExpr, LiteralValue{value}, previous(), std::move(type))};
         }
         case TokenType::FLOAT_VALUE: {
             double value = std::stod(previous().lexeme);
             type->data.type = Type::FLOAT;
-            return expr_node_t{allocate_node(LiteralExpr, value, previous(), std::move(type))};
+            return expr_node_t{allocate_node(LiteralExpr, LiteralValue{value}, previous(), std::move(type))};
         }
         case TokenType::STRING_VALUE: {
             type->data.type = Type::STRING;
-            return expr_node_t{allocate_node(LiteralExpr, previous().lexeme, previous(), std::move(type))};
+            return expr_node_t{
+                allocate_node(LiteralExpr, LiteralValue{previous().lexeme}, previous(), std::move(type))};
         }
         case TokenType::FALSE: {
             type->data.type = Type::BOOL;
-            return expr_node_t{allocate_node(LiteralExpr, false, previous(), std::move(type))};
+            return expr_node_t{allocate_node(LiteralExpr, LiteralValue{false}, previous(), std::move(type))};
         }
         case TokenType::TRUE: {
             type->data.type = Type::BOOL;
-            return expr_node_t{allocate_node(LiteralExpr, true, previous(), std::move(type))};
+            return expr_node_t{allocate_node(LiteralExpr, LiteralValue{true}, previous(), std::move(type))};
         }
         case TokenType::NULL_: {
             type->data.type = Type::NULL_;
-            return expr_node_t{allocate_node(LiteralExpr, nullptr, previous(), std::move(type))};
+            return expr_node_t{allocate_node(LiteralExpr, LiteralValue{nullptr}, previous(), std::move(type))};
         }
 
         default: throw ParseException{previous(), "Unexpected TokenType passed to literal parser"};
@@ -504,7 +501,7 @@ stmt_node_t Parser::declaration() {
 stmt_node_t Parser::class_declaration() {
     consume("Expected class name after 'class' keyword", TokenType::IDENTIFIER);
 
-    for (auto *class_ : classes) {
+    for (auto *class_ : current_module.classes) {
         if (class_->name.lexeme == previous().lexeme) {
             throw_parse_error("Class already defined");
         }
@@ -549,7 +546,9 @@ stmt_node_t Parser::class_declaration() {
 
             if (method_name.lexeme == name.lexeme) {
                 if (found_dtor && dtor == nullptr) {
+                    using namespace std::string_literals;
                     dtor = dynamic_cast<FunctionStmt *>(method.get());
+                    dtor->name.lexeme = "~"s + dtor->name.lexeme; // Turning Foo into ~Foo
                     switch (visibility) {
                         case VisibilityType::PUBLIC: visibility = VisibilityType::PUBLIC_DTOR; break;
                         case VisibilityType::PRIVATE: visibility = VisibilityType::PRIVATE_DTOR; break;
@@ -575,7 +574,7 @@ stmt_node_t Parser::class_declaration() {
     consume("Expected '}' at the end of class declaration", TokenType::RIGHT_BRACE);
     auto *class_definition =
         allocate_node(ClassStmt, std::move(name), ctor, dtor, std::move(members), std::move(methods));
-    classes.push_back(class_definition);
+    current_module.classes.push_back(class_definition);
 
     return stmt_node_t{class_definition};
 }
@@ -583,7 +582,7 @@ stmt_node_t Parser::class_declaration() {
 stmt_node_t Parser::function_declaration() {
     consume("Expected function name after 'fn' keyword", TokenType::IDENTIFIER);
 
-    for (auto *func : functions) {
+    for (auto *func : current_module.functions) {
         if (func->name.lexeme == previous().lexeme) {
             throw_parse_error("Function already defined");
         }
@@ -625,10 +624,17 @@ stmt_node_t Parser::function_declaration() {
         allocate_node(FunctionStmt, std::move(name), std::move(return_type), std::move(params), std::move(body));
 
     if (!in_class && scope_depth == 1) {
-        functions.push_back(function_definition);
+        current_module.functions.push_back(function_definition);
     }
 
     return stmt_node_t{function_definition};
+}
+
+void recursively_change_module_depth(std::pair<Module, std::size_t> &module, std::size_t value) {
+    module.second = value;
+    for (auto *imported : module.first.imported) {
+        recursively_change_module_depth(*imported, value + 1);
+    }
 }
 
 stmt_node_t Parser::import_statement() {
@@ -659,11 +665,23 @@ stmt_node_t Parser::import_statement() {
     std::string_view logger_source{logger.source};
     std::string_view logger_module_name{logger.module_name};
 
+    auto it = std::find_if(parsed_modules.begin(), parsed_modules.end(),
+        [&module_name](const std::pair<Module, std::size_t> &pair) { return module_name == pair.first.name; });
+
+    // Avoid parsing a module if its already imported
+    if (it != parsed_modules.end()) {
+        if (it->second < (current_module_depth + 1)) {
+            recursively_change_module_depth(*it, current_module_depth + 1);
+        }
+        current_module.imported.push_back(&(*it));
+        return {nullptr};
+    }
+
     try {
         logger.set_source(module_source);
         logger.set_module_name(module_name);
         Scanner scanner{module_source};
-        Parser parser{scanner.scan(), imported_module};
+        Parser parser{scanner.scan(), imported_module, current_module_depth + 1};
         imported_module.statements = parser.program();
         TypeResolver resolver{imported_module};
         resolver.check(imported_module.statements);
@@ -671,7 +689,8 @@ stmt_node_t Parser::import_statement() {
 
     logger.set_source(logger_source);
     logger.set_module_name(logger_module_name);
-    current_module.imported.emplace_back(std::move(imported_module));
+    parsed_modules.emplace_back(std::move(imported_module), current_module_depth + 1);
+    current_module.imported.push_back(&parsed_modules.back());
     return {nullptr};
 }
 
@@ -697,11 +716,8 @@ stmt_node_t Parser::variable_declaration() {
     expr_node_t initializer = match(TokenType::EQUAL) ? expression() : nullptr;
     consume("Expected ';' or newline after variable initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
 
-    if (var_type != nullptr && keyword == TokenType::VAL) {
-        var_type.get()->data.is_const = true;
-    }
-
-    auto *variable = allocate_node(VarStmt, std::move(name), std::move(var_type), std::move(initializer));
+    auto *variable = allocate_node(
+        VarStmt, (keyword == TokenType::VAL), std::move(name), std::move(var_type), std::move(initializer));
     return stmt_node_t{variable};
 }
 

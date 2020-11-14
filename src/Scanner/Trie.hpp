@@ -27,9 +27,7 @@ struct Node {
         }
     }
 
-    Node(char value) : Node() {
-        this->value = value;
-    }
+    Node(char value) : Node() { this->value = value; }
 };
 
 class Trie {

@@ -6,17 +6,20 @@
 #define CODE_GEN_HPP
 
 #include "../AST.hpp"
-#include "../VM/Chunk.hpp"
 #include "../Module.hpp"
+#include "../VM/Chunk.hpp"
+
+#include <deque>
 
 class Generator : Visitor {
     Chunk *current_chunk{nullptr};
     Module *current_module{nullptr};
-    RuntimeModule generated_module{};
 
   public:
+    static std::deque<RuntimeModule> compiled_modules;
+
     Generator() = default;
-    RuntimeModule compile_module(Module &module, Chunk &chunk);
+    RuntimeModule compile(Module &main_module);
 
     ExprVisitorType compile(Expr *expr);
     StmtVisitorType compile(Stmt *stmt);

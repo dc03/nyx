@@ -347,8 +347,8 @@ if __name__ == '__main__':
         decl_stmt('name{name}, type{std::move(type)}',
                   'Token name, type_node_t type')
 
-        decl_stmt('name{name}, type{std::move(type)}, initializer{std::move(initializer)}',
-                  'Token name, type_node_t type, expr_node_t initializer')
+        decl_stmt('is_val{is_val}, name{name}, type{std::move(type)}, initializer{std::move(initializer)}',
+                  'bool is_val, Token name, type_node_t type, expr_node_t initializer')
 
         decl_stmt('keyword{keyword}, condition{std::move(condition)}, body{std::move(body)}',
                   'Token keyword, expr_node_t condition, stmt_node_t body')

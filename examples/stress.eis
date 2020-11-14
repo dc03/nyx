@@ -162,8 +162,17 @@ z[0][0]
 var yay = imported::X()
 print(yay.x)
 print(imported::foo())
-*/*/*/
+
 import "imported.eis"
 
 var y = imported::X()
 y.x = 6
+
+for (var i = 0; i < 5; ++i) {
+    print(i)
+}
+*/*/*/
+import "C.eis"
+import "A.eis"
+import "imported.eis"
+5 + 6

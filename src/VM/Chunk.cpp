@@ -1,15 +1,15 @@
 /* See LICENSE at project root for license details */
 #include "Chunk.hpp"
+
 #include "../ErrorLogger/ErrorLogger.hpp"
-#include "Instructions.hpp"
 
 #include <utility>
 
-void Chunk::emit_byte(std::byte value) {
+void Chunk::emit_byte(Chunk::byte value) {
     bytes.push_back(value);
 }
 
-void Chunk::emit_bytes(std::byte value_1, std::byte value_2) {
+void Chunk::emit_bytes(Chunk::byte value_1, Chunk::byte value_2) {
     bytes.push_back(value_1);
     bytes.push_back(value_2);
 }
@@ -20,11 +20,15 @@ void Chunk::emit_constant(Value value) {
 
     if (constants.size() <= const_short_max) {
         constants.emplace_back(std::move(value));
-        emit_bytes(static_cast<std::byte>(Instruction::CONST_SHORT), static_cast<std::byte>(constants.size() - 1));
+        emit_bytes(static_cast<unsigned char>(Instruction::CONST_SHORT), constants.size() - 1);
     } else if (constants.size() <= const_long_max) {
         constants.emplace_back(std::move(value));
-        emit_bytes(static_cast<std::byte>(Instruction::CONST_LONG), static_cast<std::byte>(constants.size() - 1));
+        emit_bytes(static_cast<unsigned char>(Instruction::CONST_LONG), constants.size() - 1);
     } else {
         compile_error("Too many constants in chunk");
     }
+}
+
+void Chunk::emit_instruction(Instruction instruction) {
+    bytes.push_back(static_cast<unsigned char>(instruction));
 }

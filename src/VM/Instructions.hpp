@@ -8,31 +8,33 @@
 #include <cstddef>
 
 enum class Instruction : unsigned char {
-    HALT,
-//    INT_SHORT, // 1 byte int literal
-//    INT_LONG,  // 3 byte int literal
+    HALT, // Stop the interpreter
+    POP,  // Pop the value at the top of the stack
+
+    //    INT_SHORT, // 1 byte int literal
+    //    INT_LONG,  // 3 byte int literal
     CONST_SHORT, // first 255 constant values
     CONST_LONG,  // rest of the constant values
 
-    ADDS, // string concatenation
+    CONCAT, // string concatenation
 
-    ADDI, // Integer addition
-    ADDF, // Float addition
-    SUBI, // Integer subtraction
-    SUBF, // Float subtraction
-    MULI, // Integer multiplication
-    MULF, // Float multiplication
-    DIVI, // Integer division
-    DIVF, // Float division
+    ADD, // Addition
+    SUB, // Subtraction
+    MUL, // Multiplication
+    DIV, // Division
+    MOD, // Integer modulo
 
-    SHL,     // Bitwise shift-left
-    SHR,     // Bitwise shift-right
-    BIT_AND, // Bitwise and
-    BIT_OR,  // Bitwise or
-    BIT_NOT, // Bitwise not
-    BIT_XOR, // Bitwise xor
+    SHIFT_LEFT,  // Bitwise shift-left
+    SHIFT_RIGHT, // Bitwise shift-right
+    BIT_AND,     // Bitwise and
+    BIT_OR,      // Bitwise or
+    BIT_NOT,     // Bitwise not
+    BIT_XOR,     // Bitwise xor
 
-    NOT, // Logical not
+    NOT,     // Logical not
+    EQUAL,   // Logical equal
+    GREATER, // Logical greater
+    LESSER,  // Logical lesser
 
     NEGATE, // Unary minus
 };

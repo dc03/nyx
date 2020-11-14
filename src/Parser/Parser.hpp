@@ -9,13 +9,12 @@
 #include "../Module.hpp"
 #include "../Token.hpp"
 
+#include <deque>
 #include <string_view>
 #include <vector>
 
 #define allocate_node(T, ...)                                                                                          \
-    new T {                                                                                                            \
-        __VA_ARGS__                                                                                                    \
-    }
+    new T { __VA_ARGS__ }
 
 struct ParsePrecedence {
     enum of {
@@ -53,8 +52,7 @@ class Parser {
     ParseRule rules[static_cast<std::size_t>(TokenType::END_OF_FILE) + 1];
 
     Module &current_module;
-    std::vector<ClassStmt *> &classes;
-    std::vector<FunctionStmt *> &functions;
+    std::size_t current_module_depth{}; // The depth in the import tree where the parser is currently at
     std::size_t scope_depth{};
 
     bool in_class{false};
@@ -71,7 +69,9 @@ class Parser {
     void throw_parse_error(const std::string_view message) const;
 
   public:
-    explicit Parser(const std::vector<Token> &tokens, Module &module);
+    static std::deque<std::pair<Module, std::size_t>> parsed_modules;
+
+    explicit Parser(const std::vector<Token> &tokens, Module &module, std::size_t current_depth);
 
     [[nodiscard]] bool is_at_end() const noexcept;
     [[nodiscard]] const Token &previous() const noexcept;

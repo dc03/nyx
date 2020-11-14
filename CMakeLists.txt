@@ -1,3 +1,4 @@
+# See LICENSE at project root for license details
 cmake_minimum_required(VERSION 3.10)
 
 project(eis VERSION 0.0.6)
@@ -10,9 +11,9 @@ if (MSVC)
     add_compile_options(/W4 /WX)
 else()
     # lots of warnings and all warnings as errors
-    add_compile_options(-Wall -Wextra -pedantic -Werror -g)
+    add_compile_options(-Wall -Wextra -pedantic -g)
 endif()
 
 add_executable(eis src/eis.cpp src/ErrorLogger/ErrorLogger.cpp src/Parser/TypeResolver.cpp src/Parser/VisitorTypes.cpp
                    src/Parser/Parser.cpp src/Scanner/Scanner.cpp src/Scanner/Trie.cpp src/AST.cpp src/VM/Chunk.cpp
-                   src/CodeGen/CodeGen.cpp)
+                   src/CodeGen/CodeGen.cpp src/VM/VM.cpp src/VM/Value.cpp)

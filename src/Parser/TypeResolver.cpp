@@ -8,9 +8,7 @@
 #include <string_view>
 
 #define allocate_node(T, ...)                                                                                          \
-    new T {                                                                                                            \
-        __VA_ARGS__                                                                                                    \
-    }
+    new T { __VA_ARGS__ }
 
 #define unreachable() __builtin_unreachable()
 
@@ -26,19 +24,13 @@ struct scoped_boolean_manager {
         controlled = true;
     }
 
-    ~scoped_boolean_manager() {
-        scoped_bool = previous_value;
-    }
+    ~scoped_boolean_manager() { scoped_bool = previous_value; }
 };
 
 struct scoped_scope_manager {
     TypeResolver &resolver;
-    scoped_scope_manager(TypeResolver &resolver) : resolver{resolver} {
-        resolver.begin_scope();
-    }
-    ~scoped_scope_manager() {
-        resolver.end_scope();
-    }
+    scoped_scope_manager(TypeResolver &resolver) : resolver{resolver} { resolver.begin_scope(); }
+    ~scoped_scope_manager() { resolver.end_scope(); }
 };
 
 TypeResolver::TypeResolver(Module &module)
@@ -129,15 +121,15 @@ BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Arg
 
 ExprVisitorType TypeResolver::visit(AccessExpr &expr) {
     for (auto &module : current_module.imported) {
-        std::string module_name = module.name.substr(0, module.name.find_last_of('.'));
+        std::string module_name = module->first.name.substr(0, module->first.name.find_last_of('.'));
         if (module_name == expr.module.lexeme) {
-            for (FunctionStmt *func : module.functions) {
+            for (FunctionStmt *func : module->first.functions) {
                 if (func->name.lexeme == expr.name.lexeme) {
                     return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.name};
                 }
             }
 
-            for (ClassStmt *class_ : module.classes) {
+            for (ClassStmt *class_ : module->first.classes) {
                 if (class_->name.lexeme == expr.name.lexeme) {
                     return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), class_, expr.name};
                 }
@@ -444,7 +436,7 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
-    switch (expr.value.value.index()) {
+    switch (expr.value.tag) {
         case LiteralValue::INT:
         case LiteralValue::DOUBLE:
         case LiteralValue::STRING:
@@ -470,7 +462,7 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
 
     if (object.info->data.is_const) {
         error("Cannot assign to a const object", expr.name);
-    } else if (attribute_type.info->data.is_const) {
+    } else if (not in_ctor && attribute_type.info->data.is_const) {
         error("Cannot assign to const attribute", expr.name);
     }
 
@@ -486,7 +478,6 @@ ExprVisitorType TypeResolver::visit(SuperExpr &) {
     // TODO: Implement me
     throw TypeException{"Super expressions/inheritance not implemented yet"};
 }
-
 
 ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
     ExprVisitorType left = resolve(expr.left.get());
@@ -601,9 +592,7 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
             : managed_class{current_class}, previous_value{current_class} {
             current_class = stmt;
         }
-        ~scoped_class_manager() {
-            managed_class = previous_value;
-        }
+        ~scoped_class_manager() { managed_class = previous_value; }
     } pointer_manager{current_class, &stmt};
 
     // Creation of the implicit constructor
@@ -617,11 +606,11 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
     std::size_t initialized_count = std::count_if(stmt.members.begin(), stmt.members.end(),
         [](const auto &member) { return dynamic_cast<VarStmt *>(member.first.get())->initializer != nullptr; });
 
-    BlockStmt *ctor_body = dynamic_cast<BlockStmt *>(stmt.ctor->body.get());
+    auto *ctor_body = dynamic_cast<BlockStmt *>(stmt.ctor->body.get());
     ctor_body->stmts.reserve(initialized_count + ctor_body->stmts.size());
 
     for (auto &member_declaration : stmt.members) {
-        VarStmt *member = dynamic_cast<VarStmt *>(member_declaration.first.get());
+        auto *member = dynamic_cast<VarStmt *>(member_declaration.first.get());
         if (member->initializer != nullptr) {
             using namespace std::string_literals;
             // Transform the declaration of the member into an implicit assignment in the constructor
@@ -666,12 +655,14 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
             : managed_class{current_class}, previous_value{current_class} {
             current_class = stmt;
         }
-        ~scoped_function_manager() {
-            managed_class = previous_value;
-        }
+        ~scoped_function_manager() { managed_class = previous_value; }
     } pointer_manager{current_function, &stmt};
 
     scoped_scope_manager manager{*this};
+
+    bool throwaway{};
+    bool is_in_ctor{current_class != nullptr && stmt.name.lexeme == current_class->name.lexeme};
+    scoped_boolean_manager ctor_manager{is_in_ctor ? in_ctor : throwaway};
 
     for (const auto &param : stmt.params) {
         values.push_back({param.first.lexeme, param.second.get(), scope_depth});
@@ -731,6 +722,10 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         error("A variable with the same name has already been created in this scope", stmt.name);
     }
 
+    if (stmt.is_val && stmt.type != nullptr) {
+        stmt.type->data.is_const = true;
+    }
+
     if (stmt.initializer != nullptr && stmt.type != nullptr) {
         QualifiedTypeInfo type = resolve(stmt.type.get());
         ExprVisitorType initializer = resolve(stmt.initializer.get());
@@ -742,8 +737,18 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         }
     } else if (stmt.initializer != nullptr) {
         ExprVisitorType initializer = resolve(stmt.initializer.get());
+        stmt.type = type_node_t{copy_type(initializer.info)};
+
+        if (stmt.is_val) {
+            stmt.type->data.is_const = true;
+        } else if (!initializer.info->data.is_ref) {
+            // If there is a var statement without a specified type that is not binding to a reference it is
+            // automatically non-const
+            stmt.type->data.is_const = false;
+        }
+
         if (!in_class || in_function) {
-            values.push_back({stmt.name.lexeme, initializer.info, scope_depth, initializer.class_});
+            values.push_back({stmt.name.lexeme, stmt.type.get(), scope_depth, initializer.class_});
         }
     } else if (stmt.type != nullptr) {
         QualifiedTypeInfo type = resolve(stmt.type.get());

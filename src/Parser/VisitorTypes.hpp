@@ -34,14 +34,31 @@ struct ExprTypeInfo {
 };
 
 struct LiteralValue {
-    enum { INT, DOUBLE, STRING, BOOL, NULL_ };
-    std::variant<int, double, std::string, bool, std::nullptr_t> value;
+    enum { INT, DOUBLE, STRING, BOOL, NULL_ } tag;
+    union as {
+        int integer;
+        double real;
+        std::string string;
+        bool boolean;
+        std::nullptr_t null;
 
-    LiteralValue(int value);
-    LiteralValue(double value);
-    LiteralValue(std::string value);
-    LiteralValue(bool value);
-    LiteralValue(std::nullptr_t);
+        as() { null = nullptr; }
+        explicit as(int value) { integer = value; }
+        explicit as(double value) { real = value; }
+        explicit as(const std::string &value) { string = value; }
+        explicit as(bool value) { boolean = value; }
+        explicit as(std::nullptr_t) { null = nullptr; }
+        ~as() {}
+    } as;
+
+    explicit LiteralValue(int value);
+    explicit LiteralValue(double value);
+    explicit LiteralValue(std::string value);
+    explicit LiteralValue(bool value);
+    explicit LiteralValue(std::nullptr_t);
+
+    LiteralValue(LiteralValue &&other) noexcept;
+    ~LiteralValue();
 };
 
 using StmtVisitorType = void;

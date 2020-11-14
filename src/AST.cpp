@@ -1,10 +1,9 @@
+/* See LICENSE at project root for license details */
 #include "AST.hpp"
 
 #define unreachable() __builtin_unreachable()
 #define allocate_node(T, ...)                                                                                          \
-    new T {                                                                                                            \
-        __VA_ARGS__                                                                                                    \
-    }
+    new T { __VA_ARGS__ }
 
 std::string stringify(BaseType *node) {
     std::string result{};

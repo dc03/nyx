@@ -26,6 +26,7 @@ class TypeResolver final : Visitor {
     std::vector<type_node_t> type_scratch_space{};
     std::vector<Value> values{};
 
+    bool in_ctor{false};
     bool in_class{false};
     bool in_function{false};
     bool in_loop{false};

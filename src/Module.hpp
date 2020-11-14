@@ -18,7 +18,7 @@ struct Module {
     std::vector<ClassStmt *> classes{};
     std::vector<FunctionStmt *> functions{};
     std::vector<stmt_node_t> statements{};
-    std::vector<Module> imported{};
+    std::vector<std::pair<Module, std::size_t> *> imported{};
 
     explicit Module(std::string_view name, std::string_view dir) : name{name}, module_directory{dir} {}
 };
