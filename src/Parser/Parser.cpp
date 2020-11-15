@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <utility>
 
-std::deque<std::pair<Module, std::size_t>> Parser::parsed_modules{};
+std::vector<std::pair<Module, std::size_t>> Parser::parsed_modules{};
 
 struct ParseException : public std::invalid_argument {
     Token token{};
@@ -632,8 +632,8 @@ stmt_node_t Parser::function_declaration() {
 
 void recursively_change_module_depth(std::pair<Module, std::size_t> &module, std::size_t value) {
     module.second = value;
-    for (auto *imported : module.first.imported) {
-        recursively_change_module_depth(*imported, value + 1);
+    for (std::size_t imported : module.first.imported) {
+        recursively_change_module_depth(Parser::parsed_modules[imported], value + 1);
     }
 }
 
@@ -673,7 +673,7 @@ stmt_node_t Parser::import_statement() {
         if (it->second < (current_module_depth + 1)) {
             recursively_change_module_depth(*it, current_module_depth + 1);
         }
-        current_module.imported.push_back(&(*it));
+        current_module.imported.push_back(it - parsed_modules.begin());
         return {nullptr};
     }
 
@@ -690,7 +690,7 @@ stmt_node_t Parser::import_statement() {
     logger.set_source(logger_source);
     logger.set_module_name(logger_module_name);
     parsed_modules.emplace_back(std::move(imported_module), current_module_depth + 1);
-    current_module.imported.push_back(&parsed_modules.back());
+    current_module.imported.push_back(parsed_modules.size() - 1);
     return {nullptr};
 }
 

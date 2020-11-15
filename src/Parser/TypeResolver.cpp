@@ -2,6 +2,7 @@
 #include "TypeResolver.hpp"
 
 #include "../ErrorLogger/ErrorLogger.hpp"
+#include "Parser.hpp"
 
 #include <algorithm>
 #include <stdexcept>
@@ -120,16 +121,17 @@ BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Arg
 }
 
 ExprVisitorType TypeResolver::visit(AccessExpr &expr) {
-    for (auto &module : current_module.imported) {
-        std::string module_name = module->first.name.substr(0, module->first.name.find_last_of('.'));
+    for (std::size_t module : current_module.imported) {
+        std::string module_name = Parser::parsed_modules[module].first.name.substr(
+            0, Parser::parsed_modules[module].first.name.find_last_of('.'));
         if (module_name == expr.module.lexeme) {
-            for (FunctionStmt *func : module->first.functions) {
+            for (FunctionStmt *func : Parser::parsed_modules[module].first.functions) {
                 if (func->name.lexeme == expr.name.lexeme) {
                     return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.name};
                 }
             }
 
-            for (ClassStmt *class_ : module->first.classes) {
+            for (ClassStmt *class_ : Parser::parsed_modules[module].first.classes) {
                 if (class_->name.lexeme == expr.name.lexeme) {
                     return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), class_, expr.name};
                 }

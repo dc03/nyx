@@ -9,14 +9,12 @@
 #include "../Module.hpp"
 #include "../VM/Chunk.hpp"
 
-#include <deque>
-
 class Generator : Visitor {
     Chunk *current_chunk{nullptr};
     Module *current_module{nullptr};
 
   public:
-    static std::deque<RuntimeModule> compiled_modules;
+    static std::vector<RuntimeModule> compiled_modules;
 
     Generator() = default;
     RuntimeModule compile(Module &module);

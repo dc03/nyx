@@ -6,7 +6,7 @@
 
 #define unreachable() __builtin_unreachable()
 
-std::deque<RuntimeModule> Generator::compiled_modules{};
+std::vector<RuntimeModule> Generator::compiled_modules{};
 
 RuntimeModule Generator::compile(Module &module) {
     RuntimeModule compiled{};

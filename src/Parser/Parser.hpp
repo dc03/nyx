@@ -9,7 +9,6 @@
 #include "../Module.hpp"
 #include "../Token.hpp"
 
-#include <deque>
 #include <string_view>
 #include <vector>
 
@@ -69,7 +68,7 @@ class Parser {
     void throw_parse_error(const std::string_view message) const;
 
   public:
-    static std::deque<std::pair<Module, std::size_t>> parsed_modules;
+    static std::vector<std::pair<Module, std::size_t>> parsed_modules;
 
     explicit Parser(const std::vector<Token> &tokens, Module &module, std::size_t current_depth);
 
