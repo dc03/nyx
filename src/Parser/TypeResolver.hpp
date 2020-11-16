@@ -51,7 +51,6 @@ class TypeResolver final : Visitor {
     StmtVisitorType resolve(Stmt *stmt);
     BaseTypeVisitorType resolve(BaseType *type);
 
-    ExprVisitorType visit(AccessExpr &expr) override final;
     ExprVisitorType visit(AssignExpr &expr) override final;
     ExprVisitorType visit(BinaryExpr &expr) override final;
     ExprVisitorType visit(CallExpr &expr) override final;
@@ -61,6 +60,8 @@ class TypeResolver final : Visitor {
     ExprVisitorType visit(IndexExpr &expr) override final;
     ExprVisitorType visit(LiteralExpr &expr) override final;
     ExprVisitorType visit(LogicalExpr &expr) override final;
+    ExprVisitorType visit(ScopeAccessExpr &expr) override final;
+    ExprVisitorType visit(ScopeNameExpr &expr) override final;
     ExprVisitorType visit(SetExpr &expr) override final;
     ExprVisitorType visit(SuperExpr &expr) override final;
     ExprVisitorType visit(TernaryExpr &expr) override final;

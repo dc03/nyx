@@ -25,7 +25,6 @@ using type_node_t = std::unique_ptr<BaseType>;
 
 // Expression nodes
 
-struct AccessExpr;
 struct AssignExpr;
 struct BinaryExpr;
 struct CallExpr;
@@ -35,6 +34,8 @@ struct GroupingExpr;
 struct IndexExpr;
 struct LiteralExpr;
 struct LogicalExpr;
+struct ScopeAccessExpr;
+struct ScopeNameExpr;
 struct SetExpr;
 struct SuperExpr;
 struct TernaryExpr;
@@ -65,7 +66,6 @@ struct ListType;
 struct TypeofType;
 
 struct Visitor {
-    virtual ExprVisitorType visit(AccessExpr &expr) = 0;
     virtual ExprVisitorType visit(AssignExpr &expr) = 0;
     virtual ExprVisitorType visit(BinaryExpr &expr) = 0;
     virtual ExprVisitorType visit(CallExpr &expr) = 0;
@@ -75,6 +75,8 @@ struct Visitor {
     virtual ExprVisitorType visit(IndexExpr &expr) = 0;
     virtual ExprVisitorType visit(LiteralExpr &expr) = 0;
     virtual ExprVisitorType visit(LogicalExpr &expr) = 0;
+    virtual ExprVisitorType visit(ScopeAccessExpr &expr) = 0;
+    virtual ExprVisitorType visit(ScopeNameExpr &expr) = 0;
     virtual ExprVisitorType visit(SetExpr &expr) = 0;
     virtual ExprVisitorType visit(SuperExpr &expr) = 0;
     virtual ExprVisitorType visit(TernaryExpr &expr) = 0;
@@ -102,7 +104,6 @@ struct Visitor {
 };
 
 enum class NodeType {
-    AccessExpr,
     AssignExpr,
     BinaryExpr,
     CallExpr,
@@ -112,6 +113,8 @@ enum class NodeType {
     IndexExpr,
     LiteralExpr,
     LogicalExpr,
+    ScopeAccessExpr,
+    ScopeNameExpr,
     SetExpr,
     SuperExpr,
     TernaryExpr,
@@ -222,19 +225,6 @@ struct TypeofType final : public BaseType {
 // End of type node definitions
 
 // Expression node definitions
-
-struct AccessExpr final : public Expr {
-    Token module;
-    Token name;
-
-    std::string_view string_tag() override final { return "AccessExpr"; }
-
-    NodeType type_tag() override final { return NodeType::AccessExpr; }
-
-    AccessExpr(Token module, Token name) : module{module}, name{name} {}
-
-    ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
-};
 
 struct AssignExpr final : public Expr {
     Token target;
@@ -358,6 +348,31 @@ struct LogicalExpr final : public Expr {
 
     LogicalExpr(expr_node_t left, Token oper, expr_node_t right)
         : left{std::move(left)}, oper{oper}, right{std::move(right)} {}
+
+    ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct ScopeAccessExpr final : public Expr {
+    expr_node_t scope;
+    Token name;
+
+    std::string_view string_tag() override final { return "ScopeAccessExpr"; }
+
+    NodeType type_tag() override final { return NodeType::ScopeAccessExpr; }
+
+    ScopeAccessExpr(expr_node_t scope, Token name) : scope{std::move(scope)}, name{name} {}
+
+    ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct ScopeNameExpr final : public Expr {
+    Token name;
+
+    std::string_view string_tag() override final { return "ScopeNameExpr"; }
+
+    NodeType type_tag() override final { return NodeType::ScopeNameExpr; }
+
+    ScopeNameExpr(Token name) : name{name} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

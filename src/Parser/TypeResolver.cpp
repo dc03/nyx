@@ -120,29 +120,6 @@ BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Arg
     return type_scratch_space.back().get();
 }
 
-ExprVisitorType TypeResolver::visit(AccessExpr &expr) {
-    for (std::size_t module : current_module.imported) {
-        std::string module_name = Parser::parsed_modules[module].first.name.substr(
-            0, Parser::parsed_modules[module].first.name.find_last_of('.'));
-        if (module_name == expr.module.lexeme) {
-            for (FunctionStmt *func : Parser::parsed_modules[module].first.functions) {
-                if (func->name.lexeme == expr.name.lexeme) {
-                    return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.name};
-                }
-            }
-
-            for (ClassStmt *class_ : Parser::parsed_modules[module].first.classes) {
-                if (class_->name.lexeme == expr.name.lexeme) {
-                    return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), class_, expr.name};
-                }
-            }
-        }
-    }
-
-    error("No such function/class exists in any imported module", expr.name);
-    throw TypeException{"No such function/class exists in any imported module"};
-}
-
 ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
     for (auto it = values.end() - 1; it >= values.begin(); it--) {
         if (it->lexeme == expr.target.lexeme) {
@@ -460,6 +437,56 @@ ExprVisitorType TypeResolver::visit(LogicalExpr &expr) {
     resolve(expr.left.get());
     resolve(expr.right.get());
     return {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+}
+
+ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
+    ExprVisitorType left = resolve(expr.scope.get());
+
+    switch (left.type) {
+        case ExprTypeInfo::ScopeType::CLASS:
+            for (auto &method : left.class_->methods) {
+                if (dynamic_cast<FunctionStmt *>(method.first.get())->name.lexeme == expr.name.lexeme) {
+                    return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
+                        dynamic_cast<FunctionStmt *>(method.first.get()), expr.name};
+                }
+            }
+            error("No such method exists in the class", expr.name);
+            throw TypeException{"No such method exists in the class"};
+        case ExprTypeInfo::ScopeType::MODULE:
+            for (ClassStmt *class_ : Parser::parsed_modules[left.module_index].first.classes) {
+                if (class_->name.lexeme == expr.name.lexeme) {
+                    return {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.name};
+                }
+            }
+            for (FunctionStmt *func : Parser::parsed_modules[left.module_index].first.functions) {
+                if (func->name.lexeme == expr.name.lexeme) {
+                    return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.name};
+                }
+            }
+            error("No such function/class exists in the module", expr.name);
+            throw TypeException{"No such function/class exists in the module"};
+        case ExprTypeInfo::ScopeType::NONE:
+            error("No such module/class exists in the current global scope", expr.name);
+            throw TypeException{"No such module/class exists in the current global scope"};
+    }
+}
+
+ExprVisitorType TypeResolver::visit(ScopeNameExpr &expr) {
+    for (std::size_t i{0}; i < Parser::parsed_modules.size(); i++) {
+        if (Parser::parsed_modules[i].first.name.substr(0, Parser::parsed_modules[i].first.name.find_last_of('.')) ==
+            expr.name.lexeme) {
+            return {make_new_type<PrimitiveType>(Type::MODULE, true, false), i, expr.name};
+        }
+    }
+
+    for (ClassStmt *class_ : current_module.classes) {
+        if (class_->name.lexeme == expr.name.lexeme) {
+            return {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.name};
+        }
+    }
+
+    error("No such scope exists with the given name", expr.name);
+    throw TypeException{"No such scope exists with the given name"};
 }
 
 ExprVisitorType TypeResolver::visit(SetExpr &expr) {

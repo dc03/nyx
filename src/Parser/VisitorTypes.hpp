@@ -9,9 +9,8 @@
 
 #include <memory>
 #include <string>
-#include <variant>
 
-enum class Type { BOOL, INT, FLOAT, STRING, CLASS, LIST, TYPEOF, NULL_, FUNCTION };
+enum class Type { BOOL, INT, FLOAT, STRING, CLASS, LIST, TYPEOF, NULL_, FUNCTION, MODULE };
 
 struct Expr;
 struct BaseType;
@@ -24,13 +23,16 @@ struct ExprTypeInfo {
     QualifiedTypeInfo info{nullptr};
     FunctionStmt *func{nullptr};
     ClassStmt *class_{nullptr};
+    std::size_t module_index{};
     Token lexeme{};
     bool is_lvalue{};
+    enum class ScopeType { CLASS, MODULE, NONE } type{};
 
     ExprTypeInfo() = default;
     ExprTypeInfo(QualifiedTypeInfo info, Token token, bool is_lvalue = false);
     ExprTypeInfo(QualifiedTypeInfo info, FunctionStmt *func, Token token, bool is_lvalue = false);
     ExprTypeInfo(QualifiedTypeInfo info, ClassStmt *class_, Token token, bool is_lvalue = false);
+    ExprTypeInfo(QualifiedTypeInfo info, std::size_t module_index, Token token);
 };
 
 struct LiteralValue {

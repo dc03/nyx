@@ -175,4 +175,6 @@ import "C.eis"
 import "A.eis"
 import "imported.eis"
 */*/*/
-2 <= (5, 6, 7)
+//2 <= (5, 6, 7)
+import "imported.eis"
+var x = imported::x();

@@ -32,7 +32,7 @@ struct ParsePrecedence {
         UNARY,      // ! ~ ++ --
         CALL,       // . () []
         COMMA,      // ,
-        /* PRIMARY */
+        PRIMARY
     };
 };
 
@@ -90,21 +90,21 @@ class Parser {
     expr_node_t parse_precedence(ParsePrecedence::of precedence);
     expr_node_t expression();
 
-    expr_node_t grouping(bool);
-    expr_node_t literal(bool);
-    expr_node_t super(bool);
-    expr_node_t this_expr(bool);
-    expr_node_t unary(bool);
-    expr_node_t variable(bool can_assign);
-
     expr_node_t and_(bool, expr_node_t left);
     expr_node_t binary(bool, expr_node_t left);
     expr_node_t call(bool, expr_node_t function);
     expr_node_t comma(bool, expr_node_t left);
     expr_node_t dot(bool can_assign, expr_node_t left);
+    expr_node_t grouping(bool);
     expr_node_t index(bool, expr_node_t object);
+    expr_node_t literal(bool);
     expr_node_t or_(bool, expr_node_t left);
+    expr_node_t scope_access(bool, expr_node_t left);
+    expr_node_t super(bool);
     expr_node_t ternary(bool, expr_node_t left);
+    expr_node_t this_expr(bool);
+    expr_node_t unary(bool);
+    expr_node_t variable(bool can_assign);
 
     // Type parsing
     type_node_t type();

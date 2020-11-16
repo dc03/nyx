@@ -30,23 +30,23 @@ int main(const int, const char *const argv[]) {
     main.statements = parser.program();
     resolver.check(main.statements);
 
-    if (!logger.had_error) {
-        std::sort(Parser::parsed_modules.begin(), Parser::parsed_modules.end(),
-            [](const auto &x1, const auto &x2) { return x1.second > x2.second; });
-
-        for (auto &module : Parser::parsed_modules) {
-            std::cout << module.first.name << " -> depth: " << module.second << "\n";
-        }
-
-        Generator generator{};
-        for (auto &module : Parser::parsed_modules) {
-            Generator::compiled_modules.emplace_back(generator.compile(module.first));
-        }
-        RuntimeModule main_compiled = generator.compile(main);
-        main_compiled.top_level_code.emit_instruction(Instruction::HALT);
-        VM vm{};
-        vm.run(main_compiled);
-        // std::cout << vm.stack[0].to_int();
-    }
+    //    if (!logger.had_error) {
+    //        std::sort(Parser::parsed_modules.begin(), Parser::parsed_modules.end(),
+    //            [](const auto &x1, const auto &x2) { return x1.second > x2.second; });
+    //
+    //        for (auto &module : Parser::parsed_modules) {
+    //            std::cout << module.first.name << " -> depth: " << module.second << "\n";
+    //        }
+    //
+    //        Generator generator{};
+    //        for (auto &module : Parser::parsed_modules) {
+    //            Generator::compiled_modules.emplace_back(generator.compile(module.first));
+    //        }
+    //        RuntimeModule main_compiled = generator.compile(main);
+    //        main_compiled.top_level_code.emit_instruction(Instruction::HALT);
+    //        VM vm{};
+    //        vm.run(main_compiled);
+    //        // std::cout << vm.stack[0].to_int();
+    //    }
     return 0;
 }

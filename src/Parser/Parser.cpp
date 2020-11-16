@@ -119,6 +119,7 @@ Parser::Parser(const std::vector<Token> &tokens, Module &module, std::size_t cur
     add_rule(TokenType::RIGHT_INDEX,   {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::LEFT_BRACE,    {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::RIGHT_BRACE,   {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::DOUBLE_COLON,  {nullptr, &Parser::scope_access, ParsePrecedence::PRIMARY});
     add_rule(TokenType::SEMICOLON,     {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::ARROW,         {nullptr, nullptr, ParsePrecedence::NONE});
     add_rule(TokenType::IDENTIFIER,    {&Parser::variable, nullptr, ParsePrecedence::NONE});
@@ -377,6 +378,12 @@ expr_node_t Parser::literal(bool) {
     }
 }
 
+expr_node_t Parser::scope_access(bool, expr_node_t left) {
+    consume("Expected identifier to be accessed after scope name", TokenType::IDENTIFIER);
+    Token name = previous();
+    return expr_node_t{allocate_node(ScopeAccessExpr, std::move(left), std::move(name))};
+}
+
 expr_node_t Parser::super(bool) {
     if (!(in_class && in_function)) {
         throw_parse_error("Cannot use super expression outside a class");
@@ -408,10 +415,8 @@ expr_node_t Parser::variable(bool can_assign) {
                           TokenType::SLASH_EQUAL)) {
         expr_node_t value = expression();
         return expr_node_t{allocate_node(AssignExpr, std::move(name), std::move(value))};
-    } else if (match(TokenType::DOUBLE_COLON)) {
-        consume("Expected name to access after module name", TokenType::IDENTIFIER);
-        Token accessed = previous();
-        return expr_node_t{allocate_node(AccessExpr, std::move(name), std::move(accessed))};
+    } else if (peek().type == TokenType::DOUBLE_COLON) {
+        return expr_node_t{allocate_node(ScopeNameExpr, std::move(name))};
     } else {
         return expr_node_t{allocate_node(VariableExpr, std::move(name), 0)};
     }

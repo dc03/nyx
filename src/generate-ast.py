@@ -186,8 +186,9 @@ if __name__ == '__main__':
         declare_alias(file, 'type_node_t', 'BaseType')
         # Base class and alias declarations complete
 
-        Exprs: List[str] = ['Access', 'Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'Literal',
-                            'Logical', 'Set', 'Super', 'Ternary', 'This', 'Unary', 'Variable']
+        Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'Literal',
+                            'Logical', 'ScopeAccess', 'ScopeName', 'Set', 'Super', 'Ternary', 'This', 'Unary',
+                            'Variable']
         Stmts: List[str] = ['Block', 'Break', 'Class', 'Continue', 'Expression', 'Function',
                             'If', 'Return', 'Switch', 'Type', 'Var', 'While']
         Types: List[str] = ['Primitive', 'UserDefined', 'List', 'Typeof']
@@ -252,9 +253,6 @@ if __name__ == '__main__':
 
         file.write('// Expression node definitions\n\n')
 
-        decl_expr('module{module}, name{name}',
-                  'Token module, Token name')
-
         decl_expr('target{target}, value{std::move(value)}',
                   'Token target, expr_node_t value')
 
@@ -281,6 +279,12 @@ if __name__ == '__main__':
 
         decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}',
                   'expr_node_t left, Token oper, expr_node_t right')
+
+        decl_expr('scope{std::move(scope)}, name{name}',
+                  'expr_node_t scope, Token name')
+
+        decl_expr('name{name}',
+                  'Token name')
 
         decl_expr('object{std::move(object)}, name{name}, value{std::move(value)}',
                   'expr_node_t object, Token name, expr_node_t value')

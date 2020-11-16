@@ -23,8 +23,10 @@ LiteralValue::~LiteralValue() {
 }
 
 ExprTypeInfo::ExprTypeInfo(QualifiedTypeInfo info, Token token, bool is_lvalue)
-    : info{info}, lexeme{std::move(token)}, is_lvalue{is_lvalue} {}
+    : info{info}, lexeme{std::move(token)}, is_lvalue{is_lvalue}, type{ScopeType::NONE} {}
 ExprTypeInfo::ExprTypeInfo(QualifiedTypeInfo info, FunctionStmt *func, Token token, bool is_lvalue)
-    : info{info}, func{func}, lexeme{std::move(token)}, is_lvalue{is_lvalue} {}
+    : info{info}, func{func}, lexeme{std::move(token)}, is_lvalue{is_lvalue}, type{ScopeType::NONE} {}
 ExprTypeInfo::ExprTypeInfo(QualifiedTypeInfo info, ClassStmt *class_, Token token, bool is_lvalue)
-    : info{info}, class_{class_}, lexeme{std::move(token)}, is_lvalue{is_lvalue} {}
+    : info{info}, class_{class_}, lexeme{std::move(token)}, is_lvalue{is_lvalue}, type{ScopeType::CLASS} {}
+ExprTypeInfo::ExprTypeInfo(QualifiedTypeInfo info, std::size_t module_index, Token token)
+    : info{info}, module_index{module_index}, lexeme{std::move(token)}, is_lvalue{false}, type{ScopeType::MODULE} {}

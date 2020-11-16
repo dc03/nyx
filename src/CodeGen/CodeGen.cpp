@@ -34,10 +34,6 @@ BaseTypeVisitorType Generator::compile(BaseType *type) {
     return type->accept(*this);
 }
 
-ExprVisitorType Generator::visit(AccessExpr &expr) {
-    return {};
-}
-
 ExprVisitorType Generator::visit(AssignExpr &expr) {
     return {};
 }
@@ -138,6 +134,14 @@ ExprVisitorType Generator::visit(LiteralExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(LogicalExpr &expr) {
+    return {};
+}
+
+ExprVisitorType Generator::visit(ScopeAccessExpr &expr) {
+    return {};
+}
+
+ExprVisitorType Generator::visit(ScopeNameExpr &expr) {
     return {};
 }
 

@@ -33,7 +33,7 @@ primary        ::= "false" | "true" | "null"
                  | NUMBER | STRING | IDENTIFIER | expression "[" expression "]"
                  | "super" "." IDENTIFIER | "this"
                  | "(" expression ")"
-                 | IDENTIFIER "::" IDENTIFIER ;
+                 | expression "::" IDENTIFIER ;
 
 declaration    ::= statement
                  | import
