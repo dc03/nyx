@@ -179,8 +179,13 @@ import "imported.eis"
 class X {
     public var x: int;
     public fn X() -> X {}
-    public fn foo() -> null {}
+    public fn foo(x: const ref X, y: int) -> null {
+        print(string(x.x + y))
+    }
 }
 
-var x = X::X();
-x.foo();
+var y = 6
+val x = X::X()
+X::foo(x, 5)
+x.foo(y)
+y = 5

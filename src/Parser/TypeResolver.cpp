@@ -124,7 +124,7 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
     for (auto it = values.end() - 1; it >= values.begin(); it--) {
         if (it->lexeme == expr.target.lexeme) {
             ExprVisitorType value = resolve(expr.value.get());
-            if (value.info->data.is_const) {
+            if (it->info->data.is_const) {
                 error("Cannot assign to a const variable", expr.target);
             } else if (!convertible_to(it->info, value.info, value.is_lvalue, expr.target)) {
                 error("Cannot convert type of value to type of target", expr.target);
@@ -281,6 +281,11 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         }
     }
 
+    if (expr.function->type_tag() == NodeType::GetExpr) {
+        auto *get = dynamic_cast<GetExpr *>(expr.function.get());
+        expr.args.insert(expr.args.begin(), std::move(get->object));
+    }
+
     if (called->params.size() != expr.args.size()) {
         error("Number of arguments passed to function must match the number of parameters", expr.paren);
         throw TypeException{"Number of arguments passed to function must match the number of parameters"};
@@ -430,6 +435,7 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
             }
             error("No such method exists in the class", expr.name);
             throw TypeException{"No such method exists in the class"};
+
         case ExprTypeInfo::ScopeType::MODULE:
             for (ClassStmt *class_ : Parser::parsed_modules[left.module_index].first.classes) {
                 if (class_->name.lexeme == expr.name.lexeme) {
@@ -443,7 +449,9 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
             }
             error("No such function/class exists in the module", expr.name);
             throw TypeException{"No such function/class exists in the module"};
+
         case ExprTypeInfo::ScopeType::NONE:
+        default:
             error("No such module/class exists in the current global scope", expr.name);
             throw TypeException{"No such module/class exists in the current global scope"};
     }

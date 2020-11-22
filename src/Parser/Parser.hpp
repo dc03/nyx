@@ -18,6 +18,7 @@
 struct ParsePrecedence {
     enum of {
         NONE,
+        COMMA,      // ,
         ASSIGNMENT, // = += -= *= /= ?:
         LOGIC_OR,   // ||
         LOGIC_AND,  // &&
@@ -31,7 +32,6 @@ struct ParsePrecedence {
         PRODUCT,    // % / *
         UNARY,      // ! ~ ++ --
         CALL,       // . () []
-        COMMA,      // ,
         PRIMARY
     };
 };
