@@ -176,5 +176,11 @@ import "A.eis"
 import "imported.eis"
 */*/*/
 //2 <= (5, 6, 7)
-import "imported.eis"
-var x = imported::x();
+class X {
+    public var x: int;
+    public fn X() -> X {}
+    public fn foo() -> null {}
+}
+
+var x = X::X();
+x.foo();

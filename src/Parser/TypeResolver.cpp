@@ -270,54 +270,30 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     }
 
     ExprVisitorType callee = resolve(expr.function.get());
-    if (callee.func == nullptr && callee.class_ == nullptr) {
-        error("Expected function to be called in call expression", callee.lexeme);
-        throw TypeException{"Expected function to be called in call expression"};
-    } else if (callee.func != nullptr && callee.func->params.size() != expr.args.size()) {
-        error("Number of arguments passed to function must match the number of parameters", expr.paren);
-        throw TypeException{"Number of arguments passed to function must match the number of parameters"};
-    } else if (callee.func != nullptr) {
-        for (std::size_t i{0}; i < expr.args.size(); i++) {
-            ExprVisitorType argument = resolve(expr.args[i].get());
-            if (!convertible_to(
-                    callee.func->params[i].second.get(), argument.info, argument.is_lvalue, argument.lexeme)) {
-                error("Type of argument is not convertible to type of parameter", argument.lexeme);
-            }
-        }
 
-        return {callee.func->return_type.get(), callee.func, expr.paren};
-    } else {
-        FunctionStmt *ctor = nullptr;
+    FunctionStmt *called = callee.func;
+    if (callee.class_ != nullptr) {
         for (auto &method_decl : callee.class_->methods) {
             auto *method = dynamic_cast<FunctionStmt *>(method_decl.first.get());
-            if (method->name.lexeme == callee.class_->name.lexeme) {
-                if (method_decl.second == VisibilityType::PUBLIC ||
-                    (in_class && current_class->name.lexeme == method->name.lexeme)) {
-                    ctor = method;
-                    break;
-                } else if (method_decl.second == VisibilityType::PROTECTED) {
-                    error("Cannot access protected constructor outside class", callee.lexeme);
-                } else if (method_decl.second == VisibilityType::PRIVATE) {
-                    error("Cannot access private constructor outside class", callee.lexeme);
-                }
-                ctor = method;
-                break;
+            if (method->name.lexeme == callee.lexeme.lexeme) {
+                called = method;
             }
-        }
-
-        if (ctor != nullptr) {
-            for (std::size_t i{0}; i < expr.args.size(); i++) {
-                ExprVisitorType argument = resolve(expr.args[i].get());
-                if (!convertible_to(ctor->params[i].second.get(), argument.info, argument.is_lvalue, argument.lexeme)) {
-                    error("Type of argument is not convertible to type of parameter", argument.lexeme);
-                }
-            }
-            return {ctor->return_type.get(), callee.class_, expr.paren};
-        } else {
-            error("No such class exists to be constructed", callee.lexeme);
-            throw TypeException{"No such class exists to be constructed"};
         }
     }
+
+    if (called->params.size() != expr.args.size()) {
+        error("Number of arguments passed to function must match the number of parameters", expr.paren);
+        throw TypeException{"Number of arguments passed to function must match the number of parameters"};
+    }
+
+    for (std::size_t i{0}; i < expr.args.size(); i++) {
+        ExprVisitorType argument = resolve(expr.args[i].get());
+        if (!convertible_to(called->params[i].second.get(), argument.info, argument.is_lvalue, argument.lexeme)) {
+            error("Type of argument is not convertible to type of parameter", argument.lexeme);
+        }
+    }
+
+    return {called->return_type.get(), called, expr.paren};
 }
 
 ExprVisitorType TypeResolver::visit(CommaExpr &expr) {
@@ -371,13 +347,15 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
             if (method->name.lexeme == name.lexeme) {
                 if ((method_decl.second == VisibilityType::PUBLIC) ||
                     (in_class && current_class->name.lexeme == type->name.lexeme)) {
-                    return {method->return_type.get(), name};
+                    return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
+                        dynamic_cast<FunctionStmt *>(method_decl.first.get()), name};
                 } else if (method_decl.second == VisibilityType::PROTECTED) {
                     error("Cannot access protected method outside class", name);
                 } else if (method_decl.second == VisibilityType::PRIVATE) {
                     error("Cannot access private method outside class", name);
                 }
-                return {method->return_type.get(), name};
+                return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
+                    dynamic_cast<FunctionStmt *>(method_decl.first.get()), name};
             }
         }
 
