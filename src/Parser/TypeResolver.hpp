@@ -39,6 +39,7 @@ class TypeResolver final : Visitor {
     BaseType *make_new_type(Type type, bool is_const, bool is_ref, Args &&... args);
     ExprTypeInfo resolve_class_access(ExprVisitorType &object, const Token &name);
     ExprVisitorType check_inbuilt(VariableExpr *function, const Token &oper, std::vector<expr_node_t> &args);
+    ClassStmt *find_class(const UserDefinedType &class_name);
 
   public:
     TypeResolver(Module &module);

@@ -1,7 +1,10 @@
-import "A.eis"
+//import "A.eis"
 class X {
     public var x: const int = 5
     public fn X() -> const X {}
+    public fn foo(x: const ref X, y: int) -> null {
+            print(string(x.x + y))
+    }
 }
 /*
 fn foo() -> int {

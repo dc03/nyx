@@ -26,13 +26,15 @@ struct ExprTypeInfo {
     std::size_t module_index{};
     Token lexeme{};
     bool is_lvalue{};
-    enum class ScopeType { CLASS, MODULE, NONE } type{};
+    enum class ScopeType { CLASS, MODULE, NONE } scope_type{};
 
     ExprTypeInfo() = default;
+    ExprTypeInfo(const ExprTypeInfo &) = default;
     ExprTypeInfo(QualifiedTypeInfo info, Token token, bool is_lvalue = false);
     ExprTypeInfo(QualifiedTypeInfo info, FunctionStmt *func, Token token, bool is_lvalue = false);
     ExprTypeInfo(QualifiedTypeInfo info, ClassStmt *class_, Token token, bool is_lvalue = false);
     ExprTypeInfo(QualifiedTypeInfo info, std::size_t module_index, Token token);
+    ExprTypeInfo(QualifiedTypeInfo info, FunctionStmt *func, ClassStmt *class_, Token token, bool is_lvalue = false);
 };
 
 struct LiteralValue {

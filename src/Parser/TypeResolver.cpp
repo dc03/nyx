@@ -30,7 +30,7 @@ struct scoped_boolean_manager {
 
 struct scoped_scope_manager {
     TypeResolver &resolver;
-    scoped_scope_manager(TypeResolver &resolver) : resolver{resolver} { resolver.begin_scope(); }
+    explicit scoped_scope_manager(TypeResolver &resolver) : resolver{resolver} { resolver.begin_scope(); }
     ~scoped_scope_manager() { resolver.end_scope(); }
 };
 
@@ -68,6 +68,15 @@ bool convertible_to(QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lval
     } else {
         return from->data.type == to->data.type && class_condition;
     }
+}
+
+ClassStmt *TypeResolver::find_class(const UserDefinedType &class_name) {
+    for (ClassStmt *class_ : classes) {
+        if (class_->name.lexeme == class_name.name.lexeme) {
+            return class_;
+        }
+    }
+    return nullptr;
 }
 
 void TypeResolver::check(std::vector<stmt_node_t> &program) {
@@ -298,7 +307,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         }
     }
 
-    return {called->return_type.get(), called, expr.paren};
+    return {called->return_type.get(), called, callee.class_, expr.paren};
 }
 
 ExprVisitorType TypeResolver::visit(CommaExpr &expr) {
@@ -317,26 +326,13 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
             throw TypeException{"Can only get 'size' attribute of a list"};
         }
     } else if (object.info->data.type == Type::CLASS) {
-        auto *type = dynamic_cast<UserDefinedType *>(object.info);
-        ClassStmt *user_type = object.class_;
+        ClassStmt *accessed_type = object.class_;
 
-        for (ClassStmt *stored_type : classes) {
-            if (stored_type->name.lexeme == type->name.lexeme) {
-                user_type = stored_type;
-                break;
-            }
-        }
-
-        if (user_type == nullptr) {
-            error("Cannot find class with the given name", type->name);
-            throw TypeException{"Cannot find class with the given name"};
-        }
-
-        for (auto &member_decl : user_type->members) {
+        for (auto &member_decl : accessed_type->members) {
             auto *member = dynamic_cast<VarStmt *>(member_decl.first.get());
             if (member->name.lexeme == name.lexeme) {
                 if (member_decl.second == VisibilityType::PUBLIC ||
-                    (in_class && current_class->name.lexeme == type->name.lexeme)) {
+                    (in_class && current_class->name.lexeme == accessed_type->name.lexeme)) {
                     return {member->type.get(), name};
                 } else if (member_decl.second == VisibilityType::PROTECTED) {
                     error("Cannot access protected member outside class", name);
@@ -347,11 +343,11 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
             }
         }
 
-        for (auto &method_decl : user_type->methods) {
+        for (auto &method_decl : accessed_type->methods) {
             auto *method = dynamic_cast<FunctionStmt *>(method_decl.first.get());
             if (method->name.lexeme == name.lexeme) {
                 if ((method_decl.second == VisibilityType::PUBLIC) ||
-                    (in_class && current_class->name.lexeme == type->name.lexeme)) {
+                    (in_class && current_class->name.lexeme == accessed_type->name.lexeme)) {
                     return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
                         dynamic_cast<FunctionStmt *>(method_decl.first.get()), name};
                 } else if (method_decl.second == VisibilityType::PROTECTED) {
@@ -425,12 +421,12 @@ ExprVisitorType TypeResolver::visit(LogicalExpr &expr) {
 ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
     ExprVisitorType left = resolve(expr.scope.get());
 
-    switch (left.type) {
+    switch (left.scope_type) {
         case ExprTypeInfo::ScopeType::CLASS:
             for (auto &method : left.class_->methods) {
                 if (dynamic_cast<FunctionStmt *>(method.first.get())->name.lexeme == expr.name.lexeme) {
                     return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
-                        dynamic_cast<FunctionStmt *>(method.first.get()), expr.name};
+                        dynamic_cast<FunctionStmt *>(method.first.get()), left.class_, expr.name};
                 }
             }
             error("No such method exists in the class", expr.name);
@@ -513,7 +509,8 @@ ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(ThisExpr &expr) {
-    return {make_new_type<UserDefinedType>(Type::CLASS, false, false, current_class->name), expr.keyword};
+    return {
+        make_new_type<UserDefinedType>(Type::CLASS, false, false, current_class->name), current_class, expr.keyword};
 }
 
 ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
@@ -580,7 +577,7 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
 
     for (ClassStmt *class_ : classes) {
         if (class_->name.lexeme == expr.name.lexeme) {
-            return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), class_, expr.name};
+            return {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.name};
         }
     }
 
@@ -680,11 +677,21 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     scoped_scope_manager manager{*this};
 
     bool throwaway{};
-    bool is_in_ctor{current_class != nullptr && stmt.name.lexeme == current_class->name.lexeme};
+    bool is_in_ctor = current_class != nullptr && stmt.name.lexeme == current_class->name.lexeme;
     scoped_boolean_manager ctor_manager{is_in_ctor ? in_ctor : throwaway};
 
     for (const auto &param : stmt.params) {
-        values.push_back({param.first.lexeme, param.second.get(), scope_depth});
+        ClassStmt *param_class = nullptr;
+
+        if (param.second->type_tag() == NodeType::UserDefinedType) {
+            param_class = find_class(dynamic_cast<UserDefinedType &>(*param.second));
+            if (param_class == nullptr) {
+                error("No such module/class exists in the current global scope", stmt.name);
+                throw TypeException{"No such module/class exists in the current global scope"};
+            }
+        }
+
+        values.push_back({param.first.lexeme, param.second.get(), scope_depth, param_class});
     }
 
     resolve(stmt.body.get());
@@ -771,8 +778,18 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         }
     } else if (stmt.type != nullptr) {
         QualifiedTypeInfo type = resolve(stmt.type.get());
+        ClassStmt *stmt_class = nullptr;
+
+        if (stmt.type->type_tag() == NodeType::UserDefinedType) {
+            stmt_class = find_class(dynamic_cast<UserDefinedType &>(*stmt.type));
+            if (stmt_class == nullptr) {
+                error("No such module/class exists in the current global scope", stmt.name);
+                throw TypeException{"No such module/class exists in the current global scope"};
+            }
+        }
+
         if (!in_class || in_function) {
-            values.push_back({stmt.name.lexeme, type, scope_depth});
+            values.push_back({stmt.name.lexeme, type, scope_depth, stmt_class});
         }
     } else {
         error("Expected type for variable", stmt.name);

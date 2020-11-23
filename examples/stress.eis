@@ -173,8 +173,7 @@ for (var i = 0; i < 5; ++i) {
 }
 import "C.eis"
 import "A.eis"
-import "imported.eis"
-*/*/*/
+
 //2 <= (5, 6, 7)
 class X {
     public var x: int;
@@ -183,9 +182,10 @@ class X {
         print(string(x.x + y))
     }
 }
-
+*/*/*/
+import "imported.eis"
 var y = 6
-val x = X::X()
-X::foo(x, 5)
+val x = imported::X::X()
+imported::X::foo(x, 5)
 x.foo(y)
 y = 5
