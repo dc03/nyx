@@ -1,0 +1,5410 @@
+import "test2.eis"
+
+class AA {
+    public var x: int
+    private var y: string
+    public fn AA() -> const AA {}
+    public fn foo(s: const ref AA) -> string { return "string"; }
+    private fn bar(s: const ref AA) -> null { var x = 0; print(x); }
+}
+
+class AB {
+    public var x: int
+    private var y: string
+    public fn AB() -> const AB {}
+    public fn foo(s: const ref AB) -> string { return "string"; }
+    private fn bar(s: const ref AB) -> null { var x = 0; print(x); }
+}
+
+class AC {
+    public var x: int
+    private var y: string
+    public fn AC() -> const AC {}
+    public fn foo(s: const ref AC) -> string { return "string"; }
+    private fn bar(s: const ref AC) -> null { var x = 0; print(x); }
+}
+
+class AD {
+    public var x: int
+    private var y: string
+    public fn AD() -> const AD {}
+    public fn foo(s: const ref AD) -> string { return "string"; }
+    private fn bar(s: const ref AD) -> null { var x = 0; print(x); }
+}
+
+class AE {
+    public var x: int
+    private var y: string
+    public fn AE() -> const AE {}
+    public fn foo(s: const ref AE) -> string { return "string"; }
+    private fn bar(s: const ref AE) -> null { var x = 0; print(x); }
+}
+
+class AF {
+    public var x: int
+    private var y: string
+    public fn AF() -> const AF {}
+    public fn foo(s: const ref AF) -> string { return "string"; }
+    private fn bar(s: const ref AF) -> null { var x = 0; print(x); }
+}
+
+class AG {
+    public var x: int
+    private var y: string
+    public fn AG() -> const AG {}
+    public fn foo(s: const ref AG) -> string { return "string"; }
+    private fn bar(s: const ref AG) -> null { var x = 0; print(x); }
+}
+
+class AH {
+    public var x: int
+    private var y: string
+    public fn AH() -> const AH {}
+    public fn foo(s: const ref AH) -> string { return "string"; }
+    private fn bar(s: const ref AH) -> null { var x = 0; print(x); }
+}
+
+class AI {
+    public var x: int
+    private var y: string
+    public fn AI() -> const AI {}
+    public fn foo(s: const ref AI) -> string { return "string"; }
+    private fn bar(s: const ref AI) -> null { var x = 0; print(x); }
+}
+
+class AJ {
+    public var x: int
+    private var y: string
+    public fn AJ() -> const AJ {}
+    public fn foo(s: const ref AJ) -> string { return "string"; }
+    private fn bar(s: const ref AJ) -> null { var x = 0; print(x); }
+}
+
+class AK {
+    public var x: int
+    private var y: string
+    public fn AK() -> const AK {}
+    public fn foo(s: const ref AK) -> string { return "string"; }
+    private fn bar(s: const ref AK) -> null { var x = 0; print(x); }
+}
+
+class AL {
+    public var x: int
+    private var y: string
+    public fn AL() -> const AL {}
+    public fn foo(s: const ref AL) -> string { return "string"; }
+    private fn bar(s: const ref AL) -> null { var x = 0; print(x); }
+}
+
+class AM {
+    public var x: int
+    private var y: string
+    public fn AM() -> const AM {}
+    public fn foo(s: const ref AM) -> string { return "string"; }
+    private fn bar(s: const ref AM) -> null { var x = 0; print(x); }
+}
+
+class AN {
+    public var x: int
+    private var y: string
+    public fn AN() -> const AN {}
+    public fn foo(s: const ref AN) -> string { return "string"; }
+    private fn bar(s: const ref AN) -> null { var x = 0; print(x); }
+}
+
+class AO {
+    public var x: int
+    private var y: string
+    public fn AO() -> const AO {}
+    public fn foo(s: const ref AO) -> string { return "string"; }
+    private fn bar(s: const ref AO) -> null { var x = 0; print(x); }
+}
+
+class AP {
+    public var x: int
+    private var y: string
+    public fn AP() -> const AP {}
+    public fn foo(s: const ref AP) -> string { return "string"; }
+    private fn bar(s: const ref AP) -> null { var x = 0; print(x); }
+}
+
+class AQ {
+    public var x: int
+    private var y: string
+    public fn AQ() -> const AQ {}
+    public fn foo(s: const ref AQ) -> string { return "string"; }
+    private fn bar(s: const ref AQ) -> null { var x = 0; print(x); }
+}
+
+class AR {
+    public var x: int
+    private var y: string
+    public fn AR() -> const AR {}
+    public fn foo(s: const ref AR) -> string { return "string"; }
+    private fn bar(s: const ref AR) -> null { var x = 0; print(x); }
+}
+
+class AS {
+    public var x: int
+    private var y: string
+    public fn AS() -> const AS {}
+    public fn foo(s: const ref AS) -> string { return "string"; }
+    private fn bar(s: const ref AS) -> null { var x = 0; print(x); }
+}
+
+class AT {
+    public var x: int
+    private var y: string
+    public fn AT() -> const AT {}
+    public fn foo(s: const ref AT) -> string { return "string"; }
+    private fn bar(s: const ref AT) -> null { var x = 0; print(x); }
+}
+
+class AU {
+    public var x: int
+    private var y: string
+    public fn AU() -> const AU {}
+    public fn foo(s: const ref AU) -> string { return "string"; }
+    private fn bar(s: const ref AU) -> null { var x = 0; print(x); }
+}
+
+class AV {
+    public var x: int
+    private var y: string
+    public fn AV() -> const AV {}
+    public fn foo(s: const ref AV) -> string { return "string"; }
+    private fn bar(s: const ref AV) -> null { var x = 0; print(x); }
+}
+
+class AW {
+    public var x: int
+    private var y: string
+    public fn AW() -> const AW {}
+    public fn foo(s: const ref AW) -> string { return "string"; }
+    private fn bar(s: const ref AW) -> null { var x = 0; print(x); }
+}
+
+class AX {
+    public var x: int
+    private var y: string
+    public fn AX() -> const AX {}
+    public fn foo(s: const ref AX) -> string { return "string"; }
+    private fn bar(s: const ref AX) -> null { var x = 0; print(x); }
+}
+
+class AY {
+    public var x: int
+    private var y: string
+    public fn AY() -> const AY {}
+    public fn foo(s: const ref AY) -> string { return "string"; }
+    private fn bar(s: const ref AY) -> null { var x = 0; print(x); }
+}
+
+class AZ {
+    public var x: int
+    private var y: string
+    public fn AZ() -> const AZ {}
+    public fn foo(s: const ref AZ) -> string { return "string"; }
+    private fn bar(s: const ref AZ) -> null { var x = 0; print(x); }
+}
+
+class BA {
+    public var x: int
+    private var y: string
+    public fn BA() -> const BA {}
+    public fn foo(s: const ref BA) -> string { return "string"; }
+    private fn bar(s: const ref BA) -> null { var x = 0; print(x); }
+}
+
+class BB {
+    public var x: int
+    private var y: string
+    public fn BB() -> const BB {}
+    public fn foo(s: const ref BB) -> string { return "string"; }
+    private fn bar(s: const ref BB) -> null { var x = 0; print(x); }
+}
+
+class BC {
+    public var x: int
+    private var y: string
+    public fn BC() -> const BC {}
+    public fn foo(s: const ref BC) -> string { return "string"; }
+    private fn bar(s: const ref BC) -> null { var x = 0; print(x); }
+}
+
+class BD {
+    public var x: int
+    private var y: string
+    public fn BD() -> const BD {}
+    public fn foo(s: const ref BD) -> string { return "string"; }
+    private fn bar(s: const ref BD) -> null { var x = 0; print(x); }
+}
+
+class BE {
+    public var x: int
+    private var y: string
+    public fn BE() -> const BE {}
+    public fn foo(s: const ref BE) -> string { return "string"; }
+    private fn bar(s: const ref BE) -> null { var x = 0; print(x); }
+}
+
+class BF {
+    public var x: int
+    private var y: string
+    public fn BF() -> const BF {}
+    public fn foo(s: const ref BF) -> string { return "string"; }
+    private fn bar(s: const ref BF) -> null { var x = 0; print(x); }
+}
+
+class BG {
+    public var x: int
+    private var y: string
+    public fn BG() -> const BG {}
+    public fn foo(s: const ref BG) -> string { return "string"; }
+    private fn bar(s: const ref BG) -> null { var x = 0; print(x); }
+}
+
+class BH {
+    public var x: int
+    private var y: string
+    public fn BH() -> const BH {}
+    public fn foo(s: const ref BH) -> string { return "string"; }
+    private fn bar(s: const ref BH) -> null { var x = 0; print(x); }
+}
+
+class BI {
+    public var x: int
+    private var y: string
+    public fn BI() -> const BI {}
+    public fn foo(s: const ref BI) -> string { return "string"; }
+    private fn bar(s: const ref BI) -> null { var x = 0; print(x); }
+}
+
+class BJ {
+    public var x: int
+    private var y: string
+    public fn BJ() -> const BJ {}
+    public fn foo(s: const ref BJ) -> string { return "string"; }
+    private fn bar(s: const ref BJ) -> null { var x = 0; print(x); }
+}
+
+class BK {
+    public var x: int
+    private var y: string
+    public fn BK() -> const BK {}
+    public fn foo(s: const ref BK) -> string { return "string"; }
+    private fn bar(s: const ref BK) -> null { var x = 0; print(x); }
+}
+
+class BL {
+    public var x: int
+    private var y: string
+    public fn BL() -> const BL {}
+    public fn foo(s: const ref BL) -> string { return "string"; }
+    private fn bar(s: const ref BL) -> null { var x = 0; print(x); }
+}
+
+class BM {
+    public var x: int
+    private var y: string
+    public fn BM() -> const BM {}
+    public fn foo(s: const ref BM) -> string { return "string"; }
+    private fn bar(s: const ref BM) -> null { var x = 0; print(x); }
+}
+
+class BN {
+    public var x: int
+    private var y: string
+    public fn BN() -> const BN {}
+    public fn foo(s: const ref BN) -> string { return "string"; }
+    private fn bar(s: const ref BN) -> null { var x = 0; print(x); }
+}
+
+class BO {
+    public var x: int
+    private var y: string
+    public fn BO() -> const BO {}
+    public fn foo(s: const ref BO) -> string { return "string"; }
+    private fn bar(s: const ref BO) -> null { var x = 0; print(x); }
+}
+
+class BP {
+    public var x: int
+    private var y: string
+    public fn BP() -> const BP {}
+    public fn foo(s: const ref BP) -> string { return "string"; }
+    private fn bar(s: const ref BP) -> null { var x = 0; print(x); }
+}
+
+class BQ {
+    public var x: int
+    private var y: string
+    public fn BQ() -> const BQ {}
+    public fn foo(s: const ref BQ) -> string { return "string"; }
+    private fn bar(s: const ref BQ) -> null { var x = 0; print(x); }
+}
+
+class BR {
+    public var x: int
+    private var y: string
+    public fn BR() -> const BR {}
+    public fn foo(s: const ref BR) -> string { return "string"; }
+    private fn bar(s: const ref BR) -> null { var x = 0; print(x); }
+}
+
+class BS {
+    public var x: int
+    private var y: string
+    public fn BS() -> const BS {}
+    public fn foo(s: const ref BS) -> string { return "string"; }
+    private fn bar(s: const ref BS) -> null { var x = 0; print(x); }
+}
+
+class BT {
+    public var x: int
+    private var y: string
+    public fn BT() -> const BT {}
+    public fn foo(s: const ref BT) -> string { return "string"; }
+    private fn bar(s: const ref BT) -> null { var x = 0; print(x); }
+}
+
+class BU {
+    public var x: int
+    private var y: string
+    public fn BU() -> const BU {}
+    public fn foo(s: const ref BU) -> string { return "string"; }
+    private fn bar(s: const ref BU) -> null { var x = 0; print(x); }
+}
+
+class BV {
+    public var x: int
+    private var y: string
+    public fn BV() -> const BV {}
+    public fn foo(s: const ref BV) -> string { return "string"; }
+    private fn bar(s: const ref BV) -> null { var x = 0; print(x); }
+}
+
+class BW {
+    public var x: int
+    private var y: string
+    public fn BW() -> const BW {}
+    public fn foo(s: const ref BW) -> string { return "string"; }
+    private fn bar(s: const ref BW) -> null { var x = 0; print(x); }
+}
+
+class BX {
+    public var x: int
+    private var y: string
+    public fn BX() -> const BX {}
+    public fn foo(s: const ref BX) -> string { return "string"; }
+    private fn bar(s: const ref BX) -> null { var x = 0; print(x); }
+}
+
+class BY {
+    public var x: int
+    private var y: string
+    public fn BY() -> const BY {}
+    public fn foo(s: const ref BY) -> string { return "string"; }
+    private fn bar(s: const ref BY) -> null { var x = 0; print(x); }
+}
+
+class BZ {
+    public var x: int
+    private var y: string
+    public fn BZ() -> const BZ {}
+    public fn foo(s: const ref BZ) -> string { return "string"; }
+    private fn bar(s: const ref BZ) -> null { var x = 0; print(x); }
+}
+
+class CA {
+    public var x: int
+    private var y: string
+    public fn CA() -> const CA {}
+    public fn foo(s: const ref CA) -> string { return "string"; }
+    private fn bar(s: const ref CA) -> null { var x = 0; print(x); }
+}
+
+class CB {
+    public var x: int
+    private var y: string
+    public fn CB() -> const CB {}
+    public fn foo(s: const ref CB) -> string { return "string"; }
+    private fn bar(s: const ref CB) -> null { var x = 0; print(x); }
+}
+
+class CC {
+    public var x: int
+    private var y: string
+    public fn CC() -> const CC {}
+    public fn foo(s: const ref CC) -> string { return "string"; }
+    private fn bar(s: const ref CC) -> null { var x = 0; print(x); }
+}
+
+class CD {
+    public var x: int
+    private var y: string
+    public fn CD() -> const CD {}
+    public fn foo(s: const ref CD) -> string { return "string"; }
+    private fn bar(s: const ref CD) -> null { var x = 0; print(x); }
+}
+
+class CE {
+    public var x: int
+    private var y: string
+    public fn CE() -> const CE {}
+    public fn foo(s: const ref CE) -> string { return "string"; }
+    private fn bar(s: const ref CE) -> null { var x = 0; print(x); }
+}
+
+class CF {
+    public var x: int
+    private var y: string
+    public fn CF() -> const CF {}
+    public fn foo(s: const ref CF) -> string { return "string"; }
+    private fn bar(s: const ref CF) -> null { var x = 0; print(x); }
+}
+
+class CG {
+    public var x: int
+    private var y: string
+    public fn CG() -> const CG {}
+    public fn foo(s: const ref CG) -> string { return "string"; }
+    private fn bar(s: const ref CG) -> null { var x = 0; print(x); }
+}
+
+class CH {
+    public var x: int
+    private var y: string
+    public fn CH() -> const CH {}
+    public fn foo(s: const ref CH) -> string { return "string"; }
+    private fn bar(s: const ref CH) -> null { var x = 0; print(x); }
+}
+
+class CI {
+    public var x: int
+    private var y: string
+    public fn CI() -> const CI {}
+    public fn foo(s: const ref CI) -> string { return "string"; }
+    private fn bar(s: const ref CI) -> null { var x = 0; print(x); }
+}
+
+class CJ {
+    public var x: int
+    private var y: string
+    public fn CJ() -> const CJ {}
+    public fn foo(s: const ref CJ) -> string { return "string"; }
+    private fn bar(s: const ref CJ) -> null { var x = 0; print(x); }
+}
+
+class CK {
+    public var x: int
+    private var y: string
+    public fn CK() -> const CK {}
+    public fn foo(s: const ref CK) -> string { return "string"; }
+    private fn bar(s: const ref CK) -> null { var x = 0; print(x); }
+}
+
+class CL {
+    public var x: int
+    private var y: string
+    public fn CL() -> const CL {}
+    public fn foo(s: const ref CL) -> string { return "string"; }
+    private fn bar(s: const ref CL) -> null { var x = 0; print(x); }
+}
+
+class CM {
+    public var x: int
+    private var y: string
+    public fn CM() -> const CM {}
+    public fn foo(s: const ref CM) -> string { return "string"; }
+    private fn bar(s: const ref CM) -> null { var x = 0; print(x); }
+}
+
+class CN {
+    public var x: int
+    private var y: string
+    public fn CN() -> const CN {}
+    public fn foo(s: const ref CN) -> string { return "string"; }
+    private fn bar(s: const ref CN) -> null { var x = 0; print(x); }
+}
+
+class CO {
+    public var x: int
+    private var y: string
+    public fn CO() -> const CO {}
+    public fn foo(s: const ref CO) -> string { return "string"; }
+    private fn bar(s: const ref CO) -> null { var x = 0; print(x); }
+}
+
+class CP {
+    public var x: int
+    private var y: string
+    public fn CP() -> const CP {}
+    public fn foo(s: const ref CP) -> string { return "string"; }
+    private fn bar(s: const ref CP) -> null { var x = 0; print(x); }
+}
+
+class CQ {
+    public var x: int
+    private var y: string
+    public fn CQ() -> const CQ {}
+    public fn foo(s: const ref CQ) -> string { return "string"; }
+    private fn bar(s: const ref CQ) -> null { var x = 0; print(x); }
+}
+
+class CR {
+    public var x: int
+    private var y: string
+    public fn CR() -> const CR {}
+    public fn foo(s: const ref CR) -> string { return "string"; }
+    private fn bar(s: const ref CR) -> null { var x = 0; print(x); }
+}
+
+class CS {
+    public var x: int
+    private var y: string
+    public fn CS() -> const CS {}
+    public fn foo(s: const ref CS) -> string { return "string"; }
+    private fn bar(s: const ref CS) -> null { var x = 0; print(x); }
+}
+
+class CT {
+    public var x: int
+    private var y: string
+    public fn CT() -> const CT {}
+    public fn foo(s: const ref CT) -> string { return "string"; }
+    private fn bar(s: const ref CT) -> null { var x = 0; print(x); }
+}
+
+class CU {
+    public var x: int
+    private var y: string
+    public fn CU() -> const CU {}
+    public fn foo(s: const ref CU) -> string { return "string"; }
+    private fn bar(s: const ref CU) -> null { var x = 0; print(x); }
+}
+
+class CV {
+    public var x: int
+    private var y: string
+    public fn CV() -> const CV {}
+    public fn foo(s: const ref CV) -> string { return "string"; }
+    private fn bar(s: const ref CV) -> null { var x = 0; print(x); }
+}
+
+class CW {
+    public var x: int
+    private var y: string
+    public fn CW() -> const CW {}
+    public fn foo(s: const ref CW) -> string { return "string"; }
+    private fn bar(s: const ref CW) -> null { var x = 0; print(x); }
+}
+
+class CX {
+    public var x: int
+    private var y: string
+    public fn CX() -> const CX {}
+    public fn foo(s: const ref CX) -> string { return "string"; }
+    private fn bar(s: const ref CX) -> null { var x = 0; print(x); }
+}
+
+class CY {
+    public var x: int
+    private var y: string
+    public fn CY() -> const CY {}
+    public fn foo(s: const ref CY) -> string { return "string"; }
+    private fn bar(s: const ref CY) -> null { var x = 0; print(x); }
+}
+
+class CZ {
+    public var x: int
+    private var y: string
+    public fn CZ() -> const CZ {}
+    public fn foo(s: const ref CZ) -> string { return "string"; }
+    private fn bar(s: const ref CZ) -> null { var x = 0; print(x); }
+}
+
+class DA {
+    public var x: int
+    private var y: string
+    public fn DA() -> const DA {}
+    public fn foo(s: const ref DA) -> string { return "string"; }
+    private fn bar(s: const ref DA) -> null { var x = 0; print(x); }
+}
+
+class DB {
+    public var x: int
+    private var y: string
+    public fn DB() -> const DB {}
+    public fn foo(s: const ref DB) -> string { return "string"; }
+    private fn bar(s: const ref DB) -> null { var x = 0; print(x); }
+}
+
+class DC {
+    public var x: int
+    private var y: string
+    public fn DC() -> const DC {}
+    public fn foo(s: const ref DC) -> string { return "string"; }
+    private fn bar(s: const ref DC) -> null { var x = 0; print(x); }
+}
+
+class DD {
+    public var x: int
+    private var y: string
+    public fn DD() -> const DD {}
+    public fn foo(s: const ref DD) -> string { return "string"; }
+    private fn bar(s: const ref DD) -> null { var x = 0; print(x); }
+}
+
+class DE {
+    public var x: int
+    private var y: string
+    public fn DE() -> const DE {}
+    public fn foo(s: const ref DE) -> string { return "string"; }
+    private fn bar(s: const ref DE) -> null { var x = 0; print(x); }
+}
+
+class DF {
+    public var x: int
+    private var y: string
+    public fn DF() -> const DF {}
+    public fn foo(s: const ref DF) -> string { return "string"; }
+    private fn bar(s: const ref DF) -> null { var x = 0; print(x); }
+}
+
+class DG {
+    public var x: int
+    private var y: string
+    public fn DG() -> const DG {}
+    public fn foo(s: const ref DG) -> string { return "string"; }
+    private fn bar(s: const ref DG) -> null { var x = 0; print(x); }
+}
+
+class DH {
+    public var x: int
+    private var y: string
+    public fn DH() -> const DH {}
+    public fn foo(s: const ref DH) -> string { return "string"; }
+    private fn bar(s: const ref DH) -> null { var x = 0; print(x); }
+}
+
+class DI {
+    public var x: int
+    private var y: string
+    public fn DI() -> const DI {}
+    public fn foo(s: const ref DI) -> string { return "string"; }
+    private fn bar(s: const ref DI) -> null { var x = 0; print(x); }
+}
+
+class DJ {
+    public var x: int
+    private var y: string
+    public fn DJ() -> const DJ {}
+    public fn foo(s: const ref DJ) -> string { return "string"; }
+    private fn bar(s: const ref DJ) -> null { var x = 0; print(x); }
+}
+
+class DK {
+    public var x: int
+    private var y: string
+    public fn DK() -> const DK {}
+    public fn foo(s: const ref DK) -> string { return "string"; }
+    private fn bar(s: const ref DK) -> null { var x = 0; print(x); }
+}
+
+class DL {
+    public var x: int
+    private var y: string
+    public fn DL() -> const DL {}
+    public fn foo(s: const ref DL) -> string { return "string"; }
+    private fn bar(s: const ref DL) -> null { var x = 0; print(x); }
+}
+
+class DM {
+    public var x: int
+    private var y: string
+    public fn DM() -> const DM {}
+    public fn foo(s: const ref DM) -> string { return "string"; }
+    private fn bar(s: const ref DM) -> null { var x = 0; print(x); }
+}
+
+class DN {
+    public var x: int
+    private var y: string
+    public fn DN() -> const DN {}
+    public fn foo(s: const ref DN) -> string { return "string"; }
+    private fn bar(s: const ref DN) -> null { var x = 0; print(x); }
+}
+
+class DO {
+    public var x: int
+    private var y: string
+    public fn DO() -> const DO {}
+    public fn foo(s: const ref DO) -> string { return "string"; }
+    private fn bar(s: const ref DO) -> null { var x = 0; print(x); }
+}
+
+class DP {
+    public var x: int
+    private var y: string
+    public fn DP() -> const DP {}
+    public fn foo(s: const ref DP) -> string { return "string"; }
+    private fn bar(s: const ref DP) -> null { var x = 0; print(x); }
+}
+
+class DQ {
+    public var x: int
+    private var y: string
+    public fn DQ() -> const DQ {}
+    public fn foo(s: const ref DQ) -> string { return "string"; }
+    private fn bar(s: const ref DQ) -> null { var x = 0; print(x); }
+}
+
+class DR {
+    public var x: int
+    private var y: string
+    public fn DR() -> const DR {}
+    public fn foo(s: const ref DR) -> string { return "string"; }
+    private fn bar(s: const ref DR) -> null { var x = 0; print(x); }
+}
+
+class DS {
+    public var x: int
+    private var y: string
+    public fn DS() -> const DS {}
+    public fn foo(s: const ref DS) -> string { return "string"; }
+    private fn bar(s: const ref DS) -> null { var x = 0; print(x); }
+}
+
+class DT {
+    public var x: int
+    private var y: string
+    public fn DT() -> const DT {}
+    public fn foo(s: const ref DT) -> string { return "string"; }
+    private fn bar(s: const ref DT) -> null { var x = 0; print(x); }
+}
+
+class DU {
+    public var x: int
+    private var y: string
+    public fn DU() -> const DU {}
+    public fn foo(s: const ref DU) -> string { return "string"; }
+    private fn bar(s: const ref DU) -> null { var x = 0; print(x); }
+}
+
+class DV {
+    public var x: int
+    private var y: string
+    public fn DV() -> const DV {}
+    public fn foo(s: const ref DV) -> string { return "string"; }
+    private fn bar(s: const ref DV) -> null { var x = 0; print(x); }
+}
+
+class DW {
+    public var x: int
+    private var y: string
+    public fn DW() -> const DW {}
+    public fn foo(s: const ref DW) -> string { return "string"; }
+    private fn bar(s: const ref DW) -> null { var x = 0; print(x); }
+}
+
+class DX {
+    public var x: int
+    private var y: string
+    public fn DX() -> const DX {}
+    public fn foo(s: const ref DX) -> string { return "string"; }
+    private fn bar(s: const ref DX) -> null { var x = 0; print(x); }
+}
+
+class DY {
+    public var x: int
+    private var y: string
+    public fn DY() -> const DY {}
+    public fn foo(s: const ref DY) -> string { return "string"; }
+    private fn bar(s: const ref DY) -> null { var x = 0; print(x); }
+}
+
+class DZ {
+    public var x: int
+    private var y: string
+    public fn DZ() -> const DZ {}
+    public fn foo(s: const ref DZ) -> string { return "string"; }
+    private fn bar(s: const ref DZ) -> null { var x = 0; print(x); }
+}
+
+class EA {
+    public var x: int
+    private var y: string
+    public fn EA() -> const EA {}
+    public fn foo(s: const ref EA) -> string { return "string"; }
+    private fn bar(s: const ref EA) -> null { var x = 0; print(x); }
+}
+
+class EB {
+    public var x: int
+    private var y: string
+    public fn EB() -> const EB {}
+    public fn foo(s: const ref EB) -> string { return "string"; }
+    private fn bar(s: const ref EB) -> null { var x = 0; print(x); }
+}
+
+class EC {
+    public var x: int
+    private var y: string
+    public fn EC() -> const EC {}
+    public fn foo(s: const ref EC) -> string { return "string"; }
+    private fn bar(s: const ref EC) -> null { var x = 0; print(x); }
+}
+
+class ED {
+    public var x: int
+    private var y: string
+    public fn ED() -> const ED {}
+    public fn foo(s: const ref ED) -> string { return "string"; }
+    private fn bar(s: const ref ED) -> null { var x = 0; print(x); }
+}
+
+class EE {
+    public var x: int
+    private var y: string
+    public fn EE() -> const EE {}
+    public fn foo(s: const ref EE) -> string { return "string"; }
+    private fn bar(s: const ref EE) -> null { var x = 0; print(x); }
+}
+
+class EF {
+    public var x: int
+    private var y: string
+    public fn EF() -> const EF {}
+    public fn foo(s: const ref EF) -> string { return "string"; }
+    private fn bar(s: const ref EF) -> null { var x = 0; print(x); }
+}
+
+class EG {
+    public var x: int
+    private var y: string
+    public fn EG() -> const EG {}
+    public fn foo(s: const ref EG) -> string { return "string"; }
+    private fn bar(s: const ref EG) -> null { var x = 0; print(x); }
+}
+
+class EH {
+    public var x: int
+    private var y: string
+    public fn EH() -> const EH {}
+    public fn foo(s: const ref EH) -> string { return "string"; }
+    private fn bar(s: const ref EH) -> null { var x = 0; print(x); }
+}
+
+class EI {
+    public var x: int
+    private var y: string
+    public fn EI() -> const EI {}
+    public fn foo(s: const ref EI) -> string { return "string"; }
+    private fn bar(s: const ref EI) -> null { var x = 0; print(x); }
+}
+
+class EJ {
+    public var x: int
+    private var y: string
+    public fn EJ() -> const EJ {}
+    public fn foo(s: const ref EJ) -> string { return "string"; }
+    private fn bar(s: const ref EJ) -> null { var x = 0; print(x); }
+}
+
+class EK {
+    public var x: int
+    private var y: string
+    public fn EK() -> const EK {}
+    public fn foo(s: const ref EK) -> string { return "string"; }
+    private fn bar(s: const ref EK) -> null { var x = 0; print(x); }
+}
+
+class EL {
+    public var x: int
+    private var y: string
+    public fn EL() -> const EL {}
+    public fn foo(s: const ref EL) -> string { return "string"; }
+    private fn bar(s: const ref EL) -> null { var x = 0; print(x); }
+}
+
+class EM {
+    public var x: int
+    private var y: string
+    public fn EM() -> const EM {}
+    public fn foo(s: const ref EM) -> string { return "string"; }
+    private fn bar(s: const ref EM) -> null { var x = 0; print(x); }
+}
+
+class EN {
+    public var x: int
+    private var y: string
+    public fn EN() -> const EN {}
+    public fn foo(s: const ref EN) -> string { return "string"; }
+    private fn bar(s: const ref EN) -> null { var x = 0; print(x); }
+}
+
+class EO {
+    public var x: int
+    private var y: string
+    public fn EO() -> const EO {}
+    public fn foo(s: const ref EO) -> string { return "string"; }
+    private fn bar(s: const ref EO) -> null { var x = 0; print(x); }
+}
+
+class EP {
+    public var x: int
+    private var y: string
+    public fn EP() -> const EP {}
+    public fn foo(s: const ref EP) -> string { return "string"; }
+    private fn bar(s: const ref EP) -> null { var x = 0; print(x); }
+}
+
+class EQ {
+    public var x: int
+    private var y: string
+    public fn EQ() -> const EQ {}
+    public fn foo(s: const ref EQ) -> string { return "string"; }
+    private fn bar(s: const ref EQ) -> null { var x = 0; print(x); }
+}
+
+class ER {
+    public var x: int
+    private var y: string
+    public fn ER() -> const ER {}
+    public fn foo(s: const ref ER) -> string { return "string"; }
+    private fn bar(s: const ref ER) -> null { var x = 0; print(x); }
+}
+
+class ES {
+    public var x: int
+    private var y: string
+    public fn ES() -> const ES {}
+    public fn foo(s: const ref ES) -> string { return "string"; }
+    private fn bar(s: const ref ES) -> null { var x = 0; print(x); }
+}
+
+class ET {
+    public var x: int
+    private var y: string
+    public fn ET() -> const ET {}
+    public fn foo(s: const ref ET) -> string { return "string"; }
+    private fn bar(s: const ref ET) -> null { var x = 0; print(x); }
+}
+
+class EU {
+    public var x: int
+    private var y: string
+    public fn EU() -> const EU {}
+    public fn foo(s: const ref EU) -> string { return "string"; }
+    private fn bar(s: const ref EU) -> null { var x = 0; print(x); }
+}
+
+class EV {
+    public var x: int
+    private var y: string
+    public fn EV() -> const EV {}
+    public fn foo(s: const ref EV) -> string { return "string"; }
+    private fn bar(s: const ref EV) -> null { var x = 0; print(x); }
+}
+
+class EW {
+    public var x: int
+    private var y: string
+    public fn EW() -> const EW {}
+    public fn foo(s: const ref EW) -> string { return "string"; }
+    private fn bar(s: const ref EW) -> null { var x = 0; print(x); }
+}
+
+class EX {
+    public var x: int
+    private var y: string
+    public fn EX() -> const EX {}
+    public fn foo(s: const ref EX) -> string { return "string"; }
+    private fn bar(s: const ref EX) -> null { var x = 0; print(x); }
+}
+
+class EY {
+    public var x: int
+    private var y: string
+    public fn EY() -> const EY {}
+    public fn foo(s: const ref EY) -> string { return "string"; }
+    private fn bar(s: const ref EY) -> null { var x = 0; print(x); }
+}
+
+class EZ {
+    public var x: int
+    private var y: string
+    public fn EZ() -> const EZ {}
+    public fn foo(s: const ref EZ) -> string { return "string"; }
+    private fn bar(s: const ref EZ) -> null { var x = 0; print(x); }
+}
+
+class FA {
+    public var x: int
+    private var y: string
+    public fn FA() -> const FA {}
+    public fn foo(s: const ref FA) -> string { return "string"; }
+    private fn bar(s: const ref FA) -> null { var x = 0; print(x); }
+}
+
+class FB {
+    public var x: int
+    private var y: string
+    public fn FB() -> const FB {}
+    public fn foo(s: const ref FB) -> string { return "string"; }
+    private fn bar(s: const ref FB) -> null { var x = 0; print(x); }
+}
+
+class FC {
+    public var x: int
+    private var y: string
+    public fn FC() -> const FC {}
+    public fn foo(s: const ref FC) -> string { return "string"; }
+    private fn bar(s: const ref FC) -> null { var x = 0; print(x); }
+}
+
+class FD {
+    public var x: int
+    private var y: string
+    public fn FD() -> const FD {}
+    public fn foo(s: const ref FD) -> string { return "string"; }
+    private fn bar(s: const ref FD) -> null { var x = 0; print(x); }
+}
+
+class FE {
+    public var x: int
+    private var y: string
+    public fn FE() -> const FE {}
+    public fn foo(s: const ref FE) -> string { return "string"; }
+    private fn bar(s: const ref FE) -> null { var x = 0; print(x); }
+}
+
+class FF {
+    public var x: int
+    private var y: string
+    public fn FF() -> const FF {}
+    public fn foo(s: const ref FF) -> string { return "string"; }
+    private fn bar(s: const ref FF) -> null { var x = 0; print(x); }
+}
+
+class FG {
+    public var x: int
+    private var y: string
+    public fn FG() -> const FG {}
+    public fn foo(s: const ref FG) -> string { return "string"; }
+    private fn bar(s: const ref FG) -> null { var x = 0; print(x); }
+}
+
+class FH {
+    public var x: int
+    private var y: string
+    public fn FH() -> const FH {}
+    public fn foo(s: const ref FH) -> string { return "string"; }
+    private fn bar(s: const ref FH) -> null { var x = 0; print(x); }
+}
+
+class FI {
+    public var x: int
+    private var y: string
+    public fn FI() -> const FI {}
+    public fn foo(s: const ref FI) -> string { return "string"; }
+    private fn bar(s: const ref FI) -> null { var x = 0; print(x); }
+}
+
+class FJ {
+    public var x: int
+    private var y: string
+    public fn FJ() -> const FJ {}
+    public fn foo(s: const ref FJ) -> string { return "string"; }
+    private fn bar(s: const ref FJ) -> null { var x = 0; print(x); }
+}
+
+class FK {
+    public var x: int
+    private var y: string
+    public fn FK() -> const FK {}
+    public fn foo(s: const ref FK) -> string { return "string"; }
+    private fn bar(s: const ref FK) -> null { var x = 0; print(x); }
+}
+
+class FL {
+    public var x: int
+    private var y: string
+    public fn FL() -> const FL {}
+    public fn foo(s: const ref FL) -> string { return "string"; }
+    private fn bar(s: const ref FL) -> null { var x = 0; print(x); }
+}
+
+class FM {
+    public var x: int
+    private var y: string
+    public fn FM() -> const FM {}
+    public fn foo(s: const ref FM) -> string { return "string"; }
+    private fn bar(s: const ref FM) -> null { var x = 0; print(x); }
+}
+
+class FN {
+    public var x: int
+    private var y: string
+    public fn FN() -> const FN {}
+    public fn foo(s: const ref FN) -> string { return "string"; }
+    private fn bar(s: const ref FN) -> null { var x = 0; print(x); }
+}
+
+class FO {
+    public var x: int
+    private var y: string
+    public fn FO() -> const FO {}
+    public fn foo(s: const ref FO) -> string { return "string"; }
+    private fn bar(s: const ref FO) -> null { var x = 0; print(x); }
+}
+
+class FP {
+    public var x: int
+    private var y: string
+    public fn FP() -> const FP {}
+    public fn foo(s: const ref FP) -> string { return "string"; }
+    private fn bar(s: const ref FP) -> null { var x = 0; print(x); }
+}
+
+class FQ {
+    public var x: int
+    private var y: string
+    public fn FQ() -> const FQ {}
+    public fn foo(s: const ref FQ) -> string { return "string"; }
+    private fn bar(s: const ref FQ) -> null { var x = 0; print(x); }
+}
+
+class FR {
+    public var x: int
+    private var y: string
+    public fn FR() -> const FR {}
+    public fn foo(s: const ref FR) -> string { return "string"; }
+    private fn bar(s: const ref FR) -> null { var x = 0; print(x); }
+}
+
+class FS {
+    public var x: int
+    private var y: string
+    public fn FS() -> const FS {}
+    public fn foo(s: const ref FS) -> string { return "string"; }
+    private fn bar(s: const ref FS) -> null { var x = 0; print(x); }
+}
+
+class FT {
+    public var x: int
+    private var y: string
+    public fn FT() -> const FT {}
+    public fn foo(s: const ref FT) -> string { return "string"; }
+    private fn bar(s: const ref FT) -> null { var x = 0; print(x); }
+}
+
+class FU {
+    public var x: int
+    private var y: string
+    public fn FU() -> const FU {}
+    public fn foo(s: const ref FU) -> string { return "string"; }
+    private fn bar(s: const ref FU) -> null { var x = 0; print(x); }
+}
+
+class FV {
+    public var x: int
+    private var y: string
+    public fn FV() -> const FV {}
+    public fn foo(s: const ref FV) -> string { return "string"; }
+    private fn bar(s: const ref FV) -> null { var x = 0; print(x); }
+}
+
+class FW {
+    public var x: int
+    private var y: string
+    public fn FW() -> const FW {}
+    public fn foo(s: const ref FW) -> string { return "string"; }
+    private fn bar(s: const ref FW) -> null { var x = 0; print(x); }
+}
+
+class FX {
+    public var x: int
+    private var y: string
+    public fn FX() -> const FX {}
+    public fn foo(s: const ref FX) -> string { return "string"; }
+    private fn bar(s: const ref FX) -> null { var x = 0; print(x); }
+}
+
+class FY {
+    public var x: int
+    private var y: string
+    public fn FY() -> const FY {}
+    public fn foo(s: const ref FY) -> string { return "string"; }
+    private fn bar(s: const ref FY) -> null { var x = 0; print(x); }
+}
+
+class FZ {
+    public var x: int
+    private var y: string
+    public fn FZ() -> const FZ {}
+    public fn foo(s: const ref FZ) -> string { return "string"; }
+    private fn bar(s: const ref FZ) -> null { var x = 0; print(x); }
+}
+
+class GA {
+    public var x: int
+    private var y: string
+    public fn GA() -> const GA {}
+    public fn foo(s: const ref GA) -> string { return "string"; }
+    private fn bar(s: const ref GA) -> null { var x = 0; print(x); }
+}
+
+class GB {
+    public var x: int
+    private var y: string
+    public fn GB() -> const GB {}
+    public fn foo(s: const ref GB) -> string { return "string"; }
+    private fn bar(s: const ref GB) -> null { var x = 0; print(x); }
+}
+
+class GC {
+    public var x: int
+    private var y: string
+    public fn GC() -> const GC {}
+    public fn foo(s: const ref GC) -> string { return "string"; }
+    private fn bar(s: const ref GC) -> null { var x = 0; print(x); }
+}
+
+class GD {
+    public var x: int
+    private var y: string
+    public fn GD() -> const GD {}
+    public fn foo(s: const ref GD) -> string { return "string"; }
+    private fn bar(s: const ref GD) -> null { var x = 0; print(x); }
+}
+
+class GE {
+    public var x: int
+    private var y: string
+    public fn GE() -> const GE {}
+    public fn foo(s: const ref GE) -> string { return "string"; }
+    private fn bar(s: const ref GE) -> null { var x = 0; print(x); }
+}
+
+class GF {
+    public var x: int
+    private var y: string
+    public fn GF() -> const GF {}
+    public fn foo(s: const ref GF) -> string { return "string"; }
+    private fn bar(s: const ref GF) -> null { var x = 0; print(x); }
+}
+
+class GG {
+    public var x: int
+    private var y: string
+    public fn GG() -> const GG {}
+    public fn foo(s: const ref GG) -> string { return "string"; }
+    private fn bar(s: const ref GG) -> null { var x = 0; print(x); }
+}
+
+class GH {
+    public var x: int
+    private var y: string
+    public fn GH() -> const GH {}
+    public fn foo(s: const ref GH) -> string { return "string"; }
+    private fn bar(s: const ref GH) -> null { var x = 0; print(x); }
+}
+
+class GI {
+    public var x: int
+    private var y: string
+    public fn GI() -> const GI {}
+    public fn foo(s: const ref GI) -> string { return "string"; }
+    private fn bar(s: const ref GI) -> null { var x = 0; print(x); }
+}
+
+class GJ {
+    public var x: int
+    private var y: string
+    public fn GJ() -> const GJ {}
+    public fn foo(s: const ref GJ) -> string { return "string"; }
+    private fn bar(s: const ref GJ) -> null { var x = 0; print(x); }
+}
+
+class GK {
+    public var x: int
+    private var y: string
+    public fn GK() -> const GK {}
+    public fn foo(s: const ref GK) -> string { return "string"; }
+    private fn bar(s: const ref GK) -> null { var x = 0; print(x); }
+}
+
+class GL {
+    public var x: int
+    private var y: string
+    public fn GL() -> const GL {}
+    public fn foo(s: const ref GL) -> string { return "string"; }
+    private fn bar(s: const ref GL) -> null { var x = 0; print(x); }
+}
+
+class GM {
+    public var x: int
+    private var y: string
+    public fn GM() -> const GM {}
+    public fn foo(s: const ref GM) -> string { return "string"; }
+    private fn bar(s: const ref GM) -> null { var x = 0; print(x); }
+}
+
+class GN {
+    public var x: int
+    private var y: string
+    public fn GN() -> const GN {}
+    public fn foo(s: const ref GN) -> string { return "string"; }
+    private fn bar(s: const ref GN) -> null { var x = 0; print(x); }
+}
+
+class GO {
+    public var x: int
+    private var y: string
+    public fn GO() -> const GO {}
+    public fn foo(s: const ref GO) -> string { return "string"; }
+    private fn bar(s: const ref GO) -> null { var x = 0; print(x); }
+}
+
+class GP {
+    public var x: int
+    private var y: string
+    public fn GP() -> const GP {}
+    public fn foo(s: const ref GP) -> string { return "string"; }
+    private fn bar(s: const ref GP) -> null { var x = 0; print(x); }
+}
+
+class GQ {
+    public var x: int
+    private var y: string
+    public fn GQ() -> const GQ {}
+    public fn foo(s: const ref GQ) -> string { return "string"; }
+    private fn bar(s: const ref GQ) -> null { var x = 0; print(x); }
+}
+
+class GR {
+    public var x: int
+    private var y: string
+    public fn GR() -> const GR {}
+    public fn foo(s: const ref GR) -> string { return "string"; }
+    private fn bar(s: const ref GR) -> null { var x = 0; print(x); }
+}
+
+class GS {
+    public var x: int
+    private var y: string
+    public fn GS() -> const GS {}
+    public fn foo(s: const ref GS) -> string { return "string"; }
+    private fn bar(s: const ref GS) -> null { var x = 0; print(x); }
+}
+
+class GT {
+    public var x: int
+    private var y: string
+    public fn GT() -> const GT {}
+    public fn foo(s: const ref GT) -> string { return "string"; }
+    private fn bar(s: const ref GT) -> null { var x = 0; print(x); }
+}
+
+class GU {
+    public var x: int
+    private var y: string
+    public fn GU() -> const GU {}
+    public fn foo(s: const ref GU) -> string { return "string"; }
+    private fn bar(s: const ref GU) -> null { var x = 0; print(x); }
+}
+
+class GV {
+    public var x: int
+    private var y: string
+    public fn GV() -> const GV {}
+    public fn foo(s: const ref GV) -> string { return "string"; }
+    private fn bar(s: const ref GV) -> null { var x = 0; print(x); }
+}
+
+class GW {
+    public var x: int
+    private var y: string
+    public fn GW() -> const GW {}
+    public fn foo(s: const ref GW) -> string { return "string"; }
+    private fn bar(s: const ref GW) -> null { var x = 0; print(x); }
+}
+
+class GX {
+    public var x: int
+    private var y: string
+    public fn GX() -> const GX {}
+    public fn foo(s: const ref GX) -> string { return "string"; }
+    private fn bar(s: const ref GX) -> null { var x = 0; print(x); }
+}
+
+class GY {
+    public var x: int
+    private var y: string
+    public fn GY() -> const GY {}
+    public fn foo(s: const ref GY) -> string { return "string"; }
+    private fn bar(s: const ref GY) -> null { var x = 0; print(x); }
+}
+
+class GZ {
+    public var x: int
+    private var y: string
+    public fn GZ() -> const GZ {}
+    public fn foo(s: const ref GZ) -> string { return "string"; }
+    private fn bar(s: const ref GZ) -> null { var x = 0; print(x); }
+}
+
+class HA {
+    public var x: int
+    private var y: string
+    public fn HA() -> const HA {}
+    public fn foo(s: const ref HA) -> string { return "string"; }
+    private fn bar(s: const ref HA) -> null { var x = 0; print(x); }
+}
+
+class HB {
+    public var x: int
+    private var y: string
+    public fn HB() -> const HB {}
+    public fn foo(s: const ref HB) -> string { return "string"; }
+    private fn bar(s: const ref HB) -> null { var x = 0; print(x); }
+}
+
+class HC {
+    public var x: int
+    private var y: string
+    public fn HC() -> const HC {}
+    public fn foo(s: const ref HC) -> string { return "string"; }
+    private fn bar(s: const ref HC) -> null { var x = 0; print(x); }
+}
+
+class HD {
+    public var x: int
+    private var y: string
+    public fn HD() -> const HD {}
+    public fn foo(s: const ref HD) -> string { return "string"; }
+    private fn bar(s: const ref HD) -> null { var x = 0; print(x); }
+}
+
+class HE {
+    public var x: int
+    private var y: string
+    public fn HE() -> const HE {}
+    public fn foo(s: const ref HE) -> string { return "string"; }
+    private fn bar(s: const ref HE) -> null { var x = 0; print(x); }
+}
+
+class HF {
+    public var x: int
+    private var y: string
+    public fn HF() -> const HF {}
+    public fn foo(s: const ref HF) -> string { return "string"; }
+    private fn bar(s: const ref HF) -> null { var x = 0; print(x); }
+}
+
+class HG {
+    public var x: int
+    private var y: string
+    public fn HG() -> const HG {}
+    public fn foo(s: const ref HG) -> string { return "string"; }
+    private fn bar(s: const ref HG) -> null { var x = 0; print(x); }
+}
+
+class HH {
+    public var x: int
+    private var y: string
+    public fn HH() -> const HH {}
+    public fn foo(s: const ref HH) -> string { return "string"; }
+    private fn bar(s: const ref HH) -> null { var x = 0; print(x); }
+}
+
+class HI {
+    public var x: int
+    private var y: string
+    public fn HI() -> const HI {}
+    public fn foo(s: const ref HI) -> string { return "string"; }
+    private fn bar(s: const ref HI) -> null { var x = 0; print(x); }
+}
+
+class HJ {
+    public var x: int
+    private var y: string
+    public fn HJ() -> const HJ {}
+    public fn foo(s: const ref HJ) -> string { return "string"; }
+    private fn bar(s: const ref HJ) -> null { var x = 0; print(x); }
+}
+
+class HK {
+    public var x: int
+    private var y: string
+    public fn HK() -> const HK {}
+    public fn foo(s: const ref HK) -> string { return "string"; }
+    private fn bar(s: const ref HK) -> null { var x = 0; print(x); }
+}
+
+class HL {
+    public var x: int
+    private var y: string
+    public fn HL() -> const HL {}
+    public fn foo(s: const ref HL) -> string { return "string"; }
+    private fn bar(s: const ref HL) -> null { var x = 0; print(x); }
+}
+
+class HM {
+    public var x: int
+    private var y: string
+    public fn HM() -> const HM {}
+    public fn foo(s: const ref HM) -> string { return "string"; }
+    private fn bar(s: const ref HM) -> null { var x = 0; print(x); }
+}
+
+class HN {
+    public var x: int
+    private var y: string
+    public fn HN() -> const HN {}
+    public fn foo(s: const ref HN) -> string { return "string"; }
+    private fn bar(s: const ref HN) -> null { var x = 0; print(x); }
+}
+
+class HO {
+    public var x: int
+    private var y: string
+    public fn HO() -> const HO {}
+    public fn foo(s: const ref HO) -> string { return "string"; }
+    private fn bar(s: const ref HO) -> null { var x = 0; print(x); }
+}
+
+class HP {
+    public var x: int
+    private var y: string
+    public fn HP() -> const HP {}
+    public fn foo(s: const ref HP) -> string { return "string"; }
+    private fn bar(s: const ref HP) -> null { var x = 0; print(x); }
+}
+
+class HQ {
+    public var x: int
+    private var y: string
+    public fn HQ() -> const HQ {}
+    public fn foo(s: const ref HQ) -> string { return "string"; }
+    private fn bar(s: const ref HQ) -> null { var x = 0; print(x); }
+}
+
+class HR {
+    public var x: int
+    private var y: string
+    public fn HR() -> const HR {}
+    public fn foo(s: const ref HR) -> string { return "string"; }
+    private fn bar(s: const ref HR) -> null { var x = 0; print(x); }
+}
+
+class HS {
+    public var x: int
+    private var y: string
+    public fn HS() -> const HS {}
+    public fn foo(s: const ref HS) -> string { return "string"; }
+    private fn bar(s: const ref HS) -> null { var x = 0; print(x); }
+}
+
+class HT {
+    public var x: int
+    private var y: string
+    public fn HT() -> const HT {}
+    public fn foo(s: const ref HT) -> string { return "string"; }
+    private fn bar(s: const ref HT) -> null { var x = 0; print(x); }
+}
+
+class HU {
+    public var x: int
+    private var y: string
+    public fn HU() -> const HU {}
+    public fn foo(s: const ref HU) -> string { return "string"; }
+    private fn bar(s: const ref HU) -> null { var x = 0; print(x); }
+}
+
+class HV {
+    public var x: int
+    private var y: string
+    public fn HV() -> const HV {}
+    public fn foo(s: const ref HV) -> string { return "string"; }
+    private fn bar(s: const ref HV) -> null { var x = 0; print(x); }
+}
+
+class HW {
+    public var x: int
+    private var y: string
+    public fn HW() -> const HW {}
+    public fn foo(s: const ref HW) -> string { return "string"; }
+    private fn bar(s: const ref HW) -> null { var x = 0; print(x); }
+}
+
+class HX {
+    public var x: int
+    private var y: string
+    public fn HX() -> const HX {}
+    public fn foo(s: const ref HX) -> string { return "string"; }
+    private fn bar(s: const ref HX) -> null { var x = 0; print(x); }
+}
+
+class HY {
+    public var x: int
+    private var y: string
+    public fn HY() -> const HY {}
+    public fn foo(s: const ref HY) -> string { return "string"; }
+    private fn bar(s: const ref HY) -> null { var x = 0; print(x); }
+}
+
+class HZ {
+    public var x: int
+    private var y: string
+    public fn HZ() -> const HZ {}
+    public fn foo(s: const ref HZ) -> string { return "string"; }
+    private fn bar(s: const ref HZ) -> null { var x = 0; print(x); }
+}
+
+class IA {
+    public var x: int
+    private var y: string
+    public fn IA() -> const IA {}
+    public fn foo(s: const ref IA) -> string { return "string"; }
+    private fn bar(s: const ref IA) -> null { var x = 0; print(x); }
+}
+
+class IB {
+    public var x: int
+    private var y: string
+    public fn IB() -> const IB {}
+    public fn foo(s: const ref IB) -> string { return "string"; }
+    private fn bar(s: const ref IB) -> null { var x = 0; print(x); }
+}
+
+class IC {
+    public var x: int
+    private var y: string
+    public fn IC() -> const IC {}
+    public fn foo(s: const ref IC) -> string { return "string"; }
+    private fn bar(s: const ref IC) -> null { var x = 0; print(x); }
+}
+
+class ID {
+    public var x: int
+    private var y: string
+    public fn ID() -> const ID {}
+    public fn foo(s: const ref ID) -> string { return "string"; }
+    private fn bar(s: const ref ID) -> null { var x = 0; print(x); }
+}
+
+class IE {
+    public var x: int
+    private var y: string
+    public fn IE() -> const IE {}
+    public fn foo(s: const ref IE) -> string { return "string"; }
+    private fn bar(s: const ref IE) -> null { var x = 0; print(x); }
+}
+
+class IF {
+    public var x: int
+    private var y: string
+    public fn IF() -> const IF {}
+    public fn foo(s: const ref IF) -> string { return "string"; }
+    private fn bar(s: const ref IF) -> null { var x = 0; print(x); }
+}
+
+class IG {
+    public var x: int
+    private var y: string
+    public fn IG() -> const IG {}
+    public fn foo(s: const ref IG) -> string { return "string"; }
+    private fn bar(s: const ref IG) -> null { var x = 0; print(x); }
+}
+
+class IH {
+    public var x: int
+    private var y: string
+    public fn IH() -> const IH {}
+    public fn foo(s: const ref IH) -> string { return "string"; }
+    private fn bar(s: const ref IH) -> null { var x = 0; print(x); }
+}
+
+class II {
+    public var x: int
+    private var y: string
+    public fn II() -> const II {}
+    public fn foo(s: const ref II) -> string { return "string"; }
+    private fn bar(s: const ref II) -> null { var x = 0; print(x); }
+}
+
+class IJ {
+    public var x: int
+    private var y: string
+    public fn IJ() -> const IJ {}
+    public fn foo(s: const ref IJ) -> string { return "string"; }
+    private fn bar(s: const ref IJ) -> null { var x = 0; print(x); }
+}
+
+class IK {
+    public var x: int
+    private var y: string
+    public fn IK() -> const IK {}
+    public fn foo(s: const ref IK) -> string { return "string"; }
+    private fn bar(s: const ref IK) -> null { var x = 0; print(x); }
+}
+
+class IL {
+    public var x: int
+    private var y: string
+    public fn IL() -> const IL {}
+    public fn foo(s: const ref IL) -> string { return "string"; }
+    private fn bar(s: const ref IL) -> null { var x = 0; print(x); }
+}
+
+class IM {
+    public var x: int
+    private var y: string
+    public fn IM() -> const IM {}
+    public fn foo(s: const ref IM) -> string { return "string"; }
+    private fn bar(s: const ref IM) -> null { var x = 0; print(x); }
+}
+
+class IN {
+    public var x: int
+    private var y: string
+    public fn IN() -> const IN {}
+    public fn foo(s: const ref IN) -> string { return "string"; }
+    private fn bar(s: const ref IN) -> null { var x = 0; print(x); }
+}
+
+class IO {
+    public var x: int
+    private var y: string
+    public fn IO() -> const IO {}
+    public fn foo(s: const ref IO) -> string { return "string"; }
+    private fn bar(s: const ref IO) -> null { var x = 0; print(x); }
+}
+
+class IP {
+    public var x: int
+    private var y: string
+    public fn IP() -> const IP {}
+    public fn foo(s: const ref IP) -> string { return "string"; }
+    private fn bar(s: const ref IP) -> null { var x = 0; print(x); }
+}
+
+class IQ {
+    public var x: int
+    private var y: string
+    public fn IQ() -> const IQ {}
+    public fn foo(s: const ref IQ) -> string { return "string"; }
+    private fn bar(s: const ref IQ) -> null { var x = 0; print(x); }
+}
+
+class IR {
+    public var x: int
+    private var y: string
+    public fn IR() -> const IR {}
+    public fn foo(s: const ref IR) -> string { return "string"; }
+    private fn bar(s: const ref IR) -> null { var x = 0; print(x); }
+}
+
+class IS {
+    public var x: int
+    private var y: string
+    public fn IS() -> const IS {}
+    public fn foo(s: const ref IS) -> string { return "string"; }
+    private fn bar(s: const ref IS) -> null { var x = 0; print(x); }
+}
+
+class IT {
+    public var x: int
+    private var y: string
+    public fn IT() -> const IT {}
+    public fn foo(s: const ref IT) -> string { return "string"; }
+    private fn bar(s: const ref IT) -> null { var x = 0; print(x); }
+}
+
+class IU {
+    public var x: int
+    private var y: string
+    public fn IU() -> const IU {}
+    public fn foo(s: const ref IU) -> string { return "string"; }
+    private fn bar(s: const ref IU) -> null { var x = 0; print(x); }
+}
+
+class IV {
+    public var x: int
+    private var y: string
+    public fn IV() -> const IV {}
+    public fn foo(s: const ref IV) -> string { return "string"; }
+    private fn bar(s: const ref IV) -> null { var x = 0; print(x); }
+}
+
+class IW {
+    public var x: int
+    private var y: string
+    public fn IW() -> const IW {}
+    public fn foo(s: const ref IW) -> string { return "string"; }
+    private fn bar(s: const ref IW) -> null { var x = 0; print(x); }
+}
+
+class IX {
+    public var x: int
+    private var y: string
+    public fn IX() -> const IX {}
+    public fn foo(s: const ref IX) -> string { return "string"; }
+    private fn bar(s: const ref IX) -> null { var x = 0; print(x); }
+}
+
+class IY {
+    public var x: int
+    private var y: string
+    public fn IY() -> const IY {}
+    public fn foo(s: const ref IY) -> string { return "string"; }
+    private fn bar(s: const ref IY) -> null { var x = 0; print(x); }
+}
+
+class IZ {
+    public var x: int
+    private var y: string
+    public fn IZ() -> const IZ {}
+    public fn foo(s: const ref IZ) -> string { return "string"; }
+    private fn bar(s: const ref IZ) -> null { var x = 0; print(x); }
+}
+
+class JA {
+    public var x: int
+    private var y: string
+    public fn JA() -> const JA {}
+    public fn foo(s: const ref JA) -> string { return "string"; }
+    private fn bar(s: const ref JA) -> null { var x = 0; print(x); }
+}
+
+class JB {
+    public var x: int
+    private var y: string
+    public fn JB() -> const JB {}
+    public fn foo(s: const ref JB) -> string { return "string"; }
+    private fn bar(s: const ref JB) -> null { var x = 0; print(x); }
+}
+
+class JC {
+    public var x: int
+    private var y: string
+    public fn JC() -> const JC {}
+    public fn foo(s: const ref JC) -> string { return "string"; }
+    private fn bar(s: const ref JC) -> null { var x = 0; print(x); }
+}
+
+class JD {
+    public var x: int
+    private var y: string
+    public fn JD() -> const JD {}
+    public fn foo(s: const ref JD) -> string { return "string"; }
+    private fn bar(s: const ref JD) -> null { var x = 0; print(x); }
+}
+
+class JE {
+    public var x: int
+    private var y: string
+    public fn JE() -> const JE {}
+    public fn foo(s: const ref JE) -> string { return "string"; }
+    private fn bar(s: const ref JE) -> null { var x = 0; print(x); }
+}
+
+class JF {
+    public var x: int
+    private var y: string
+    public fn JF() -> const JF {}
+    public fn foo(s: const ref JF) -> string { return "string"; }
+    private fn bar(s: const ref JF) -> null { var x = 0; print(x); }
+}
+
+class JG {
+    public var x: int
+    private var y: string
+    public fn JG() -> const JG {}
+    public fn foo(s: const ref JG) -> string { return "string"; }
+    private fn bar(s: const ref JG) -> null { var x = 0; print(x); }
+}
+
+class JH {
+    public var x: int
+    private var y: string
+    public fn JH() -> const JH {}
+    public fn foo(s: const ref JH) -> string { return "string"; }
+    private fn bar(s: const ref JH) -> null { var x = 0; print(x); }
+}
+
+class JI {
+    public var x: int
+    private var y: string
+    public fn JI() -> const JI {}
+    public fn foo(s: const ref JI) -> string { return "string"; }
+    private fn bar(s: const ref JI) -> null { var x = 0; print(x); }
+}
+
+class JJ {
+    public var x: int
+    private var y: string
+    public fn JJ() -> const JJ {}
+    public fn foo(s: const ref JJ) -> string { return "string"; }
+    private fn bar(s: const ref JJ) -> null { var x = 0; print(x); }
+}
+
+class JK {
+    public var x: int
+    private var y: string
+    public fn JK() -> const JK {}
+    public fn foo(s: const ref JK) -> string { return "string"; }
+    private fn bar(s: const ref JK) -> null { var x = 0; print(x); }
+}
+
+class JL {
+    public var x: int
+    private var y: string
+    public fn JL() -> const JL {}
+    public fn foo(s: const ref JL) -> string { return "string"; }
+    private fn bar(s: const ref JL) -> null { var x = 0; print(x); }
+}
+
+class JM {
+    public var x: int
+    private var y: string
+    public fn JM() -> const JM {}
+    public fn foo(s: const ref JM) -> string { return "string"; }
+    private fn bar(s: const ref JM) -> null { var x = 0; print(x); }
+}
+
+class JN {
+    public var x: int
+    private var y: string
+    public fn JN() -> const JN {}
+    public fn foo(s: const ref JN) -> string { return "string"; }
+    private fn bar(s: const ref JN) -> null { var x = 0; print(x); }
+}
+
+class JO {
+    public var x: int
+    private var y: string
+    public fn JO() -> const JO {}
+    public fn foo(s: const ref JO) -> string { return "string"; }
+    private fn bar(s: const ref JO) -> null { var x = 0; print(x); }
+}
+
+class JP {
+    public var x: int
+    private var y: string
+    public fn JP() -> const JP {}
+    public fn foo(s: const ref JP) -> string { return "string"; }
+    private fn bar(s: const ref JP) -> null { var x = 0; print(x); }
+}
+
+class JQ {
+    public var x: int
+    private var y: string
+    public fn JQ() -> const JQ {}
+    public fn foo(s: const ref JQ) -> string { return "string"; }
+    private fn bar(s: const ref JQ) -> null { var x = 0; print(x); }
+}
+
+class JR {
+    public var x: int
+    private var y: string
+    public fn JR() -> const JR {}
+    public fn foo(s: const ref JR) -> string { return "string"; }
+    private fn bar(s: const ref JR) -> null { var x = 0; print(x); }
+}
+
+class JS {
+    public var x: int
+    private var y: string
+    public fn JS() -> const JS {}
+    public fn foo(s: const ref JS) -> string { return "string"; }
+    private fn bar(s: const ref JS) -> null { var x = 0; print(x); }
+}
+
+class JT {
+    public var x: int
+    private var y: string
+    public fn JT() -> const JT {}
+    public fn foo(s: const ref JT) -> string { return "string"; }
+    private fn bar(s: const ref JT) -> null { var x = 0; print(x); }
+}
+
+class JU {
+    public var x: int
+    private var y: string
+    public fn JU() -> const JU {}
+    public fn foo(s: const ref JU) -> string { return "string"; }
+    private fn bar(s: const ref JU) -> null { var x = 0; print(x); }
+}
+
+class JV {
+    public var x: int
+    private var y: string
+    public fn JV() -> const JV {}
+    public fn foo(s: const ref JV) -> string { return "string"; }
+    private fn bar(s: const ref JV) -> null { var x = 0; print(x); }
+}
+
+class JW {
+    public var x: int
+    private var y: string
+    public fn JW() -> const JW {}
+    public fn foo(s: const ref JW) -> string { return "string"; }
+    private fn bar(s: const ref JW) -> null { var x = 0; print(x); }
+}
+
+class JX {
+    public var x: int
+    private var y: string
+    public fn JX() -> const JX {}
+    public fn foo(s: const ref JX) -> string { return "string"; }
+    private fn bar(s: const ref JX) -> null { var x = 0; print(x); }
+}
+
+class JY {
+    public var x: int
+    private var y: string
+    public fn JY() -> const JY {}
+    public fn foo(s: const ref JY) -> string { return "string"; }
+    private fn bar(s: const ref JY) -> null { var x = 0; print(x); }
+}
+
+class JZ {
+    public var x: int
+    private var y: string
+    public fn JZ() -> const JZ {}
+    public fn foo(s: const ref JZ) -> string { return "string"; }
+    private fn bar(s: const ref JZ) -> null { var x = 0; print(x); }
+}
+
+class KA {
+    public var x: int
+    private var y: string
+    public fn KA() -> const KA {}
+    public fn foo(s: const ref KA) -> string { return "string"; }
+    private fn bar(s: const ref KA) -> null { var x = 0; print(x); }
+}
+
+class KB {
+    public var x: int
+    private var y: string
+    public fn KB() -> const KB {}
+    public fn foo(s: const ref KB) -> string { return "string"; }
+    private fn bar(s: const ref KB) -> null { var x = 0; print(x); }
+}
+
+class KC {
+    public var x: int
+    private var y: string
+    public fn KC() -> const KC {}
+    public fn foo(s: const ref KC) -> string { return "string"; }
+    private fn bar(s: const ref KC) -> null { var x = 0; print(x); }
+}
+
+class KD {
+    public var x: int
+    private var y: string
+    public fn KD() -> const KD {}
+    public fn foo(s: const ref KD) -> string { return "string"; }
+    private fn bar(s: const ref KD) -> null { var x = 0; print(x); }
+}
+
+class KE {
+    public var x: int
+    private var y: string
+    public fn KE() -> const KE {}
+    public fn foo(s: const ref KE) -> string { return "string"; }
+    private fn bar(s: const ref KE) -> null { var x = 0; print(x); }
+}
+
+class KF {
+    public var x: int
+    private var y: string
+    public fn KF() -> const KF {}
+    public fn foo(s: const ref KF) -> string { return "string"; }
+    private fn bar(s: const ref KF) -> null { var x = 0; print(x); }
+}
+
+class KG {
+    public var x: int
+    private var y: string
+    public fn KG() -> const KG {}
+    public fn foo(s: const ref KG) -> string { return "string"; }
+    private fn bar(s: const ref KG) -> null { var x = 0; print(x); }
+}
+
+class KH {
+    public var x: int
+    private var y: string
+    public fn KH() -> const KH {}
+    public fn foo(s: const ref KH) -> string { return "string"; }
+    private fn bar(s: const ref KH) -> null { var x = 0; print(x); }
+}
+
+class KI {
+    public var x: int
+    private var y: string
+    public fn KI() -> const KI {}
+    public fn foo(s: const ref KI) -> string { return "string"; }
+    private fn bar(s: const ref KI) -> null { var x = 0; print(x); }
+}
+
+class KJ {
+    public var x: int
+    private var y: string
+    public fn KJ() -> const KJ {}
+    public fn foo(s: const ref KJ) -> string { return "string"; }
+    private fn bar(s: const ref KJ) -> null { var x = 0; print(x); }
+}
+
+class KK {
+    public var x: int
+    private var y: string
+    public fn KK() -> const KK {}
+    public fn foo(s: const ref KK) -> string { return "string"; }
+    private fn bar(s: const ref KK) -> null { var x = 0; print(x); }
+}
+
+class KL {
+    public var x: int
+    private var y: string
+    public fn KL() -> const KL {}
+    public fn foo(s: const ref KL) -> string { return "string"; }
+    private fn bar(s: const ref KL) -> null { var x = 0; print(x); }
+}
+
+class KM {
+    public var x: int
+    private var y: string
+    public fn KM() -> const KM {}
+    public fn foo(s: const ref KM) -> string { return "string"; }
+    private fn bar(s: const ref KM) -> null { var x = 0; print(x); }
+}
+
+class KN {
+    public var x: int
+    private var y: string
+    public fn KN() -> const KN {}
+    public fn foo(s: const ref KN) -> string { return "string"; }
+    private fn bar(s: const ref KN) -> null { var x = 0; print(x); }
+}
+
+class KO {
+    public var x: int
+    private var y: string
+    public fn KO() -> const KO {}
+    public fn foo(s: const ref KO) -> string { return "string"; }
+    private fn bar(s: const ref KO) -> null { var x = 0; print(x); }
+}
+
+class KP {
+    public var x: int
+    private var y: string
+    public fn KP() -> const KP {}
+    public fn foo(s: const ref KP) -> string { return "string"; }
+    private fn bar(s: const ref KP) -> null { var x = 0; print(x); }
+}
+
+class KQ {
+    public var x: int
+    private var y: string
+    public fn KQ() -> const KQ {}
+    public fn foo(s: const ref KQ) -> string { return "string"; }
+    private fn bar(s: const ref KQ) -> null { var x = 0; print(x); }
+}
+
+class KR {
+    public var x: int
+    private var y: string
+    public fn KR() -> const KR {}
+    public fn foo(s: const ref KR) -> string { return "string"; }
+    private fn bar(s: const ref KR) -> null { var x = 0; print(x); }
+}
+
+class KS {
+    public var x: int
+    private var y: string
+    public fn KS() -> const KS {}
+    public fn foo(s: const ref KS) -> string { return "string"; }
+    private fn bar(s: const ref KS) -> null { var x = 0; print(x); }
+}
+
+class KT {
+    public var x: int
+    private var y: string
+    public fn KT() -> const KT {}
+    public fn foo(s: const ref KT) -> string { return "string"; }
+    private fn bar(s: const ref KT) -> null { var x = 0; print(x); }
+}
+
+class KU {
+    public var x: int
+    private var y: string
+    public fn KU() -> const KU {}
+    public fn foo(s: const ref KU) -> string { return "string"; }
+    private fn bar(s: const ref KU) -> null { var x = 0; print(x); }
+}
+
+class KV {
+    public var x: int
+    private var y: string
+    public fn KV() -> const KV {}
+    public fn foo(s: const ref KV) -> string { return "string"; }
+    private fn bar(s: const ref KV) -> null { var x = 0; print(x); }
+}
+
+class KW {
+    public var x: int
+    private var y: string
+    public fn KW() -> const KW {}
+    public fn foo(s: const ref KW) -> string { return "string"; }
+    private fn bar(s: const ref KW) -> null { var x = 0; print(x); }
+}
+
+class KX {
+    public var x: int
+    private var y: string
+    public fn KX() -> const KX {}
+    public fn foo(s: const ref KX) -> string { return "string"; }
+    private fn bar(s: const ref KX) -> null { var x = 0; print(x); }
+}
+
+class KY {
+    public var x: int
+    private var y: string
+    public fn KY() -> const KY {}
+    public fn foo(s: const ref KY) -> string { return "string"; }
+    private fn bar(s: const ref KY) -> null { var x = 0; print(x); }
+}
+
+class KZ {
+    public var x: int
+    private var y: string
+    public fn KZ() -> const KZ {}
+    public fn foo(s: const ref KZ) -> string { return "string"; }
+    private fn bar(s: const ref KZ) -> null { var x = 0; print(x); }
+}
+
+class LA {
+    public var x: int
+    private var y: string
+    public fn LA() -> const LA {}
+    public fn foo(s: const ref LA) -> string { return "string"; }
+    private fn bar(s: const ref LA) -> null { var x = 0; print(x); }
+}
+
+class LB {
+    public var x: int
+    private var y: string
+    public fn LB() -> const LB {}
+    public fn foo(s: const ref LB) -> string { return "string"; }
+    private fn bar(s: const ref LB) -> null { var x = 0; print(x); }
+}
+
+class LC {
+    public var x: int
+    private var y: string
+    public fn LC() -> const LC {}
+    public fn foo(s: const ref LC) -> string { return "string"; }
+    private fn bar(s: const ref LC) -> null { var x = 0; print(x); }
+}
+
+class LD {
+    public var x: int
+    private var y: string
+    public fn LD() -> const LD {}
+    public fn foo(s: const ref LD) -> string { return "string"; }
+    private fn bar(s: const ref LD) -> null { var x = 0; print(x); }
+}
+
+class LE {
+    public var x: int
+    private var y: string
+    public fn LE() -> const LE {}
+    public fn foo(s: const ref LE) -> string { return "string"; }
+    private fn bar(s: const ref LE) -> null { var x = 0; print(x); }
+}
+
+class LF {
+    public var x: int
+    private var y: string
+    public fn LF() -> const LF {}
+    public fn foo(s: const ref LF) -> string { return "string"; }
+    private fn bar(s: const ref LF) -> null { var x = 0; print(x); }
+}
+
+class LG {
+    public var x: int
+    private var y: string
+    public fn LG() -> const LG {}
+    public fn foo(s: const ref LG) -> string { return "string"; }
+    private fn bar(s: const ref LG) -> null { var x = 0; print(x); }
+}
+
+class LH {
+    public var x: int
+    private var y: string
+    public fn LH() -> const LH {}
+    public fn foo(s: const ref LH) -> string { return "string"; }
+    private fn bar(s: const ref LH) -> null { var x = 0; print(x); }
+}
+
+class LI {
+    public var x: int
+    private var y: string
+    public fn LI() -> const LI {}
+    public fn foo(s: const ref LI) -> string { return "string"; }
+    private fn bar(s: const ref LI) -> null { var x = 0; print(x); }
+}
+
+class LJ {
+    public var x: int
+    private var y: string
+    public fn LJ() -> const LJ {}
+    public fn foo(s: const ref LJ) -> string { return "string"; }
+    private fn bar(s: const ref LJ) -> null { var x = 0; print(x); }
+}
+
+class LK {
+    public var x: int
+    private var y: string
+    public fn LK() -> const LK {}
+    public fn foo(s: const ref LK) -> string { return "string"; }
+    private fn bar(s: const ref LK) -> null { var x = 0; print(x); }
+}
+
+class LL {
+    public var x: int
+    private var y: string
+    public fn LL() -> const LL {}
+    public fn foo(s: const ref LL) -> string { return "string"; }
+    private fn bar(s: const ref LL) -> null { var x = 0; print(x); }
+}
+
+class LM {
+    public var x: int
+    private var y: string
+    public fn LM() -> const LM {}
+    public fn foo(s: const ref LM) -> string { return "string"; }
+    private fn bar(s: const ref LM) -> null { var x = 0; print(x); }
+}
+
+class LN {
+    public var x: int
+    private var y: string
+    public fn LN() -> const LN {}
+    public fn foo(s: const ref LN) -> string { return "string"; }
+    private fn bar(s: const ref LN) -> null { var x = 0; print(x); }
+}
+
+class LO {
+    public var x: int
+    private var y: string
+    public fn LO() -> const LO {}
+    public fn foo(s: const ref LO) -> string { return "string"; }
+    private fn bar(s: const ref LO) -> null { var x = 0; print(x); }
+}
+
+class LP {
+    public var x: int
+    private var y: string
+    public fn LP() -> const LP {}
+    public fn foo(s: const ref LP) -> string { return "string"; }
+    private fn bar(s: const ref LP) -> null { var x = 0; print(x); }
+}
+
+class LQ {
+    public var x: int
+    private var y: string
+    public fn LQ() -> const LQ {}
+    public fn foo(s: const ref LQ) -> string { return "string"; }
+    private fn bar(s: const ref LQ) -> null { var x = 0; print(x); }
+}
+
+class LR {
+    public var x: int
+    private var y: string
+    public fn LR() -> const LR {}
+    public fn foo(s: const ref LR) -> string { return "string"; }
+    private fn bar(s: const ref LR) -> null { var x = 0; print(x); }
+}
+
+class LS {
+    public var x: int
+    private var y: string
+    public fn LS() -> const LS {}
+    public fn foo(s: const ref LS) -> string { return "string"; }
+    private fn bar(s: const ref LS) -> null { var x = 0; print(x); }
+}
+
+class LT {
+    public var x: int
+    private var y: string
+    public fn LT() -> const LT {}
+    public fn foo(s: const ref LT) -> string { return "string"; }
+    private fn bar(s: const ref LT) -> null { var x = 0; print(x); }
+}
+
+class LU {
+    public var x: int
+    private var y: string
+    public fn LU() -> const LU {}
+    public fn foo(s: const ref LU) -> string { return "string"; }
+    private fn bar(s: const ref LU) -> null { var x = 0; print(x); }
+}
+
+class LV {
+    public var x: int
+    private var y: string
+    public fn LV() -> const LV {}
+    public fn foo(s: const ref LV) -> string { return "string"; }
+    private fn bar(s: const ref LV) -> null { var x = 0; print(x); }
+}
+
+class LW {
+    public var x: int
+    private var y: string
+    public fn LW() -> const LW {}
+    public fn foo(s: const ref LW) -> string { return "string"; }
+    private fn bar(s: const ref LW) -> null { var x = 0; print(x); }
+}
+
+class LX {
+    public var x: int
+    private var y: string
+    public fn LX() -> const LX {}
+    public fn foo(s: const ref LX) -> string { return "string"; }
+    private fn bar(s: const ref LX) -> null { var x = 0; print(x); }
+}
+
+class LY {
+    public var x: int
+    private var y: string
+    public fn LY() -> const LY {}
+    public fn foo(s: const ref LY) -> string { return "string"; }
+    private fn bar(s: const ref LY) -> null { var x = 0; print(x); }
+}
+
+class LZ {
+    public var x: int
+    private var y: string
+    public fn LZ() -> const LZ {}
+    public fn foo(s: const ref LZ) -> string { return "string"; }
+    private fn bar(s: const ref LZ) -> null { var x = 0; print(x); }
+}
+
+class MA {
+    public var x: int
+    private var y: string
+    public fn MA() -> const MA {}
+    public fn foo(s: const ref MA) -> string { return "string"; }
+    private fn bar(s: const ref MA) -> null { var x = 0; print(x); }
+}
+
+class MB {
+    public var x: int
+    private var y: string
+    public fn MB() -> const MB {}
+    public fn foo(s: const ref MB) -> string { return "string"; }
+    private fn bar(s: const ref MB) -> null { var x = 0; print(x); }
+}
+
+class MC {
+    public var x: int
+    private var y: string
+    public fn MC() -> const MC {}
+    public fn foo(s: const ref MC) -> string { return "string"; }
+    private fn bar(s: const ref MC) -> null { var x = 0; print(x); }
+}
+
+class MD {
+    public var x: int
+    private var y: string
+    public fn MD() -> const MD {}
+    public fn foo(s: const ref MD) -> string { return "string"; }
+    private fn bar(s: const ref MD) -> null { var x = 0; print(x); }
+}
+
+class ME {
+    public var x: int
+    private var y: string
+    public fn ME() -> const ME {}
+    public fn foo(s: const ref ME) -> string { return "string"; }
+    private fn bar(s: const ref ME) -> null { var x = 0; print(x); }
+}
+
+class MF {
+    public var x: int
+    private var y: string
+    public fn MF() -> const MF {}
+    public fn foo(s: const ref MF) -> string { return "string"; }
+    private fn bar(s: const ref MF) -> null { var x = 0; print(x); }
+}
+
+class MG {
+    public var x: int
+    private var y: string
+    public fn MG() -> const MG {}
+    public fn foo(s: const ref MG) -> string { return "string"; }
+    private fn bar(s: const ref MG) -> null { var x = 0; print(x); }
+}
+
+class MH {
+    public var x: int
+    private var y: string
+    public fn MH() -> const MH {}
+    public fn foo(s: const ref MH) -> string { return "string"; }
+    private fn bar(s: const ref MH) -> null { var x = 0; print(x); }
+}
+
+class MI {
+    public var x: int
+    private var y: string
+    public fn MI() -> const MI {}
+    public fn foo(s: const ref MI) -> string { return "string"; }
+    private fn bar(s: const ref MI) -> null { var x = 0; print(x); }
+}
+
+class MJ {
+    public var x: int
+    private var y: string
+    public fn MJ() -> const MJ {}
+    public fn foo(s: const ref MJ) -> string { return "string"; }
+    private fn bar(s: const ref MJ) -> null { var x = 0; print(x); }
+}
+
+class MK {
+    public var x: int
+    private var y: string
+    public fn MK() -> const MK {}
+    public fn foo(s: const ref MK) -> string { return "string"; }
+    private fn bar(s: const ref MK) -> null { var x = 0; print(x); }
+}
+
+class ML {
+    public var x: int
+    private var y: string
+    public fn ML() -> const ML {}
+    public fn foo(s: const ref ML) -> string { return "string"; }
+    private fn bar(s: const ref ML) -> null { var x = 0; print(x); }
+}
+
+class MM {
+    public var x: int
+    private var y: string
+    public fn MM() -> const MM {}
+    public fn foo(s: const ref MM) -> string { return "string"; }
+    private fn bar(s: const ref MM) -> null { var x = 0; print(x); }
+}
+
+class MN {
+    public var x: int
+    private var y: string
+    public fn MN() -> const MN {}
+    public fn foo(s: const ref MN) -> string { return "string"; }
+    private fn bar(s: const ref MN) -> null { var x = 0; print(x); }
+}
+
+class MO {
+    public var x: int
+    private var y: string
+    public fn MO() -> const MO {}
+    public fn foo(s: const ref MO) -> string { return "string"; }
+    private fn bar(s: const ref MO) -> null { var x = 0; print(x); }
+}
+
+class MP {
+    public var x: int
+    private var y: string
+    public fn MP() -> const MP {}
+    public fn foo(s: const ref MP) -> string { return "string"; }
+    private fn bar(s: const ref MP) -> null { var x = 0; print(x); }
+}
+
+class MQ {
+    public var x: int
+    private var y: string
+    public fn MQ() -> const MQ {}
+    public fn foo(s: const ref MQ) -> string { return "string"; }
+    private fn bar(s: const ref MQ) -> null { var x = 0; print(x); }
+}
+
+class MR {
+    public var x: int
+    private var y: string
+    public fn MR() -> const MR {}
+    public fn foo(s: const ref MR) -> string { return "string"; }
+    private fn bar(s: const ref MR) -> null { var x = 0; print(x); }
+}
+
+class MS {
+    public var x: int
+    private var y: string
+    public fn MS() -> const MS {}
+    public fn foo(s: const ref MS) -> string { return "string"; }
+    private fn bar(s: const ref MS) -> null { var x = 0; print(x); }
+}
+
+class MT {
+    public var x: int
+    private var y: string
+    public fn MT() -> const MT {}
+    public fn foo(s: const ref MT) -> string { return "string"; }
+    private fn bar(s: const ref MT) -> null { var x = 0; print(x); }
+}
+
+class MU {
+    public var x: int
+    private var y: string
+    public fn MU() -> const MU {}
+    public fn foo(s: const ref MU) -> string { return "string"; }
+    private fn bar(s: const ref MU) -> null { var x = 0; print(x); }
+}
+
+class MV {
+    public var x: int
+    private var y: string
+    public fn MV() -> const MV {}
+    public fn foo(s: const ref MV) -> string { return "string"; }
+    private fn bar(s: const ref MV) -> null { var x = 0; print(x); }
+}
+
+class MW {
+    public var x: int
+    private var y: string
+    public fn MW() -> const MW {}
+    public fn foo(s: const ref MW) -> string { return "string"; }
+    private fn bar(s: const ref MW) -> null { var x = 0; print(x); }
+}
+
+class MX {
+    public var x: int
+    private var y: string
+    public fn MX() -> const MX {}
+    public fn foo(s: const ref MX) -> string { return "string"; }
+    private fn bar(s: const ref MX) -> null { var x = 0; print(x); }
+}
+
+class MY {
+    public var x: int
+    private var y: string
+    public fn MY() -> const MY {}
+    public fn foo(s: const ref MY) -> string { return "string"; }
+    private fn bar(s: const ref MY) -> null { var x = 0; print(x); }
+}
+
+class MZ {
+    public var x: int
+    private var y: string
+    public fn MZ() -> const MZ {}
+    public fn foo(s: const ref MZ) -> string { return "string"; }
+    private fn bar(s: const ref MZ) -> null { var x = 0; print(x); }
+}
+
+class NA {
+    public var x: int
+    private var y: string
+    public fn NA() -> const NA {}
+    public fn foo(s: const ref NA) -> string { return "string"; }
+    private fn bar(s: const ref NA) -> null { var x = 0; print(x); }
+}
+
+class NB {
+    public var x: int
+    private var y: string
+    public fn NB() -> const NB {}
+    public fn foo(s: const ref NB) -> string { return "string"; }
+    private fn bar(s: const ref NB) -> null { var x = 0; print(x); }
+}
+
+class NC {
+    public var x: int
+    private var y: string
+    public fn NC() -> const NC {}
+    public fn foo(s: const ref NC) -> string { return "string"; }
+    private fn bar(s: const ref NC) -> null { var x = 0; print(x); }
+}
+
+class ND {
+    public var x: int
+    private var y: string
+    public fn ND() -> const ND {}
+    public fn foo(s: const ref ND) -> string { return "string"; }
+    private fn bar(s: const ref ND) -> null { var x = 0; print(x); }
+}
+
+class NE {
+    public var x: int
+    private var y: string
+    public fn NE() -> const NE {}
+    public fn foo(s: const ref NE) -> string { return "string"; }
+    private fn bar(s: const ref NE) -> null { var x = 0; print(x); }
+}
+
+class NF {
+    public var x: int
+    private var y: string
+    public fn NF() -> const NF {}
+    public fn foo(s: const ref NF) -> string { return "string"; }
+    private fn bar(s: const ref NF) -> null { var x = 0; print(x); }
+}
+
+class NG {
+    public var x: int
+    private var y: string
+    public fn NG() -> const NG {}
+    public fn foo(s: const ref NG) -> string { return "string"; }
+    private fn bar(s: const ref NG) -> null { var x = 0; print(x); }
+}
+
+class NH {
+    public var x: int
+    private var y: string
+    public fn NH() -> const NH {}
+    public fn foo(s: const ref NH) -> string { return "string"; }
+    private fn bar(s: const ref NH) -> null { var x = 0; print(x); }
+}
+
+class NI {
+    public var x: int
+    private var y: string
+    public fn NI() -> const NI {}
+    public fn foo(s: const ref NI) -> string { return "string"; }
+    private fn bar(s: const ref NI) -> null { var x = 0; print(x); }
+}
+
+class NJ {
+    public var x: int
+    private var y: string
+    public fn NJ() -> const NJ {}
+    public fn foo(s: const ref NJ) -> string { return "string"; }
+    private fn bar(s: const ref NJ) -> null { var x = 0; print(x); }
+}
+
+class NK {
+    public var x: int
+    private var y: string
+    public fn NK() -> const NK {}
+    public fn foo(s: const ref NK) -> string { return "string"; }
+    private fn bar(s: const ref NK) -> null { var x = 0; print(x); }
+}
+
+class NL {
+    public var x: int
+    private var y: string
+    public fn NL() -> const NL {}
+    public fn foo(s: const ref NL) -> string { return "string"; }
+    private fn bar(s: const ref NL) -> null { var x = 0; print(x); }
+}
+
+class NM {
+    public var x: int
+    private var y: string
+    public fn NM() -> const NM {}
+    public fn foo(s: const ref NM) -> string { return "string"; }
+    private fn bar(s: const ref NM) -> null { var x = 0; print(x); }
+}
+
+class NN {
+    public var x: int
+    private var y: string
+    public fn NN() -> const NN {}
+    public fn foo(s: const ref NN) -> string { return "string"; }
+    private fn bar(s: const ref NN) -> null { var x = 0; print(x); }
+}
+
+class NO {
+    public var x: int
+    private var y: string
+    public fn NO() -> const NO {}
+    public fn foo(s: const ref NO) -> string { return "string"; }
+    private fn bar(s: const ref NO) -> null { var x = 0; print(x); }
+}
+
+class NP {
+    public var x: int
+    private var y: string
+    public fn NP() -> const NP {}
+    public fn foo(s: const ref NP) -> string { return "string"; }
+    private fn bar(s: const ref NP) -> null { var x = 0; print(x); }
+}
+
+class NQ {
+    public var x: int
+    private var y: string
+    public fn NQ() -> const NQ {}
+    public fn foo(s: const ref NQ) -> string { return "string"; }
+    private fn bar(s: const ref NQ) -> null { var x = 0; print(x); }
+}
+
+class NR {
+    public var x: int
+    private var y: string
+    public fn NR() -> const NR {}
+    public fn foo(s: const ref NR) -> string { return "string"; }
+    private fn bar(s: const ref NR) -> null { var x = 0; print(x); }
+}
+
+class NS {
+    public var x: int
+    private var y: string
+    public fn NS() -> const NS {}
+    public fn foo(s: const ref NS) -> string { return "string"; }
+    private fn bar(s: const ref NS) -> null { var x = 0; print(x); }
+}
+
+class NT {
+    public var x: int
+    private var y: string
+    public fn NT() -> const NT {}
+    public fn foo(s: const ref NT) -> string { return "string"; }
+    private fn bar(s: const ref NT) -> null { var x = 0; print(x); }
+}
+
+class NU {
+    public var x: int
+    private var y: string
+    public fn NU() -> const NU {}
+    public fn foo(s: const ref NU) -> string { return "string"; }
+    private fn bar(s: const ref NU) -> null { var x = 0; print(x); }
+}
+
+class NV {
+    public var x: int
+    private var y: string
+    public fn NV() -> const NV {}
+    public fn foo(s: const ref NV) -> string { return "string"; }
+    private fn bar(s: const ref NV) -> null { var x = 0; print(x); }
+}
+
+class NW {
+    public var x: int
+    private var y: string
+    public fn NW() -> const NW {}
+    public fn foo(s: const ref NW) -> string { return "string"; }
+    private fn bar(s: const ref NW) -> null { var x = 0; print(x); }
+}
+
+class NX {
+    public var x: int
+    private var y: string
+    public fn NX() -> const NX {}
+    public fn foo(s: const ref NX) -> string { return "string"; }
+    private fn bar(s: const ref NX) -> null { var x = 0; print(x); }
+}
+
+class NY {
+    public var x: int
+    private var y: string
+    public fn NY() -> const NY {}
+    public fn foo(s: const ref NY) -> string { return "string"; }
+    private fn bar(s: const ref NY) -> null { var x = 0; print(x); }
+}
+
+class NZ {
+    public var x: int
+    private var y: string
+    public fn NZ() -> const NZ {}
+    public fn foo(s: const ref NZ) -> string { return "string"; }
+    private fn bar(s: const ref NZ) -> null { var x = 0; print(x); }
+}
+
+class OA {
+    public var x: int
+    private var y: string
+    public fn OA() -> const OA {}
+    public fn foo(s: const ref OA) -> string { return "string"; }
+    private fn bar(s: const ref OA) -> null { var x = 0; print(x); }
+}
+
+class OB {
+    public var x: int
+    private var y: string
+    public fn OB() -> const OB {}
+    public fn foo(s: const ref OB) -> string { return "string"; }
+    private fn bar(s: const ref OB) -> null { var x = 0; print(x); }
+}
+
+class OC {
+    public var x: int
+    private var y: string
+    public fn OC() -> const OC {}
+    public fn foo(s: const ref OC) -> string { return "string"; }
+    private fn bar(s: const ref OC) -> null { var x = 0; print(x); }
+}
+
+class OD {
+    public var x: int
+    private var y: string
+    public fn OD() -> const OD {}
+    public fn foo(s: const ref OD) -> string { return "string"; }
+    private fn bar(s: const ref OD) -> null { var x = 0; print(x); }
+}
+
+class OE {
+    public var x: int
+    private var y: string
+    public fn OE() -> const OE {}
+    public fn foo(s: const ref OE) -> string { return "string"; }
+    private fn bar(s: const ref OE) -> null { var x = 0; print(x); }
+}
+
+class OF {
+    public var x: int
+    private var y: string
+    public fn OF() -> const OF {}
+    public fn foo(s: const ref OF) -> string { return "string"; }
+    private fn bar(s: const ref OF) -> null { var x = 0; print(x); }
+}
+
+class OG {
+    public var x: int
+    private var y: string
+    public fn OG() -> const OG {}
+    public fn foo(s: const ref OG) -> string { return "string"; }
+    private fn bar(s: const ref OG) -> null { var x = 0; print(x); }
+}
+
+class OH {
+    public var x: int
+    private var y: string
+    public fn OH() -> const OH {}
+    public fn foo(s: const ref OH) -> string { return "string"; }
+    private fn bar(s: const ref OH) -> null { var x = 0; print(x); }
+}
+
+class OI {
+    public var x: int
+    private var y: string
+    public fn OI() -> const OI {}
+    public fn foo(s: const ref OI) -> string { return "string"; }
+    private fn bar(s: const ref OI) -> null { var x = 0; print(x); }
+}
+
+class OJ {
+    public var x: int
+    private var y: string
+    public fn OJ() -> const OJ {}
+    public fn foo(s: const ref OJ) -> string { return "string"; }
+    private fn bar(s: const ref OJ) -> null { var x = 0; print(x); }
+}
+
+class OK {
+    public var x: int
+    private var y: string
+    public fn OK() -> const OK {}
+    public fn foo(s: const ref OK) -> string { return "string"; }
+    private fn bar(s: const ref OK) -> null { var x = 0; print(x); }
+}
+
+class OL {
+    public var x: int
+    private var y: string
+    public fn OL() -> const OL {}
+    public fn foo(s: const ref OL) -> string { return "string"; }
+    private fn bar(s: const ref OL) -> null { var x = 0; print(x); }
+}
+
+class OM {
+    public var x: int
+    private var y: string
+    public fn OM() -> const OM {}
+    public fn foo(s: const ref OM) -> string { return "string"; }
+    private fn bar(s: const ref OM) -> null { var x = 0; print(x); }
+}
+
+class ON {
+    public var x: int
+    private var y: string
+    public fn ON() -> const ON {}
+    public fn foo(s: const ref ON) -> string { return "string"; }
+    private fn bar(s: const ref ON) -> null { var x = 0; print(x); }
+}
+
+class OO {
+    public var x: int
+    private var y: string
+    public fn OO() -> const OO {}
+    public fn foo(s: const ref OO) -> string { return "string"; }
+    private fn bar(s: const ref OO) -> null { var x = 0; print(x); }
+}
+
+class OP {
+    public var x: int
+    private var y: string
+    public fn OP() -> const OP {}
+    public fn foo(s: const ref OP) -> string { return "string"; }
+    private fn bar(s: const ref OP) -> null { var x = 0; print(x); }
+}
+
+class OQ {
+    public var x: int
+    private var y: string
+    public fn OQ() -> const OQ {}
+    public fn foo(s: const ref OQ) -> string { return "string"; }
+    private fn bar(s: const ref OQ) -> null { var x = 0; print(x); }
+}
+
+class OR {
+    public var x: int
+    private var y: string
+    public fn OR() -> const OR {}
+    public fn foo(s: const ref OR) -> string { return "string"; }
+    private fn bar(s: const ref OR) -> null { var x = 0; print(x); }
+}
+
+class OS {
+    public var x: int
+    private var y: string
+    public fn OS() -> const OS {}
+    public fn foo(s: const ref OS) -> string { return "string"; }
+    private fn bar(s: const ref OS) -> null { var x = 0; print(x); }
+}
+
+class OT {
+    public var x: int
+    private var y: string
+    public fn OT() -> const OT {}
+    public fn foo(s: const ref OT) -> string { return "string"; }
+    private fn bar(s: const ref OT) -> null { var x = 0; print(x); }
+}
+
+class OU {
+    public var x: int
+    private var y: string
+    public fn OU() -> const OU {}
+    public fn foo(s: const ref OU) -> string { return "string"; }
+    private fn bar(s: const ref OU) -> null { var x = 0; print(x); }
+}
+
+class OV {
+    public var x: int
+    private var y: string
+    public fn OV() -> const OV {}
+    public fn foo(s: const ref OV) -> string { return "string"; }
+    private fn bar(s: const ref OV) -> null { var x = 0; print(x); }
+}
+
+class OW {
+    public var x: int
+    private var y: string
+    public fn OW() -> const OW {}
+    public fn foo(s: const ref OW) -> string { return "string"; }
+    private fn bar(s: const ref OW) -> null { var x = 0; print(x); }
+}
+
+class OX {
+    public var x: int
+    private var y: string
+    public fn OX() -> const OX {}
+    public fn foo(s: const ref OX) -> string { return "string"; }
+    private fn bar(s: const ref OX) -> null { var x = 0; print(x); }
+}
+
+class OY {
+    public var x: int
+    private var y: string
+    public fn OY() -> const OY {}
+    public fn foo(s: const ref OY) -> string { return "string"; }
+    private fn bar(s: const ref OY) -> null { var x = 0; print(x); }
+}
+
+class OZ {
+    public var x: int
+    private var y: string
+    public fn OZ() -> const OZ {}
+    public fn foo(s: const ref OZ) -> string { return "string"; }
+    private fn bar(s: const ref OZ) -> null { var x = 0; print(x); }
+}
+
+class PA {
+    public var x: int
+    private var y: string
+    public fn PA() -> const PA {}
+    public fn foo(s: const ref PA) -> string { return "string"; }
+    private fn bar(s: const ref PA) -> null { var x = 0; print(x); }
+}
+
+class PB {
+    public var x: int
+    private var y: string
+    public fn PB() -> const PB {}
+    public fn foo(s: const ref PB) -> string { return "string"; }
+    private fn bar(s: const ref PB) -> null { var x = 0; print(x); }
+}
+
+class PC {
+    public var x: int
+    private var y: string
+    public fn PC() -> const PC {}
+    public fn foo(s: const ref PC) -> string { return "string"; }
+    private fn bar(s: const ref PC) -> null { var x = 0; print(x); }
+}
+
+class PD {
+    public var x: int
+    private var y: string
+    public fn PD() -> const PD {}
+    public fn foo(s: const ref PD) -> string { return "string"; }
+    private fn bar(s: const ref PD) -> null { var x = 0; print(x); }
+}
+
+class PE {
+    public var x: int
+    private var y: string
+    public fn PE() -> const PE {}
+    public fn foo(s: const ref PE) -> string { return "string"; }
+    private fn bar(s: const ref PE) -> null { var x = 0; print(x); }
+}
+
+class PF {
+    public var x: int
+    private var y: string
+    public fn PF() -> const PF {}
+    public fn foo(s: const ref PF) -> string { return "string"; }
+    private fn bar(s: const ref PF) -> null { var x = 0; print(x); }
+}
+
+class PG {
+    public var x: int
+    private var y: string
+    public fn PG() -> const PG {}
+    public fn foo(s: const ref PG) -> string { return "string"; }
+    private fn bar(s: const ref PG) -> null { var x = 0; print(x); }
+}
+
+class PH {
+    public var x: int
+    private var y: string
+    public fn PH() -> const PH {}
+    public fn foo(s: const ref PH) -> string { return "string"; }
+    private fn bar(s: const ref PH) -> null { var x = 0; print(x); }
+}
+
+class PI {
+    public var x: int
+    private var y: string
+    public fn PI() -> const PI {}
+    public fn foo(s: const ref PI) -> string { return "string"; }
+    private fn bar(s: const ref PI) -> null { var x = 0; print(x); }
+}
+
+class PJ {
+    public var x: int
+    private var y: string
+    public fn PJ() -> const PJ {}
+    public fn foo(s: const ref PJ) -> string { return "string"; }
+    private fn bar(s: const ref PJ) -> null { var x = 0; print(x); }
+}
+
+class PK {
+    public var x: int
+    private var y: string
+    public fn PK() -> const PK {}
+    public fn foo(s: const ref PK) -> string { return "string"; }
+    private fn bar(s: const ref PK) -> null { var x = 0; print(x); }
+}
+
+class PL {
+    public var x: int
+    private var y: string
+    public fn PL() -> const PL {}
+    public fn foo(s: const ref PL) -> string { return "string"; }
+    private fn bar(s: const ref PL) -> null { var x = 0; print(x); }
+}
+
+class PM {
+    public var x: int
+    private var y: string
+    public fn PM() -> const PM {}
+    public fn foo(s: const ref PM) -> string { return "string"; }
+    private fn bar(s: const ref PM) -> null { var x = 0; print(x); }
+}
+
+class PN {
+    public var x: int
+    private var y: string
+    public fn PN() -> const PN {}
+    public fn foo(s: const ref PN) -> string { return "string"; }
+    private fn bar(s: const ref PN) -> null { var x = 0; print(x); }
+}
+
+class PO {
+    public var x: int
+    private var y: string
+    public fn PO() -> const PO {}
+    public fn foo(s: const ref PO) -> string { return "string"; }
+    private fn bar(s: const ref PO) -> null { var x = 0; print(x); }
+}
+
+class PP {
+    public var x: int
+    private var y: string
+    public fn PP() -> const PP {}
+    public fn foo(s: const ref PP) -> string { return "string"; }
+    private fn bar(s: const ref PP) -> null { var x = 0; print(x); }
+}
+
+class PQ {
+    public var x: int
+    private var y: string
+    public fn PQ() -> const PQ {}
+    public fn foo(s: const ref PQ) -> string { return "string"; }
+    private fn bar(s: const ref PQ) -> null { var x = 0; print(x); }
+}
+
+class PR {
+    public var x: int
+    private var y: string
+    public fn PR() -> const PR {}
+    public fn foo(s: const ref PR) -> string { return "string"; }
+    private fn bar(s: const ref PR) -> null { var x = 0; print(x); }
+}
+
+class PS {
+    public var x: int
+    private var y: string
+    public fn PS() -> const PS {}
+    public fn foo(s: const ref PS) -> string { return "string"; }
+    private fn bar(s: const ref PS) -> null { var x = 0; print(x); }
+}
+
+class PT {
+    public var x: int
+    private var y: string
+    public fn PT() -> const PT {}
+    public fn foo(s: const ref PT) -> string { return "string"; }
+    private fn bar(s: const ref PT) -> null { var x = 0; print(x); }
+}
+
+class PU {
+    public var x: int
+    private var y: string
+    public fn PU() -> const PU {}
+    public fn foo(s: const ref PU) -> string { return "string"; }
+    private fn bar(s: const ref PU) -> null { var x = 0; print(x); }
+}
+
+class PV {
+    public var x: int
+    private var y: string
+    public fn PV() -> const PV {}
+    public fn foo(s: const ref PV) -> string { return "string"; }
+    private fn bar(s: const ref PV) -> null { var x = 0; print(x); }
+}
+
+class PW {
+    public var x: int
+    private var y: string
+    public fn PW() -> const PW {}
+    public fn foo(s: const ref PW) -> string { return "string"; }
+    private fn bar(s: const ref PW) -> null { var x = 0; print(x); }
+}
+
+class PX {
+    public var x: int
+    private var y: string
+    public fn PX() -> const PX {}
+    public fn foo(s: const ref PX) -> string { return "string"; }
+    private fn bar(s: const ref PX) -> null { var x = 0; print(x); }
+}
+
+class PY {
+    public var x: int
+    private var y: string
+    public fn PY() -> const PY {}
+    public fn foo(s: const ref PY) -> string { return "string"; }
+    private fn bar(s: const ref PY) -> null { var x = 0; print(x); }
+}
+
+class PZ {
+    public var x: int
+    private var y: string
+    public fn PZ() -> const PZ {}
+    public fn foo(s: const ref PZ) -> string { return "string"; }
+    private fn bar(s: const ref PZ) -> null { var x = 0; print(x); }
+}
+
+class QA {
+    public var x: int
+    private var y: string
+    public fn QA() -> const QA {}
+    public fn foo(s: const ref QA) -> string { return "string"; }
+    private fn bar(s: const ref QA) -> null { var x = 0; print(x); }
+}
+
+class QB {
+    public var x: int
+    private var y: string
+    public fn QB() -> const QB {}
+    public fn foo(s: const ref QB) -> string { return "string"; }
+    private fn bar(s: const ref QB) -> null { var x = 0; print(x); }
+}
+
+class QC {
+    public var x: int
+    private var y: string
+    public fn QC() -> const QC {}
+    public fn foo(s: const ref QC) -> string { return "string"; }
+    private fn bar(s: const ref QC) -> null { var x = 0; print(x); }
+}
+
+class QD {
+    public var x: int
+    private var y: string
+    public fn QD() -> const QD {}
+    public fn foo(s: const ref QD) -> string { return "string"; }
+    private fn bar(s: const ref QD) -> null { var x = 0; print(x); }
+}
+
+class QE {
+    public var x: int
+    private var y: string
+    public fn QE() -> const QE {}
+    public fn foo(s: const ref QE) -> string { return "string"; }
+    private fn bar(s: const ref QE) -> null { var x = 0; print(x); }
+}
+
+class QF {
+    public var x: int
+    private var y: string
+    public fn QF() -> const QF {}
+    public fn foo(s: const ref QF) -> string { return "string"; }
+    private fn bar(s: const ref QF) -> null { var x = 0; print(x); }
+}
+
+class QG {
+    public var x: int
+    private var y: string
+    public fn QG() -> const QG {}
+    public fn foo(s: const ref QG) -> string { return "string"; }
+    private fn bar(s: const ref QG) -> null { var x = 0; print(x); }
+}
+
+class QH {
+    public var x: int
+    private var y: string
+    public fn QH() -> const QH {}
+    public fn foo(s: const ref QH) -> string { return "string"; }
+    private fn bar(s: const ref QH) -> null { var x = 0; print(x); }
+}
+
+class QI {
+    public var x: int
+    private var y: string
+    public fn QI() -> const QI {}
+    public fn foo(s: const ref QI) -> string { return "string"; }
+    private fn bar(s: const ref QI) -> null { var x = 0; print(x); }
+}
+
+class QJ {
+    public var x: int
+    private var y: string
+    public fn QJ() -> const QJ {}
+    public fn foo(s: const ref QJ) -> string { return "string"; }
+    private fn bar(s: const ref QJ) -> null { var x = 0; print(x); }
+}
+
+class QK {
+    public var x: int
+    private var y: string
+    public fn QK() -> const QK {}
+    public fn foo(s: const ref QK) -> string { return "string"; }
+    private fn bar(s: const ref QK) -> null { var x = 0; print(x); }
+}
+
+class QL {
+    public var x: int
+    private var y: string
+    public fn QL() -> const QL {}
+    public fn foo(s: const ref QL) -> string { return "string"; }
+    private fn bar(s: const ref QL) -> null { var x = 0; print(x); }
+}
+
+class QM {
+    public var x: int
+    private var y: string
+    public fn QM() -> const QM {}
+    public fn foo(s: const ref QM) -> string { return "string"; }
+    private fn bar(s: const ref QM) -> null { var x = 0; print(x); }
+}
+
+class QN {
+    public var x: int
+    private var y: string
+    public fn QN() -> const QN {}
+    public fn foo(s: const ref QN) -> string { return "string"; }
+    private fn bar(s: const ref QN) -> null { var x = 0; print(x); }
+}
+
+class QO {
+    public var x: int
+    private var y: string
+    public fn QO() -> const QO {}
+    public fn foo(s: const ref QO) -> string { return "string"; }
+    private fn bar(s: const ref QO) -> null { var x = 0; print(x); }
+}
+
+class QP {
+    public var x: int
+    private var y: string
+    public fn QP() -> const QP {}
+    public fn foo(s: const ref QP) -> string { return "string"; }
+    private fn bar(s: const ref QP) -> null { var x = 0; print(x); }
+}
+
+class QQ {
+    public var x: int
+    private var y: string
+    public fn QQ() -> const QQ {}
+    public fn foo(s: const ref QQ) -> string { return "string"; }
+    private fn bar(s: const ref QQ) -> null { var x = 0; print(x); }
+}
+
+class QR {
+    public var x: int
+    private var y: string
+    public fn QR() -> const QR {}
+    public fn foo(s: const ref QR) -> string { return "string"; }
+    private fn bar(s: const ref QR) -> null { var x = 0; print(x); }
+}
+
+class QS {
+    public var x: int
+    private var y: string
+    public fn QS() -> const QS {}
+    public fn foo(s: const ref QS) -> string { return "string"; }
+    private fn bar(s: const ref QS) -> null { var x = 0; print(x); }
+}
+
+class QT {
+    public var x: int
+    private var y: string
+    public fn QT() -> const QT {}
+    public fn foo(s: const ref QT) -> string { return "string"; }
+    private fn bar(s: const ref QT) -> null { var x = 0; print(x); }
+}
+
+class QU {
+    public var x: int
+    private var y: string
+    public fn QU() -> const QU {}
+    public fn foo(s: const ref QU) -> string { return "string"; }
+    private fn bar(s: const ref QU) -> null { var x = 0; print(x); }
+}
+
+class QV {
+    public var x: int
+    private var y: string
+    public fn QV() -> const QV {}
+    public fn foo(s: const ref QV) -> string { return "string"; }
+    private fn bar(s: const ref QV) -> null { var x = 0; print(x); }
+}
+
+class QW {
+    public var x: int
+    private var y: string
+    public fn QW() -> const QW {}
+    public fn foo(s: const ref QW) -> string { return "string"; }
+    private fn bar(s: const ref QW) -> null { var x = 0; print(x); }
+}
+
+class QX {
+    public var x: int
+    private var y: string
+    public fn QX() -> const QX {}
+    public fn foo(s: const ref QX) -> string { return "string"; }
+    private fn bar(s: const ref QX) -> null { var x = 0; print(x); }
+}
+
+class QY {
+    public var x: int
+    private var y: string
+    public fn QY() -> const QY {}
+    public fn foo(s: const ref QY) -> string { return "string"; }
+    private fn bar(s: const ref QY) -> null { var x = 0; print(x); }
+}
+
+class QZ {
+    public var x: int
+    private var y: string
+    public fn QZ() -> const QZ {}
+    public fn foo(s: const ref QZ) -> string { return "string"; }
+    private fn bar(s: const ref QZ) -> null { var x = 0; print(x); }
+}
+
+class RA {
+    public var x: int
+    private var y: string
+    public fn RA() -> const RA {}
+    public fn foo(s: const ref RA) -> string { return "string"; }
+    private fn bar(s: const ref RA) -> null { var x = 0; print(x); }
+}
+
+class RB {
+    public var x: int
+    private var y: string
+    public fn RB() -> const RB {}
+    public fn foo(s: const ref RB) -> string { return "string"; }
+    private fn bar(s: const ref RB) -> null { var x = 0; print(x); }
+}
+
+class RC {
+    public var x: int
+    private var y: string
+    public fn RC() -> const RC {}
+    public fn foo(s: const ref RC) -> string { return "string"; }
+    private fn bar(s: const ref RC) -> null { var x = 0; print(x); }
+}
+
+class RD {
+    public var x: int
+    private var y: string
+    public fn RD() -> const RD {}
+    public fn foo(s: const ref RD) -> string { return "string"; }
+    private fn bar(s: const ref RD) -> null { var x = 0; print(x); }
+}
+
+class RE {
+    public var x: int
+    private var y: string
+    public fn RE() -> const RE {}
+    public fn foo(s: const ref RE) -> string { return "string"; }
+    private fn bar(s: const ref RE) -> null { var x = 0; print(x); }
+}
+
+class RF {
+    public var x: int
+    private var y: string
+    public fn RF() -> const RF {}
+    public fn foo(s: const ref RF) -> string { return "string"; }
+    private fn bar(s: const ref RF) -> null { var x = 0; print(x); }
+}
+
+class RG {
+    public var x: int
+    private var y: string
+    public fn RG() -> const RG {}
+    public fn foo(s: const ref RG) -> string { return "string"; }
+    private fn bar(s: const ref RG) -> null { var x = 0; print(x); }
+}
+
+class RH {
+    public var x: int
+    private var y: string
+    public fn RH() -> const RH {}
+    public fn foo(s: const ref RH) -> string { return "string"; }
+    private fn bar(s: const ref RH) -> null { var x = 0; print(x); }
+}
+
+class RI {
+    public var x: int
+    private var y: string
+    public fn RI() -> const RI {}
+    public fn foo(s: const ref RI) -> string { return "string"; }
+    private fn bar(s: const ref RI) -> null { var x = 0; print(x); }
+}
+
+class RJ {
+    public var x: int
+    private var y: string
+    public fn RJ() -> const RJ {}
+    public fn foo(s: const ref RJ) -> string { return "string"; }
+    private fn bar(s: const ref RJ) -> null { var x = 0; print(x); }
+}
+
+class RK {
+    public var x: int
+    private var y: string
+    public fn RK() -> const RK {}
+    public fn foo(s: const ref RK) -> string { return "string"; }
+    private fn bar(s: const ref RK) -> null { var x = 0; print(x); }
+}
+
+class RL {
+    public var x: int
+    private var y: string
+    public fn RL() -> const RL {}
+    public fn foo(s: const ref RL) -> string { return "string"; }
+    private fn bar(s: const ref RL) -> null { var x = 0; print(x); }
+}
+
+class RM {
+    public var x: int
+    private var y: string
+    public fn RM() -> const RM {}
+    public fn foo(s: const ref RM) -> string { return "string"; }
+    private fn bar(s: const ref RM) -> null { var x = 0; print(x); }
+}
+
+class RN {
+    public var x: int
+    private var y: string
+    public fn RN() -> const RN {}
+    public fn foo(s: const ref RN) -> string { return "string"; }
+    private fn bar(s: const ref RN) -> null { var x = 0; print(x); }
+}
+
+class RO {
+    public var x: int
+    private var y: string
+    public fn RO() -> const RO {}
+    public fn foo(s: const ref RO) -> string { return "string"; }
+    private fn bar(s: const ref RO) -> null { var x = 0; print(x); }
+}
+
+class RP {
+    public var x: int
+    private var y: string
+    public fn RP() -> const RP {}
+    public fn foo(s: const ref RP) -> string { return "string"; }
+    private fn bar(s: const ref RP) -> null { var x = 0; print(x); }
+}
+
+class RQ {
+    public var x: int
+    private var y: string
+    public fn RQ() -> const RQ {}
+    public fn foo(s: const ref RQ) -> string { return "string"; }
+    private fn bar(s: const ref RQ) -> null { var x = 0; print(x); }
+}
+
+class RR {
+    public var x: int
+    private var y: string
+    public fn RR() -> const RR {}
+    public fn foo(s: const ref RR) -> string { return "string"; }
+    private fn bar(s: const ref RR) -> null { var x = 0; print(x); }
+}
+
+class RS {
+    public var x: int
+    private var y: string
+    public fn RS() -> const RS {}
+    public fn foo(s: const ref RS) -> string { return "string"; }
+    private fn bar(s: const ref RS) -> null { var x = 0; print(x); }
+}
+
+class RT {
+    public var x: int
+    private var y: string
+    public fn RT() -> const RT {}
+    public fn foo(s: const ref RT) -> string { return "string"; }
+    private fn bar(s: const ref RT) -> null { var x = 0; print(x); }
+}
+
+class RU {
+    public var x: int
+    private var y: string
+    public fn RU() -> const RU {}
+    public fn foo(s: const ref RU) -> string { return "string"; }
+    private fn bar(s: const ref RU) -> null { var x = 0; print(x); }
+}
+
+class RV {
+    public var x: int
+    private var y: string
+    public fn RV() -> const RV {}
+    public fn foo(s: const ref RV) -> string { return "string"; }
+    private fn bar(s: const ref RV) -> null { var x = 0; print(x); }
+}
+
+class RW {
+    public var x: int
+    private var y: string
+    public fn RW() -> const RW {}
+    public fn foo(s: const ref RW) -> string { return "string"; }
+    private fn bar(s: const ref RW) -> null { var x = 0; print(x); }
+}
+
+class RX {
+    public var x: int
+    private var y: string
+    public fn RX() -> const RX {}
+    public fn foo(s: const ref RX) -> string { return "string"; }
+    private fn bar(s: const ref RX) -> null { var x = 0; print(x); }
+}
+
+class RY {
+    public var x: int
+    private var y: string
+    public fn RY() -> const RY {}
+    public fn foo(s: const ref RY) -> string { return "string"; }
+    private fn bar(s: const ref RY) -> null { var x = 0; print(x); }
+}
+
+class RZ {
+    public var x: int
+    private var y: string
+    public fn RZ() -> const RZ {}
+    public fn foo(s: const ref RZ) -> string { return "string"; }
+    private fn bar(s: const ref RZ) -> null { var x = 0; print(x); }
+}
+
+class SA {
+    public var x: int
+    private var y: string
+    public fn SA() -> const SA {}
+    public fn foo(s: const ref SA) -> string { return "string"; }
+    private fn bar(s: const ref SA) -> null { var x = 0; print(x); }
+}
+
+class SB {
+    public var x: int
+    private var y: string
+    public fn SB() -> const SB {}
+    public fn foo(s: const ref SB) -> string { return "string"; }
+    private fn bar(s: const ref SB) -> null { var x = 0; print(x); }
+}
+
+class SC {
+    public var x: int
+    private var y: string
+    public fn SC() -> const SC {}
+    public fn foo(s: const ref SC) -> string { return "string"; }
+    private fn bar(s: const ref SC) -> null { var x = 0; print(x); }
+}
+
+class SD {
+    public var x: int
+    private var y: string
+    public fn SD() -> const SD {}
+    public fn foo(s: const ref SD) -> string { return "string"; }
+    private fn bar(s: const ref SD) -> null { var x = 0; print(x); }
+}
+
+class SE {
+    public var x: int
+    private var y: string
+    public fn SE() -> const SE {}
+    public fn foo(s: const ref SE) -> string { return "string"; }
+    private fn bar(s: const ref SE) -> null { var x = 0; print(x); }
+}
+
+class SF {
+    public var x: int
+    private var y: string
+    public fn SF() -> const SF {}
+    public fn foo(s: const ref SF) -> string { return "string"; }
+    private fn bar(s: const ref SF) -> null { var x = 0; print(x); }
+}
+
+class SG {
+    public var x: int
+    private var y: string
+    public fn SG() -> const SG {}
+    public fn foo(s: const ref SG) -> string { return "string"; }
+    private fn bar(s: const ref SG) -> null { var x = 0; print(x); }
+}
+
+class SH {
+    public var x: int
+    private var y: string
+    public fn SH() -> const SH {}
+    public fn foo(s: const ref SH) -> string { return "string"; }
+    private fn bar(s: const ref SH) -> null { var x = 0; print(x); }
+}
+
+class SI {
+    public var x: int
+    private var y: string
+    public fn SI() -> const SI {}
+    public fn foo(s: const ref SI) -> string { return "string"; }
+    private fn bar(s: const ref SI) -> null { var x = 0; print(x); }
+}
+
+class SJ {
+    public var x: int
+    private var y: string
+    public fn SJ() -> const SJ {}
+    public fn foo(s: const ref SJ) -> string { return "string"; }
+    private fn bar(s: const ref SJ) -> null { var x = 0; print(x); }
+}
+
+class SK {
+    public var x: int
+    private var y: string
+    public fn SK() -> const SK {}
+    public fn foo(s: const ref SK) -> string { return "string"; }
+    private fn bar(s: const ref SK) -> null { var x = 0; print(x); }
+}
+
+class SL {
+    public var x: int
+    private var y: string
+    public fn SL() -> const SL {}
+    public fn foo(s: const ref SL) -> string { return "string"; }
+    private fn bar(s: const ref SL) -> null { var x = 0; print(x); }
+}
+
+class SM {
+    public var x: int
+    private var y: string
+    public fn SM() -> const SM {}
+    public fn foo(s: const ref SM) -> string { return "string"; }
+    private fn bar(s: const ref SM) -> null { var x = 0; print(x); }
+}
+
+class SN {
+    public var x: int
+    private var y: string
+    public fn SN() -> const SN {}
+    public fn foo(s: const ref SN) -> string { return "string"; }
+    private fn bar(s: const ref SN) -> null { var x = 0; print(x); }
+}
+
+class SO {
+    public var x: int
+    private var y: string
+    public fn SO() -> const SO {}
+    public fn foo(s: const ref SO) -> string { return "string"; }
+    private fn bar(s: const ref SO) -> null { var x = 0; print(x); }
+}
+
+class SP {
+    public var x: int
+    private var y: string
+    public fn SP() -> const SP {}
+    public fn foo(s: const ref SP) -> string { return "string"; }
+    private fn bar(s: const ref SP) -> null { var x = 0; print(x); }
+}
+
+class SQ {
+    public var x: int
+    private var y: string
+    public fn SQ() -> const SQ {}
+    public fn foo(s: const ref SQ) -> string { return "string"; }
+    private fn bar(s: const ref SQ) -> null { var x = 0; print(x); }
+}
+
+class SR {
+    public var x: int
+    private var y: string
+    public fn SR() -> const SR {}
+    public fn foo(s: const ref SR) -> string { return "string"; }
+    private fn bar(s: const ref SR) -> null { var x = 0; print(x); }
+}
+
+class SS {
+    public var x: int
+    private var y: string
+    public fn SS() -> const SS {}
+    public fn foo(s: const ref SS) -> string { return "string"; }
+    private fn bar(s: const ref SS) -> null { var x = 0; print(x); }
+}
+
+class ST {
+    public var x: int
+    private var y: string
+    public fn ST() -> const ST {}
+    public fn foo(s: const ref ST) -> string { return "string"; }
+    private fn bar(s: const ref ST) -> null { var x = 0; print(x); }
+}
+
+class SU {
+    public var x: int
+    private var y: string
+    public fn SU() -> const SU {}
+    public fn foo(s: const ref SU) -> string { return "string"; }
+    private fn bar(s: const ref SU) -> null { var x = 0; print(x); }
+}
+
+class SV {
+    public var x: int
+    private var y: string
+    public fn SV() -> const SV {}
+    public fn foo(s: const ref SV) -> string { return "string"; }
+    private fn bar(s: const ref SV) -> null { var x = 0; print(x); }
+}
+
+class SW {
+    public var x: int
+    private var y: string
+    public fn SW() -> const SW {}
+    public fn foo(s: const ref SW) -> string { return "string"; }
+    private fn bar(s: const ref SW) -> null { var x = 0; print(x); }
+}
+
+class SX {
+    public var x: int
+    private var y: string
+    public fn SX() -> const SX {}
+    public fn foo(s: const ref SX) -> string { return "string"; }
+    private fn bar(s: const ref SX) -> null { var x = 0; print(x); }
+}
+
+class SY {
+    public var x: int
+    private var y: string
+    public fn SY() -> const SY {}
+    public fn foo(s: const ref SY) -> string { return "string"; }
+    private fn bar(s: const ref SY) -> null { var x = 0; print(x); }
+}
+
+class SZ {
+    public var x: int
+    private var y: string
+    public fn SZ() -> const SZ {}
+    public fn foo(s: const ref SZ) -> string { return "string"; }
+    private fn bar(s: const ref SZ) -> null { var x = 0; print(x); }
+}
+
+class TA {
+    public var x: int
+    private var y: string
+    public fn TA() -> const TA {}
+    public fn foo(s: const ref TA) -> string { return "string"; }
+    private fn bar(s: const ref TA) -> null { var x = 0; print(x); }
+}
+
+class TB {
+    public var x: int
+    private var y: string
+    public fn TB() -> const TB {}
+    public fn foo(s: const ref TB) -> string { return "string"; }
+    private fn bar(s: const ref TB) -> null { var x = 0; print(x); }
+}
+
+class TC {
+    public var x: int
+    private var y: string
+    public fn TC() -> const TC {}
+    public fn foo(s: const ref TC) -> string { return "string"; }
+    private fn bar(s: const ref TC) -> null { var x = 0; print(x); }
+}
+
+class TD {
+    public var x: int
+    private var y: string
+    public fn TD() -> const TD {}
+    public fn foo(s: const ref TD) -> string { return "string"; }
+    private fn bar(s: const ref TD) -> null { var x = 0; print(x); }
+}
+
+class TE {
+    public var x: int
+    private var y: string
+    public fn TE() -> const TE {}
+    public fn foo(s: const ref TE) -> string { return "string"; }
+    private fn bar(s: const ref TE) -> null { var x = 0; print(x); }
+}
+
+class TF {
+    public var x: int
+    private var y: string
+    public fn TF() -> const TF {}
+    public fn foo(s: const ref TF) -> string { return "string"; }
+    private fn bar(s: const ref TF) -> null { var x = 0; print(x); }
+}
+
+class TG {
+    public var x: int
+    private var y: string
+    public fn TG() -> const TG {}
+    public fn foo(s: const ref TG) -> string { return "string"; }
+    private fn bar(s: const ref TG) -> null { var x = 0; print(x); }
+}
+
+class TH {
+    public var x: int
+    private var y: string
+    public fn TH() -> const TH {}
+    public fn foo(s: const ref TH) -> string { return "string"; }
+    private fn bar(s: const ref TH) -> null { var x = 0; print(x); }
+}
+
+class TI {
+    public var x: int
+    private var y: string
+    public fn TI() -> const TI {}
+    public fn foo(s: const ref TI) -> string { return "string"; }
+    private fn bar(s: const ref TI) -> null { var x = 0; print(x); }
+}
+
+class TJ {
+    public var x: int
+    private var y: string
+    public fn TJ() -> const TJ {}
+    public fn foo(s: const ref TJ) -> string { return "string"; }
+    private fn bar(s: const ref TJ) -> null { var x = 0; print(x); }
+}
+
+class TK {
+    public var x: int
+    private var y: string
+    public fn TK() -> const TK {}
+    public fn foo(s: const ref TK) -> string { return "string"; }
+    private fn bar(s: const ref TK) -> null { var x = 0; print(x); }
+}
+
+class TL {
+    public var x: int
+    private var y: string
+    public fn TL() -> const TL {}
+    public fn foo(s: const ref TL) -> string { return "string"; }
+    private fn bar(s: const ref TL) -> null { var x = 0; print(x); }
+}
+
+class TM {
+    public var x: int
+    private var y: string
+    public fn TM() -> const TM {}
+    public fn foo(s: const ref TM) -> string { return "string"; }
+    private fn bar(s: const ref TM) -> null { var x = 0; print(x); }
+}
+
+class TN {
+    public var x: int
+    private var y: string
+    public fn TN() -> const TN {}
+    public fn foo(s: const ref TN) -> string { return "string"; }
+    private fn bar(s: const ref TN) -> null { var x = 0; print(x); }
+}
+
+class TO {
+    public var x: int
+    private var y: string
+    public fn TO() -> const TO {}
+    public fn foo(s: const ref TO) -> string { return "string"; }
+    private fn bar(s: const ref TO) -> null { var x = 0; print(x); }
+}
+
+class TP {
+    public var x: int
+    private var y: string
+    public fn TP() -> const TP {}
+    public fn foo(s: const ref TP) -> string { return "string"; }
+    private fn bar(s: const ref TP) -> null { var x = 0; print(x); }
+}
+
+class TQ {
+    public var x: int
+    private var y: string
+    public fn TQ() -> const TQ {}
+    public fn foo(s: const ref TQ) -> string { return "string"; }
+    private fn bar(s: const ref TQ) -> null { var x = 0; print(x); }
+}
+
+class TR {
+    public var x: int
+    private var y: string
+    public fn TR() -> const TR {}
+    public fn foo(s: const ref TR) -> string { return "string"; }
+    private fn bar(s: const ref TR) -> null { var x = 0; print(x); }
+}
+
+class TS {
+    public var x: int
+    private var y: string
+    public fn TS() -> const TS {}
+    public fn foo(s: const ref TS) -> string { return "string"; }
+    private fn bar(s: const ref TS) -> null { var x = 0; print(x); }
+}
+
+class TT {
+    public var x: int
+    private var y: string
+    public fn TT() -> const TT {}
+    public fn foo(s: const ref TT) -> string { return "string"; }
+    private fn bar(s: const ref TT) -> null { var x = 0; print(x); }
+}
+
+class TU {
+    public var x: int
+    private var y: string
+    public fn TU() -> const TU {}
+    public fn foo(s: const ref TU) -> string { return "string"; }
+    private fn bar(s: const ref TU) -> null { var x = 0; print(x); }
+}
+
+class TV {
+    public var x: int
+    private var y: string
+    public fn TV() -> const TV {}
+    public fn foo(s: const ref TV) -> string { return "string"; }
+    private fn bar(s: const ref TV) -> null { var x = 0; print(x); }
+}
+
+class TW {
+    public var x: int
+    private var y: string
+    public fn TW() -> const TW {}
+    public fn foo(s: const ref TW) -> string { return "string"; }
+    private fn bar(s: const ref TW) -> null { var x = 0; print(x); }
+}
+
+class TX {
+    public var x: int
+    private var y: string
+    public fn TX() -> const TX {}
+    public fn foo(s: const ref TX) -> string { return "string"; }
+    private fn bar(s: const ref TX) -> null { var x = 0; print(x); }
+}
+
+class TY {
+    public var x: int
+    private var y: string
+    public fn TY() -> const TY {}
+    public fn foo(s: const ref TY) -> string { return "string"; }
+    private fn bar(s: const ref TY) -> null { var x = 0; print(x); }
+}
+
+class TZ {
+    public var x: int
+    private var y: string
+    public fn TZ() -> const TZ {}
+    public fn foo(s: const ref TZ) -> string { return "string"; }
+    private fn bar(s: const ref TZ) -> null { var x = 0; print(x); }
+}
+
+class UA {
+    public var x: int
+    private var y: string
+    public fn UA() -> const UA {}
+    public fn foo(s: const ref UA) -> string { return "string"; }
+    private fn bar(s: const ref UA) -> null { var x = 0; print(x); }
+}
+
+class UB {
+    public var x: int
+    private var y: string
+    public fn UB() -> const UB {}
+    public fn foo(s: const ref UB) -> string { return "string"; }
+    private fn bar(s: const ref UB) -> null { var x = 0; print(x); }
+}
+
+class UC {
+    public var x: int
+    private var y: string
+    public fn UC() -> const UC {}
+    public fn foo(s: const ref UC) -> string { return "string"; }
+    private fn bar(s: const ref UC) -> null { var x = 0; print(x); }
+}
+
+class UD {
+    public var x: int
+    private var y: string
+    public fn UD() -> const UD {}
+    public fn foo(s: const ref UD) -> string { return "string"; }
+    private fn bar(s: const ref UD) -> null { var x = 0; print(x); }
+}
+
+class UE {
+    public var x: int
+    private var y: string
+    public fn UE() -> const UE {}
+    public fn foo(s: const ref UE) -> string { return "string"; }
+    private fn bar(s: const ref UE) -> null { var x = 0; print(x); }
+}
+
+class UF {
+    public var x: int
+    private var y: string
+    public fn UF() -> const UF {}
+    public fn foo(s: const ref UF) -> string { return "string"; }
+    private fn bar(s: const ref UF) -> null { var x = 0; print(x); }
+}
+
+class UG {
+    public var x: int
+    private var y: string
+    public fn UG() -> const UG {}
+    public fn foo(s: const ref UG) -> string { return "string"; }
+    private fn bar(s: const ref UG) -> null { var x = 0; print(x); }
+}
+
+class UH {
+    public var x: int
+    private var y: string
+    public fn UH() -> const UH {}
+    public fn foo(s: const ref UH) -> string { return "string"; }
+    private fn bar(s: const ref UH) -> null { var x = 0; print(x); }
+}
+
+class UI {
+    public var x: int
+    private var y: string
+    public fn UI() -> const UI {}
+    public fn foo(s: const ref UI) -> string { return "string"; }
+    private fn bar(s: const ref UI) -> null { var x = 0; print(x); }
+}
+
+class UJ {
+    public var x: int
+    private var y: string
+    public fn UJ() -> const UJ {}
+    public fn foo(s: const ref UJ) -> string { return "string"; }
+    private fn bar(s: const ref UJ) -> null { var x = 0; print(x); }
+}
+
+class UK {
+    public var x: int
+    private var y: string
+    public fn UK() -> const UK {}
+    public fn foo(s: const ref UK) -> string { return "string"; }
+    private fn bar(s: const ref UK) -> null { var x = 0; print(x); }
+}
+
+class UL {
+    public var x: int
+    private var y: string
+    public fn UL() -> const UL {}
+    public fn foo(s: const ref UL) -> string { return "string"; }
+    private fn bar(s: const ref UL) -> null { var x = 0; print(x); }
+}
+
+class UM {
+    public var x: int
+    private var y: string
+    public fn UM() -> const UM {}
+    public fn foo(s: const ref UM) -> string { return "string"; }
+    private fn bar(s: const ref UM) -> null { var x = 0; print(x); }
+}
+
+class UN {
+    public var x: int
+    private var y: string
+    public fn UN() -> const UN {}
+    public fn foo(s: const ref UN) -> string { return "string"; }
+    private fn bar(s: const ref UN) -> null { var x = 0; print(x); }
+}
+
+class UO {
+    public var x: int
+    private var y: string
+    public fn UO() -> const UO {}
+    public fn foo(s: const ref UO) -> string { return "string"; }
+    private fn bar(s: const ref UO) -> null { var x = 0; print(x); }
+}
+
+class UP {
+    public var x: int
+    private var y: string
+    public fn UP() -> const UP {}
+    public fn foo(s: const ref UP) -> string { return "string"; }
+    private fn bar(s: const ref UP) -> null { var x = 0; print(x); }
+}
+
+class UQ {
+    public var x: int
+    private var y: string
+    public fn UQ() -> const UQ {}
+    public fn foo(s: const ref UQ) -> string { return "string"; }
+    private fn bar(s: const ref UQ) -> null { var x = 0; print(x); }
+}
+
+class UR {
+    public var x: int
+    private var y: string
+    public fn UR() -> const UR {}
+    public fn foo(s: const ref UR) -> string { return "string"; }
+    private fn bar(s: const ref UR) -> null { var x = 0; print(x); }
+}
+
+class US {
+    public var x: int
+    private var y: string
+    public fn US() -> const US {}
+    public fn foo(s: const ref US) -> string { return "string"; }
+    private fn bar(s: const ref US) -> null { var x = 0; print(x); }
+}
+
+class UT {
+    public var x: int
+    private var y: string
+    public fn UT() -> const UT {}
+    public fn foo(s: const ref UT) -> string { return "string"; }
+    private fn bar(s: const ref UT) -> null { var x = 0; print(x); }
+}
+
+class UU {
+    public var x: int
+    private var y: string
+    public fn UU() -> const UU {}
+    public fn foo(s: const ref UU) -> string { return "string"; }
+    private fn bar(s: const ref UU) -> null { var x = 0; print(x); }
+}
+
+class UV {
+    public var x: int
+    private var y: string
+    public fn UV() -> const UV {}
+    public fn foo(s: const ref UV) -> string { return "string"; }
+    private fn bar(s: const ref UV) -> null { var x = 0; print(x); }
+}
+
+class UW {
+    public var x: int
+    private var y: string
+    public fn UW() -> const UW {}
+    public fn foo(s: const ref UW) -> string { return "string"; }
+    private fn bar(s: const ref UW) -> null { var x = 0; print(x); }
+}
+
+class UX {
+    public var x: int
+    private var y: string
+    public fn UX() -> const UX {}
+    public fn foo(s: const ref UX) -> string { return "string"; }
+    private fn bar(s: const ref UX) -> null { var x = 0; print(x); }
+}
+
+class UY {
+    public var x: int
+    private var y: string
+    public fn UY() -> const UY {}
+    public fn foo(s: const ref UY) -> string { return "string"; }
+    private fn bar(s: const ref UY) -> null { var x = 0; print(x); }
+}
+
+class UZ {
+    public var x: int
+    private var y: string
+    public fn UZ() -> const UZ {}
+    public fn foo(s: const ref UZ) -> string { return "string"; }
+    private fn bar(s: const ref UZ) -> null { var x = 0; print(x); }
+}
+
+class VA {
+    public var x: int
+    private var y: string
+    public fn VA() -> const VA {}
+    public fn foo(s: const ref VA) -> string { return "string"; }
+    private fn bar(s: const ref VA) -> null { var x = 0; print(x); }
+}
+
+class VB {
+    public var x: int
+    private var y: string
+    public fn VB() -> const VB {}
+    public fn foo(s: const ref VB) -> string { return "string"; }
+    private fn bar(s: const ref VB) -> null { var x = 0; print(x); }
+}
+
+class VC {
+    public var x: int
+    private var y: string
+    public fn VC() -> const VC {}
+    public fn foo(s: const ref VC) -> string { return "string"; }
+    private fn bar(s: const ref VC) -> null { var x = 0; print(x); }
+}
+
+class VD {
+    public var x: int
+    private var y: string
+    public fn VD() -> const VD {}
+    public fn foo(s: const ref VD) -> string { return "string"; }
+    private fn bar(s: const ref VD) -> null { var x = 0; print(x); }
+}
+
+class VE {
+    public var x: int
+    private var y: string
+    public fn VE() -> const VE {}
+    public fn foo(s: const ref VE) -> string { return "string"; }
+    private fn bar(s: const ref VE) -> null { var x = 0; print(x); }
+}
+
+class VF {
+    public var x: int
+    private var y: string
+    public fn VF() -> const VF {}
+    public fn foo(s: const ref VF) -> string { return "string"; }
+    private fn bar(s: const ref VF) -> null { var x = 0; print(x); }
+}
+
+class VG {
+    public var x: int
+    private var y: string
+    public fn VG() -> const VG {}
+    public fn foo(s: const ref VG) -> string { return "string"; }
+    private fn bar(s: const ref VG) -> null { var x = 0; print(x); }
+}
+
+class VH {
+    public var x: int
+    private var y: string
+    public fn VH() -> const VH {}
+    public fn foo(s: const ref VH) -> string { return "string"; }
+    private fn bar(s: const ref VH) -> null { var x = 0; print(x); }
+}
+
+class VI {
+    public var x: int
+    private var y: string
+    public fn VI() -> const VI {}
+    public fn foo(s: const ref VI) -> string { return "string"; }
+    private fn bar(s: const ref VI) -> null { var x = 0; print(x); }
+}
+
+class VJ {
+    public var x: int
+    private var y: string
+    public fn VJ() -> const VJ {}
+    public fn foo(s: const ref VJ) -> string { return "string"; }
+    private fn bar(s: const ref VJ) -> null { var x = 0; print(x); }
+}
+
+class VK {
+    public var x: int
+    private var y: string
+    public fn VK() -> const VK {}
+    public fn foo(s: const ref VK) -> string { return "string"; }
+    private fn bar(s: const ref VK) -> null { var x = 0; print(x); }
+}
+
+class VL {
+    public var x: int
+    private var y: string
+    public fn VL() -> const VL {}
+    public fn foo(s: const ref VL) -> string { return "string"; }
+    private fn bar(s: const ref VL) -> null { var x = 0; print(x); }
+}
+
+class VM {
+    public var x: int
+    private var y: string
+    public fn VM() -> const VM {}
+    public fn foo(s: const ref VM) -> string { return "string"; }
+    private fn bar(s: const ref VM) -> null { var x = 0; print(x); }
+}
+
+class VN {
+    public var x: int
+    private var y: string
+    public fn VN() -> const VN {}
+    public fn foo(s: const ref VN) -> string { return "string"; }
+    private fn bar(s: const ref VN) -> null { var x = 0; print(x); }
+}
+
+class VO {
+    public var x: int
+    private var y: string
+    public fn VO() -> const VO {}
+    public fn foo(s: const ref VO) -> string { return "string"; }
+    private fn bar(s: const ref VO) -> null { var x = 0; print(x); }
+}
+
+class VP {
+    public var x: int
+    private var y: string
+    public fn VP() -> const VP {}
+    public fn foo(s: const ref VP) -> string { return "string"; }
+    private fn bar(s: const ref VP) -> null { var x = 0; print(x); }
+}
+
+class VQ {
+    public var x: int
+    private var y: string
+    public fn VQ() -> const VQ {}
+    public fn foo(s: const ref VQ) -> string { return "string"; }
+    private fn bar(s: const ref VQ) -> null { var x = 0; print(x); }
+}
+
+class VR {
+    public var x: int
+    private var y: string
+    public fn VR() -> const VR {}
+    public fn foo(s: const ref VR) -> string { return "string"; }
+    private fn bar(s: const ref VR) -> null { var x = 0; print(x); }
+}
+
+class VS {
+    public var x: int
+    private var y: string
+    public fn VS() -> const VS {}
+    public fn foo(s: const ref VS) -> string { return "string"; }
+    private fn bar(s: const ref VS) -> null { var x = 0; print(x); }
+}
+
+class VT {
+    public var x: int
+    private var y: string
+    public fn VT() -> const VT {}
+    public fn foo(s: const ref VT) -> string { return "string"; }
+    private fn bar(s: const ref VT) -> null { var x = 0; print(x); }
+}
+
+class VU {
+    public var x: int
+    private var y: string
+    public fn VU() -> const VU {}
+    public fn foo(s: const ref VU) -> string { return "string"; }
+    private fn bar(s: const ref VU) -> null { var x = 0; print(x); }
+}
+
+class VV {
+    public var x: int
+    private var y: string
+    public fn VV() -> const VV {}
+    public fn foo(s: const ref VV) -> string { return "string"; }
+    private fn bar(s: const ref VV) -> null { var x = 0; print(x); }
+}
+
+class VW {
+    public var x: int
+    private var y: string
+    public fn VW() -> const VW {}
+    public fn foo(s: const ref VW) -> string { return "string"; }
+    private fn bar(s: const ref VW) -> null { var x = 0; print(x); }
+}
+
+class VX {
+    public var x: int
+    private var y: string
+    public fn VX() -> const VX {}
+    public fn foo(s: const ref VX) -> string { return "string"; }
+    private fn bar(s: const ref VX) -> null { var x = 0; print(x); }
+}
+
+class VY {
+    public var x: int
+    private var y: string
+    public fn VY() -> const VY {}
+    public fn foo(s: const ref VY) -> string { return "string"; }
+    private fn bar(s: const ref VY) -> null { var x = 0; print(x); }
+}
+
+class VZ {
+    public var x: int
+    private var y: string
+    public fn VZ() -> const VZ {}
+    public fn foo(s: const ref VZ) -> string { return "string"; }
+    private fn bar(s: const ref VZ) -> null { var x = 0; print(x); }
+}
+
+class WA {
+    public var x: int
+    private var y: string
+    public fn WA() -> const WA {}
+    public fn foo(s: const ref WA) -> string { return "string"; }
+    private fn bar(s: const ref WA) -> null { var x = 0; print(x); }
+}
+
+class WB {
+    public var x: int
+    private var y: string
+    public fn WB() -> const WB {}
+    public fn foo(s: const ref WB) -> string { return "string"; }
+    private fn bar(s: const ref WB) -> null { var x = 0; print(x); }
+}
+
+class WC {
+    public var x: int
+    private var y: string
+    public fn WC() -> const WC {}
+    public fn foo(s: const ref WC) -> string { return "string"; }
+    private fn bar(s: const ref WC) -> null { var x = 0; print(x); }
+}
+
+class WD {
+    public var x: int
+    private var y: string
+    public fn WD() -> const WD {}
+    public fn foo(s: const ref WD) -> string { return "string"; }
+    private fn bar(s: const ref WD) -> null { var x = 0; print(x); }
+}
+
+class WE {
+    public var x: int
+    private var y: string
+    public fn WE() -> const WE {}
+    public fn foo(s: const ref WE) -> string { return "string"; }
+    private fn bar(s: const ref WE) -> null { var x = 0; print(x); }
+}
+
+class WF {
+    public var x: int
+    private var y: string
+    public fn WF() -> const WF {}
+    public fn foo(s: const ref WF) -> string { return "string"; }
+    private fn bar(s: const ref WF) -> null { var x = 0; print(x); }
+}
+
+class WG {
+    public var x: int
+    private var y: string
+    public fn WG() -> const WG {}
+    public fn foo(s: const ref WG) -> string { return "string"; }
+    private fn bar(s: const ref WG) -> null { var x = 0; print(x); }
+}
+
+class WH {
+    public var x: int
+    private var y: string
+    public fn WH() -> const WH {}
+    public fn foo(s: const ref WH) -> string { return "string"; }
+    private fn bar(s: const ref WH) -> null { var x = 0; print(x); }
+}
+
+class WI {
+    public var x: int
+    private var y: string
+    public fn WI() -> const WI {}
+    public fn foo(s: const ref WI) -> string { return "string"; }
+    private fn bar(s: const ref WI) -> null { var x = 0; print(x); }
+}
+
+class WJ {
+    public var x: int
+    private var y: string
+    public fn WJ() -> const WJ {}
+    public fn foo(s: const ref WJ) -> string { return "string"; }
+    private fn bar(s: const ref WJ) -> null { var x = 0; print(x); }
+}
+
+class WK {
+    public var x: int
+    private var y: string
+    public fn WK() -> const WK {}
+    public fn foo(s: const ref WK) -> string { return "string"; }
+    private fn bar(s: const ref WK) -> null { var x = 0; print(x); }
+}
+
+class WL {
+    public var x: int
+    private var y: string
+    public fn WL() -> const WL {}
+    public fn foo(s: const ref WL) -> string { return "string"; }
+    private fn bar(s: const ref WL) -> null { var x = 0; print(x); }
+}
+
+class WM {
+    public var x: int
+    private var y: string
+    public fn WM() -> const WM {}
+    public fn foo(s: const ref WM) -> string { return "string"; }
+    private fn bar(s: const ref WM) -> null { var x = 0; print(x); }
+}
+
+class WN {
+    public var x: int
+    private var y: string
+    public fn WN() -> const WN {}
+    public fn foo(s: const ref WN) -> string { return "string"; }
+    private fn bar(s: const ref WN) -> null { var x = 0; print(x); }
+}
+
+class WO {
+    public var x: int
+    private var y: string
+    public fn WO() -> const WO {}
+    public fn foo(s: const ref WO) -> string { return "string"; }
+    private fn bar(s: const ref WO) -> null { var x = 0; print(x); }
+}
+
+class WP {
+    public var x: int
+    private var y: string
+    public fn WP() -> const WP {}
+    public fn foo(s: const ref WP) -> string { return "string"; }
+    private fn bar(s: const ref WP) -> null { var x = 0; print(x); }
+}
+
+class WQ {
+    public var x: int
+    private var y: string
+    public fn WQ() -> const WQ {}
+    public fn foo(s: const ref WQ) -> string { return "string"; }
+    private fn bar(s: const ref WQ) -> null { var x = 0; print(x); }
+}
+
+class WR {
+    public var x: int
+    private var y: string
+    public fn WR() -> const WR {}
+    public fn foo(s: const ref WR) -> string { return "string"; }
+    private fn bar(s: const ref WR) -> null { var x = 0; print(x); }
+}
+
+class WS {
+    public var x: int
+    private var y: string
+    public fn WS() -> const WS {}
+    public fn foo(s: const ref WS) -> string { return "string"; }
+    private fn bar(s: const ref WS) -> null { var x = 0; print(x); }
+}
+
+class WT {
+    public var x: int
+    private var y: string
+    public fn WT() -> const WT {}
+    public fn foo(s: const ref WT) -> string { return "string"; }
+    private fn bar(s: const ref WT) -> null { var x = 0; print(x); }
+}
+
+class WU {
+    public var x: int
+    private var y: string
+    public fn WU() -> const WU {}
+    public fn foo(s: const ref WU) -> string { return "string"; }
+    private fn bar(s: const ref WU) -> null { var x = 0; print(x); }
+}
+
+class WV {
+    public var x: int
+    private var y: string
+    public fn WV() -> const WV {}
+    public fn foo(s: const ref WV) -> string { return "string"; }
+    private fn bar(s: const ref WV) -> null { var x = 0; print(x); }
+}
+
+class WW {
+    public var x: int
+    private var y: string
+    public fn WW() -> const WW {}
+    public fn foo(s: const ref WW) -> string { return "string"; }
+    private fn bar(s: const ref WW) -> null { var x = 0; print(x); }
+}
+
+class WX {
+    public var x: int
+    private var y: string
+    public fn WX() -> const WX {}
+    public fn foo(s: const ref WX) -> string { return "string"; }
+    private fn bar(s: const ref WX) -> null { var x = 0; print(x); }
+}
+
+class WY {
+    public var x: int
+    private var y: string
+    public fn WY() -> const WY {}
+    public fn foo(s: const ref WY) -> string { return "string"; }
+    private fn bar(s: const ref WY) -> null { var x = 0; print(x); }
+}
+
+class WZ {
+    public var x: int
+    private var y: string
+    public fn WZ() -> const WZ {}
+    public fn foo(s: const ref WZ) -> string { return "string"; }
+    private fn bar(s: const ref WZ) -> null { var x = 0; print(x); }
+}
+
+class XA {
+    public var x: int
+    private var y: string
+    public fn XA() -> const XA {}
+    public fn foo(s: const ref XA) -> string { return "string"; }
+    private fn bar(s: const ref XA) -> null { var x = 0; print(x); }
+}
+
+class XB {
+    public var x: int
+    private var y: string
+    public fn XB() -> const XB {}
+    public fn foo(s: const ref XB) -> string { return "string"; }
+    private fn bar(s: const ref XB) -> null { var x = 0; print(x); }
+}
+
+class XC {
+    public var x: int
+    private var y: string
+    public fn XC() -> const XC {}
+    public fn foo(s: const ref XC) -> string { return "string"; }
+    private fn bar(s: const ref XC) -> null { var x = 0; print(x); }
+}
+
+class XD {
+    public var x: int
+    private var y: string
+    public fn XD() -> const XD {}
+    public fn foo(s: const ref XD) -> string { return "string"; }
+    private fn bar(s: const ref XD) -> null { var x = 0; print(x); }
+}
+
+class XE {
+    public var x: int
+    private var y: string
+    public fn XE() -> const XE {}
+    public fn foo(s: const ref XE) -> string { return "string"; }
+    private fn bar(s: const ref XE) -> null { var x = 0; print(x); }
+}
+
+class XF {
+    public var x: int
+    private var y: string
+    public fn XF() -> const XF {}
+    public fn foo(s: const ref XF) -> string { return "string"; }
+    private fn bar(s: const ref XF) -> null { var x = 0; print(x); }
+}
+
+class XG {
+    public var x: int
+    private var y: string
+    public fn XG() -> const XG {}
+    public fn foo(s: const ref XG) -> string { return "string"; }
+    private fn bar(s: const ref XG) -> null { var x = 0; print(x); }
+}
+
+class XH {
+    public var x: int
+    private var y: string
+    public fn XH() -> const XH {}
+    public fn foo(s: const ref XH) -> string { return "string"; }
+    private fn bar(s: const ref XH) -> null { var x = 0; print(x); }
+}
+
+class XI {
+    public var x: int
+    private var y: string
+    public fn XI() -> const XI {}
+    public fn foo(s: const ref XI) -> string { return "string"; }
+    private fn bar(s: const ref XI) -> null { var x = 0; print(x); }
+}
+
+class XJ {
+    public var x: int
+    private var y: string
+    public fn XJ() -> const XJ {}
+    public fn foo(s: const ref XJ) -> string { return "string"; }
+    private fn bar(s: const ref XJ) -> null { var x = 0; print(x); }
+}
+
+class XK {
+    public var x: int
+    private var y: string
+    public fn XK() -> const XK {}
+    public fn foo(s: const ref XK) -> string { return "string"; }
+    private fn bar(s: const ref XK) -> null { var x = 0; print(x); }
+}
+
+class XL {
+    public var x: int
+    private var y: string
+    public fn XL() -> const XL {}
+    public fn foo(s: const ref XL) -> string { return "string"; }
+    private fn bar(s: const ref XL) -> null { var x = 0; print(x); }
+}
+
+class XM {
+    public var x: int
+    private var y: string
+    public fn XM() -> const XM {}
+    public fn foo(s: const ref XM) -> string { return "string"; }
+    private fn bar(s: const ref XM) -> null { var x = 0; print(x); }
+}
+
+class XN {
+    public var x: int
+    private var y: string
+    public fn XN() -> const XN {}
+    public fn foo(s: const ref XN) -> string { return "string"; }
+    private fn bar(s: const ref XN) -> null { var x = 0; print(x); }
+}
+
+class XO {
+    public var x: int
+    private var y: string
+    public fn XO() -> const XO {}
+    public fn foo(s: const ref XO) -> string { return "string"; }
+    private fn bar(s: const ref XO) -> null { var x = 0; print(x); }
+}
+
+class XP {
+    public var x: int
+    private var y: string
+    public fn XP() -> const XP {}
+    public fn foo(s: const ref XP) -> string { return "string"; }
+    private fn bar(s: const ref XP) -> null { var x = 0; print(x); }
+}
+
+class XQ {
+    public var x: int
+    private var y: string
+    public fn XQ() -> const XQ {}
+    public fn foo(s: const ref XQ) -> string { return "string"; }
+    private fn bar(s: const ref XQ) -> null { var x = 0; print(x); }
+}
+
+class XR {
+    public var x: int
+    private var y: string
+    public fn XR() -> const XR {}
+    public fn foo(s: const ref XR) -> string { return "string"; }
+    private fn bar(s: const ref XR) -> null { var x = 0; print(x); }
+}
+
+class XS {
+    public var x: int
+    private var y: string
+    public fn XS() -> const XS {}
+    public fn foo(s: const ref XS) -> string { return "string"; }
+    private fn bar(s: const ref XS) -> null { var x = 0; print(x); }
+}
+
+class XT {
+    public var x: int
+    private var y: string
+    public fn XT() -> const XT {}
+    public fn foo(s: const ref XT) -> string { return "string"; }
+    private fn bar(s: const ref XT) -> null { var x = 0; print(x); }
+}
+
+class XU {
+    public var x: int
+    private var y: string
+    public fn XU() -> const XU {}
+    public fn foo(s: const ref XU) -> string { return "string"; }
+    private fn bar(s: const ref XU) -> null { var x = 0; print(x); }
+}
+
+class XV {
+    public var x: int
+    private var y: string
+    public fn XV() -> const XV {}
+    public fn foo(s: const ref XV) -> string { return "string"; }
+    private fn bar(s: const ref XV) -> null { var x = 0; print(x); }
+}
+
+class XW {
+    public var x: int
+    private var y: string
+    public fn XW() -> const XW {}
+    public fn foo(s: const ref XW) -> string { return "string"; }
+    private fn bar(s: const ref XW) -> null { var x = 0; print(x); }
+}
+
+class XX {
+    public var x: int
+    private var y: string
+    public fn XX() -> const XX {}
+    public fn foo(s: const ref XX) -> string { return "string"; }
+    private fn bar(s: const ref XX) -> null { var x = 0; print(x); }
+}
+
+class XY {
+    public var x: int
+    private var y: string
+    public fn XY() -> const XY {}
+    public fn foo(s: const ref XY) -> string { return "string"; }
+    private fn bar(s: const ref XY) -> null { var x = 0; print(x); }
+}
+
+class XZ {
+    public var x: int
+    private var y: string
+    public fn XZ() -> const XZ {}
+    public fn foo(s: const ref XZ) -> string { return "string"; }
+    private fn bar(s: const ref XZ) -> null { var x = 0; print(x); }
+}
+
+class YA {
+    public var x: int
+    private var y: string
+    public fn YA() -> const YA {}
+    public fn foo(s: const ref YA) -> string { return "string"; }
+    private fn bar(s: const ref YA) -> null { var x = 0; print(x); }
+}
+
+class YB {
+    public var x: int
+    private var y: string
+    public fn YB() -> const YB {}
+    public fn foo(s: const ref YB) -> string { return "string"; }
+    private fn bar(s: const ref YB) -> null { var x = 0; print(x); }
+}
+
+class YC {
+    public var x: int
+    private var y: string
+    public fn YC() -> const YC {}
+    public fn foo(s: const ref YC) -> string { return "string"; }
+    private fn bar(s: const ref YC) -> null { var x = 0; print(x); }
+}
+
+class YD {
+    public var x: int
+    private var y: string
+    public fn YD() -> const YD {}
+    public fn foo(s: const ref YD) -> string { return "string"; }
+    private fn bar(s: const ref YD) -> null { var x = 0; print(x); }
+}
+
+class YE {
+    public var x: int
+    private var y: string
+    public fn YE() -> const YE {}
+    public fn foo(s: const ref YE) -> string { return "string"; }
+    private fn bar(s: const ref YE) -> null { var x = 0; print(x); }
+}
+
+class YF {
+    public var x: int
+    private var y: string
+    public fn YF() -> const YF {}
+    public fn foo(s: const ref YF) -> string { return "string"; }
+    private fn bar(s: const ref YF) -> null { var x = 0; print(x); }
+}
+
+class YG {
+    public var x: int
+    private var y: string
+    public fn YG() -> const YG {}
+    public fn foo(s: const ref YG) -> string { return "string"; }
+    private fn bar(s: const ref YG) -> null { var x = 0; print(x); }
+}
+
+class YH {
+    public var x: int
+    private var y: string
+    public fn YH() -> const YH {}
+    public fn foo(s: const ref YH) -> string { return "string"; }
+    private fn bar(s: const ref YH) -> null { var x = 0; print(x); }
+}
+
+class YI {
+    public var x: int
+    private var y: string
+    public fn YI() -> const YI {}
+    public fn foo(s: const ref YI) -> string { return "string"; }
+    private fn bar(s: const ref YI) -> null { var x = 0; print(x); }
+}
+
+class YJ {
+    public var x: int
+    private var y: string
+    public fn YJ() -> const YJ {}
+    public fn foo(s: const ref YJ) -> string { return "string"; }
+    private fn bar(s: const ref YJ) -> null { var x = 0; print(x); }
+}
+
+class YK {
+    public var x: int
+    private var y: string
+    public fn YK() -> const YK {}
+    public fn foo(s: const ref YK) -> string { return "string"; }
+    private fn bar(s: const ref YK) -> null { var x = 0; print(x); }
+}
+
+class YL {
+    public var x: int
+    private var y: string
+    public fn YL() -> const YL {}
+    public fn foo(s: const ref YL) -> string { return "string"; }
+    private fn bar(s: const ref YL) -> null { var x = 0; print(x); }
+}
+
+class YM {
+    public var x: int
+    private var y: string
+    public fn YM() -> const YM {}
+    public fn foo(s: const ref YM) -> string { return "string"; }
+    private fn bar(s: const ref YM) -> null { var x = 0; print(x); }
+}
+
+class YN {
+    public var x: int
+    private var y: string
+    public fn YN() -> const YN {}
+    public fn foo(s: const ref YN) -> string { return "string"; }
+    private fn bar(s: const ref YN) -> null { var x = 0; print(x); }
+}
+
+class YO {
+    public var x: int
+    private var y: string
+    public fn YO() -> const YO {}
+    public fn foo(s: const ref YO) -> string { return "string"; }
+    private fn bar(s: const ref YO) -> null { var x = 0; print(x); }
+}
+
+class YP {
+    public var x: int
+    private var y: string
+    public fn YP() -> const YP {}
+    public fn foo(s: const ref YP) -> string { return "string"; }
+    private fn bar(s: const ref YP) -> null { var x = 0; print(x); }
+}
+
+class YQ {
+    public var x: int
+    private var y: string
+    public fn YQ() -> const YQ {}
+    public fn foo(s: const ref YQ) -> string { return "string"; }
+    private fn bar(s: const ref YQ) -> null { var x = 0; print(x); }
+}
+
+class YR {
+    public var x: int
+    private var y: string
+    public fn YR() -> const YR {}
+    public fn foo(s: const ref YR) -> string { return "string"; }
+    private fn bar(s: const ref YR) -> null { var x = 0; print(x); }
+}
+
+class YS {
+    public var x: int
+    private var y: string
+    public fn YS() -> const YS {}
+    public fn foo(s: const ref YS) -> string { return "string"; }
+    private fn bar(s: const ref YS) -> null { var x = 0; print(x); }
+}
+
+class YT {
+    public var x: int
+    private var y: string
+    public fn YT() -> const YT {}
+    public fn foo(s: const ref YT) -> string { return "string"; }
+    private fn bar(s: const ref YT) -> null { var x = 0; print(x); }
+}
+
+class YU {
+    public var x: int
+    private var y: string
+    public fn YU() -> const YU {}
+    public fn foo(s: const ref YU) -> string { return "string"; }
+    private fn bar(s: const ref YU) -> null { var x = 0; print(x); }
+}
+
+class YV {
+    public var x: int
+    private var y: string
+    public fn YV() -> const YV {}
+    public fn foo(s: const ref YV) -> string { return "string"; }
+    private fn bar(s: const ref YV) -> null { var x = 0; print(x); }
+}
+
+class YW {
+    public var x: int
+    private var y: string
+    public fn YW() -> const YW {}
+    public fn foo(s: const ref YW) -> string { return "string"; }
+    private fn bar(s: const ref YW) -> null { var x = 0; print(x); }
+}
+
+class YX {
+    public var x: int
+    private var y: string
+    public fn YX() -> const YX {}
+    public fn foo(s: const ref YX) -> string { return "string"; }
+    private fn bar(s: const ref YX) -> null { var x = 0; print(x); }
+}
+
+class YY {
+    public var x: int
+    private var y: string
+    public fn YY() -> const YY {}
+    public fn foo(s: const ref YY) -> string { return "string"; }
+    private fn bar(s: const ref YY) -> null { var x = 0; print(x); }
+}
+
+class YZ {
+    public var x: int
+    private var y: string
+    public fn YZ() -> const YZ {}
+    public fn foo(s: const ref YZ) -> string { return "string"; }
+    private fn bar(s: const ref YZ) -> null { var x = 0; print(x); }
+}
+
+class ZA {
+    public var x: int
+    private var y: string
+    public fn ZA() -> const ZA {}
+    public fn foo(s: const ref ZA) -> string { return "string"; }
+    private fn bar(s: const ref ZA) -> null { var x = 0; print(x); }
+}
+
+class ZB {
+    public var x: int
+    private var y: string
+    public fn ZB() -> const ZB {}
+    public fn foo(s: const ref ZB) -> string { return "string"; }
+    private fn bar(s: const ref ZB) -> null { var x = 0; print(x); }
+}
+
+class ZC {
+    public var x: int
+    private var y: string
+    public fn ZC() -> const ZC {}
+    public fn foo(s: const ref ZC) -> string { return "string"; }
+    private fn bar(s: const ref ZC) -> null { var x = 0; print(x); }
+}
+
+class ZD {
+    public var x: int
+    private var y: string
+    public fn ZD() -> const ZD {}
+    public fn foo(s: const ref ZD) -> string { return "string"; }
+    private fn bar(s: const ref ZD) -> null { var x = 0; print(x); }
+}
+
+class ZE {
+    public var x: int
+    private var y: string
+    public fn ZE() -> const ZE {}
+    public fn foo(s: const ref ZE) -> string { return "string"; }
+    private fn bar(s: const ref ZE) -> null { var x = 0; print(x); }
+}
+
+class ZF {
+    public var x: int
+    private var y: string
+    public fn ZF() -> const ZF {}
+    public fn foo(s: const ref ZF) -> string { return "string"; }
+    private fn bar(s: const ref ZF) -> null { var x = 0; print(x); }
+}
+
+class ZG {
+    public var x: int
+    private var y: string
+    public fn ZG() -> const ZG {}
+    public fn foo(s: const ref ZG) -> string { return "string"; }
+    private fn bar(s: const ref ZG) -> null { var x = 0; print(x); }
+}
+
+class ZH {
+    public var x: int
+    private var y: string
+    public fn ZH() -> const ZH {}
+    public fn foo(s: const ref ZH) -> string { return "string"; }
+    private fn bar(s: const ref ZH) -> null { var x = 0; print(x); }
+}
+
+class ZI {
+    public var x: int
+    private var y: string
+    public fn ZI() -> const ZI {}
+    public fn foo(s: const ref ZI) -> string { return "string"; }
+    private fn bar(s: const ref ZI) -> null { var x = 0; print(x); }
+}
+
+class ZJ {
+    public var x: int
+    private var y: string
+    public fn ZJ() -> const ZJ {}
+    public fn foo(s: const ref ZJ) -> string { return "string"; }
+    private fn bar(s: const ref ZJ) -> null { var x = 0; print(x); }
+}
+
+class ZK {
+    public var x: int
+    private var y: string
+    public fn ZK() -> const ZK {}
+    public fn foo(s: const ref ZK) -> string { return "string"; }
+    private fn bar(s: const ref ZK) -> null { var x = 0; print(x); }
+}
+
+class ZL {
+    public var x: int
+    private var y: string
+    public fn ZL() -> const ZL {}
+    public fn foo(s: const ref ZL) -> string { return "string"; }
+    private fn bar(s: const ref ZL) -> null { var x = 0; print(x); }
+}
+
+class ZM {
+    public var x: int
+    private var y: string
+    public fn ZM() -> const ZM {}
+    public fn foo(s: const ref ZM) -> string { return "string"; }
+    private fn bar(s: const ref ZM) -> null { var x = 0; print(x); }
+}
+
+class ZN {
+    public var x: int
+    private var y: string
+    public fn ZN() -> const ZN {}
+    public fn foo(s: const ref ZN) -> string { return "string"; }
+    private fn bar(s: const ref ZN) -> null { var x = 0; print(x); }
+}
+
+class ZO {
+    public var x: int
+    private var y: string
+    public fn ZO() -> const ZO {}
+    public fn foo(s: const ref ZO) -> string { return "string"; }
+    private fn bar(s: const ref ZO) -> null { var x = 0; print(x); }
+}
+
+class ZP {
+    public var x: int
+    private var y: string
+    public fn ZP() -> const ZP {}
+    public fn foo(s: const ref ZP) -> string { return "string"; }
+    private fn bar(s: const ref ZP) -> null { var x = 0; print(x); }
+}
+
+class ZQ {
+    public var x: int
+    private var y: string
+    public fn ZQ() -> const ZQ {}
+    public fn foo(s: const ref ZQ) -> string { return "string"; }
+    private fn bar(s: const ref ZQ) -> null { var x = 0; print(x); }
+}
+
+class ZR {
+    public var x: int
+    private var y: string
+    public fn ZR() -> const ZR {}
+    public fn foo(s: const ref ZR) -> string { return "string"; }
+    private fn bar(s: const ref ZR) -> null { var x = 0; print(x); }
+}
+
+class ZS {
+    public var x: int
+    private var y: string
+    public fn ZS() -> const ZS {}
+    public fn foo(s: const ref ZS) -> string { return "string"; }
+    private fn bar(s: const ref ZS) -> null { var x = 0; print(x); }
+}
+
+class ZT {
+    public var x: int
+    private var y: string
+    public fn ZT() -> const ZT {}
+    public fn foo(s: const ref ZT) -> string { return "string"; }
+    private fn bar(s: const ref ZT) -> null { var x = 0; print(x); }
+}
+
+class ZU {
+    public var x: int
+    private var y: string
+    public fn ZU() -> const ZU {}
+    public fn foo(s: const ref ZU) -> string { return "string"; }
+    private fn bar(s: const ref ZU) -> null { var x = 0; print(x); }
+}
+
+class ZV {
+    public var x: int
+    private var y: string
+    public fn ZV() -> const ZV {}
+    public fn foo(s: const ref ZV) -> string { return "string"; }
+    private fn bar(s: const ref ZV) -> null { var x = 0; print(x); }
+}
+
+class ZW {
+    public var x: int
+    private var y: string
+    public fn ZW() -> const ZW {}
+    public fn foo(s: const ref ZW) -> string { return "string"; }
+    private fn bar(s: const ref ZW) -> null { var x = 0; print(x); }
+}
+
+class ZX {
+    public var x: int
+    private var y: string
+    public fn ZX() -> const ZX {}
+    public fn foo(s: const ref ZX) -> string { return "string"; }
+    private fn bar(s: const ref ZX) -> null { var x = 0; print(x); }
+}
+
+class ZY {
+    public var x: int
+    private var y: string
+    public fn ZY() -> const ZY {}
+    public fn foo(s: const ref ZY) -> string { return "string"; }
+    private fn bar(s: const ref ZY) -> null { var x = 0; print(x); }
+}
+
+class ZZ {
+    public var x: int
+    private var y: string
+    public fn ZZ() -> const ZZ {}
+    public fn foo(s: const ref ZZ) -> string { return "string"; }
+    private fn bar(s: const ref ZZ) -> null { var x = 0; print(x); }
+}
+

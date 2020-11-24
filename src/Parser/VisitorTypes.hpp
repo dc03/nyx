@@ -46,13 +46,14 @@ struct LiteralValue {
         bool boolean;
         std::nullptr_t null;
 
-        as() { null = nullptr; }
-        explicit as(int value) { integer = value; }
-        explicit as(double value) { real = value; }
-        explicit as(const std::string &value) { string = value; }
-        explicit as(bool value) { boolean = value; }
-        explicit as(std::nullptr_t) { null = nullptr; }
+        as(): string{} {}
         ~as() {}
+        explicit as(int value): integer{value} {}
+        explicit as(double value): real{value} {}
+        explicit as(const std::string &value): string{value} {}
+        explicit as(std::string &&value): string{std::move(value)} {}
+        explicit as(bool value): boolean{value} { boolean = value; }
+        explicit as(std::nullptr_t): null{nullptr} {}
     } as;
 
     explicit LiteralValue(int value);
