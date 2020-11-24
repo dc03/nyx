@@ -1,7 +1,7 @@
 # See LICENSE at project root for license details
 cmake_minimum_required(VERSION 3.10)
 
-project(eis VERSION 0.0.6)
+project(eis VERSION 0.0.7)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)

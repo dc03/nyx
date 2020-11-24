@@ -8,12 +8,12 @@ if __name__ == '__main__':
     with open('test.eis', 'wt') as f:
         for i in range(a('A'), a('Z') + 1):
             for j in range(a('A'), a('Z') + 1):
-                c = str(b(i))
-                d = str(b(j))
-                f.write('class ' + c + d + ' {\n')
-                tab(f, 1).write('public var x: int\n')
-                tab(f, 1).write('private var y: string\n')
-                tab(f, 1).write('public fn ' + c + d + '() -> const ' + c + d + ' {}\n')
-                tab(f, 1).write('public fn foo(s: const ref ' + c + d + ') -> string { return "string"; }\n')
-                tab(f, 1).write('private fn bar(s: const ref ' + c + d + ') -> null { var x = 0; print(x); }\n')
-                f.write('}\n\n')
+                for k in range(a('A'), a('Z') + 1):
+                    class_name = b(i) + b(j) + b(k)
+                    f.write('class ' + class_name + ' {\n')
+                    tab(f, 1).write('public var x: int\n')
+                    tab(f, 1).write('private var y: string\n')
+                    tab(f, 1).write('public fn ' + class_name + '() -> const ' + class_name + ' {}\n')
+                    tab(f, 1).write('public fn foo(s: const ref ' + class_name + ') -> string { return "string"; }\n')
+                    tab(f, 1).write('private fn bar(s: const ref ' + class_name + ') -> null { var x = 0; print(x); }\n')
+                    f.write('}\n\n')
