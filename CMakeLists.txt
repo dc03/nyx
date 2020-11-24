@@ -11,7 +11,13 @@ if (MSVC)
     add_compile_options(/W4 /WX)
 else()
     # lots of warnings and all warnings as errors
-    add_compile_options(-Wall -Wextra -pedantic -g)
+    add_compile_options(-Wall -Wextra -pedantic)
+endif()
+
+if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
+    add_compile_options(-g)
+else(${CMAKE_BUILD_TYPE} MATCHES "Release")
+    add_compile_options(-O2 -flto)
 endif()
 
 add_executable(eis src/eis.cpp src/ErrorLogger/ErrorLogger.cpp src/Parser/TypeResolver.cpp src/Parser/VisitorTypes.cpp
