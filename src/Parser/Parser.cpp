@@ -535,40 +535,49 @@ StmtNode Parser::class_declaration() {
         }();
 
         if (match(TokenType::VAR, TokenType::VAR)) {
-            std::unique_ptr<VarStmt> member{dynamic_cast<VarStmt *>(variable_declaration().release())};
-            members.emplace_back(std::move(member), visibility);
+            try {
+                std::unique_ptr<VarStmt> member{dynamic_cast<VarStmt *>(variable_declaration().release())};
+                members.emplace_back(std::move(member), visibility);
+            } catch (...) {
+                synchronize();
+            }
         } else if (match(TokenType::FN)) {
-            bool found_dtor = match(TokenType::BIT_NOT);
-            if (found_dtor && peek().lexeme != name.lexeme) {
-                advance();
-                throw_parse_error("The name of the destructor has to be the same as the name of the class");
-            }
-
-            std::unique_ptr<FunctionStmt> method{dynamic_cast<FunctionStmt *>(function_declaration().release())};
-            const Token &method_name = method->name;
-
-            if (method_name.lexeme == name.lexeme) {
-                if (found_dtor && dtor == nullptr) {
-                    using namespace std::string_literals;
-                    dtor = method.get();
-                    dtor->name.lexeme = "~"s + dtor->name.lexeme; // Turning Foo into ~Foo
-                    switch (visibility) {
-                        case VisibilityType::PUBLIC: visibility = VisibilityType::PUBLIC_DTOR; break;
-                        case VisibilityType::PRIVATE: visibility = VisibilityType::PRIVATE_DTOR; break;
-                        case VisibilityType::PROTECTED: visibility = VisibilityType::PROTECTED_DTOR; break;
-
-                        default: break;
-                    }
-                } else if (ctor == nullptr) {
-                    ctor = method.get();
-                } else {
-                    constexpr const std::string_view message =
-                        "Cannot declare constructors or destructors more than once";
-                    error(message, method_name);
-                    throw ParseException{method_name, message};
+            try {
+                bool found_dtor = match(TokenType::BIT_NOT);
+                if (found_dtor && peek().lexeme != name.lexeme) {
+                    advance();
+                    throw_parse_error("The name of the destructor has to be the same as the name of the class");
                 }
+
+                std::unique_ptr<FunctionStmt> method{dynamic_cast<FunctionStmt *>(function_declaration().release())};
+                const Token &method_name = method->name;
+
+                if (method_name.lexeme == name.lexeme) {
+                    if (found_dtor && dtor == nullptr) {
+                        using namespace std::string_literals;
+                        dtor = method.get();
+                        dtor->name.lexeme = "~"s + dtor->name.lexeme; // Turning Foo into ~Foo
+                        switch (visibility) {
+                            case VisibilityType::PUBLIC: visibility = VisibilityType::PUBLIC_DTOR; break;
+                            case VisibilityType::PRIVATE: visibility = VisibilityType::PRIVATE_DTOR; break;
+                            case VisibilityType::PROTECTED: visibility = VisibilityType::PROTECTED_DTOR; break;
+
+                            default: break;
+                        }
+                    } else if (ctor == nullptr) {
+                        ctor = method.get();
+                    } else {
+                        constexpr const std::string_view message =
+                            "Cannot declare constructors or destructors more than once";
+                        error(message, method_name);
+                        throw ParseException{method_name, message};
+                    }
+                }
+                methods.emplace_back(std::move(method), visibility);
             }
-            methods.emplace_back(std::move(method), visibility);
+            catch(...) {
+                synchronize();
+            }
         } else {
             throw_parse_error("Expected either member or method declaration in class");
         }
