@@ -5,7 +5,7 @@ def tab(file, n):
 if __name__ == '__main__':
     a = lambda a: ord(a)
     b = lambda b: chr(b)
-    with open('test.eis', 'wt') as f:
+    with open('test.wis', 'wt') as f:
         for i in range(a('A'), a('Z') + 1):
             for j in range(a('A'), a('Z') + 1):
                 for k in range(a('A'), a('Z') + 1):
