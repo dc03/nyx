@@ -183,7 +183,7 @@ class X {
     }
 }
 */*/*/
-import "imported.eis"
+import "imported.wis"
 var y = 6
 val x = imported::X::X()
 imported::X::foo(x, 5)

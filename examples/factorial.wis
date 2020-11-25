@@ -13,7 +13,7 @@ fn factorial(x: int) -> int {
 fn main() -> int {
     var x: int
     print("Enter the literal to take the factorial of: ")
-    read(x)
-    print("The factorial of " + str(x) + " is: " + str(factorial(x)))
+    //read(x)
+    print("The factorial of " + string(x) + " is: " + string(factorial(x)))
     return 0
 }
