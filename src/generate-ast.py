@@ -5,6 +5,7 @@ from typing import *
 
 def make_header(file, guard: str) -> None:
     file.write('#pragma once\n\n')
+    file.write('/* Copyright (C) 2020  Dhruv Chawla */\n')
     file.write('/* See LICENSE at project root for license details */\n\n')
     file.write('#ifndef ' + guard + '\n')
     file.write('#define ' + guard + '\n\n')
@@ -325,8 +326,9 @@ if __name__ == '__main__':
 
         decl_stmt('name{name}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, ' +
                   'methods{std::move(methods)}',
-                  'Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<std::pair<StmtNode,' +
-                  'VisibilityType>> members, std::vector<std::pair<StmtNode,VisibilityType>> methods')
+                  'Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<std::pair<std::unique_ptr<VarStmt>,'
+                  + 'VisibilityType>> members, std::vector<std::pair<std::unique_ptr<FunctionStmt>,VisibilityType>>'
+                  + 'methods')
 
         decl_stmt('keyword{keyword}',
                   'Token keyword')

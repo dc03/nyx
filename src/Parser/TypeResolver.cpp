@@ -300,9 +300,8 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     FunctionStmt *called = callee.func;
     if (callee.class_ != nullptr) {
         for (auto &method_decl : callee.class_->methods) {
-            auto *method = dynamic_cast<FunctionStmt *>(method_decl.first.get());
-            if (method->name == callee.lexeme) {
-                called = method;
+            if (method_decl.first->name == callee.lexeme) {
+                called = method_decl.first.get();
             }
         }
     }
@@ -346,7 +345,7 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
         ClassStmt *accessed_type = object.class_;
 
         for (auto &member_decl : accessed_type->members) {
-            auto *member = dynamic_cast<VarStmt *>(member_decl.first.get());
+            auto *member = member_decl.first.get();
             if (member->name == name) {
                 if (member_decl.second == VisibilityType::PUBLIC ||
                     (in_class && current_class->name == accessed_type->name)) {
@@ -361,19 +360,17 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
         }
 
         for (auto &method_decl : accessed_type->methods) {
-            auto *method = dynamic_cast<FunctionStmt *>(method_decl.first.get());
+            auto *method = method_decl.first.get();
             if (method->name == name) {
                 if ((method_decl.second == VisibilityType::PUBLIC) ||
                     (in_class && current_class->name == accessed_type->name)) {
-                    return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
-                        dynamic_cast<FunctionStmt *>(method_decl.first.get()), name};
+                    return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method_decl.first.get(), name};
                 } else if (method_decl.second == VisibilityType::PROTECTED) {
                     error("Cannot access protected method outside class", name);
                 } else if (method_decl.second == VisibilityType::PRIVATE) {
                     error("Cannot access private method outside class", name);
                 }
-                return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
-                    dynamic_cast<FunctionStmt *>(method_decl.first.get()), name};
+                return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method_decl.first.get(), name};
             }
         }
 
@@ -441,9 +438,9 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
     switch (left.scope_type) {
         case ExprTypeInfo::ScopeType::CLASS:
             for (auto &method : left.class_->methods) {
-                if (dynamic_cast<FunctionStmt *>(method.first.get())->name == expr.name) {
-                    return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
-                        dynamic_cast<FunctionStmt *>(method.first.get()), left.class_, expr.name};
+                if (method.first->name == expr.name) {
+                    return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method.first.get(), left.class_,
+                        expr.name};
                 }
             }
             error("No such method exists in the class", expr.name);
@@ -626,17 +623,17 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
         stmt.ctor = allocate_node(FunctionStmt, stmt.name,
             TypeNode{allocate_node(UserDefinedType, {Type::CLASS, false, false}, stmt.name)}, {},
             StmtNode{allocate_node(BlockStmt, {})});
-        stmt.methods.emplace_back(StmtNode{stmt.ctor}, VisibilityType::PUBLIC);
+        stmt.methods.emplace_back(std::unique_ptr<FunctionStmt>{stmt.ctor}, VisibilityType::PUBLIC);
     }
 
     std::size_t initialized_count = std::count_if(stmt.members.begin(), stmt.members.end(),
-        [](const auto &member) { return dynamic_cast<VarStmt *>(member.first.get())->initializer != nullptr; });
+        [](const auto &member) { return member.first->initializer != nullptr; });
 
     auto *ctor_body = dynamic_cast<BlockStmt *>(stmt.ctor->body.get());
     ctor_body->stmts.reserve(initialized_count + ctor_body->stmts.size());
 
     for (auto &member_declaration : stmt.members) {
-        auto *member = dynamic_cast<VarStmt *>(member_declaration.first.get());
+        auto *member = member_declaration.first.get();
         if (member->initializer != nullptr) {
             using namespace std::string_literals;
             // Transform the declaration of the member into an implicit assignment in the constructor

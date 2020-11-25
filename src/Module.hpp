@@ -17,8 +17,8 @@
 struct Module {
     std::string name{};
     std::string module_directory{};
-    std::unordered_map<std::string_view, ClassStmt*> classes{};
-    std::unordered_map<std::string_view, FunctionStmt*> functions{};
+    std::unordered_map<std::string_view, ClassStmt *> classes{};
+    std::unordered_map<std::string_view, FunctionStmt *> functions{};
     std::vector<StmtNode> statements{};
     std::vector<std::size_t> imported{}; // Indexes into Parser::parsed_modules (better than pointers)
 

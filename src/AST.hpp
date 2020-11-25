@@ -494,16 +494,16 @@ struct ClassStmt final : public Stmt {
     Token name;
     FunctionStmt *ctor;
     FunctionStmt *dtor;
-    std::vector<std::pair<StmtNode, VisibilityType>> members;
-    std::vector<std::pair<StmtNode, VisibilityType>> methods;
+    std::vector<std::pair<std::unique_ptr<VarStmt>, VisibilityType>> members;
+    std::vector<std::pair<std::unique_ptr<FunctionStmt>, VisibilityType>> methods;
 
     std::string_view string_tag() override final { return "ClassStmt"; }
 
     NodeType type_tag() override final { return NodeType::ClassStmt; }
 
     ClassStmt(Token name, FunctionStmt *ctor, FunctionStmt *dtor,
-        std::vector<std::pair<StmtNode, VisibilityType>> members,
-        std::vector<std::pair<StmtNode, VisibilityType>> methods)
+        std::vector<std::pair<std::unique_ptr<VarStmt>, VisibilityType>> members,
+        std::vector<std::pair<std::unique_ptr<FunctionStmt>, VisibilityType>> methods)
         : name{name}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, methods{std::move(methods)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
@@ -543,8 +543,7 @@ struct FunctionStmt final : public Stmt {
 
     NodeType type_tag() override final { return NodeType::FunctionStmt; }
 
-    FunctionStmt(
-        Token name, TypeNode return_type, std::vector<std::pair<Token, TypeNode>> params, StmtNode body)
+    FunctionStmt(Token name, TypeNode return_type, std::vector<std::pair<Token, TypeNode>> params, StmtNode body)
         : name{name}, return_type{std::move(return_type)}, params{std::move(params)}, body{std::move(body)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }

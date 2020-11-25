@@ -359,8 +359,7 @@ ExprNode Parser::literal(bool) {
         }
         case TokenType::STRING_VALUE: {
             type->data.type = Type::STRING;
-            return ExprNode{
-                allocate_node(LiteralExpr, LiteralValue{previous().lexeme}, previous(), std::move(type))};
+            return ExprNode{allocate_node(LiteralExpr, LiteralValue{previous().lexeme}, previous(), std::move(type))};
         }
         case TokenType::FALSE: {
             type->data.type = Type::BOOL;
@@ -514,8 +513,8 @@ StmtNode Parser::class_declaration() {
     Token name = previous();
     FunctionStmt *ctor{nullptr};
     FunctionStmt *dtor{nullptr};
-    std::vector<std::pair<StmtNode, VisibilityType>> members{};
-    std::vector<std::pair<StmtNode, VisibilityType>> methods{};
+    std::vector<std::pair<std::unique_ptr<VarStmt>, VisibilityType>> members{};
+    std::vector<std::pair<std::unique_ptr<FunctionStmt>, VisibilityType>> methods{};
 
     scoped_integer_manager depth_manager{scope_depth};
 
@@ -536,7 +535,7 @@ StmtNode Parser::class_declaration() {
         }();
 
         if (match(TokenType::VAR, TokenType::VAR)) {
-            StmtNode member = variable_declaration();
+            std::unique_ptr<VarStmt> member{dynamic_cast<VarStmt *>(variable_declaration().release())};
             members.emplace_back(std::move(member), visibility);
         } else if (match(TokenType::FN)) {
             bool found_dtor = match(TokenType::BIT_NOT);
@@ -545,13 +544,13 @@ StmtNode Parser::class_declaration() {
                 throw_parse_error("The name of the destructor has to be the same as the name of the class");
             }
 
-            StmtNode method = function_declaration();
-            const Token &method_name = dynamic_cast<FunctionStmt *>(method.get())->name;
+            std::unique_ptr<FunctionStmt> method{dynamic_cast<FunctionStmt *>(function_declaration().release())};
+            const Token &method_name = method->name;
 
             if (method_name.lexeme == name.lexeme) {
                 if (found_dtor && dtor == nullptr) {
                     using namespace std::string_literals;
-                    dtor = dynamic_cast<FunctionStmt *>(method.get());
+                    dtor = method.get();
                     dtor->name.lexeme = "~"s + dtor->name.lexeme; // Turning Foo into ~Foo
                     switch (visibility) {
                         case VisibilityType::PUBLIC: visibility = VisibilityType::PUBLIC_DTOR; break;
@@ -561,7 +560,7 @@ StmtNode Parser::class_declaration() {
                         default: break;
                     }
                 } else if (ctor == nullptr) {
-                    ctor = dynamic_cast<FunctionStmt *>(method.get());
+                    ctor = method.get();
                 } else {
                     constexpr const std::string_view message =
                         "Cannot declare constructors or destructors more than once";
