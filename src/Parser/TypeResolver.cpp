@@ -71,12 +71,19 @@ bool convertible_to(QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lval
     }
 }
 
-ClassStmt *TypeResolver::find_class(const UserDefinedType &class_name) {
-    for (ClassStmt *class_ : classes) {
-        if (class_->name.lexeme == class_name.name.lexeme) {
-            return class_;
-        }
+ClassStmt *TypeResolver::find_class(const std::string &class_name) {
+    if (auto class_ = classes.find(class_name); class_ != classes.end()) {
+        return class_->second;
     }
+
+    return nullptr;
+}
+
+FunctionStmt *TypeResolver::find_function(const std::string &function_name) {
+    if (auto func = functions.find(function_name); func != functions.end()) {
+        return func->second;
+    }
+
     return nullptr;
 }
 
@@ -294,7 +301,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     if (callee.class_ != nullptr) {
         for (auto &method_decl : callee.class_->methods) {
             auto *method = dynamic_cast<FunctionStmt *>(method_decl.first.get());
-            if (method->name.lexeme == callee.lexeme.lexeme) {
+            if (method->name == callee.lexeme) {
                 called = method;
             }
         }
@@ -340,9 +347,9 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
 
         for (auto &member_decl : accessed_type->members) {
             auto *member = dynamic_cast<VarStmt *>(member_decl.first.get());
-            if (member->name.lexeme == name.lexeme) {
+            if (member->name == name) {
                 if (member_decl.second == VisibilityType::PUBLIC ||
-                    (in_class && current_class->name.lexeme == accessed_type->name.lexeme)) {
+                    (in_class && current_class->name == accessed_type->name)) {
                     return {member->type.get(), name};
                 } else if (member_decl.second == VisibilityType::PROTECTED) {
                     error("Cannot access protected member outside class", name);
@@ -355,9 +362,9 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
 
         for (auto &method_decl : accessed_type->methods) {
             auto *method = dynamic_cast<FunctionStmt *>(method_decl.first.get());
-            if (method->name.lexeme == name.lexeme) {
+            if (method->name == name) {
                 if ((method_decl.second == VisibilityType::PUBLIC) ||
-                    (in_class && current_class->name.lexeme == accessed_type->name.lexeme)) {
+                    (in_class && current_class->name == accessed_type->name)) {
                     return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
                         dynamic_cast<FunctionStmt *>(method_decl.first.get()), name};
                 } else if (method_decl.second == VisibilityType::PROTECTED) {
@@ -434,7 +441,7 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
     switch (left.scope_type) {
         case ExprTypeInfo::ScopeType::CLASS:
             for (auto &method : left.class_->methods) {
-                if (dynamic_cast<FunctionStmt *>(method.first.get())->name.lexeme == expr.name.lexeme) {
+                if (dynamic_cast<FunctionStmt *>(method.first.get())->name == expr.name) {
                     return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
                         dynamic_cast<FunctionStmt *>(method.first.get()), left.class_, expr.name};
                 }
@@ -442,17 +449,16 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
             error("No such method exists in the class", expr.name);
             throw TypeException{"No such method exists in the class"};
 
-        case ExprTypeInfo::ScopeType::MODULE:
-            for (ClassStmt *class_ : Parser::parsed_modules[left.module_index].first.classes) {
-                if (class_->name.lexeme == expr.name.lexeme) {
-                    return {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.name};
-                }
+        case ExprTypeInfo::ScopeType::MODULE: {
+            auto &module = Parser::parsed_modules[left.module_index].first;
+            if (auto class_ = module.classes.find(expr.name.lexeme); class_ != module.classes.end()) {
+                return {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_->second, expr.name};
             }
-            for (FunctionStmt *func : Parser::parsed_modules[left.module_index].first.functions) {
-                if (func->name.lexeme == expr.name.lexeme) {
-                    return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.name};
-                }
+
+            if (auto func = module.functions.find(expr.name.lexeme); func != module.functions.end()) {
+                return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func->second, expr.name};
             }
+        }
             error("No such function/class exists in the module", expr.name);
             throw TypeException{"No such function/class exists in the module"};
 
@@ -471,10 +477,8 @@ ExprVisitorType TypeResolver::visit(ScopeNameExpr &expr) {
         }
     }
 
-    for (ClassStmt *class_ : current_module.classes) {
-        if (class_->name.lexeme == expr.name.lexeme) {
-            return {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.name};
-        }
+    if (ClassStmt *class_ = find_class(expr.name.lexeme); class_ != nullptr) {
+        return {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.name};
     }
 
     error("No such scope exists with the given name", expr.name);
@@ -579,16 +583,12 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
         }
     }
 
-    for (FunctionStmt *func : functions) {
-        if (func->name.lexeme == expr.name.lexeme) {
-            return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.name};
-        }
+    if (FunctionStmt *func = find_function(expr.name.lexeme); func != nullptr) {
+        return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.name};
     }
 
-    for (ClassStmt *class_ : classes) {
-        if (class_->name.lexeme == expr.name.lexeme) {
-            return {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.name};
-        }
+    if (ClassStmt *class_ = find_class(expr.name.lexeme); class_ != nullptr) {
+        return {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.name};
     }
 
     error("No such variable/function in the current module's scope", expr.name);
@@ -687,14 +687,14 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     scoped_scope_manager manager{*this};
 
     bool throwaway{};
-    bool is_in_ctor = current_class != nullptr && stmt.name.lexeme == current_class->name.lexeme;
+    bool is_in_ctor = current_class != nullptr && stmt.name == current_class->name;
     scoped_boolean_manager ctor_manager{is_in_ctor ? in_ctor : throwaway};
 
     for (const auto &param : stmt.params) {
         ClassStmt *param_class = nullptr;
 
         if (param.second->type_tag() == NodeType::UserDefinedType) {
-            param_class = find_class(dynamic_cast<UserDefinedType &>(*param.second));
+            param_class = find_class(dynamic_cast<UserDefinedType &>(*param.second).name.lexeme);
             if (param_class == nullptr) {
                 error("No such module/class exists in the current global scope", stmt.name);
                 throw TypeException{"No such module/class exists in the current global scope"};
@@ -791,7 +791,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         ClassStmt *stmt_class = nullptr;
 
         if (stmt.type->type_tag() == NodeType::UserDefinedType) {
-            stmt_class = find_class(dynamic_cast<UserDefinedType &>(*stmt.type));
+            stmt_class = find_class(dynamic_cast<UserDefinedType &>(*stmt.type).name.lexeme);
             if (stmt_class == nullptr) {
                 error("No such module/class exists in the current global scope", stmt.name);
                 throw TypeException{"No such module/class exists in the current global scope"};

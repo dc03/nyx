@@ -34,7 +34,7 @@
 cmake-build-debug/**/*
 cmake-build-debug-coverage/**/*
 cmake-build-release/**/*
-examples/test.eis
+examples/test.wis
 build/**/*
 venv/
 .vscode/

@@ -11,13 +11,14 @@
 
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 struct Module {
     std::string name{};
     std::string module_directory{};
-    std::vector<ClassStmt *> classes{};
-    std::vector<FunctionStmt *> functions{};
+    std::unordered_map<std::string_view, ClassStmt*> classes{};
+    std::unordered_map<std::string_view, FunctionStmt*> functions{};
     std::vector<stmt_node_t> statements{};
     std::vector<std::size_t> imported{}; // Indexes into Parser::parsed_modules (better than pointers)
 

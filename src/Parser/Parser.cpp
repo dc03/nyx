@@ -507,10 +507,8 @@ stmt_node_t Parser::declaration() {
 stmt_node_t Parser::class_declaration() {
     consume("Expected class name after 'class' keyword", TokenType::IDENTIFIER);
 
-    for (auto *class_ : current_module.classes) {
-        if (class_->name.lexeme == previous().lexeme) {
-            throw_parse_error("Class already defined");
-        }
+    if (current_module.classes.find(previous().lexeme) != current_module.classes.end()) {
+        throw_parse_error("Class already defined");
     }
 
     Token name = previous();
@@ -580,7 +578,7 @@ stmt_node_t Parser::class_declaration() {
     consume("Expected '}' at the end of class declaration", TokenType::RIGHT_BRACE);
     auto *class_definition =
         allocate_node(ClassStmt, std::move(name), ctor, dtor, std::move(members), std::move(methods));
-    current_module.classes.push_back(class_definition);
+    current_module.classes[class_definition->name.lexeme] = class_definition;
 
     return stmt_node_t{class_definition};
 }
@@ -588,10 +586,8 @@ stmt_node_t Parser::class_declaration() {
 stmt_node_t Parser::function_declaration() {
     consume("Expected function name after 'fn' keyword", TokenType::IDENTIFIER);
 
-    for (auto *func : current_module.functions) {
-        if (func->name.lexeme == previous().lexeme) {
-            throw_parse_error("Function already defined");
-        }
+    if (current_module.functions.find(previous().lexeme) != current_module.functions.end()) {
+        throw_parse_error("Function already defined");
     }
 
     Token name = previous();
@@ -630,7 +626,7 @@ stmt_node_t Parser::function_declaration() {
         allocate_node(FunctionStmt, std::move(name), std::move(return_type), std::move(params), std::move(body));
 
     if (!in_class && scope_depth == 1) {
-        current_module.functions.push_back(function_definition);
+        current_module.functions[function_definition->name.lexeme] = function_definition;
     }
 
     return stmt_node_t{function_definition};
