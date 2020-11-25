@@ -73,7 +73,7 @@ bool convertible_to(QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lval
 
 ClassStmt *TypeResolver::find_class(const UserDefinedType &class_name) {
     for (ClassStmt *class_ : classes) {
-        if (class_->name.lexeme == class_name.name.lexeme) {
+        if (class_->name == class_name.name) {
             return class_;
         }
     }
@@ -294,7 +294,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     if (callee.class_ != nullptr) {
         for (auto &method_decl : callee.class_->methods) {
             auto *method = dynamic_cast<FunctionStmt *>(method_decl.first.get());
-            if (method->name.lexeme == callee.lexeme.lexeme) {
+            if (method->name == callee.lexeme) {
                 called = method;
             }
         }
@@ -340,9 +340,9 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
 
         for (auto &member_decl : accessed_type->members) {
             auto *member = dynamic_cast<VarStmt *>(member_decl.first.get());
-            if (member->name.lexeme == name.lexeme) {
+            if (member->name == name) {
                 if (member_decl.second == VisibilityType::PUBLIC ||
-                    (in_class && current_class->name.lexeme == accessed_type->name.lexeme)) {
+                    (in_class && current_class->name == accessed_type->name)) {
                     return {member->type.get(), name};
                 } else if (member_decl.second == VisibilityType::PROTECTED) {
                     error("Cannot access protected member outside class", name);
@@ -355,9 +355,9 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
 
         for (auto &method_decl : accessed_type->methods) {
             auto *method = dynamic_cast<FunctionStmt *>(method_decl.first.get());
-            if (method->name.lexeme == name.lexeme) {
+            if (method->name == name) {
                 if ((method_decl.second == VisibilityType::PUBLIC) ||
-                    (in_class && current_class->name.lexeme == accessed_type->name.lexeme)) {
+                    (in_class && current_class->name == accessed_type->name)) {
                     return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
                         dynamic_cast<FunctionStmt *>(method_decl.first.get()), name};
                 } else if (method_decl.second == VisibilityType::PROTECTED) {
@@ -434,7 +434,7 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
     switch (left.scope_type) {
         case ExprTypeInfo::ScopeType::CLASS:
             for (auto &method : left.class_->methods) {
-                if (dynamic_cast<FunctionStmt *>(method.first.get())->name.lexeme == expr.name.lexeme) {
+                if (dynamic_cast<FunctionStmt *>(method.first.get())->name == expr.name) {
                     return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
                         dynamic_cast<FunctionStmt *>(method.first.get()), left.class_, expr.name};
                 }
@@ -444,12 +444,12 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
 
         case ExprTypeInfo::ScopeType::MODULE:
             for (ClassStmt *class_ : Parser::parsed_modules[left.module_index].first.classes) {
-                if (class_->name.lexeme == expr.name.lexeme) {
+                if (class_->name == expr.name) {
                     return {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.name};
                 }
             }
             for (FunctionStmt *func : Parser::parsed_modules[left.module_index].first.functions) {
-                if (func->name.lexeme == expr.name.lexeme) {
+                if (func->name == expr.name) {
                     return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.name};
                 }
             }
@@ -472,7 +472,7 @@ ExprVisitorType TypeResolver::visit(ScopeNameExpr &expr) {
     }
 
     for (ClassStmt *class_ : current_module.classes) {
-        if (class_->name.lexeme == expr.name.lexeme) {
+        if (class_->name == expr.name) {
             return {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.name};
         }
     }
@@ -580,13 +580,13 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
     }
 
     for (FunctionStmt *func : functions) {
-        if (func->name.lexeme == expr.name.lexeme) {
+        if (func->name == expr.name) {
             return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.name};
         }
     }
 
     for (ClassStmt *class_ : classes) {
-        if (class_->name.lexeme == expr.name.lexeme) {
+        if (class_->name == expr.name) {
             return {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.name};
         }
     }
@@ -687,7 +687,7 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     scoped_scope_manager manager{*this};
 
     bool throwaway{};
-    bool is_in_ctor = current_class != nullptr && stmt.name.lexeme == current_class->name.lexeme;
+    bool is_in_ctor = current_class != nullptr && stmt.name == current_class->name;
     scoped_boolean_manager ctor_manager{is_in_ctor ? in_ctor : throwaway};
 
     for (const auto &param : stmt.params) {
