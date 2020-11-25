@@ -45,7 +45,7 @@ BaseTypeVisitorType copy_type(BaseType *node) {
         return allocate_node(UserDefinedType, type->data, type->name);
     } else if (node->type_tag() == NodeType::ListType) {
         ListType *type = dynamic_cast<ListType *>(node);
-        return allocate_node(ListType, type->data, type_node_t{copy_type(type->contained.get())}, nullptr);
+        return allocate_node(ListType, type->data, TypeNode{copy_type(type->contained.get())}, nullptr);
     }
     unreachable();
 }

@@ -182,9 +182,9 @@ if __name__ == '__main__':
         file.write('#include <vector>\n\n')
         forward_declare(file, ['Expr', 'Stmt', 'BaseType'])
         file.write('\n')
-        declare_alias(file, 'expr_node_t', 'Expr')
-        declare_alias(file, 'stmt_node_t', 'Stmt')
-        declare_alias(file, 'type_node_t', 'BaseType')
+        declare_alias(file, 'ExprNode', 'Expr')
+        declare_alias(file, 'StmtNode', 'Stmt')
+        declare_alias(file, 'TypeNode', 'BaseType')
         # Base class and alias declarations complete
 
         Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'Literal',
@@ -243,64 +243,64 @@ if __name__ == '__main__':
 
         declare_derived_type(file, 'BaseType', Types[2],
                              'BaseType{data}, contained{std::move(contained)}, size{std::move(size)}',
-                             'type_node_t contained, expr_node_t size',
-                             'SharedData data, type_node_t contained, expr_node_t size')
+                             'TypeNode contained, ExprNode size',
+                             'SharedData data, TypeNode contained, ExprNode size')
 
         declare_derived_type(file, 'BaseType', Types[3],
-                             'BaseType{data}, expr{std::move(expr)}', 'expr_node_t expr',
-                             'SharedData data, expr_node_t expr')
+                             'BaseType{data}, expr{std::move(expr)}', 'ExprNode expr',
+                             'SharedData data, ExprNode expr')
 
         file.write('// End of type node definitions\n\n')
 
         file.write('// Expression node definitions\n\n')
 
         decl_expr('target{target}, value{std::move(value)}',
-                  'Token target, expr_node_t value')
+                  'Token target, ExprNode value')
 
         decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}, resolved_type{resolved_type}',
-                  'expr_node_t left, Token oper, expr_node_t right, ExprVisitorType resolved_type')
+                  'ExprNode left, Token oper, ExprNode right, ExprVisitorType resolved_type')
 
         decl_expr('function{std::move(function)}, paren{paren}, args{std::move(args)}',
-                  'expr_node_t function, Token paren, std::vector<expr_node_t> args')
+                  'ExprNode function, Token paren, std::vector<ExprNode> args')
 
         decl_expr('exprs{std::move(exprs)}',
-                  'std::vector<expr_node_t> exprs')
+                  'std::vector<ExprNode> exprs')
 
         decl_expr('object{std::move(object)}, name{name}',
-                  'expr_node_t object, Token name')
+                  'ExprNode object, Token name')
 
         decl_expr('expr{std::move(expr)}',
-                  'expr_node_t expr')
+                  'ExprNode expr')
 
         decl_expr('object{std::move(object)}, oper{oper}, index{std::move(index)}',
-                  'expr_node_t object, Token oper, expr_node_t index')
+                  'ExprNode object, Token oper, ExprNode index')
 
         decl_expr('value{std::move(value)}, lexeme{std::move(lexeme)}, type{std::move(type)}',
-                  'LiteralValue value, Token lexeme, type_node_t type')
+                  'LiteralValue value, Token lexeme, TypeNode type')
 
         decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}',
-                  'expr_node_t left, Token oper, expr_node_t right')
+                  'ExprNode left, Token oper, ExprNode right')
 
         decl_expr('scope{std::move(scope)}, name{name}',
-                  'expr_node_t scope, Token name')
+                  'ExprNode scope, Token name')
 
         decl_expr('name{name}',
                   'Token name')
 
         decl_expr('object{std::move(object)}, name{name}, value{std::move(value)}',
-                  'expr_node_t object, Token name, expr_node_t value')
+                  'ExprNode object, Token name, ExprNode value')
 
         decl_expr('keyword{keyword}, name{name}',
                   'Token keyword, Token name')
 
         decl_expr('left{std::move(left)}, question{question}, middle{std::move(middle)}, right{std::move(right)}',
-                  'expr_node_t left, Token question, expr_node_t middle, expr_node_t right')
+                  'ExprNode left, Token question, ExprNode middle, ExprNode right')
 
         decl_expr('keyword{keyword}',
                   'Token keyword')
 
         decl_expr('oper{oper}, right{std::move(right)}',
-                  'Token oper, expr_node_t right')
+                  'Token oper, ExprNode right')
 
         decl_expr('name{name}, scope_depth{scope_depth}',
                   'Token name, std::size_t scope_depth')
@@ -309,7 +309,7 @@ if __name__ == '__main__':
         file.write('// Statement node definitions\n\n')
 
         decl_stmt('stmts{std::move(stmts)}',
-                  'std::vector<stmt_node_t> stmts')
+                  'std::vector<StmtNode> stmts')
 
         decl_stmt('keyword{keyword}',
                   'Token keyword')
@@ -325,38 +325,38 @@ if __name__ == '__main__':
 
         decl_stmt('name{name}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, ' +
                   'methods{std::move(methods)}',
-                  'Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<std::pair<stmt_node_t,' +
-                  'VisibilityType>> members, std::vector<std::pair<stmt_node_t,VisibilityType>> methods')
+                  'Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<std::pair<StmtNode,' +
+                  'VisibilityType>> members, std::vector<std::pair<StmtNode,VisibilityType>> methods')
 
         decl_stmt('keyword{keyword}',
                   'Token keyword')
 
         decl_stmt('expr{std::move(expr)}',
-                  'expr_node_t expr')
+                  'ExprNode expr')
 
         decl_stmt('name{name}, return_type{std::move(return_type)}, params{std::move(params)}, body{std::move(body)}',
-                  'Token name, type_node_t return_type, std::vector<std::pair<Token,type_node_t>> params, ' +
-                  'stmt_node_t body')
+                  'Token name, TypeNode return_type, std::vector<std::pair<Token,TypeNode>> params, ' +
+                  'StmtNode body')
 
         decl_stmt('condition{std::move(condition)}, thenBranch{std::move(thenBranch)},' +
                   'elseBranch{std::move(elseBranch)}',
-                  'expr_node_t condition, stmt_node_t thenBranch, stmt_node_t elseBranch')
+                  'ExprNode condition, StmtNode thenBranch, StmtNode elseBranch')
 
         decl_stmt('keyword{keyword}, value{std::move(value)}',
-                  'Token keyword, expr_node_t value')
+                  'Token keyword, ExprNode value')
 
         decl_stmt('condition{std::move(condition)}, cases{std::move(cases)}, default_case{std::move(default_case)}',
-                  'expr_node_t condition, std::vector<std::pair<expr_node_t,stmt_node_t>> cases, ' +
-                  'stmt_node_t default_case')
+                  'ExprNode condition, std::vector<std::pair<ExprNode,StmtNode>> cases, ' +
+                  'StmtNode default_case')
 
         decl_stmt('name{name}, type{std::move(type)}',
-                  'Token name, type_node_t type')
+                  'Token name, TypeNode type')
 
         decl_stmt('is_val{is_val}, name{name}, type{std::move(type)}, initializer{std::move(initializer)}',
-                  'bool is_val, Token name, type_node_t type, expr_node_t initializer')
+                  'bool is_val, Token name, TypeNode type, ExprNode initializer')
 
         decl_stmt('keyword{keyword}, condition{std::move(condition)}, body{std::move(body)}',
-                  'Token keyword, expr_node_t condition, stmt_node_t body')
+                  'Token keyword, ExprNode condition, StmtNode body')
 
         file.write('// End of statement node definitions\n\n')
 

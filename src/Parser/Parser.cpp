@@ -224,8 +224,8 @@ void Parser::consume(std::string_view message, const Token &where, Args... args)
     }
 }
 
-std::vector<stmt_node_t> Parser::program() {
-    std::vector<stmt_node_t> statements;
+std::vector<StmtNode> Parser::program() {
+    std::vector<StmtNode> statements;
 
     while (peek().type != TokenType::END_OF_FILE && peek().type != TokenType::END_OF_LINE) {
         statements.emplace_back(declaration());
@@ -239,7 +239,7 @@ std::vector<stmt_node_t> Parser::program() {
     return statements;
 }
 
-expr_node_t Parser::parse_precedence(ParsePrecedence::of precedence) {
+ExprNode Parser::parse_precedence(ParsePrecedence::of precedence) {
     using namespace std::string_literals;
     advance();
 
@@ -259,7 +259,7 @@ expr_node_t Parser::parse_precedence(ParsePrecedence::of precedence) {
     }
 
     bool can_assign = precedence <= ParsePrecedence::ASSIGNMENT;
-    expr_node_t left = std::invoke(prefix, this, can_assign);
+    ExprNode left = std::invoke(prefix, this, can_assign);
 
     while (precedence <= get_rule(peek().type).precedence) {
         ExprInfixParseFn infix = get_rule(advance().type).infix;
@@ -276,116 +276,116 @@ expr_node_t Parser::parse_precedence(ParsePrecedence::of precedence) {
     return left;
 }
 
-expr_node_t Parser::and_(bool, expr_node_t left) {
+ExprNode Parser::and_(bool, ExprNode left) {
     Token oper = previous();
-    expr_node_t right = parse_precedence(ParsePrecedence::LOGIC_AND);
-    return expr_node_t{allocate_node(LogicalExpr, std::move(left), std::move(oper), std::move(right))};
+    ExprNode right = parse_precedence(ParsePrecedence::LOGIC_AND);
+    return ExprNode{allocate_node(LogicalExpr, std::move(left), std::move(oper), std::move(right))};
 }
 
-expr_node_t Parser::binary(bool, expr_node_t left) {
+ExprNode Parser::binary(bool, ExprNode left) {
     Token oper = previous();
-    expr_node_t right = parse_precedence(ParsePrecedence::of(get_rule(previous().type).precedence + 1));
-    return expr_node_t{allocate_node(BinaryExpr, std::move(left), std::move(oper), std::move(right), {})};
+    ExprNode right = parse_precedence(ParsePrecedence::of(get_rule(previous().type).precedence + 1));
+    return ExprNode{allocate_node(BinaryExpr, std::move(left), std::move(oper), std::move(right), {})};
 }
 
-expr_node_t Parser::call(bool, expr_node_t function) {
+ExprNode Parser::call(bool, ExprNode function) {
     Token paren = previous();
-    std::vector<expr_node_t> args{};
+    std::vector<ExprNode> args{};
     if (peek().type != TokenType::RIGHT_PAREN) {
         do {
             args.emplace_back(parse_precedence(ParsePrecedence::ASSIGNMENT));
         } while (match(TokenType::COMMA));
     }
     consume("Expected ')' after function call", TokenType::RIGHT_PAREN);
-    return expr_node_t{allocate_node(CallExpr, std::move(function), std::move(paren), std::move(args))};
+    return ExprNode{allocate_node(CallExpr, std::move(function), std::move(paren), std::move(args))};
 }
 
-expr_node_t Parser::comma(bool, expr_node_t left) {
-    std::vector<expr_node_t> exprs{};
+ExprNode Parser::comma(bool, ExprNode left) {
+    std::vector<ExprNode> exprs{};
     exprs.emplace_back(std::move(left));
     do {
         exprs.emplace_back(parse_precedence(ParsePrecedence::ASSIGNMENT));
     } while (match(TokenType::COMMA));
 
-    return expr_node_t{allocate_node(CommaExpr, std::move(exprs))};
+    return ExprNode{allocate_node(CommaExpr, std::move(exprs))};
 }
 
-expr_node_t Parser::dot(bool can_assign, expr_node_t left) {
+ExprNode Parser::dot(bool can_assign, ExprNode left) {
     consume("Expected identifier after '.'", TokenType::IDENTIFIER);
     Token name = previous();
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
-        expr_node_t value = expression();
-        return expr_node_t{allocate_node(SetExpr, std::move(left), std::move(name), std::move(value))};
+        ExprNode value = expression();
+        return ExprNode{allocate_node(SetExpr, std::move(left), std::move(name), std::move(value))};
     } else {
-        return expr_node_t{allocate_node(GetExpr, std::move(left), std::move(name))};
+        return ExprNode{allocate_node(GetExpr, std::move(left), std::move(name))};
     }
 }
 
-expr_node_t Parser::index(bool, expr_node_t object) {
+ExprNode Parser::index(bool, ExprNode object) {
     Token oper = previous();
-    expr_node_t index = expression();
+    ExprNode index = expression();
     consume("Expected ']' after array subscript index", TokenType::RIGHT_INDEX);
-    return expr_node_t{allocate_node(IndexExpr, std::move(object), std::move(oper), std::move(index))};
+    return ExprNode{allocate_node(IndexExpr, std::move(object), std::move(oper), std::move(index))};
 }
 
-expr_node_t Parser::or_(bool, expr_node_t left) {
+ExprNode Parser::or_(bool, ExprNode left) {
     Token oper = previous();
-    expr_node_t right = parse_precedence(ParsePrecedence::LOGIC_OR);
-    return expr_node_t{allocate_node(LogicalExpr, std::move(left), std::move(oper), std::move(right))};
+    ExprNode right = parse_precedence(ParsePrecedence::LOGIC_OR);
+    return ExprNode{allocate_node(LogicalExpr, std::move(left), std::move(oper), std::move(right))};
 }
 
-expr_node_t Parser::expression() {
+ExprNode Parser::expression() {
     return parse_precedence(ParsePrecedence::ASSIGNMENT);
 }
 
-expr_node_t Parser::grouping(bool) {
-    expr_node_t expr = expression();
+ExprNode Parser::grouping(bool) {
+    ExprNode expr = expression();
     consume("Expected ')' after parenthesized expression", TokenType::RIGHT_PAREN);
-    return expr_node_t{allocate_node(GroupingExpr, std::move(expr))};
+    return ExprNode{allocate_node(GroupingExpr, std::move(expr))};
 }
 
-expr_node_t Parser::literal(bool) {
-    type_node_t type = type_node_t{allocate_node(PrimitiveType, SharedData{Type::INT, true, false})};
+ExprNode Parser::literal(bool) {
+    TypeNode type = TypeNode{allocate_node(PrimitiveType, SharedData{Type::INT, true, false})};
     switch (previous().type) {
         case TokenType::INT_VALUE: {
             int value = std::stoi(previous().lexeme);
-            return expr_node_t{allocate_node(LiteralExpr, LiteralValue{value}, previous(), std::move(type))};
+            return ExprNode{allocate_node(LiteralExpr, LiteralValue{value}, previous(), std::move(type))};
         }
         case TokenType::FLOAT_VALUE: {
             double value = std::stod(previous().lexeme);
             type->data.type = Type::FLOAT;
-            return expr_node_t{allocate_node(LiteralExpr, LiteralValue{value}, previous(), std::move(type))};
+            return ExprNode{allocate_node(LiteralExpr, LiteralValue{value}, previous(), std::move(type))};
         }
         case TokenType::STRING_VALUE: {
             type->data.type = Type::STRING;
-            return expr_node_t{
+            return ExprNode{
                 allocate_node(LiteralExpr, LiteralValue{previous().lexeme}, previous(), std::move(type))};
         }
         case TokenType::FALSE: {
             type->data.type = Type::BOOL;
-            return expr_node_t{allocate_node(LiteralExpr, LiteralValue{false}, previous(), std::move(type))};
+            return ExprNode{allocate_node(LiteralExpr, LiteralValue{false}, previous(), std::move(type))};
         }
         case TokenType::TRUE: {
             type->data.type = Type::BOOL;
-            return expr_node_t{allocate_node(LiteralExpr, LiteralValue{true}, previous(), std::move(type))};
+            return ExprNode{allocate_node(LiteralExpr, LiteralValue{true}, previous(), std::move(type))};
         }
         case TokenType::NULL_: {
             type->data.type = Type::NULL_;
-            return expr_node_t{allocate_node(LiteralExpr, LiteralValue{nullptr}, previous(), std::move(type))};
+            return ExprNode{allocate_node(LiteralExpr, LiteralValue{nullptr}, previous(), std::move(type))};
         }
 
         default: throw ParseException{previous(), "Unexpected TokenType passed to literal parser"};
     }
 }
 
-expr_node_t Parser::scope_access(bool, expr_node_t left) {
+ExprNode Parser::scope_access(bool, ExprNode left) {
     consume("Expected identifier to be accessed after scope name", TokenType::IDENTIFIER);
     Token name = previous();
-    return expr_node_t{allocate_node(ScopeAccessExpr, std::move(left), std::move(name))};
+    return ExprNode{allocate_node(ScopeAccessExpr, std::move(left), std::move(name))};
 }
 
-expr_node_t Parser::super(bool) {
+ExprNode Parser::super(bool) {
     if (!(in_class && in_function)) {
         throw_parse_error("Cannot use super expression outside a class");
     }
@@ -393,47 +393,47 @@ expr_node_t Parser::super(bool) {
     consume("Expected '.' after 'super' keyword", TokenType::DOT);
     consume("Expected name after '.' in super expression", TokenType::IDENTIFIER);
     Token name = previous();
-    return expr_node_t{allocate_node(SuperExpr, std::move(super), std::move(name))};
+    return ExprNode{allocate_node(SuperExpr, std::move(super), std::move(name))};
 }
 
-expr_node_t Parser::this_expr(bool) {
+ExprNode Parser::this_expr(bool) {
     if (!(in_class && in_function)) {
         throw_parse_error("Cannot use this keyword outside a class");
     }
     Token keyword = previous();
-    return expr_node_t{allocate_node(ThisExpr, std::move(keyword))};
+    return ExprNode{allocate_node(ThisExpr, std::move(keyword))};
 }
 
-expr_node_t Parser::unary(bool) {
+ExprNode Parser::unary(bool) {
     Token oper = previous();
-    expr_node_t expr = parse_precedence(get_rule(previous().type).precedence);
-    return expr_node_t{allocate_node(UnaryExpr, std::move(oper), std::move(expr))};
+    ExprNode expr = parse_precedence(get_rule(previous().type).precedence);
+    return ExprNode{allocate_node(UnaryExpr, std::move(oper), std::move(expr))};
 }
 
-expr_node_t Parser::variable(bool can_assign) {
+ExprNode Parser::variable(bool can_assign) {
     Token name = previous();
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
-        expr_node_t value = expression();
-        return expr_node_t{allocate_node(AssignExpr, std::move(name), std::move(value))};
+        ExprNode value = expression();
+        return ExprNode{allocate_node(AssignExpr, std::move(name), std::move(value))};
     } else if (peek().type == TokenType::DOUBLE_COLON) {
-        return expr_node_t{allocate_node(ScopeNameExpr, std::move(name))};
+        return ExprNode{allocate_node(ScopeNameExpr, std::move(name))};
     } else {
-        return expr_node_t{allocate_node(VariableExpr, std::move(name), 0)};
+        return ExprNode{allocate_node(VariableExpr, std::move(name), 0)};
     }
 }
 
-expr_node_t Parser::ternary(bool, expr_node_t left) {
+ExprNode Parser::ternary(bool, ExprNode left) {
     Token question = previous();
-    expr_node_t middle = parse_precedence(ParsePrecedence::LOGIC_OR);
+    ExprNode middle = parse_precedence(ParsePrecedence::LOGIC_OR);
     consume("Expected colon in ternary expression", TokenType::COLON);
-    expr_node_t right = parse_precedence(ParsePrecedence::LOGIC_OR);
-    return expr_node_t{allocate_node(TernaryExpr, std::move(left), question, std::move(middle), std::move(right))};
+    ExprNode right = parse_precedence(ParsePrecedence::LOGIC_OR);
+    return ExprNode{allocate_node(TernaryExpr, std::move(left), question, std::move(middle), std::move(right))};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type_node_t Parser::type() {
+TypeNode Parser::type() {
     bool is_const = match(TokenType::CONST);
     bool is_ref = match(TokenType::REF);
     Type type = [this]() {
@@ -463,27 +463,27 @@ type_node_t Parser::type() {
     SharedData data{type, is_const, is_ref};
     if (type == Type::CLASS) {
         Token name = previous();
-        return type_node_t{allocate_node(UserDefinedType, data, std::move(name))};
+        return TypeNode{allocate_node(UserDefinedType, data, std::move(name))};
     } else if (type == Type::LIST) {
         return list_type(is_const, is_ref);
     } else if (type == Type::TYPEOF) {
-        return type_node_t{allocate_node(TypeofType, data, expression())};
+        return TypeNode{allocate_node(TypeofType, data, expression())};
     } else {
-        return type_node_t{allocate_node(PrimitiveType, data)};
+        return TypeNode{allocate_node(PrimitiveType, data)};
     }
 }
 
-type_node_t Parser::list_type(bool is_const, bool is_ref) {
-    type_node_t contained = type();
-    expr_node_t size = match(TokenType::COMMA) ? expression() : nullptr;
+TypeNode Parser::list_type(bool is_const, bool is_ref) {
+    TypeNode contained = type();
+    ExprNode size = match(TokenType::COMMA) ? expression() : nullptr;
     consume("Expected ']' after array declaration", TokenType::RIGHT_INDEX);
     SharedData data{Type::LIST, is_const, is_ref};
-    return type_node_t{allocate_node(ListType, data, std::move(contained), std::move(size))};
+    return TypeNode{allocate_node(ListType, data, std::move(contained), std::move(size))};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-stmt_node_t Parser::declaration() {
+StmtNode Parser::declaration() {
     try {
         if (match(TokenType::CLASS)) {
             return class_declaration();
@@ -504,7 +504,7 @@ stmt_node_t Parser::declaration() {
     }
 }
 
-stmt_node_t Parser::class_declaration() {
+StmtNode Parser::class_declaration() {
     consume("Expected class name after 'class' keyword", TokenType::IDENTIFIER);
 
     if (current_module.classes.find(previous().lexeme) != current_module.classes.end()) {
@@ -514,8 +514,8 @@ stmt_node_t Parser::class_declaration() {
     Token name = previous();
     FunctionStmt *ctor{nullptr};
     FunctionStmt *dtor{nullptr};
-    std::vector<std::pair<stmt_node_t, VisibilityType>> members{};
-    std::vector<std::pair<stmt_node_t, VisibilityType>> methods{};
+    std::vector<std::pair<StmtNode, VisibilityType>> members{};
+    std::vector<std::pair<StmtNode, VisibilityType>> methods{};
 
     scoped_integer_manager depth_manager{scope_depth};
 
@@ -536,7 +536,7 @@ stmt_node_t Parser::class_declaration() {
         }();
 
         if (match(TokenType::VAR, TokenType::VAR)) {
-            stmt_node_t member = variable_declaration();
+            StmtNode member = variable_declaration();
             members.emplace_back(std::move(member), visibility);
         } else if (match(TokenType::FN)) {
             bool found_dtor = match(TokenType::BIT_NOT);
@@ -545,7 +545,7 @@ stmt_node_t Parser::class_declaration() {
                 throw_parse_error("The name of the destructor has to be the same as the name of the class");
             }
 
-            stmt_node_t method = function_declaration();
+            StmtNode method = function_declaration();
             const Token &method_name = dynamic_cast<FunctionStmt *>(method.get())->name;
 
             if (method_name.lexeme == name.lexeme) {
@@ -580,10 +580,10 @@ stmt_node_t Parser::class_declaration() {
         allocate_node(ClassStmt, std::move(name), ctor, dtor, std::move(members), std::move(methods));
     current_module.classes[class_definition->name.lexeme] = class_definition;
 
-    return stmt_node_t{class_definition};
+    return StmtNode{class_definition};
 }
 
-stmt_node_t Parser::function_declaration() {
+StmtNode Parser::function_declaration() {
     consume("Expected function name after 'fn' keyword", TokenType::IDENTIFIER);
 
     if (current_module.functions.find(previous().lexeme) != current_module.functions.end()) {
@@ -595,13 +595,13 @@ stmt_node_t Parser::function_declaration() {
 
     scoped_integer_manager manager{scope_depth};
 
-    std::vector<std::pair<Token, type_node_t>> params{};
+    std::vector<std::pair<Token, TypeNode>> params{};
     if (peek().type != TokenType::RIGHT_PAREN) {
         do {
             advance();
             Token parameter_name = previous();
             consume("Expected ':' after function parameter name", TokenType::COLON);
-            type_node_t parameter_type = type();
+            TypeNode parameter_type = type();
             params.emplace_back(std::move(parameter_name), std::move(parameter_type));
         } while (match(TokenType::COMMA));
     }
@@ -616,11 +616,11 @@ stmt_node_t Parser::function_declaration() {
     }
 
     consume("Expected '->' after ')' to specify type", TokenType::ARROW);
-    type_node_t return_type = type();
+    TypeNode return_type = type();
     consume("Expected '{' after function return type", TokenType::LEFT_BRACE);
 
     scoped_boolean_manager function_manager{in_function};
-    stmt_node_t body = block_statement();
+    StmtNode body = block_statement();
 
     auto *function_definition =
         allocate_node(FunctionStmt, std::move(name), std::move(return_type), std::move(params), std::move(body));
@@ -629,7 +629,7 @@ stmt_node_t Parser::function_declaration() {
         current_module.functions[function_definition->name.lexeme] = function_definition;
     }
 
-    return stmt_node_t{function_definition};
+    return StmtNode{function_definition};
 }
 
 void recursively_change_module_depth(std::pair<Module, std::size_t> &module, std::size_t value) {
@@ -639,7 +639,7 @@ void recursively_change_module_depth(std::pair<Module, std::size_t> &module, std
     }
 }
 
-stmt_node_t Parser::import_statement() {
+StmtNode Parser::import_statement() {
     Token keyword = previous();
     consume("Expected path to module after 'import' keyword", TokenType::STRING_VALUE);
     Token imported = previous();
@@ -696,16 +696,16 @@ stmt_node_t Parser::import_statement() {
     return {nullptr};
 }
 
-stmt_node_t Parser::type_declaration() {
+StmtNode Parser::type_declaration() {
     consume("Expected type name after 'type' keyword", previous(), TokenType::IDENTIFIER);
     Token name = previous();
     consume("Expected '=' after type name", TokenType::EQUAL);
-    type_node_t aliased = type();
+    TypeNode aliased = type();
     consume("Expected ';' or newline after type alias", TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t{allocate_node(TypeStmt, std::move(name), std::move(aliased))};
+    return StmtNode{allocate_node(TypeStmt, std::move(name), std::move(aliased))};
 }
 
-stmt_node_t Parser::variable_declaration() {
+StmtNode Parser::variable_declaration() {
     std::string message = "Expected variable name after 'var' keyword";
     if (previous().type == TokenType::VAL) {
         message[32] = 'l';
@@ -714,16 +714,16 @@ stmt_node_t Parser::variable_declaration() {
     consume(message, previous(), TokenType::IDENTIFIER);
     Token name = previous();
 
-    type_node_t var_type = match(TokenType::COLON) ? type() : nullptr;
-    expr_node_t initializer = match(TokenType::EQUAL) ? expression() : nullptr;
+    TypeNode var_type = match(TokenType::COLON) ? type() : nullptr;
+    ExprNode initializer = match(TokenType::EQUAL) ? expression() : nullptr;
     consume("Expected ';' or newline after variable initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
 
     auto *variable = allocate_node(
         VarStmt, (keyword == TokenType::VAL), std::move(name), std::move(var_type), std::move(initializer));
-    return stmt_node_t{variable};
+    return StmtNode{variable};
 }
 
-stmt_node_t Parser::statement() {
+StmtNode Parser::statement() {
     if (match(TokenType::LEFT_BRACE)) {
         return block_statement();
     } else if (match(TokenType::BREAK)) {
@@ -745,8 +745,8 @@ stmt_node_t Parser::statement() {
     }
 }
 
-stmt_node_t Parser::block_statement() {
-    std::vector<stmt_node_t> statements{};
+StmtNode Parser::block_statement() {
+    std::vector<StmtNode> statements{};
     scoped_integer_manager manager{scope_depth};
 
     while (!is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
@@ -758,11 +758,11 @@ stmt_node_t Parser::block_statement() {
     }
 
     consume("Expected '}' after block", TokenType::RIGHT_BRACE);
-    return stmt_node_t{allocate_node(BlockStmt, std::move(statements))};
+    return StmtNode{allocate_node(BlockStmt, std::move(statements))};
 }
 
 template <typename Allocated>
-stmt_node_t Parser::single_token_statement(
+StmtNode Parser::single_token_statement(
     const std::string_view token, const bool condition, const std::string_view error_message) {
     if (!condition) {
         throw_parse_error(error_message);
@@ -771,45 +771,45 @@ stmt_node_t Parser::single_token_statement(
     using namespace std::string_literals;
     const std::string consume_message = "Expected ';' or newline after "s + &token[0] + " keyword";
     consume(consume_message, TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t{allocate_node(Allocated, std::move(keyword))};
+    return StmtNode{allocate_node(Allocated, std::move(keyword))};
 }
 
-stmt_node_t Parser::break_statement() {
+StmtNode Parser::break_statement() {
     return single_token_statement<BreakStmt>(
         "break", (in_loop || in_switch), "Cannot use 'break' outside a loop or switch.");
 }
 
-stmt_node_t Parser::continue_statement() {
+StmtNode Parser::continue_statement() {
     return single_token_statement<ContinueStmt>("continue", in_loop, "Cannot use 'continue' outside a loop");
 }
 
-stmt_node_t Parser::expression_statement() {
-    expr_node_t expr = expression();
+StmtNode Parser::expression_statement() {
+    ExprNode expr = expression();
     consume("Expected ';' or newline after expression", TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t{allocate_node(ExpressionStmt, std::move(expr))};
+    return StmtNode{allocate_node(ExpressionStmt, std::move(expr))};
 }
 
-stmt_node_t Parser::for_statement() {
+StmtNode Parser::for_statement() {
     Token keyword = previous();
     consume("Expected '(' after 'for' keyword", TokenType::LEFT_PAREN);
     scoped_integer_manager manager{scope_depth};
 
-    stmt_node_t initializer = nullptr;
+    StmtNode initializer = nullptr;
     if (match(TokenType::VAR, TokenType::VAL)) {
         initializer = variable_declaration();
     } else if (!match(TokenType::SEMICOLON)) {
         initializer = expression_statement();
     }
 
-    expr_node_t condition = nullptr;
+    ExprNode condition = nullptr;
     if (peek().type != TokenType::SEMICOLON) {
         condition = expression();
     }
     consume("Expected ';' after loop condition", TokenType::SEMICOLON);
 
-    stmt_node_t increment = nullptr;
+    StmtNode increment = nullptr;
     if (peek().type != TokenType::RIGHT_PAREN) {
-        increment = stmt_node_t{allocate_node(ExpressionStmt, expression())};
+        increment = StmtNode{allocate_node(ExpressionStmt, expression())};
     }
     consume("Expected ')' after for loop header", TokenType::RIGHT_PAREN);
 
@@ -824,64 +824,64 @@ stmt_node_t Parser::for_statement() {
     modified_body->stmts.emplace_back(statement()); // The actual body
     modified_body->stmts.emplace_back(std::move(increment));
 
-    stmt_node_t desugared_loop =
-        stmt_node_t{allocate_node(WhileStmt, std::move(keyword), std::move(condition), stmt_node_t{modified_body})};
+    StmtNode desugared_loop =
+        StmtNode{allocate_node(WhileStmt, std::move(keyword), std::move(condition), StmtNode{modified_body})};
 
     auto *loop = allocate_node(BlockStmt, {});
     loop->stmts.emplace_back(std::move(initializer));
     loop->stmts.emplace_back(std::move(desugared_loop));
 
-    return stmt_node_t{loop};
+    return StmtNode{loop};
 }
 
-stmt_node_t Parser::if_statement() {
-    expr_node_t condition = expression();
-    stmt_node_t then_branch = statement();
+StmtNode Parser::if_statement() {
+    ExprNode condition = expression();
+    StmtNode then_branch = statement();
     if (match(TokenType::ELSE)) {
-        stmt_node_t else_branch = statement();
-        return stmt_node_t{allocate_node(IfStmt, std::move(condition), std::move(then_branch), std::move(else_branch))};
+        StmtNode else_branch = statement();
+        return StmtNode{allocate_node(IfStmt, std::move(condition), std::move(then_branch), std::move(else_branch))};
     } else {
-        return stmt_node_t{allocate_node(IfStmt, std::move(condition), std::move(then_branch), nullptr)};
+        return StmtNode{allocate_node(IfStmt, std::move(condition), std::move(then_branch), nullptr)};
     }
 }
 
-stmt_node_t Parser::return_statement() {
+StmtNode Parser::return_statement() {
     if (!in_function) {
         throw_parse_error("Cannot use 'return' keyword outside a function");
     }
 
     Token keyword = previous();
 
-    expr_node_t return_value = [this]() {
+    ExprNode return_value = [this]() {
         if (peek().type != TokenType::SEMICOLON && peek().type != TokenType::END_OF_LINE) {
             return expression();
         } else {
-            return expr_node_t{nullptr};
+            return ExprNode{nullptr};
         }
     }();
 
     consume("Expected ';' or newline after return statement", TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return stmt_node_t{allocate_node(ReturnStmt, std::move(keyword), std::move(return_value))};
+    return StmtNode{allocate_node(ReturnStmt, std::move(keyword), std::move(return_value))};
 }
 
-stmt_node_t Parser::switch_statement() {
-    expr_node_t condition = expression();
-    std::vector<std::pair<expr_node_t, stmt_node_t>> cases{};
-    stmt_node_t default_case = nullptr;
+StmtNode Parser::switch_statement() {
+    ExprNode condition = expression();
+    std::vector<std::pair<ExprNode, StmtNode>> cases{};
+    StmtNode default_case = nullptr;
     consume("Expected '{' after switch statement condition", TokenType::LEFT_BRACE);
 
     scoped_boolean_manager switch_manager{in_switch};
 
     while (!is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
         if (match(TokenType::CASE)) {
-            expr_node_t expr = expression();
+            ExprNode expr = expression();
             consume("Expected ':' after case expression", TokenType::COLON);
 
-            stmt_node_t stmt = statement();
+            StmtNode stmt = statement();
             cases.emplace_back(std::move(expr), std::move(stmt));
         } else if (match(TokenType::DEFAULT) && default_case == nullptr) {
             consume("Expected ':' after case expression", TokenType::COLON);
-            stmt_node_t stmt = statement();
+            StmtNode stmt = statement();
             default_case = std::move(stmt);
         } else if (default_case != nullptr) {
             throw_parse_error("Cannot have more than one default cases in a switch");
@@ -891,21 +891,21 @@ stmt_node_t Parser::switch_statement() {
     }
 
     consume("Expected '}' at the end of switch statement", TokenType::RIGHT_BRACE);
-    return stmt_node_t{allocate_node(SwitchStmt, std::move(condition), std::move(cases), std::move(default_case))};
+    return StmtNode{allocate_node(SwitchStmt, std::move(condition), std::move(cases), std::move(default_case))};
 }
 
-stmt_node_t Parser::while_statement() {
+StmtNode Parser::while_statement() {
     Token keyword = previous();
     scoped_integer_manager manager{scope_depth};
 
-    expr_node_t condition = expression();
+    ExprNode condition = expression();
 
     while (peek().type == TokenType::END_OF_LINE) {
         advance();
     }
 
     scoped_boolean_manager loop_manager{in_loop};
-    stmt_node_t body = statement();
+    StmtNode body = statement();
 
-    return stmt_node_t{allocate_node(WhileStmt, std::move(keyword), std::move(condition), std::move(body))};
+    return StmtNode{allocate_node(WhileStmt, std::move(keyword), std::move(condition), std::move(body))};
 }

@@ -24,7 +24,7 @@ class TypeResolver final : Visitor {
     Module &current_module;
     const std::unordered_map<std::string_view, ClassStmt *> &classes;
     const std::unordered_map<std::string_view, FunctionStmt *> &functions;
-    std::vector<type_node_t> type_scratch_space{};
+    std::vector<TypeNode> type_scratch_space{};
     std::vector<Value> values{};
 
     bool in_ctor{false};
@@ -39,14 +39,14 @@ class TypeResolver final : Visitor {
     template <typename T, typename... Args>
     BaseType *make_new_type(Type type, bool is_const, bool is_ref, Args &&... args);
     ExprTypeInfo resolve_class_access(ExprVisitorType &object, const Token &name);
-    ExprVisitorType check_inbuilt(VariableExpr *function, const Token &oper, std::vector<expr_node_t> &args);
+    ExprVisitorType check_inbuilt(VariableExpr *function, const Token &oper, std::vector<ExprNode> &args);
     ClassStmt *find_class(const std::string &class_name);
     FunctionStmt *find_function(const std::string &function_name);
 
   public:
     TypeResolver(Module &module);
 
-    void check(std::vector<stmt_node_t> &program);
+    void check(std::vector<StmtNode> &program);
     void begin_scope();
     void end_scope();
 

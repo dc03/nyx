@@ -20,9 +20,9 @@ struct Expr;
 struct Stmt;
 struct BaseType;
 
-using expr_node_t = std::unique_ptr<Expr>;
-using stmt_node_t = std::unique_ptr<Stmt>;
-using type_node_t = std::unique_ptr<BaseType>;
+using ExprNode = std::unique_ptr<Expr>;
+using StmtNode = std::unique_ptr<Stmt>;
+using TypeNode = std::unique_ptr<BaseType>;
 
 // Expression nodes
 
@@ -198,27 +198,27 @@ struct UserDefinedType final : public BaseType {
 };
 
 struct ListType final : public BaseType {
-    type_node_t contained;
-    expr_node_t size;
+    TypeNode contained;
+    ExprNode size;
 
     std::string_view string_tag() override final { return "ListType"; }
 
     NodeType type_tag() override final { return NodeType::ListType; }
 
-    ListType(SharedData data, type_node_t contained, expr_node_t size)
+    ListType(SharedData data, TypeNode contained, ExprNode size)
         : BaseType{data}, contained{std::move(contained)}, size{std::move(size)} {}
 
     BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct TypeofType final : public BaseType {
-    expr_node_t expr;
+    ExprNode expr;
 
     std::string_view string_tag() override final { return "TypeofType"; }
 
     NodeType type_tag() override final { return NodeType::TypeofType; }
 
-    TypeofType(SharedData data, expr_node_t expr) : BaseType{data}, expr{std::move(expr)} {}
+    TypeofType(SharedData data, ExprNode expr) : BaseType{data}, expr{std::move(expr)} {}
 
     BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -229,95 +229,95 @@ struct TypeofType final : public BaseType {
 
 struct AssignExpr final : public Expr {
     Token target;
-    expr_node_t value;
+    ExprNode value;
 
     std::string_view string_tag() override final { return "AssignExpr"; }
 
     NodeType type_tag() override final { return NodeType::AssignExpr; }
 
-    AssignExpr(Token target, expr_node_t value) : target{target}, value{std::move(value)} {}
+    AssignExpr(Token target, ExprNode value) : target{target}, value{std::move(value)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct BinaryExpr final : public Expr {
-    expr_node_t left;
+    ExprNode left;
     Token oper;
-    expr_node_t right;
+    ExprNode right;
     ExprVisitorType resolved_type;
 
     std::string_view string_tag() override final { return "BinaryExpr"; }
 
     NodeType type_tag() override final { return NodeType::BinaryExpr; }
 
-    BinaryExpr(expr_node_t left, Token oper, expr_node_t right, ExprVisitorType resolved_type)
+    BinaryExpr(ExprNode left, Token oper, ExprNode right, ExprVisitorType resolved_type)
         : left{std::move(left)}, oper{oper}, right{std::move(right)}, resolved_type{resolved_type} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct CallExpr final : public Expr {
-    expr_node_t function;
+    ExprNode function;
     Token paren;
-    std::vector<expr_node_t> args;
+    std::vector<ExprNode> args;
 
     std::string_view string_tag() override final { return "CallExpr"; }
 
     NodeType type_tag() override final { return NodeType::CallExpr; }
 
-    CallExpr(expr_node_t function, Token paren, std::vector<expr_node_t> args)
+    CallExpr(ExprNode function, Token paren, std::vector<ExprNode> args)
         : function{std::move(function)}, paren{paren}, args{std::move(args)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct CommaExpr final : public Expr {
-    std::vector<expr_node_t> exprs;
+    std::vector<ExprNode> exprs;
 
     std::string_view string_tag() override final { return "CommaExpr"; }
 
     NodeType type_tag() override final { return NodeType::CommaExpr; }
 
-    CommaExpr(std::vector<expr_node_t> exprs) : exprs{std::move(exprs)} {}
+    CommaExpr(std::vector<ExprNode> exprs) : exprs{std::move(exprs)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct GetExpr final : public Expr {
-    expr_node_t object;
+    ExprNode object;
     Token name;
 
     std::string_view string_tag() override final { return "GetExpr"; }
 
     NodeType type_tag() override final { return NodeType::GetExpr; }
 
-    GetExpr(expr_node_t object, Token name) : object{std::move(object)}, name{name} {}
+    GetExpr(ExprNode object, Token name) : object{std::move(object)}, name{name} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct GroupingExpr final : public Expr {
-    expr_node_t expr;
+    ExprNode expr;
 
     std::string_view string_tag() override final { return "GroupingExpr"; }
 
     NodeType type_tag() override final { return NodeType::GroupingExpr; }
 
-    GroupingExpr(expr_node_t expr) : expr{std::move(expr)} {}
+    GroupingExpr(ExprNode expr) : expr{std::move(expr)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct IndexExpr final : public Expr {
-    expr_node_t object;
+    ExprNode object;
     Token oper;
-    expr_node_t index;
+    ExprNode index;
 
     std::string_view string_tag() override final { return "IndexExpr"; }
 
     NodeType type_tag() override final { return NodeType::IndexExpr; }
 
-    IndexExpr(expr_node_t object, Token oper, expr_node_t index)
+    IndexExpr(ExprNode object, Token oper, ExprNode index)
         : object{std::move(object)}, oper{oper}, index{std::move(index)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
@@ -326,42 +326,42 @@ struct IndexExpr final : public Expr {
 struct LiteralExpr final : public Expr {
     LiteralValue value;
     Token lexeme;
-    type_node_t type;
+    TypeNode type;
 
     std::string_view string_tag() override final { return "LiteralExpr"; }
 
     NodeType type_tag() override final { return NodeType::LiteralExpr; }
 
-    LiteralExpr(LiteralValue value, Token lexeme, type_node_t type)
+    LiteralExpr(LiteralValue value, Token lexeme, TypeNode type)
         : value{std::move(value)}, lexeme{std::move(lexeme)}, type{std::move(type)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct LogicalExpr final : public Expr {
-    expr_node_t left;
+    ExprNode left;
     Token oper;
-    expr_node_t right;
+    ExprNode right;
 
     std::string_view string_tag() override final { return "LogicalExpr"; }
 
     NodeType type_tag() override final { return NodeType::LogicalExpr; }
 
-    LogicalExpr(expr_node_t left, Token oper, expr_node_t right)
+    LogicalExpr(ExprNode left, Token oper, ExprNode right)
         : left{std::move(left)}, oper{oper}, right{std::move(right)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct ScopeAccessExpr final : public Expr {
-    expr_node_t scope;
+    ExprNode scope;
     Token name;
 
     std::string_view string_tag() override final { return "ScopeAccessExpr"; }
 
     NodeType type_tag() override final { return NodeType::ScopeAccessExpr; }
 
-    ScopeAccessExpr(expr_node_t scope, Token name) : scope{std::move(scope)}, name{name} {}
+    ScopeAccessExpr(ExprNode scope, Token name) : scope{std::move(scope)}, name{name} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -379,15 +379,15 @@ struct ScopeNameExpr final : public Expr {
 };
 
 struct SetExpr final : public Expr {
-    expr_node_t object;
+    ExprNode object;
     Token name;
-    expr_node_t value;
+    ExprNode value;
 
     std::string_view string_tag() override final { return "SetExpr"; }
 
     NodeType type_tag() override final { return NodeType::SetExpr; }
 
-    SetExpr(expr_node_t object, Token name, expr_node_t value)
+    SetExpr(ExprNode object, Token name, ExprNode value)
         : object{std::move(object)}, name{name}, value{std::move(value)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
@@ -407,16 +407,16 @@ struct SuperExpr final : public Expr {
 };
 
 struct TernaryExpr final : public Expr {
-    expr_node_t left;
+    ExprNode left;
     Token question;
-    expr_node_t middle;
-    expr_node_t right;
+    ExprNode middle;
+    ExprNode right;
 
     std::string_view string_tag() override final { return "TernaryExpr"; }
 
     NodeType type_tag() override final { return NodeType::TernaryExpr; }
 
-    TernaryExpr(expr_node_t left, Token question, expr_node_t middle, expr_node_t right)
+    TernaryExpr(ExprNode left, Token question, ExprNode middle, ExprNode right)
         : left{std::move(left)}, question{question}, middle{std::move(middle)}, right{std::move(right)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
@@ -436,13 +436,13 @@ struct ThisExpr final : public Expr {
 
 struct UnaryExpr final : public Expr {
     Token oper;
-    expr_node_t right;
+    ExprNode right;
 
     std::string_view string_tag() override final { return "UnaryExpr"; }
 
     NodeType type_tag() override final { return NodeType::UnaryExpr; }
 
-    UnaryExpr(Token oper, expr_node_t right) : oper{oper}, right{std::move(right)} {}
+    UnaryExpr(Token oper, ExprNode right) : oper{oper}, right{std::move(right)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -465,13 +465,13 @@ struct VariableExpr final : public Expr {
 // Statement node definitions
 
 struct BlockStmt final : public Stmt {
-    std::vector<stmt_node_t> stmts;
+    std::vector<StmtNode> stmts;
 
     std::string_view string_tag() override final { return "BlockStmt"; }
 
     NodeType type_tag() override final { return NodeType::BlockStmt; }
 
-    BlockStmt(std::vector<stmt_node_t> stmts) : stmts{std::move(stmts)} {}
+    BlockStmt(std::vector<StmtNode> stmts) : stmts{std::move(stmts)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -494,16 +494,16 @@ struct ClassStmt final : public Stmt {
     Token name;
     FunctionStmt *ctor;
     FunctionStmt *dtor;
-    std::vector<std::pair<stmt_node_t, VisibilityType>> members;
-    std::vector<std::pair<stmt_node_t, VisibilityType>> methods;
+    std::vector<std::pair<StmtNode, VisibilityType>> members;
+    std::vector<std::pair<StmtNode, VisibilityType>> methods;
 
     std::string_view string_tag() override final { return "ClassStmt"; }
 
     NodeType type_tag() override final { return NodeType::ClassStmt; }
 
     ClassStmt(Token name, FunctionStmt *ctor, FunctionStmt *dtor,
-        std::vector<std::pair<stmt_node_t, VisibilityType>> members,
-        std::vector<std::pair<stmt_node_t, VisibilityType>> methods)
+        std::vector<std::pair<StmtNode, VisibilityType>> members,
+        std::vector<std::pair<StmtNode, VisibilityType>> methods)
         : name{name}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, methods{std::move(methods)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
@@ -522,44 +522,44 @@ struct ContinueStmt final : public Stmt {
 };
 
 struct ExpressionStmt final : public Stmt {
-    expr_node_t expr;
+    ExprNode expr;
 
     std::string_view string_tag() override final { return "ExpressionStmt"; }
 
     NodeType type_tag() override final { return NodeType::ExpressionStmt; }
 
-    ExpressionStmt(expr_node_t expr) : expr{std::move(expr)} {}
+    ExpressionStmt(ExprNode expr) : expr{std::move(expr)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct FunctionStmt final : public Stmt {
     Token name;
-    type_node_t return_type;
-    std::vector<std::pair<Token, type_node_t>> params;
-    stmt_node_t body;
+    TypeNode return_type;
+    std::vector<std::pair<Token, TypeNode>> params;
+    StmtNode body;
 
     std::string_view string_tag() override final { return "FunctionStmt"; }
 
     NodeType type_tag() override final { return NodeType::FunctionStmt; }
 
     FunctionStmt(
-        Token name, type_node_t return_type, std::vector<std::pair<Token, type_node_t>> params, stmt_node_t body)
+        Token name, TypeNode return_type, std::vector<std::pair<Token, TypeNode>> params, StmtNode body)
         : name{name}, return_type{std::move(return_type)}, params{std::move(params)}, body{std::move(body)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct IfStmt final : public Stmt {
-    expr_node_t condition;
-    stmt_node_t thenBranch;
-    stmt_node_t elseBranch;
+    ExprNode condition;
+    StmtNode thenBranch;
+    StmtNode elseBranch;
 
     std::string_view string_tag() override final { return "IfStmt"; }
 
     NodeType type_tag() override final { return NodeType::IfStmt; }
 
-    IfStmt(expr_node_t condition, stmt_node_t thenBranch, stmt_node_t elseBranch)
+    IfStmt(ExprNode condition, StmtNode thenBranch, StmtNode elseBranch)
         : condition{std::move(condition)}, thenBranch{std::move(thenBranch)}, elseBranch{std::move(elseBranch)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
@@ -567,27 +567,27 @@ struct IfStmt final : public Stmt {
 
 struct ReturnStmt final : public Stmt {
     Token keyword;
-    expr_node_t value;
+    ExprNode value;
 
     std::string_view string_tag() override final { return "ReturnStmt"; }
 
     NodeType type_tag() override final { return NodeType::ReturnStmt; }
 
-    ReturnStmt(Token keyword, expr_node_t value) : keyword{keyword}, value{std::move(value)} {}
+    ReturnStmt(Token keyword, ExprNode value) : keyword{keyword}, value{std::move(value)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct SwitchStmt final : public Stmt {
-    expr_node_t condition;
-    std::vector<std::pair<expr_node_t, stmt_node_t>> cases;
-    stmt_node_t default_case;
+    ExprNode condition;
+    std::vector<std::pair<ExprNode, StmtNode>> cases;
+    StmtNode default_case;
 
     std::string_view string_tag() override final { return "SwitchStmt"; }
 
     NodeType type_tag() override final { return NodeType::SwitchStmt; }
 
-    SwitchStmt(expr_node_t condition, std::vector<std::pair<expr_node_t, stmt_node_t>> cases, stmt_node_t default_case)
+    SwitchStmt(ExprNode condition, std::vector<std::pair<ExprNode, StmtNode>> cases, StmtNode default_case)
         : condition{std::move(condition)}, cases{std::move(cases)}, default_case{std::move(default_case)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
@@ -595,13 +595,13 @@ struct SwitchStmt final : public Stmt {
 
 struct TypeStmt final : public Stmt {
     Token name;
-    type_node_t type;
+    TypeNode type;
 
     std::string_view string_tag() override final { return "TypeStmt"; }
 
     NodeType type_tag() override final { return NodeType::TypeStmt; }
 
-    TypeStmt(Token name, type_node_t type) : name{name}, type{std::move(type)} {}
+    TypeStmt(Token name, TypeNode type) : name{name}, type{std::move(type)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -609,14 +609,14 @@ struct TypeStmt final : public Stmt {
 struct VarStmt final : public Stmt {
     bool is_val;
     Token name;
-    type_node_t type;
-    expr_node_t initializer;
+    TypeNode type;
+    ExprNode initializer;
 
     std::string_view string_tag() override final { return "VarStmt"; }
 
     NodeType type_tag() override final { return NodeType::VarStmt; }
 
-    VarStmt(bool is_val, Token name, type_node_t type, expr_node_t initializer)
+    VarStmt(bool is_val, Token name, TypeNode type, ExprNode initializer)
         : is_val{is_val}, name{name}, type{std::move(type)}, initializer{std::move(initializer)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
@@ -624,14 +624,14 @@ struct VarStmt final : public Stmt {
 
 struct WhileStmt final : public Stmt {
     Token keyword;
-    expr_node_t condition;
-    stmt_node_t body;
+    ExprNode condition;
+    StmtNode body;
 
     std::string_view string_tag() override final { return "WhileStmt"; }
 
     NodeType type_tag() override final { return NodeType::WhileStmt; }
 
-    WhileStmt(Token keyword, expr_node_t condition, stmt_node_t body)
+    WhileStmt(Token keyword, ExprNode condition, StmtNode body)
         : keyword{keyword}, condition{std::move(condition)}, body{std::move(body)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }

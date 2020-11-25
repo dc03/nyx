@@ -19,7 +19,7 @@ struct Module {
     std::string module_directory{};
     std::unordered_map<std::string_view, ClassStmt*> classes{};
     std::unordered_map<std::string_view, FunctionStmt*> functions{};
-    std::vector<stmt_node_t> statements{};
+    std::vector<StmtNode> statements{};
     std::vector<std::size_t> imported{}; // Indexes into Parser::parsed_modules (better than pointers)
 
     explicit Module(std::string_view name, std::string_view dir) : name{name}, module_directory{dir} {}

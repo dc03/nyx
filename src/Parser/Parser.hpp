@@ -38,8 +38,8 @@ struct ParsePrecedence {
 };
 
 class Parser {
-    using ExprPrefixParseFn = expr_node_t (Parser::*)(bool can_assign);
-    using ExprInfixParseFn = expr_node_t (Parser::*)(bool can_assign, expr_node_t left);
+    using ExprPrefixParseFn = ExprNode (Parser::*)(bool can_assign);
+    using ExprInfixParseFn = ExprNode (Parser::*)(bool can_assign, ExprNode left);
 
     struct ParseRule {
         ExprPrefixParseFn prefix{};
@@ -65,7 +65,7 @@ class Parser {
     void synchronize();
 
     template <typename Allocated>
-    stmt_node_t single_token_statement(std::string_view token, bool condition, std::string_view error_message);
+    StmtNode single_token_statement(std::string_view token, bool condition, std::string_view error_message);
     void throw_parse_error(const std::string_view message) const;
 
   public:
@@ -85,50 +85,50 @@ class Parser {
     template <typename... Args>
     void consume(std::string_view message, const Token &where, Args... args);
 
-    std::vector<stmt_node_t> program();
+    std::vector<StmtNode> program();
 
     // Expression parsing
-    expr_node_t parse_precedence(ParsePrecedence::of precedence);
-    expr_node_t expression();
+    ExprNode parse_precedence(ParsePrecedence::of precedence);
+    ExprNode expression();
 
-    expr_node_t and_(bool, expr_node_t left);
-    expr_node_t binary(bool, expr_node_t left);
-    expr_node_t call(bool, expr_node_t function);
-    expr_node_t comma(bool, expr_node_t left);
-    expr_node_t dot(bool can_assign, expr_node_t left);
-    expr_node_t grouping(bool);
-    expr_node_t index(bool, expr_node_t object);
-    expr_node_t literal(bool);
-    expr_node_t or_(bool, expr_node_t left);
-    expr_node_t scope_access(bool, expr_node_t left);
-    expr_node_t super(bool);
-    expr_node_t ternary(bool, expr_node_t left);
-    expr_node_t this_expr(bool);
-    expr_node_t unary(bool);
-    expr_node_t variable(bool can_assign);
+    ExprNode and_(bool, ExprNode left);
+    ExprNode binary(bool, ExprNode left);
+    ExprNode call(bool, ExprNode function);
+    ExprNode comma(bool, ExprNode left);
+    ExprNode dot(bool can_assign, ExprNode left);
+    ExprNode grouping(bool);
+    ExprNode index(bool, ExprNode object);
+    ExprNode literal(bool);
+    ExprNode or_(bool, ExprNode left);
+    ExprNode scope_access(bool, ExprNode left);
+    ExprNode super(bool);
+    ExprNode ternary(bool, ExprNode left);
+    ExprNode this_expr(bool);
+    ExprNode unary(bool);
+    ExprNode variable(bool can_assign);
 
     // Type parsing
-    type_node_t type();
-    type_node_t list_type(bool is_const, bool is_ref);
+    TypeNode type();
+    TypeNode list_type(bool is_const, bool is_ref);
 
     // Statement parsing
-    stmt_node_t declaration();
-    stmt_node_t class_declaration();
-    stmt_node_t function_declaration();
-    stmt_node_t import_statement();
-    stmt_node_t type_declaration();
-    stmt_node_t variable_declaration();
+    StmtNode declaration();
+    StmtNode class_declaration();
+    StmtNode function_declaration();
+    StmtNode import_statement();
+    StmtNode type_declaration();
+    StmtNode variable_declaration();
 
-    stmt_node_t statement();
-    stmt_node_t block_statement();
-    stmt_node_t break_statement();
-    stmt_node_t continue_statement();
-    stmt_node_t expression_statement();
-    stmt_node_t for_statement();
-    stmt_node_t if_statement();
-    stmt_node_t return_statement();
-    stmt_node_t switch_statement();
-    stmt_node_t while_statement();
+    StmtNode statement();
+    StmtNode block_statement();
+    StmtNode break_statement();
+    StmtNode continue_statement();
+    StmtNode expression_statement();
+    StmtNode for_statement();
+    StmtNode if_statement();
+    StmtNode return_statement();
+    StmtNode switch_statement();
+    StmtNode while_statement();
 };
 
 #endif

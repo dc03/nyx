@@ -87,7 +87,7 @@ FunctionStmt *TypeResolver::find_function(const std::string &function_name) {
     return nullptr;
 }
 
-void TypeResolver::check(std::vector<stmt_node_t> &program) {
+void TypeResolver::check(std::vector<StmtNode> &program) {
     for (auto &stmt : program) {
         if (stmt != nullptr) {
             try {
@@ -126,7 +126,7 @@ BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Arg
         type_scratch_space.emplace_back(
             allocate_node(T, SharedData{type, is_const, is_ref}, std::forward<Args>(args)...));
     } else {
-        for (type_node_t &existing_type : type_scratch_space) {
+        for (TypeNode &existing_type : type_scratch_space) {
             if (existing_type->data.type == type && existing_type->data.is_const == is_const &&
                 existing_type->data.is_ref == is_ref) {
                 return existing_type.get();
@@ -244,7 +244,7 @@ bool is_inbuilt(VariableExpr *expr) {
         [&expr](const char *const arg) { return expr->name.lexeme == arg; });
 }
 
-ExprVisitorType TypeResolver::check_inbuilt(VariableExpr *function, const Token &oper, std::vector<expr_node_t> &args) {
+ExprVisitorType TypeResolver::check_inbuilt(VariableExpr *function, const Token &oper, std::vector<ExprNode> &args) {
     using namespace std::string_literals;
     if (function->name.lexeme == "print") {
         for (auto &arg : args) {
@@ -624,9 +624,9 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
     // Creation of the implicit constructor
     if (stmt.ctor == nullptr) {
         stmt.ctor = allocate_node(FunctionStmt, stmt.name,
-            type_node_t{allocate_node(UserDefinedType, {Type::CLASS, false, false}, stmt.name)}, {},
-            stmt_node_t{allocate_node(BlockStmt, {})});
-        stmt.methods.emplace_back(stmt_node_t{stmt.ctor}, VisibilityType::PUBLIC);
+            TypeNode{allocate_node(UserDefinedType, {Type::CLASS, false, false}, stmt.name)}, {},
+            StmtNode{allocate_node(BlockStmt, {})});
+        stmt.methods.emplace_back(StmtNode{stmt.ctor}, VisibilityType::PUBLIC);
     }
 
     std::size_t initialized_count = std::count_if(stmt.members.begin(), stmt.members.end(),
@@ -643,12 +643,12 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
             Expr *this_expr = allocate_node(ThisExpr, member->name);
 
             if (member->type == nullptr) {
-                member->type = type_node_t{copy_type(resolve(member->initializer.get()).info)};
+                member->type = TypeNode{copy_type(resolve(member->initializer.get()).info)};
             }
 
-            expr_node_t member_initializer{
-                allocate_node(SetExpr, expr_node_t{this_expr}, member->name, {std::move(member->initializer)})};
-            stmt_node_t member_init_stmt{allocate_node(ExpressionStmt, std::move(member_initializer))};
+            ExprNode member_initializer{
+                allocate_node(SetExpr, ExprNode{this_expr}, member->name, {std::move(member->initializer)})};
+            StmtNode member_init_stmt{allocate_node(ExpressionStmt, std::move(member_initializer))};
 
             ctor_body->stmts.insert(ctor_body->stmts.begin(), std::move(member_init_stmt));
 
@@ -773,7 +773,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         }
     } else if (stmt.initializer != nullptr) {
         ExprVisitorType initializer = resolve(stmt.initializer.get());
-        stmt.type = type_node_t{copy_type(initializer.info)};
+        stmt.type = TypeNode{copy_type(initializer.info)};
 
         if (stmt.is_val) {
             stmt.type->data.is_const = true;
