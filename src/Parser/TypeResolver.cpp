@@ -264,7 +264,16 @@ ExprVisitorType TypeResolver::check_inbuilt(VariableExpr *function, const Token 
                 oper);
         }
 
-        return ExprVisitorType{make_new_type<PrimitiveType>(Type::INT, true, false), function->name};
+        Type return_type = [&function]() {
+            if (function->name.lexeme == "int") {
+                return Type::INT;
+            } else if (function->name.lexeme == "float") {
+                return Type::FLOAT;
+            } else {
+                return Type::STRING;
+            }
+        }();
+        return ExprVisitorType{make_new_type<PrimitiveType>(return_type, true, false), function->name};
     } else {
         unreachable();
     }
