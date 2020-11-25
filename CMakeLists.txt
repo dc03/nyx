@@ -1,7 +1,7 @@
 # See LICENSE at project root for license details
 cmake_minimum_required(VERSION 3.10)
 
-project(eis VERSION 0.0.7)
+project(wis VERSION 0.0.7)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -20,6 +20,6 @@ else(${CMAKE_BUILD_TYPE} MATCHES "Release")
     add_compile_options(-O2 -flto)
 endif()
 
-add_executable(eis src/eis.cpp src/ErrorLogger/ErrorLogger.cpp src/Parser/TypeResolver.cpp src/Parser/VisitorTypes.cpp
+add_executable(eis src/wis.cpp src/ErrorLogger/ErrorLogger.cpp src/Parser/TypeResolver.cpp src/Parser/VisitorTypes.cpp
                    src/Parser/Parser.cpp src/Scanner/Scanner.cpp src/Scanner/Trie.cpp src/AST.cpp src/VM/Chunk.cpp
                    src/CodeGen/CodeGen.cpp src/VM/VM.cpp src/VM/Value.cpp)
