@@ -1,3 +1,4 @@
+/* Copyright (C) 2020  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 #include "CodeGen/CodeGen.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"

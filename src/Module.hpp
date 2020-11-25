@@ -1,5 +1,6 @@
 #pragma once
 
+/* Copyright (C) 2020  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 
 #ifndef MODULE_HPP
