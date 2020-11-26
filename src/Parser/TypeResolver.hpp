@@ -19,6 +19,7 @@ class TypeResolver final : Visitor {
         QualifiedTypeInfo info{};
         std::size_t scope_depth{};
         ClassStmt *class_{nullptr};
+        std::size_t stack_slot{};
     };
 
     Module &current_module;

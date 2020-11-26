@@ -449,13 +449,13 @@ struct UnaryExpr final : public Expr {
 
 struct VariableExpr final : public Expr {
     Token name;
-    std::size_t scope_depth;
+    std::size_t stack_slot;
 
     std::string_view string_tag() override final { return "VariableExpr"; }
 
     NodeType type_tag() override final { return NodeType::VariableExpr; }
 
-    VariableExpr(Token name, std::size_t scope_depth) : name{name}, scope_depth{scope_depth} {}
+    VariableExpr(Token name, std::size_t stack_slot) : name{name}, stack_slot{stack_slot} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

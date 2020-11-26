@@ -303,8 +303,8 @@ if __name__ == '__main__':
         decl_expr('oper{oper}, right{std::move(right)}',
                   'Token oper, ExprNode right')
 
-        decl_expr('name{name}, scope_depth{scope_depth}',
-                  'Token name, std::size_t scope_depth')
+        decl_expr('name{name}, stack_slot{stack_slot}',
+                  'Token name, std::size_t stack_slot')
 
         file.write('// End of expression node definitions\n\n')
         file.write('// Statement node definitions\n\n')

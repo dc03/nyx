@@ -579,7 +579,7 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
 
     for (auto it = values.end() - 1; !values.empty() && it >= values.begin(); it--) {
         if (it->lexeme == expr.name.lexeme) {
-            expr.scope_depth = it->scope_depth;
+            expr.stack_slot = it->stack_slot;
             return {it->info, it->class_, expr.name, true};
         }
     }
@@ -710,7 +710,7 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
             }
         }
 
-        values.push_back({param.first.lexeme, param.second.get(), scope_depth, param_class});
+        values.push_back({param.first.lexeme, param.second.get(), scope_depth, param_class, values.size()});
     }
 
     resolve(stmt.body.get());
@@ -778,7 +778,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
             error("Cannot convert from initializer type to type of variable", stmt.name);
         }
         if (!in_class || in_function) {
-            values.push_back({stmt.name.lexeme, type, scope_depth, initializer.class_});
+            values.push_back({stmt.name.lexeme, type, scope_depth, initializer.class_, values.size()});
         }
     } else if (stmt.initializer != nullptr) {
         ExprVisitorType initializer = resolve(stmt.initializer.get());
@@ -793,7 +793,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         }
 
         if (!in_class || in_function) {
-            values.push_back({stmt.name.lexeme, stmt.type.get(), scope_depth, initializer.class_});
+            values.push_back({stmt.name.lexeme, stmt.type.get(), scope_depth, initializer.class_, values.size()});
         }
     } else if (stmt.type != nullptr) {
         QualifiedTypeInfo type = resolve(stmt.type.get());
@@ -808,7 +808,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         }
 
         if (!in_class || in_function) {
-            values.push_back({stmt.name.lexeme, type, scope_depth, stmt_class});
+            values.push_back({stmt.name.lexeme, type, scope_depth, stmt_class, values.size()});
         }
     } else {
         error("Expected type for variable", stmt.name);
