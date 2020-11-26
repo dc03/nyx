@@ -2,7 +2,8 @@
 /* See LICENSE at project root for license details */
 #include "AST.hpp"
 
-#define unreachable() __builtin_unreachable()
+#include "Common.hpp"
+
 #define allocate_node(T, ...)                                                                                          \
     new T { __VA_ARGS__ }
 

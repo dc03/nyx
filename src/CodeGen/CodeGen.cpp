@@ -2,10 +2,9 @@
 /* See LICENSE at project root for license details */
 #include "CodeGen.hpp"
 
+#include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
 #include "../VM/Chunk.hpp"
-
-#define unreachable() __builtin_unreachable()
 
 std::vector<RuntimeModule> Generator::compiled_modules{};
 

@@ -2,6 +2,8 @@
 /* See LICENSE at project root for license details */
 #include "Trie.hpp"
 
+#include "../Common.hpp"
+
 #include <algorithm>
 #include <cassert>
 #include <cctype>

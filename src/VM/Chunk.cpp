@@ -2,6 +2,7 @@
 /* See LICENSE at project root for license details */
 #include "Chunk.hpp"
 
+#include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
 
 #include <utility>

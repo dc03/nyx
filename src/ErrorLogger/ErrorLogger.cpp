@@ -2,6 +2,8 @@
 /* See LICENSE at project root for license details */
 #include "ErrorLogger.hpp"
 
+#include "../Common.hpp"
+
 #include <iostream>
 
 ErrorLogger logger{};

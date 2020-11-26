@@ -2,6 +2,7 @@
 /* See LICENSE at project root for license details */
 #include "VM.hpp"
 
+#include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
 
 #include <iostream>
@@ -36,7 +37,7 @@ bool is_truthy(Value &value) {
     } else if (value.is_null()) {
         return false;
     } else {
-        __builtin_unreachable();
+        unreachable();
     }
 }
 

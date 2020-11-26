@@ -2,17 +2,17 @@
 /* See LICENSE at project root for license details */
 #include "TypeResolver.hpp"
 
+#include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
 #include "Parser.hpp"
 
 #include <algorithm>
+#include <array>
 #include <stdexcept>
 #include <string_view>
 
 #define allocate_node(T, ...)                                                                                          \
     new T { __VA_ARGS__ }
-
-#define unreachable() __builtin_unreachable()
 
 struct TypeException : public std::runtime_error {
     explicit TypeException(std::string_view string) : std::runtime_error{std::string{string}} {}

@@ -2,6 +2,8 @@
 /* See LICENSE at project root for license details */
 #include "Value.hpp"
 
+#include "../Common.hpp"
+
 Value::Value(Value &&other) noexcept {
     *this = std::move(other);
 }

@@ -1,6 +1,7 @@
 /* Copyright (C) 2020  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 #include "../AST.hpp"
+#include "../Common.hpp"
 
 LiteralValue::LiteralValue(int value) : tag{LiteralValue::INT}, as{value} {}
 LiteralValue::LiteralValue(bool value) : tag{LiteralValue::BOOL}, as{value} {}

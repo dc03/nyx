@@ -2,11 +2,14 @@
 /* See LICENSE at project root for license details */
 #include "Parser.hpp"
 
+#include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
 #include "../Module.hpp"
 #include "../Scanner/Scanner.hpp"
 #include "TypeResolver.hpp"
 
+#include <algorithm>
+#include <array>
 #include <fstream>
 #include <functional>
 #include <stdexcept>
