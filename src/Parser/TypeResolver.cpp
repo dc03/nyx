@@ -489,7 +489,7 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
 
     if (object.info->data.is_const) {
         error("Cannot assign to a const object", expr.name);
-    } else if (not in_ctor && attribute_type.info->data.is_const) {
+    } else if (!in_ctor && attribute_type.info->data.is_const) {
         error("Cannot assign to const attribute", expr.name);
     }
 
@@ -520,6 +520,10 @@ ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(ThisExpr &expr) {
+    if (!in_ctor && !in_dtor) {
+        error("Cannot use 'this' keyword outside a class's constructor or destructor", expr.keyword);
+        throw TypeException{"Cannot use 'this' keyword outside a class's constructor or destructor"};
+    }
     return {
         make_new_type<UserDefinedType>(Type::CLASS, false, false, current_class->name), current_class, expr.keyword};
 }
@@ -608,6 +612,7 @@ StmtVisitorType TypeResolver::visit(BreakStmt &) {}
 StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
     scoped_boolean_manager class_manager{in_class};
 
+    ////////////////////////////////////////////////////////////////////////////
     struct scoped_class_manager {
         ClassStmt *&managed_class;
         ClassStmt *previous_value{nullptr};
@@ -617,6 +622,7 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
         }
         ~scoped_class_manager() { managed_class = previous_value; }
     } pointer_manager{current_class, &stmt};
+    ////////////////////////////////////////////////////////////////////////////
 
     // Creation of the implicit constructor
     if (stmt.ctor == nullptr) {
@@ -637,6 +643,8 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
         if (member->initializer != nullptr) {
             using namespace std::string_literals;
             // Transform the declaration of the member into an implicit assignment in the constructor
+            // i.e `public var x = 0` becomes `public var x: int` and `this.x = 0`
+            // TODO: What about references?
             Expr *this_expr = allocate_node(ThisExpr, member->name);
 
             if (member->type == nullptr) {
@@ -669,8 +677,10 @@ StmtVisitorType TypeResolver::visit(ExpressionStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
+    scoped_scope_manager manager{*this};
     scoped_boolean_manager function_manager{in_function};
 
+    ////////////////////////////////////////////////////////////////////////////
     struct scoped_function_manager {
         FunctionStmt *&managed_class;
         FunctionStmt *previous_value{nullptr};
@@ -681,11 +691,13 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
         ~scoped_function_manager() { managed_class = previous_value; }
     } pointer_manager{current_function, &stmt};
 
-    scoped_scope_manager manager{*this};
-
     bool throwaway{};
     bool is_in_ctor = current_class != nullptr && stmt.name == current_class->name;
-    scoped_boolean_manager ctor_manager{is_in_ctor ? in_ctor : throwaway};
+    bool is_in_dtor = current_class != nullptr && stmt.name.lexeme[0] == '~' &&
+                      (stmt.name.lexeme.substr(1) == current_class->name.lexeme);
+
+    scoped_boolean_manager special_func_manager{is_in_ctor ? in_ctor : (is_in_dtor ? in_dtor : throwaway)};
+    ////////////////////////////////////////////////////////////////////////////
 
     for (const auto &param : stmt.params) {
         ClassStmt *param_class = nullptr;

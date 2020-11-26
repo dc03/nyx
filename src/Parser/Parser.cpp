@@ -397,7 +397,7 @@ ExprNode Parser::super(bool) {
 
 ExprNode Parser::this_expr(bool) {
     if (!(in_class && in_function)) {
-        throw_parse_error("Cannot use this keyword outside a class");
+        throw_parse_error("Cannot use 'this' keyword outside a class's constructor or destructor");
     }
     Token keyword = previous();
     return ExprNode{allocate_node(ThisExpr, std::move(keyword))};

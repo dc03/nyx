@@ -28,6 +28,7 @@ class TypeResolver final : Visitor {
     std::vector<Value> values{};
 
     bool in_ctor{false};
+    bool in_dtor{false};
     bool in_class{false};
     bool in_function{false};
     bool in_loop{false};

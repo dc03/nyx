@@ -1,9 +1,14 @@
 //import "A.wis"
 class X {
     public var x: const int = 5
-    public fn X() -> const X {}
+    public fn X() -> const X {
+        this.x = 6
+    }
     public fn foo(x: const ref X, y: int) -> null {
             print(string(x.x + y))
+    }
+    public fn ~X() -> null {
+        print(this.x)
     }
 }
 /*
