@@ -318,10 +318,7 @@ if __name__ == '__main__':
         file.write('enum class VisibilityType {\n')
         tab(file, 1).write('PRIVATE,\n')
         tab(file, 1).write('PROTECTED,\n')
-        tab(file, 1).write('PUBLIC,\n')
-        tab(file, 1).write('PRIVATE_DTOR,\n')
-        tab(file, 1).write('PROTECTED_DTOR,\n')
-        tab(file, 1).write('PUBLIC_DTOR\n')
+        tab(file, 1).write('PUBLIC\n')
         file.write('};\n\n')
 
         decl_stmt('name{name}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, ' +

@@ -488,7 +488,7 @@ struct BreakStmt final : public Stmt {
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
-enum class VisibilityType { PRIVATE, PROTECTED, PUBLIC, PRIVATE_DTOR, PROTECTED_DTOR, PUBLIC_DTOR };
+enum class VisibilityType { PRIVATE, PROTECTED, PUBLIC };
 
 struct ClassStmt final : public Stmt {
     Token name;

@@ -538,9 +538,7 @@ StmtNode Parser::class_declaration() {
             try {
                 std::unique_ptr<VarStmt> member{dynamic_cast<VarStmt *>(variable_declaration().release())};
                 members.emplace_back(std::move(member), visibility);
-            } catch (...) {
-                synchronize();
-            }
+            } catch (...) { synchronize(); }
         } else if (match(TokenType::FN)) {
             try {
                 bool found_dtor = match(TokenType::BIT_NOT);
@@ -557,13 +555,6 @@ StmtNode Parser::class_declaration() {
                         using namespace std::string_literals;
                         dtor = method.get();
                         dtor->name.lexeme = "~"s + dtor->name.lexeme; // Turning Foo into ~Foo
-                        switch (visibility) {
-                            case VisibilityType::PUBLIC: visibility = VisibilityType::PUBLIC_DTOR; break;
-                            case VisibilityType::PRIVATE: visibility = VisibilityType::PRIVATE_DTOR; break;
-                            case VisibilityType::PROTECTED: visibility = VisibilityType::PROTECTED_DTOR; break;
-
-                            default: break;
-                        }
                     } else if (ctor == nullptr) {
                         ctor = method.get();
                     } else {
@@ -574,10 +565,7 @@ StmtNode Parser::class_declaration() {
                     }
                 }
                 methods.emplace_back(std::move(method), visibility);
-            }
-            catch(...) {
-                synchronize();
-            }
+            } catch (...) { synchronize(); }
         } else {
             throw_parse_error("Expected either member or method declaration in class");
         }
