@@ -293,10 +293,10 @@ ExprNode Parser::binary(bool, ExprNode left) {
 
 ExprNode Parser::call(bool, ExprNode function) {
     Token paren = previous();
-    std::vector<ExprNode> args{};
+    std::vector<std::pair<ExprNode, NumericConversionType>> args{};
     if (peek().type != TokenType::RIGHT_PAREN) {
         do {
-            args.emplace_back(parse_precedence(ParsePrecedence::ASSIGNMENT));
+            args.emplace_back(parse_precedence(ParsePrecedence::ASSIGNMENT), NumericConversionType::NONE);
         } while (match(TokenType::COMMA));
     }
     consume("Expected ')' after function call", TokenType::RIGHT_PAREN);
@@ -319,7 +319,8 @@ ExprNode Parser::dot(bool can_assign, ExprNode left) {
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
         ExprNode value = expression();
-        return ExprNode{allocate_node(SetExpr, std::move(left), std::move(name), std::move(value))};
+        return ExprNode{
+            allocate_node(SetExpr, std::move(left), std::move(name), std::move(value), NumericConversionType::NONE)};
     } else {
         return ExprNode{allocate_node(GetExpr, std::move(left), std::move(name))};
     }
@@ -417,7 +418,7 @@ ExprNode Parser::variable(bool can_assign) {
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
         ExprNode value = expression();
-        return ExprNode{allocate_node(AssignExpr, std::move(name), std::move(value))};
+        return ExprNode{allocate_node(AssignExpr, std::move(name), std::move(value), NumericConversionType::NONE)};
     } else if (peek().type == TokenType::DOUBLE_COLON) {
         return ExprNode{allocate_node(ScopeNameExpr, std::move(name))};
     } else {
@@ -717,8 +718,8 @@ StmtNode Parser::variable_declaration() {
     ExprNode initializer = match(TokenType::EQUAL) ? expression() : nullptr;
     consume("Expected ';' or newline after variable initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
 
-    auto *variable = allocate_node(
-        VarStmt, (keyword == TokenType::VAL), std::move(name), std::move(var_type), std::move(initializer));
+    auto *variable = allocate_node(VarStmt, (keyword == TokenType::VAL), std::move(name), std::move(var_type),
+        std::move(initializer), NumericConversionType::NONE);
     return StmtNode{variable};
 }
 

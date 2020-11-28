@@ -145,6 +145,10 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
                 error("Cannot assign to a const variable", expr.target);
             } else if (!convertible_to(it->info, value.info, value.is_lvalue, expr.target)) {
                 error("Cannot convert type of value to type of target", expr.target);
+            } else if (value.info->data.type == Type::FLOAT && it->info->data.type == Type::INT) {
+                expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
+            } else if (value.info->data.type == Type::INT && it->info->data.type == Type::FLOAT) {
+                expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
             }
             return {it->info, expr.target};
         }
@@ -244,11 +248,12 @@ bool is_inbuilt(VariableExpr *expr) {
         [&expr](const char *const arg) { return expr->name.lexeme == arg; });
 }
 
-ExprVisitorType TypeResolver::check_inbuilt(VariableExpr *function, const Token &oper, std::vector<ExprNode> &args) {
+ExprVisitorType TypeResolver::check_inbuilt(
+    VariableExpr *function, const Token &oper, std::vector<std::pair<ExprNode, NumericConversionType>> &args) {
     using namespace std::string_literals;
     if (function->name.lexeme == "print") {
         for (auto &arg : args) {
-            ExprVisitorType type = resolve(arg.get());
+            ExprVisitorType type = resolve(arg.first.get());
             if (type.info->data.type == Type::CLASS) {
                 error("Cannot print object of user defined type", type.lexeme);
             }
@@ -264,7 +269,7 @@ ExprVisitorType TypeResolver::check_inbuilt(VariableExpr *function, const Token 
             throw TypeException{"No arguments"};
         }
 
-        ExprVisitorType arg_type = resolve(args[0].get());
+        ExprVisitorType arg_type = resolve(args[0].first.get());
         if (!one_of(arg_type.info->data.type, Type::INT, Type::FLOAT, Type::STRING, Type::BOOL)) {
             error("Expected one of integral, floating, string or boolean arguments to be passed to builtin "
                   "function '"s +
@@ -308,7 +313,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
 
     if (expr.function->type_tag() == NodeType::GetExpr) {
         auto *get = dynamic_cast<GetExpr *>(expr.function.get());
-        expr.args.insert(expr.args.begin(), std::move(get->object));
+        expr.args.insert(expr.args.begin(), {std::move(get->object), NumericConversionType::NONE});
     }
 
     if (called->params.size() != expr.args.size()) {
@@ -317,9 +322,13 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     }
 
     for (std::size_t i{0}; i < expr.args.size(); i++) {
-        ExprVisitorType argument = resolve(expr.args[i].get());
+        ExprVisitorType argument = resolve(expr.args[i].first.get());
         if (!convertible_to(called->params[i].second.get(), argument.info, argument.is_lvalue, argument.lexeme)) {
             error("Type of argument is not convertible to type of parameter", argument.lexeme);
+        } else if (argument.info->data.type == Type::FLOAT && called->params[i].second->data.type == Type::INT) {
+            expr.args[i].second = NumericConversionType::FLOAT_TO_INT;
+        } else if (argument.info->data.type == Type::INT && called->params[i].second->data.type == Type::FLOAT) {
+            expr.args[i].second = NumericConversionType::INT_TO_FLOAT;
         }
     }
 
@@ -496,6 +505,10 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
     if (!convertible_to(attribute_type.info, value_type.info, value_type.is_lvalue, expr.name)) {
         error("Cannot convert value of assigned expresion to type of target", expr.name);
         throw TypeException{"Cannot convert value of assigned expression to type of target"};
+    } else if (value_type.info->data.type == Type::FLOAT && attribute_type.info->data.type == Type::INT) {
+        expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
+    } else if (value_type.info->data.type == Type::INT && attribute_type.info->data.type == Type::FLOAT) {
+        expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
     }
 
     return {attribute_type.info, expr.name};
@@ -651,8 +664,8 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
                 member->type = TypeNode{copy_type(resolve(member->initializer.get()).info)};
             }
 
-            ExprNode member_initializer{
-                allocate_node(SetExpr, ExprNode{this_expr}, member->name, {std::move(member->initializer)})};
+            ExprNode member_initializer{allocate_node(SetExpr, ExprNode{this_expr}, member->name,
+                {std::move(member->initializer)}, NumericConversionType::NONE)};
             StmtNode member_init_stmt{allocate_node(ExpressionStmt, std::move(member_initializer))};
 
             ctor_body->stmts.insert(ctor_body->stmts.begin(), std::move(member_init_stmt));
@@ -776,7 +789,12 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         ExprVisitorType initializer = resolve(stmt.initializer.get());
         if (!convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name)) {
             error("Cannot convert from initializer type to type of variable", stmt.name);
+        } else if (initializer.info->data.type == Type::FLOAT && type->data.type == Type::INT) {
+            stmt.conversion_type = NumericConversionType::FLOAT_TO_INT;
+        } else if (initializer.info->data.type == Type::INT && type->data.type == Type::FLOAT) {
+            stmt.conversion_type = NumericConversionType::INT_TO_FLOAT;
         }
+
         if (!in_class || in_function) {
             values.push_back({stmt.name.lexeme, type, scope_depth, initializer.class_, values.size()});
         }
