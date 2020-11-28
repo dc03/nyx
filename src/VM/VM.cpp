@@ -57,11 +57,17 @@ void VM::run(RuntimeModule &main_module) {
 // clang-format off
 #define binary_arithmetic_instruction(oper)                                                                            \
     {                                                                                                                  \
-        Value result{(top_from(2).is_int() ? top_from(2).to_int() : top_from(2).to_double())                           \
-                     oper                                                                                              \
-                     (top_from(1).is_int() ? top_from(1).to_int() : top_from(1).to_double())};                         \
-        std::cout << (result.is_int() ? result.to_int() : result.to_double()) << '\n';                                 \
-        pop_twice_push(result);                                                                                        \
+        if (top_from(2).is_int() && top_from(1).is_int()) {                                                            \
+            Value result{top_from(2).to_int() oper top_from(1).to_int()};                                              \
+            std::cout << (result.is_int() ? result.to_int() : result.to_double()) << '\n';                             \
+            pop_twice_push(result);                                                                                    \
+        } else {                                                                                                       \
+            Value result{(top_from(2).is_int() ? top_from(2).to_int() : top_from(2).to_double())                       \
+                         oper                                                                                          \
+                         (top_from(1).is_int() ? top_from(1).to_int() : top_from(1).to_double())};                     \
+            std::cout << (result.is_int() ? result.to_int() : result.to_double()) << '\n';                             \
+            pop_twice_push(result);                                                                                    \
+        }                                                                                                              \
     }                                                                                                                  \
     break
 
