@@ -255,14 +255,20 @@ if __name__ == '__main__':
 
         file.write('// Expression node definitions\n\n')
 
-        decl_expr('target{target}, value{std::move(value)}',
-                  'Token target, ExprNode value')
+        file.write('enum class NumericConversionType {\n')
+        tab(file, 1).write('FLOAT_TO_INT,\n')
+        tab(file, 1).write('INT_TO_FLOAT,\n')
+        tab(file, 1).write('NONE\n')
+        file.write('};\n\n')
+
+        decl_expr('target{target}, value{std::move(value)}, conversion_type{conversion_type}',
+                  'Token target, ExprNode value, NumericConversionType conversion_type')
 
         decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}, resolved_type{resolved_type}',
                   'ExprNode left, Token oper, ExprNode right, ExprVisitorType resolved_type')
 
         decl_expr('function{std::move(function)}, paren{paren}, args{std::move(args)}',
-                  'ExprNode function, Token paren, std::vector<ExprNode> args')
+                  'ExprNode function, Token paren, std::vector<std::pair<ExprNode,NumericConversionType>> args')
 
         decl_expr('exprs{std::move(exprs)}',
                   'std::vector<ExprNode> exprs')
@@ -288,8 +294,8 @@ if __name__ == '__main__':
         decl_expr('name{name}',
                   'Token name')
 
-        decl_expr('object{std::move(object)}, name{name}, value{std::move(value)}',
-                  'ExprNode object, Token name, ExprNode value')
+        decl_expr('object{std::move(object)}, name{name}, value{std::move(value)}, conversion_type{conversion_type}',
+                  'ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type')
 
         decl_expr('keyword{keyword}, name{name}',
                   'Token keyword, Token name')
@@ -351,8 +357,9 @@ if __name__ == '__main__':
         decl_stmt('name{name}, type{std::move(type)}',
                   'Token name, TypeNode type')
 
-        decl_stmt('is_val{is_val}, name{name}, type{std::move(type)}, initializer{std::move(initializer)}',
-                  'bool is_val, Token name, TypeNode type, ExprNode initializer')
+        decl_stmt('is_val{is_val}, name{name}, type{std::move(type)}, initializer{std::move(initializer)},' +
+                  'conversion_type{conversion_type}',
+                  'bool is_val, Token name, TypeNode type, ExprNode initializer, NumericConversionType conversion_type')
 
         decl_stmt('keyword{keyword}, condition{std::move(condition)}, body{std::move(body)}',
                   'Token keyword, ExprNode condition, StmtNode body')
