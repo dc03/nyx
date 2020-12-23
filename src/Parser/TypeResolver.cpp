@@ -157,6 +157,8 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
             } else if (value.info->data.type == Type::INT && it->info->data.type == Type::FLOAT) {
                 expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
             }
+
+            expr.requires_copy = true; // An assignment will always create a copy.
             return {it->info, expr.target};
         }
     }
@@ -339,6 +341,9 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         } else if (argument.info->data.type == Type::INT && called->params[i].second->data.type == Type::FLOAT) {
             std::get<1>(expr.args[i]) = NumericConversionType::INT_TO_FLOAT;
         }
+
+        std::get<2>(expr.args[i]) = !called->params[i].second->data.is_ref;
+        // Arguments are copied when they do not bind to references
     }
 
     return {called->return_type.get(), called, callee.class_, expr.paren};
@@ -521,6 +526,7 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
         expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
     }
 
+    expr.requires_copy = true; // An assignment will always create a copy
     return {attribute_type.info, expr.name};
 }
 
@@ -803,7 +809,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         } else if (initializer.info->data.type == Type::INT && type->data.type == Type::FLOAT) {
             stmt.conversion_type = NumericConversionType::INT_TO_FLOAT;
         }
-
+        stmt.requires_copy = !type->data.is_ref; // Copy semantics for object creation
         if (!in_class || in_function) {
             values.push_back({stmt.name.lexeme, type, scope_depth, initializer.class_, values.size()});
         }
@@ -818,7 +824,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
             // automatically non-const
             stmt.type->data.is_const = false;
         }
-
+        stmt.requires_copy = !stmt.type->data.is_ref; // Copy semantics
         if (!in_class || in_function) {
             values.push_back({stmt.name.lexeme, stmt.type.get(), scope_depth, initializer.class_, values.size()});
         }
