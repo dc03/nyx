@@ -77,6 +77,19 @@ void show_conversion_note(QualifiedTypeInfo from, QualifiedTypeInfo to) {
     note(note_message);
 }
 
+bool is_builtin_type(Type type) {
+    switch (type) {
+        case Type::BOOL:
+        case Type::FLOAT:
+        case Type::INT:
+        case Type::STRING:
+        case Type::NULL_:
+            return true;
+        default:
+            return false;
+    }
+}
+
 ClassStmt *TypeResolver::find_class(const std::string &class_name) {
     if (auto class_ = classes.find(class_name); class_ != classes.end()) {
         return class_->second;
@@ -158,7 +171,9 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
                 expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
             }
 
-            expr.requires_copy = true; // An assignment will always create a copy.
+            expr.requires_copy = !is_builtin_type(value.info->data.type);
+            // Assignment leads to copy when the type is not an inbuilt one as those are implicitly copied when the
+            // values are pushed onto the stack
             expr.stack_slot = it->stack_slot;
             return {it->info, expr.target};
         }
@@ -527,7 +542,7 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
         expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
     }
 
-    expr.requires_copy = true; // An assignment will always create a copy
+    expr.requires_copy = !is_builtin_type(value_type.info->data.type); // Similar case to AssignExpr
     return {attribute_type.info, expr.name};
 }
 
@@ -810,7 +825,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         } else if (initializer.info->data.type == Type::INT && type->data.type == Type::FLOAT) {
             stmt.conversion_type = NumericConversionType::INT_TO_FLOAT;
         }
-        stmt.requires_copy = !type->data.is_ref; // Copy semantics for object creation
+        stmt.requires_copy = !type->data.is_ref && !is_builtin_type(type->data.type); // Copy semantics for object creation
         if (!in_class || in_function) {
             values.push_back({stmt.name.lexeme, type, scope_depth, initializer.class_, values.size()});
         }
@@ -825,7 +840,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
             // automatically non-const
             stmt.type->data.is_const = false;
         }
-        stmt.requires_copy = !stmt.type->data.is_ref; // Copy semantics
+        stmt.requires_copy = !stmt.type->data.is_ref && !is_builtin_type(stmt.type->data.type); // Copy semantics
         if (!in_class || in_function) {
             values.push_back({stmt.name.lexeme, stmt.type.get(), scope_depth, initializer.class_, values.size()});
         }
