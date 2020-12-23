@@ -83,10 +83,8 @@ bool is_builtin_type(Type type) {
         case Type::FLOAT:
         case Type::INT:
         case Type::STRING:
-        case Type::NULL_:
-            return true;
-        default:
-            return false;
+        case Type::NULL_: return true;
+        default: return false;
     }
 }
 
@@ -267,7 +265,7 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
     }
 }
 
-bool is_inbuilt(VariableExpr *expr) {
+bool is_builtin_function(VariableExpr *expr) {
     constexpr std::array inbuilt_functions{"print", "int", "string", "float"};
     return std::any_of(inbuilt_functions.begin(), inbuilt_functions.end(),
         [&expr](const char *const arg) { return expr->name.lexeme == arg; });
@@ -320,7 +318,7 @@ ExprVisitorType TypeResolver::check_inbuilt(
 ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     if (expr.function->type_tag() == NodeType::VariableExpr) {
         auto *function = dynamic_cast<VariableExpr *>(expr.function.get());
-        if (is_inbuilt(function)) {
+        if (is_builtin_function(function)) {
             return check_inbuilt(function, expr.paren, expr.args);
         }
     }
@@ -618,7 +616,7 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
-    if (is_inbuilt(&expr)) {
+    if (is_builtin_function(&expr)) {
         error("Cannot use in-built function as an expression", expr.name);
         throw TypeException{"Cannot use in-built function as an expression"};
     }
@@ -825,7 +823,8 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         } else if (initializer.info->data.type == Type::INT && type->data.type == Type::FLOAT) {
             stmt.conversion_type = NumericConversionType::INT_TO_FLOAT;
         }
-        stmt.requires_copy = !type->data.is_ref && !is_builtin_type(type->data.type); // Copy semantics for object creation
+        stmt.requires_copy =
+            !type->data.is_ref && !is_builtin_type(type->data.type); // Copy semantics for object creation
         if (!in_class || in_function) {
             values.push_back({stmt.name.lexeme, type, scope_depth, initializer.class_, values.size()});
         }
