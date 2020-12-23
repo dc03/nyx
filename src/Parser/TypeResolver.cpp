@@ -159,6 +159,7 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
             }
 
             expr.requires_copy = true; // An assignment will always create a copy.
+            expr.stack_slot = it->stack_slot;
             return {it->info, expr.target};
         }
     }
