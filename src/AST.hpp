@@ -13,7 +13,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <utility>
+#include <tuple>
 #include <vector>
 
 struct Expr;
@@ -233,13 +233,14 @@ struct AssignExpr final : public Expr {
     Token target;
     ExprNode value;
     NumericConversionType conversion_type;
+    bool requires_copy;
 
     std::string_view string_tag() override final { return "AssignExpr"; }
 
     NodeType type_tag() override final { return NodeType::AssignExpr; }
 
-    AssignExpr(Token target, ExprNode value, NumericConversionType conversion_type)
-        : target{target}, value{std::move(value)}, conversion_type{conversion_type} {}
+    AssignExpr(Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy)
+        : target{target}, value{std::move(value)}, conversion_type{conversion_type}, requires_copy{requires_copy} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -263,13 +264,13 @@ struct BinaryExpr final : public Expr {
 struct CallExpr final : public Expr {
     ExprNode function;
     Token paren;
-    std::vector<std::pair<ExprNode, NumericConversionType>> args;
+    std::vector<std::tuple<ExprNode, NumericConversionType, bool>> args;
 
     std::string_view string_tag() override final { return "CallExpr"; }
 
     NodeType type_tag() override final { return NodeType::CallExpr; }
 
-    CallExpr(ExprNode function, Token paren, std::vector<std::pair<ExprNode, NumericConversionType>> args)
+    CallExpr(ExprNode function, Token paren, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> args)
         : function{std::move(function)}, paren{paren}, args{std::move(args)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
@@ -387,13 +388,18 @@ struct SetExpr final : public Expr {
     Token name;
     ExprNode value;
     NumericConversionType conversion_type;
+    bool requires_copy;
 
     std::string_view string_tag() override final { return "SetExpr"; }
 
     NodeType type_tag() override final { return NodeType::SetExpr; }
 
-    SetExpr(ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type)
-        : object{std::move(object)}, name{name}, value{std::move(value)}, conversion_type{conversion_type} {}
+    SetExpr(ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type, bool requires_copy)
+        : object{std::move(object)},
+          name{name},
+          value{std::move(value)},
+          conversion_type{conversion_type},
+          requires_copy{requires_copy} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -616,17 +622,20 @@ struct VarStmt final : public Stmt {
     TypeNode type;
     ExprNode initializer;
     NumericConversionType conversion_type;
+    bool requires_copy;
 
     std::string_view string_tag() override final { return "VarStmt"; }
 
     NodeType type_tag() override final { return NodeType::VarStmt; }
 
-    VarStmt(bool is_val, Token name, TypeNode type, ExprNode initializer, NumericConversionType conversion_type)
+    VarStmt(bool is_val, Token name, TypeNode type, ExprNode initializer, NumericConversionType conversion_type,
+        bool requires_copy)
         : is_val{is_val},
           name{name},
           type{std::move(type)},
           initializer{std::move(initializer)},
-          conversion_type{conversion_type} {}
+          conversion_type{conversion_type},
+          requires_copy{requires_copy} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

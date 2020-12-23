@@ -179,7 +179,7 @@ if __name__ == '__main__':
         file.write('#include <optional>\n')
         file.write('#include <string>\n')
         file.write('#include <string_view>\n')
-        file.write('#include <utility>\n')
+        file.write('#include <tuple>\n')
         file.write('#include <vector>\n\n')
         forward_declare(file, ['Expr', 'Stmt', 'BaseType'])
         file.write('\n')
@@ -261,14 +261,15 @@ if __name__ == '__main__':
         tab(file, 1).write('NONE\n')
         file.write('};\n\n')
 
-        decl_expr('target{target}, value{std::move(value)}, conversion_type{conversion_type}',
-                  'Token target, ExprNode value, NumericConversionType conversion_type')
+        decl_expr('target{target}, value{std::move(value)}, conversion_type{conversion_type}, requires_copy{' +
+                  'requires_copy}',
+                  'Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy')
 
         decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}, resolved_type{resolved_type}',
                   'ExprNode left, Token oper, ExprNode right, ExprVisitorType resolved_type')
 
         decl_expr('function{std::move(function)}, paren{paren}, args{std::move(args)}',
-                  'ExprNode function, Token paren, std::vector<std::pair<ExprNode,NumericConversionType>> args')
+                  'ExprNode function, Token paren, std::vector<std::tuple<ExprNode,NumericConversionType,bool>> args')
 
         decl_expr('exprs{std::move(exprs)}',
                   'std::vector<ExprNode> exprs')
@@ -294,8 +295,10 @@ if __name__ == '__main__':
         decl_expr('name{name}',
                   'Token name')
 
-        decl_expr('object{std::move(object)}, name{name}, value{std::move(value)}, conversion_type{conversion_type}',
-                  'ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type')
+        decl_expr('object{std::move(object)}, name{name}, value{std::move(value)}, conversion_type{conversion_type}, ' +
+                  'requires_copy{requires_copy}',
+                  'ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type, bool ' +
+                  'requires_copy')
 
         decl_expr('keyword{keyword}, name{name}',
                   'Token keyword, Token name')
@@ -358,8 +361,9 @@ if __name__ == '__main__':
                   'Token name, TypeNode type')
 
         decl_stmt('is_val{is_val}, name{name}, type{std::move(type)}, initializer{std::move(initializer)},' +
-                  'conversion_type{conversion_type}',
-                  'bool is_val, Token name, TypeNode type, ExprNode initializer, NumericConversionType conversion_type')
+                  'conversion_type{conversion_type}, requires_copy{requires_copy}',
+                  'bool is_val, Token name, TypeNode type, ExprNode initializer, NumericConversionType conversion_type'
+                  + ', bool requires_copy')
 
         decl_stmt('keyword{keyword}, condition{std::move(condition)}, body{std::move(body)}',
                   'Token keyword, ExprNode condition, StmtNode body')
