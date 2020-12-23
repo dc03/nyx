@@ -10,6 +10,7 @@
 #include "../Module.hpp"
 
 #include <string_view>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -39,10 +40,10 @@ class TypeResolver final : Visitor {
     std::size_t scope_depth{0};
 
     template <typename T, typename... Args>
-    BaseType *make_new_type(Type type, bool is_const, bool is_ref, Args &&... args);
+    BaseType *make_new_type(Type type, bool is_const, bool is_ref, Args &&...args);
     ExprTypeInfo resolve_class_access(ExprVisitorType &object, const Token &name);
-    ExprVisitorType check_inbuilt(
-        VariableExpr *function, const Token &oper, std::vector<std::pair<ExprNode, NumericConversionType>> &args);
+    ExprVisitorType check_inbuilt(VariableExpr *function, const Token &oper,
+        std::vector<std::tuple<ExprNode, NumericConversionType, bool>> &args);
     ClassStmt *find_class(const std::string &class_name);
     FunctionStmt *find_function(const std::string &function_name);
 

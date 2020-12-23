@@ -73,8 +73,7 @@ bool convertible_to(QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lval
 
 void show_conversion_note(QualifiedTypeInfo from, QualifiedTypeInfo to) {
     using namespace std::string_literals;
-    std::string note_message = "Trying to convert from '"s + stringify(from) +
-                               "' to '" + stringify(to) + "'";
+    std::string note_message = "Trying to convert from '"s + stringify(from) + "' to '" + stringify(to) + "'";
     note(note_message);
 }
 
@@ -128,7 +127,7 @@ BaseTypeVisitorType TypeResolver::resolve(BaseType *type) {
 }
 
 template <typename T, typename... Args>
-BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Args &&... args) {
+BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Args &&...args) {
     if constexpr (sizeof...(args) > 0) {
         type_scratch_space.emplace_back(
             allocate_node(T, SharedData{type, is_const, is_ref}, std::forward<Args>(args)...));
@@ -257,11 +256,11 @@ bool is_inbuilt(VariableExpr *expr) {
 }
 
 ExprVisitorType TypeResolver::check_inbuilt(
-    VariableExpr *function, const Token &oper, std::vector<std::pair<ExprNode, NumericConversionType>> &args) {
+    VariableExpr *function, const Token &oper, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> &args) {
     using namespace std::string_literals;
     if (function->name.lexeme == "print") {
         for (auto &arg : args) {
-            ExprVisitorType type = resolve(arg.first.get());
+            ExprVisitorType type = resolve(std::get<0>(arg).get());
             if (type.info->data.type == Type::CLASS) {
                 error("Cannot print object of user defined type", type.lexeme);
             }
@@ -277,7 +276,7 @@ ExprVisitorType TypeResolver::check_inbuilt(
             throw TypeException{"No arguments"};
         }
 
-        ExprVisitorType arg_type = resolve(args[0].first.get());
+        ExprVisitorType arg_type = resolve(std::get<0>(args[0]).get());
         if (!one_of(arg_type.info->data.type, Type::INT, Type::FLOAT, Type::STRING, Type::BOOL)) {
             error("Expected one of integral, floating, string or boolean arguments to be passed to builtin "
                   "function '"s +
@@ -321,7 +320,8 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
 
     if (expr.function->type_tag() == NodeType::GetExpr) {
         auto *get = dynamic_cast<GetExpr *>(expr.function.get());
-        expr.args.insert(expr.args.begin(), {std::move(get->object), NumericConversionType::NONE});
+        expr.args.insert(expr.args.begin(),
+            {std::move(get->object), NumericConversionType::NONE, !called->params[0].second->data.is_ref});
     }
 
     if (called->params.size() != expr.args.size()) {
@@ -330,14 +330,14 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     }
 
     for (std::size_t i{0}; i < expr.args.size(); i++) {
-        ExprVisitorType argument = resolve(expr.args[i].first.get());
+        ExprVisitorType argument = resolve(std::get<0>(expr.args[i]).get());
         if (!convertible_to(called->params[i].second.get(), argument.info, argument.is_lvalue, argument.lexeme)) {
             error("Type of argument is not convertible to type of parameter", argument.lexeme);
             show_conversion_note(argument.info, called->params[i].second.get());
         } else if (argument.info->data.type == Type::FLOAT && called->params[i].second->data.type == Type::INT) {
-            expr.args[i].second = NumericConversionType::FLOAT_TO_INT;
+            std::get<1>(expr.args[i]) = NumericConversionType::FLOAT_TO_INT;
         } else if (argument.info->data.type == Type::INT && called->params[i].second->data.type == Type::FLOAT) {
-            expr.args[i].second = NumericConversionType::INT_TO_FLOAT;
+            std::get<1>(expr.args[i]) = NumericConversionType::INT_TO_FLOAT;
         }
     }
 
@@ -676,7 +676,7 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
             }
 
             ExprNode member_initializer{allocate_node(SetExpr, ExprNode{this_expr}, member->name,
-                {std::move(member->initializer)}, NumericConversionType::NONE)};
+                {std::move(member->initializer)}, NumericConversionType::NONE, false)};
             StmtNode member_init_stmt{allocate_node(ExpressionStmt, std::move(member_initializer))};
 
             ctor_body->stmts.insert(ctor_body->stmts.begin(), std::move(member_init_stmt));
