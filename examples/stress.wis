@@ -182,10 +182,16 @@ class X {
         print(string(x.x + y))
     }
 }
-*/*/*/
+
 import "imported.wis"
 var y = 6
 val x = imported::X::X()
 imported::X::foo(x, 5)
 x.foo(y)
 y = 5
+*/*/*/
+
+var x: ref int = foo()
+fn foo() -> int {
+    return "string"
+}

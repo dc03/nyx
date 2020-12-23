@@ -71,6 +71,13 @@ bool convertible_to(QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lval
     }
 }
 
+void show_conversion_note(QualifiedTypeInfo from, QualifiedTypeInfo to) {
+    using namespace std::string_literals;
+    std::string note_message = "Trying to convert from '"s + stringify(from) +
+                               "' to '" + stringify(to) + "'";
+    note(note_message);
+}
+
 ClassStmt *TypeResolver::find_class(const std::string &class_name) {
     if (auto class_ = classes.find(class_name); class_ != classes.end()) {
         return class_->second;
@@ -145,6 +152,7 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
                 error("Cannot assign to a const variable", expr.target);
             } else if (!convertible_to(it->info, value.info, value.is_lvalue, expr.target)) {
                 error("Cannot convert type of value to type of target", expr.target);
+                show_conversion_note(value.info, it->info);
             } else if (value.info->data.type == Type::FLOAT && it->info->data.type == Type::INT) {
                 expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
             } else if (value.info->data.type == Type::INT && it->info->data.type == Type::FLOAT) {
@@ -325,6 +333,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         ExprVisitorType argument = resolve(expr.args[i].first.get());
         if (!convertible_to(called->params[i].second.get(), argument.info, argument.is_lvalue, argument.lexeme)) {
             error("Type of argument is not convertible to type of parameter", argument.lexeme);
+            show_conversion_note(argument.info, called->params[i].second.get());
         } else if (argument.info->data.type == Type::FLOAT && called->params[i].second->data.type == Type::INT) {
             expr.args[i].second = NumericConversionType::FLOAT_TO_INT;
         } else if (argument.info->data.type == Type::INT && called->params[i].second->data.type == Type::FLOAT) {
@@ -504,6 +513,7 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
 
     if (!convertible_to(attribute_type.info, value_type.info, value_type.is_lvalue, expr.name)) {
         error("Cannot convert value of assigned expresion to type of target", expr.name);
+        show_conversion_note(value_type.info, attribute_type.info);
         throw TypeException{"Cannot convert value of assigned expression to type of target"};
     } else if (value_type.info->data.type == Type::FLOAT && attribute_type.info->data.type == Type::INT) {
         expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
@@ -527,6 +537,7 @@ ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
     if (!convertible_to(middle.info, right.info, right.is_lvalue, expr.question) &&
         !convertible_to(right.info, middle.info, right.is_lvalue, expr.question)) {
         error("Expected equivalent expression types for branches of ternary expression", expr.question);
+        show_conversion_note(right.info, middle.info);
     }
 
     return {middle.info, expr.question};
@@ -742,11 +753,7 @@ StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
     ExprVisitorType return_value = resolve(stmt.value.get());
     if (!convertible_to(current_function->return_type.get(), return_value.info, return_value.is_lvalue, stmt.keyword)) {
         error("Type of expression in return statement does not match return type of function", stmt.keyword);
-        using namespace std::string_literals;
-        std::string note_message = "The type being returned is '"s + stringify(return_value.info) +
-                                   "' whereas the function return type is '"s +
-                                   stringify(current_function->return_type.get()) + "'";
-        note(note_message);
+        show_conversion_note(return_value.info, current_function->return_type.get());
     }
 }
 
@@ -759,6 +766,7 @@ StmtVisitorType TypeResolver::visit(SwitchStmt &stmt) {
         ExprVisitorType case_expr = resolve(case_stmt.first.get());
         if (!convertible_to(case_expr.info, condition.info, condition.is_lvalue, case_expr.lexeme)) {
             error("Type of case expression cannot be converted to type of switch condition", case_expr.lexeme);
+            show_conversion_note(condition.info, case_expr.info);
         }
         resolve(case_stmt.second.get());
     }
@@ -789,6 +797,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         ExprVisitorType initializer = resolve(stmt.initializer.get());
         if (!convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name)) {
             error("Cannot convert from initializer type to type of variable", stmt.name);
+            show_conversion_note(initializer.info, type);
         } else if (initializer.info->data.type == Type::FLOAT && type->data.type == Type::INT) {
             stmt.conversion_type = NumericConversionType::FLOAT_TO_INT;
         } else if (initializer.info->data.type == Type::INT && type->data.type == Type::FLOAT) {
@@ -801,7 +810,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
     } else if (stmt.initializer != nullptr) {
         ExprVisitorType initializer = resolve(stmt.initializer.get());
         stmt.type = TypeNode{copy_type(initializer.info)};
-
+        stmt.type->data.is_ref = false; // If no type is specified, a copy is always done
         if (stmt.is_val) {
             stmt.type->data.is_const = true;
         } else if (!initializer.info->data.is_ref) {
