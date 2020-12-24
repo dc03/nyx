@@ -721,7 +721,7 @@ StmtVisitorType TypeResolver::visit(ExpressionStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
-    scoped_scope_manager manager{*this};
+    // scoped_scope_manager manager{*this};
     scoped_boolean_manager function_manager{in_function};
 
     ////////////////////////////////////////////////////////////////////////////
@@ -865,7 +865,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(WhileStmt &stmt) {
-    scoped_scope_manager manager{*this};
+    // scoped_scope_manager manager{*this};
     scoped_boolean_manager loop_manager{in_loop};
 
     ExprVisitorType condition = resolve(stmt.condition.get());

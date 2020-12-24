@@ -191,7 +191,11 @@ x.foo(y)
 y = 5
 */*/*/
 
-var x: ref int = foo()
-fn foo() -> int {
-    return "string"
+var x:int  = 5
+class X {
+    public var x = 5
+}
+
+fn foo(x: int) -> null {
+
 }

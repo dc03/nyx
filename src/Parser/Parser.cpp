@@ -521,7 +521,7 @@ StmtNode Parser::class_declaration() {
     std::vector<std::pair<std::unique_ptr<VarStmt>, VisibilityType>> members{};
     std::vector<std::pair<std::unique_ptr<FunctionStmt>, VisibilityType>> methods{};
 
-    scoped_integer_manager depth_manager{scope_depth};
+    // scoped_integer_manager depth_manager{scope_depth};
 
     consume("Expected '{' after class name", TokenType::LEFT_BRACE);
     scoped_boolean_manager class_manager{in_class};
@@ -594,7 +594,7 @@ StmtNode Parser::function_declaration() {
     Token name = previous();
     consume("Expected '(' after function name", TokenType::LEFT_PAREN);
 
-    scoped_integer_manager manager{scope_depth};
+    // scoped_integer_manager manager{scope_depth};
 
     std::vector<std::pair<Token, TypeNode>> params{};
     if (peek().type != TokenType::RIGHT_PAREN) {
@@ -897,7 +897,7 @@ StmtNode Parser::switch_statement() {
 
 StmtNode Parser::while_statement() {
     Token keyword = previous();
-    scoped_integer_manager manager{scope_depth};
+    // scoped_integer_manager manager{scope_depth};
 
     ExprNode condition = expression();
 
