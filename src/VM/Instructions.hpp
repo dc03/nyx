@@ -12,8 +12,6 @@ enum class Instruction : unsigned char {
     HALT, // Stop the interpreter
     POP,  // Pop the value at the top of the stack
 
-    //    INT_SHORT, // 1 byte int literal
-    //    INT_LONG,  // 3 byte int literal
     CONST_SHORT, // first 255 constant values
     CONST_LONG,  // rest of the constant values
 
@@ -38,6 +36,19 @@ enum class Instruction : unsigned char {
     LESSER,  // Logical lesser
 
     NEGATE, // Unary minus
+
+    TRUE, // True
+    FALSE, // False
+    NULL_, // Null
+
+    ACCESS_LOCAL_SHORT, // Get local from stack
+    ACCESS_LOCAL_LONG,
+
+    JUMP_FORWARD,  // For Turing completeness (I think)
+    JUMP_BACKWARD,
+    JUMP_IF_FALSE,
+
+    ASSIGN_LOCAL, // To assign to a value on the stack
 };
 
 #endif

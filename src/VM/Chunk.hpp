@@ -14,15 +14,19 @@
 #include <vector>
 
 struct Chunk {
+    static constexpr std::size_t const_short_max = (1 << 8) - 1;
+    static constexpr std::size_t const_long_max = (std::size_t{1} << 24) - 1;
+
     using byte = unsigned char;
     std::vector<byte> bytes{};
     std::vector<Value> constants{};
 
     explicit Chunk() = default;
-    void emit_byte(Chunk::byte value);
-    void emit_bytes(Chunk::byte value_1, Chunk::byte value_2);
-    void emit_constant(Value value);
-    void emit_instruction(Instruction instruction);
+    std::size_t add_constant(Value value);
+    std::size_t emit_byte(Chunk::byte value);
+    std::size_t emit_bytes(Chunk::byte value_1, Chunk::byte value_2);
+    std::size_t emit_constant(Value value);
+    std::size_t emit_instruction(Instruction instruction);
 };
 
 #endif

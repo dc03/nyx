@@ -190,12 +190,6 @@ imported::X::foo(x, 5)
 x.foo(y)
 y = 5
 */*/*/
-
-var x:int  = 5
-class X {
-    public var x = 5
-}
-
-fn foo(x: int) -> null {
-
+for (var i = 100; i < 10; i = i + 1) {
+    i
 }

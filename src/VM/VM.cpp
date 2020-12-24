@@ -10,6 +10,7 @@
 #define PRINT_STACK
 
 void VM::push(const Value &value) {
+    *stack_top = Value{}; // Without this, for reasons I do not know, a segfault occurs with strings
     *(stack_top++) = value;
 }
 
@@ -23,6 +24,13 @@ Value &VM::top_from(std::size_t distance) const {
 
 Chunk::byte VM::read_byte() {
     return *(ip++);
+}
+
+std::size_t VM::read_three_bytes() {
+    std::size_t bytes = read_byte();
+    bytes = (bytes << 8) | read_byte();
+    bytes = (bytes << 8) | read_byte();
+    return bytes;
 }
 
 bool is_truthy(Value &value) {
@@ -115,6 +123,10 @@ void VM::run(RuntimeModule &main_module) {
 #endif
         switch (read_byte()) {
             case is Instruction::CONST_SHORT: push(chunk->constants[read_byte()]); break;
+            case is Instruction::CONST_LONG: {
+                push(chunk->constants[read_three_bytes()]);
+                break;
+            }
 
             case is Instruction::ADD: binary_arithmetic_instruction(+);
             case is Instruction::SUB: binary_arithmetic_instruction(-);
@@ -128,6 +140,12 @@ void VM::run(RuntimeModule &main_module) {
                     break;
                 }
                 binary_arithmetic_instruction(/);
+
+            case is Instruction::CONCAT: {
+                Value result{top_from(2).to_string() + top_from(1).to_string()};
+                pop_twice_push(result);
+                break;
+            }
 
             case is Instruction::SHIFT_LEFT: {
                 if (top_from(2).to_int() < 0 || top_from(1).to_int() < 0) {
@@ -189,6 +207,36 @@ void VM::run(RuntimeModule &main_module) {
                 pop();
                 push(result);
                 break;
+            }
+
+            case is Instruction::TRUE: push(Value{true}); break;
+            case is Instruction::FALSE: push(Value{false}); break;
+            case is Instruction::NULL_: push(Value{nullptr}); break;
+
+            case is Instruction::ACCESS_LOCAL_SHORT: push(stack[read_byte()]); break;
+            case is Instruction::ACCESS_LOCAL_LONG: {
+                push(stack[read_three_bytes()]);
+                break;
+            }
+
+            case is Instruction::JUMP_BACKWARD: {
+                ip -= read_three_bytes();
+                break;
+            }
+
+            case is Instruction::JUMP_IF_FALSE: {
+                if (!is_truthy(top_from(1))) {
+                    ip += read_three_bytes();
+                } else {
+                    ip += 3;
+                }
+                break;
+            }
+
+            case is Instruction::ASSIGN_LOCAL: {
+                std::size_t slot = read_three_bytes();
+                stack[slot] = top_from(1);
+                push(stack[slot]);
             }
 
             case is Instruction::POP: pop(); break;

@@ -10,9 +10,16 @@
 #include "../Module.hpp"
 #include "../VM/Chunk.hpp"
 
+#include <stack>
+
 class Generator : Visitor {
     Chunk *current_chunk{nullptr};
     Module *current_module{nullptr};
+    std::stack<std::size_t> scopes{};
+
+    void begin_scope();
+    void end_scope();
+    void patch_jump(std::size_t jump_idx, std::size_t jump_amount);
 
   public:
     static std::vector<RuntimeModule> compiled_modules;

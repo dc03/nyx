@@ -22,6 +22,7 @@ struct VM {
     [[nodiscard]] Value &top_from(std::size_t distance) const;
 
     Chunk::byte read_byte();
+    std::size_t read_three_bytes();
 
     VM() { stack_top = stack; }
 };

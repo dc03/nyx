@@ -8,7 +8,30 @@
 
 std::vector<RuntimeModule> Generator::compiled_modules{};
 
+void Generator::begin_scope() {
+    scopes.push(0);
+}
+
+void Generator::end_scope() {
+    for (std::size_t begin = scopes.top(); begin > 0; begin--) {
+        current_chunk->emit_instruction(Instruction::POP);
+    }
+    scopes.pop();
+}
+
+void Generator::patch_jump(std::size_t jump_idx, std::size_t jump_amount) {
+    if (jump_amount >= Chunk::const_long_max) {
+        compile_error("Size of jump is greater than that allowed by the instruction set");
+        return;
+    }
+
+    current_chunk->bytes[jump_idx + 1] = (jump_amount >> 16) & 0xff;
+    current_chunk->bytes[jump_idx + 2] = (jump_amount >> 8) & 0xff;
+    current_chunk->bytes[jump_idx + 3] = jump_amount & 0xff;
+}
+
 RuntimeModule Generator::compile(Module &module) {
+    begin_scope();
     RuntimeModule compiled{};
     current_chunk = &compiled.top_level_code;
     current_module = &module;
@@ -19,6 +42,7 @@ RuntimeModule Generator::compile(Module &module) {
         }
     }
 
+    end_scope();
     return compiled;
 }
 
@@ -35,6 +59,10 @@ BaseTypeVisitorType Generator::compile(BaseType *type) {
 }
 
 ExprVisitorType Generator::visit(AssignExpr &expr) {
+    compile(expr.value.get());
+    current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL);
+    current_chunk->emit_bytes((expr.stack_slot >> 16) & 0xff, (expr.stack_slot >> 8) & 0xff);
+    current_chunk->emit_byte(expr.stack_slot & 0xff);
     return {};
 }
 
@@ -127,8 +155,14 @@ ExprVisitorType Generator::visit(LiteralExpr &expr) {
         case LiteralValue::INT: current_chunk->emit_constant(Value{expr.value.as.integer}); break;
         case LiteralValue::DOUBLE: current_chunk->emit_constant(Value{expr.value.as.real}); break;
         case LiteralValue::STRING: current_chunk->emit_constant(Value{expr.value.as.string}); break;
-        case LiteralValue::BOOL: current_chunk->emit_constant(Value{expr.value.as.boolean}); break;
-        case LiteralValue::NULL_: current_chunk->emit_constant(Value{expr.value.as.null}); break;
+        case LiteralValue::BOOL:
+            if (expr.value.as.boolean) {
+                current_chunk->emit_instruction(Instruction::TRUE);
+            } else {
+                current_chunk->emit_instruction(Instruction::FALSE);
+            }
+            break;
+        case LiteralValue::NULL_: current_chunk->emit_instruction(Instruction::NULL_); break;
     }
     return {};
 }
@@ -173,10 +207,25 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(VariableExpr &expr) {
+    if (expr.stack_slot < Chunk::const_short_max) {
+        current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_SHORT);
+        current_chunk->emit_byte(expr.stack_slot & 0xff);
+    } else if (current_chunk->constants.size() < Chunk::const_long_max) {
+        current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LONG);
+        std::size_t constant = expr.stack_slot;
+        current_chunk->emit_bytes((constant >> 16) & 0xff, (constant >> 8) & 0xff);
+        current_chunk->emit_byte(constant & 0xff);
+    }
     return {};
 }
 
-StmtVisitorType Generator::visit(BlockStmt &stmt) {}
+StmtVisitorType Generator::visit(BlockStmt &stmt) {
+    begin_scope();
+    for (auto &statement : stmt.stmts) {
+        compile(statement.get());
+    }
+    end_scope();
+}
 
 StmtVisitorType Generator::visit(BreakStmt &stmt) {}
 
@@ -191,7 +240,30 @@ StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
 
 StmtVisitorType Generator::visit(FunctionStmt &stmt) {}
 
-StmtVisitorType Generator::visit(IfStmt &stmt) {}
+StmtVisitorType Generator::visit(IfStmt &stmt) {
+    compile(stmt.condition.get());
+    std::size_t jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE);
+    current_chunk->emit_bytes(0, 0);
+    current_chunk->emit_byte(0);
+    // Reserve three bytes for the offset
+    current_chunk->emit_instruction(Instruction::POP);
+    compile(stmt.thenBranch.get());
+    std::size_t before_else = current_chunk->emit_instruction(Instruction::POP);
+    patch_jump(jump_idx, before_else - jump_idx - 4);
+    /*
+     * The -3 because:
+     * JUMP_IF_FALSE
+     * BYTE1 -+
+     * BYTE2  |-> The three bytes for the offset from the JUMP_IF_FALSE instruction to the second POP
+     * BYTE3 -+
+     * POP <- The ip will be here when the jump happens, but `jump_idx` will be considered for JUMP_IF_FALSE
+     * ... <- This is the body of the if statement
+     * POP <- This will be where `before_else` is considered
+     */
+    if (stmt.elseBranch != nullptr) {
+        compile(stmt.elseBranch.get());
+    }
+}
 
 StmtVisitorType Generator::visit(ReturnStmt &stmt) {}
 
@@ -199,9 +271,36 @@ StmtVisitorType Generator::visit(SwitchStmt &stmt) {}
 
 StmtVisitorType Generator::visit(TypeStmt &stmt) {}
 
-StmtVisitorType Generator::visit(VarStmt &stmt) {}
+StmtVisitorType Generator::visit(VarStmt &stmt) {
+    if (stmt.initializer != nullptr) {
+        compile(stmt.initializer.get());
+    } else {
+        current_chunk->emit_instruction(Instruction::NULL_);
+    }
+    scopes.top() += 1;
+}
 
-StmtVisitorType Generator::visit(WhileStmt &stmt) {}
+StmtVisitorType Generator::visit(WhileStmt &stmt) {
+    std::size_t loop_start = current_chunk->bytes.size();
+    compile(stmt.condition.get());
+
+    std::size_t exit_jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE);
+    current_chunk->emit_bytes(0, 0);
+    current_chunk->emit_byte(0);
+    current_chunk->emit_instruction(Instruction::POP);
+
+    compile(stmt.body.get());
+
+    std::size_t loop_back_idx = current_chunk->emit_instruction(Instruction::JUMP_BACKWARD);
+    current_chunk->emit_bytes(0, 0);
+    current_chunk->emit_byte(0);
+
+    std::size_t loop_end = current_chunk->emit_instruction(Instruction::POP);
+
+    patch_jump(exit_jump_idx, loop_end - exit_jump_idx - 4);
+    patch_jump(loop_back_idx, loop_back_idx - loop_start + 4);
+    // In this case it will be +4 because 3 additional bytes, i.e the offset have to be jumped back over
+}
 
 BaseTypeVisitorType Generator::visit(PrimitiveType &type) {
     return {};
