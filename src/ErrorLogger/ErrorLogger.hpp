@@ -23,7 +23,7 @@ extern ErrorLogger logger;
 
 void warning(std::string_view message, const Token &where);
 void error(std::string_view message, const Token &where);
-void runtime_error(std::string_view message, const Token &where);
+void runtime_error(std::string_view message, std::size_t line_number);
 void note(std::string_view message);
 void compile_error(std::string_view message);
 

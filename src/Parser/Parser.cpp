@@ -836,13 +836,16 @@ StmtNode Parser::for_statement() {
 }
 
 StmtNode Parser::if_statement() {
+    Token keyword = previous();
     ExprNode condition = expression();
     StmtNode then_branch = statement();
     if (match(TokenType::ELSE)) {
         StmtNode else_branch = statement();
-        return StmtNode{allocate_node(IfStmt, std::move(condition), std::move(then_branch), std::move(else_branch))};
+        return StmtNode{allocate_node(
+            IfStmt, std::move(keyword), std::move(condition), std::move(then_branch), std::move(else_branch))};
     } else {
-        return StmtNode{allocate_node(IfStmt, std::move(condition), std::move(then_branch), nullptr)};
+        return StmtNode{
+            allocate_node(IfStmt, std::move(keyword), std::move(condition), std::move(then_branch), nullptr)};
     }
 }
 

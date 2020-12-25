@@ -14,7 +14,7 @@ void Generator::begin_scope() {
 
 void Generator::end_scope() {
     for (std::size_t begin = scopes.top(); begin > 0; begin--) {
-        current_chunk->emit_instruction(Instruction::POP);
+        current_chunk->emit_instruction(Instruction::POP, 0);
     }
     scopes.pop();
 }
@@ -60,7 +60,7 @@ BaseTypeVisitorType Generator::compile(BaseType *type) {
 
 ExprVisitorType Generator::visit(AssignExpr &expr) {
     compile(expr.value.get());
-    current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL);
+    current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, expr.target.line);
     current_chunk->emit_bytes((expr.stack_slot >> 16) & 0xff, (expr.stack_slot >> 8) & 0xff);
     current_chunk->emit_byte(expr.stack_slot & 0xff);
     return {};
@@ -72,45 +72,45 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
 
     // clang-format off
     switch (expr.oper.type) {
-        case TokenType::LEFT_SHIFT:    current_chunk->emit_instruction(Instruction::SHIFT_LEFT);  break;
-        case TokenType::RIGHT_SHIFT:   current_chunk->emit_instruction(Instruction::SHIFT_RIGHT); break;
-        case TokenType::BIT_AND:       current_chunk->emit_instruction(Instruction::BIT_AND);     break;
-        case TokenType::BIT_OR:        current_chunk->emit_instruction(Instruction::BIT_OR);      break;
-        case TokenType::BIT_XOR:       current_chunk->emit_instruction(Instruction::BIT_XOR);     break;
-        case TokenType::MODULO:        current_chunk->emit_instruction(Instruction::MOD);         break;
+        case TokenType::LEFT_SHIFT:    current_chunk->emit_instruction(Instruction::SHIFT_LEFT, expr.oper.line);  break;
+        case TokenType::RIGHT_SHIFT:   current_chunk->emit_instruction(Instruction::SHIFT_RIGHT, expr.oper.line); break;
+        case TokenType::BIT_AND:       current_chunk->emit_instruction(Instruction::BIT_AND, expr.oper.line);     break;
+        case TokenType::BIT_OR:        current_chunk->emit_instruction(Instruction::BIT_OR, expr.oper.line);      break;
+        case TokenType::BIT_XOR:       current_chunk->emit_instruction(Instruction::BIT_XOR, expr.oper.line);     break;
+        case TokenType::MODULO:        current_chunk->emit_instruction(Instruction::MOD, expr.oper.line);         break;
 
-        case TokenType::EQUAL_EQUAL:   current_chunk->emit_instruction(Instruction::EQUAL);       break;
-        case TokenType::GREATER:       current_chunk->emit_instruction(Instruction::GREATER);     break;
-        case TokenType::LESS:          current_chunk->emit_instruction(Instruction::LESSER);      break;
+        case TokenType::EQUAL_EQUAL:   current_chunk->emit_instruction(Instruction::EQUAL, expr.oper.line);       break;
+        case TokenType::GREATER:       current_chunk->emit_instruction(Instruction::GREATER, expr.oper.line);     break;
+        case TokenType::LESS:          current_chunk->emit_instruction(Instruction::LESSER, expr.oper.line);      break;
 
         case TokenType::NOT_EQUAL:
-            current_chunk->emit_instruction(Instruction::EQUAL);
-            current_chunk->emit_instruction(Instruction::NOT);
+            current_chunk->emit_instruction(Instruction::EQUAL, expr.oper.line);
+            current_chunk->emit_instruction(Instruction::NOT, expr.oper.line);
             break;
         case TokenType::GREATER_EQUAL:
-            current_chunk->emit_instruction(Instruction::LESSER);
-            current_chunk->emit_instruction(Instruction::NOT);
+            current_chunk->emit_instruction(Instruction::LESSER, expr.oper.line);
+            current_chunk->emit_instruction(Instruction::NOT, expr.oper.line);
             break;
         case TokenType::LESS_EQUAL:
-            current_chunk->emit_instruction(Instruction::GREATER);
-            current_chunk->emit_instruction(Instruction::NOT);
+            current_chunk->emit_instruction(Instruction::GREATER, expr.oper.line);
+            current_chunk->emit_instruction(Instruction::NOT, expr.oper.line);
             break;
 
         case TokenType::PLUS:
             switch (expr.resolved_type.info->data.type) {
                 case Type::INT:
                 case Type::FLOAT:
-                    current_chunk->emit_instruction(Instruction::ADD); break;
-                case Type::STRING: current_chunk->emit_instruction(Instruction::CONCAT); break;
+                    current_chunk->emit_instruction(Instruction::ADD, expr.oper.line); break;
+                case Type::STRING: current_chunk->emit_instruction(Instruction::CONCAT, expr.oper.line); break;
 
                 default:
                     unreachable();
             }
             break;
 
-        case TokenType::MINUS: current_chunk->emit_instruction(Instruction::SUB); break;
-        case TokenType::SLASH: current_chunk->emit_instruction(Instruction::DIV); break;
-        case TokenType::STAR:  current_chunk->emit_instruction(Instruction::MUL); break;
+        case TokenType::MINUS: current_chunk->emit_instruction(Instruction::SUB, expr.oper.line); break;
+        case TokenType::SLASH: current_chunk->emit_instruction(Instruction::DIV, expr.oper.line); break;
+        case TokenType::STAR:  current_chunk->emit_instruction(Instruction::MUL, expr.oper.line); break;
 
         default:
             error("Bug in parser with illegal token type of expression's operator", expr.oper);
@@ -130,7 +130,7 @@ ExprVisitorType Generator::visit(CommaExpr &expr) {
 
     for (auto next = std::next(it); next != end(expr.exprs); it = next, ++next) {
         compile(it->get());
-        current_chunk->emit_instruction(Instruction::POP);
+        current_chunk->emit_instruction(Instruction::POP, 0);
     }
 
     compile(it->get());
@@ -152,17 +152,17 @@ ExprVisitorType Generator::visit(IndexExpr &expr) {
 
 ExprVisitorType Generator::visit(LiteralExpr &expr) {
     switch (expr.value.tag) {
-        case LiteralValue::INT: current_chunk->emit_constant(Value{expr.value.as.integer}); break;
-        case LiteralValue::DOUBLE: current_chunk->emit_constant(Value{expr.value.as.real}); break;
-        case LiteralValue::STRING: current_chunk->emit_constant(Value{expr.value.as.string}); break;
+        case LiteralValue::INT: current_chunk->emit_constant(Value{expr.value.as.integer}, expr.lexeme.line); break;
+        case LiteralValue::DOUBLE: current_chunk->emit_constant(Value{expr.value.as.real}, expr.lexeme.line); break;
+        case LiteralValue::STRING: current_chunk->emit_constant(Value{expr.value.as.string}, expr.lexeme.line); break;
         case LiteralValue::BOOL:
             if (expr.value.as.boolean) {
-                current_chunk->emit_instruction(Instruction::TRUE);
+                current_chunk->emit_instruction(Instruction::TRUE, expr.lexeme.line);
             } else {
-                current_chunk->emit_instruction(Instruction::FALSE);
+                current_chunk->emit_instruction(Instruction::FALSE, expr.lexeme.line);
             }
             break;
-        case LiteralValue::NULL_: current_chunk->emit_instruction(Instruction::NULL_); break;
+        case LiteralValue::NULL_: current_chunk->emit_instruction(Instruction::NULL_, expr.lexeme.line); break;
     }
     return {};
 }
@@ -198,9 +198,9 @@ ExprVisitorType Generator::visit(ThisExpr &expr) {
 ExprVisitorType Generator::visit(UnaryExpr &expr) {
     compile(expr.right.get());
     switch (expr.oper.type) {
-        case TokenType::BIT_NOT: current_chunk->emit_instruction(Instruction::BIT_NOT); break;
-        case TokenType::NOT: current_chunk->emit_instruction(Instruction::NOT); break;
-        case TokenType::MINUS: current_chunk->emit_instruction(Instruction::NEGATE); break;
+        case TokenType::BIT_NOT: current_chunk->emit_instruction(Instruction::BIT_NOT, expr.oper.line); break;
+        case TokenType::NOT: current_chunk->emit_instruction(Instruction::NOT, expr.oper.line); break;
+        case TokenType::MINUS: current_chunk->emit_instruction(Instruction::NEGATE, expr.oper.line); break;
         default: error("Bug in parser with illegal type for unary expression", expr.oper); break;
     }
     return {};
@@ -208,10 +208,10 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
 
 ExprVisitorType Generator::visit(VariableExpr &expr) {
     if (expr.stack_slot < Chunk::const_short_max) {
-        current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_SHORT);
+        current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_SHORT, expr.name.line);
         current_chunk->emit_byte(expr.stack_slot & 0xff);
     } else if (current_chunk->constants.size() < Chunk::const_long_max) {
-        current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LONG);
+        current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LONG, expr.name.line);
         std::size_t constant = expr.stack_slot;
         current_chunk->emit_bytes((constant >> 16) & 0xff, (constant >> 8) & 0xff);
         current_chunk->emit_byte(constant & 0xff);
@@ -228,7 +228,7 @@ StmtVisitorType Generator::visit(BlockStmt &stmt) {
 }
 
 StmtVisitorType Generator::visit(BreakStmt &stmt) {
-    std::size_t break_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD);
+    std::size_t break_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
     break_stmts.top().push_back(break_idx);
@@ -240,20 +240,20 @@ StmtVisitorType Generator::visit(ContinueStmt &stmt) {}
 
 StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
     compile(stmt.expr.get());
-    current_chunk->emit_instruction(Instruction::POP);
+    current_chunk->emit_instruction(Instruction::POP, 0);
 }
 
 StmtVisitorType Generator::visit(FunctionStmt &stmt) {}
 
 StmtVisitorType Generator::visit(IfStmt &stmt) {
     compile(stmt.condition.get());
-    std::size_t jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE);
+    std::size_t jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, stmt.keyword.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
     // Reserve three bytes for the offset
-    current_chunk->emit_instruction(Instruction::POP);
+    current_chunk->emit_instruction(Instruction::POP, 0);
     compile(stmt.thenBranch.get());
-    std::size_t before_else = current_chunk->emit_instruction(Instruction::POP);
+    std::size_t before_else = current_chunk->emit_instruction(Instruction::POP, 0);
     patch_jump(jump_idx, before_else - jump_idx - 4);
     /*
      * The -4 because:
@@ -280,7 +280,7 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
     if (stmt.initializer != nullptr) {
         compile(stmt.initializer.get());
     } else {
-        current_chunk->emit_instruction(Instruction::NULL_);
+        current_chunk->emit_instruction(Instruction::NULL_, stmt.name.line);
     }
     scopes.top() += 1;
 }
@@ -290,18 +290,18 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
     std::size_t loop_start = current_chunk->bytes.size();
     compile(stmt.condition.get());
 
-    std::size_t exit_jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE);
+    std::size_t exit_jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, stmt.keyword.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
-    current_chunk->emit_instruction(Instruction::POP);
+    current_chunk->emit_instruction(Instruction::POP, 0);
 
     compile(stmt.body.get());
 
-    std::size_t loop_back_idx = current_chunk->emit_instruction(Instruction::JUMP_BACKWARD);
+    std::size_t loop_back_idx = current_chunk->emit_instruction(Instruction::JUMP_BACKWARD, stmt.keyword.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
 
-    std::size_t loop_end = current_chunk->emit_instruction(Instruction::POP);
+    std::size_t loop_end = current_chunk->emit_instruction(Instruction::POP, 0);
 
     patch_jump(exit_jump_idx, loop_end - exit_jump_idx - 4);
     patch_jump(loop_back_idx, loop_back_idx - loop_start + 4);

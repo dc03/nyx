@@ -45,7 +45,7 @@ int main(const int, const char *const argv[]) {
             Generator::compiled_modules.emplace_back(generator.compile(module.first));
         }
         RuntimeModule main_compiled = generator.compile(main);
-        main_compiled.top_level_code.emit_instruction(Instruction::HALT);
+        main_compiled.top_level_code.emit_instruction(Instruction::HALT, 0);
         VM vm{};
         vm.run(main_compiled);
         disassemble(main_compiled.top_level_code, main_name);

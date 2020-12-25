@@ -56,34 +56,20 @@ void error(const std::string_view message, const Token &where) {
     logger.had_error = true;
     print_message(message, where, "Error");
 }
-void runtime_error(const std::string_view message, const Token &where) {
-    logger.had_runtime_error = true;
-    std::cerr << "\n!-| line " << where.line << " | Error: " << message << '\n';
-    std::size_t line_start = where.start;
-    std::size_t line_end = where.end;
-    while (line_start > 0 && logger.source[line_start] != '\n') {
-        line_start--;
-    }
-    while (line_end < logger.source.size() && logger.source[line_end] != '\n') {
-        line_end++;
-    }
 
-    std::cerr << " >| ";
-    for (std::size_t i{line_start}; i < line_end; i++) {
-        std::cerr << logger.source[i];
+void runtime_error(const std::string_view message, std::size_t line_number) {
+    logger.had_runtime_error = true;
+    std::cerr << "\n!-| line " << line_number << " | Error: " << message << '\n';
+    std::size_t line_count = 1;
+    std::size_t i = 0;
+    for (; line_count < line_number; i++) {
         if (logger.source[i] == '\n') {
-            std::cerr << " >| ";
+            line_count++;
         }
     }
-    std::cerr << "\n >| ";
-    for (std::size_t i{line_start + 1}; i < line_end; i++) {
-        if (i == where.start || line_start == where.start) {
-            std::cerr << '^';
-        } else if (where.start < i && i < where.end) {
-            std::cerr << '-';
-        } else {
-            std::cerr << ' ';
-        }
+    std::cerr << " >| \n >| ";
+    for (; logger.source[i] != '\n' && logger.source[i] != '\0'; i++) {
+        std::cerr << logger.source[i];
     }
     std::cerr << '\n';
 }

@@ -567,6 +567,7 @@ struct FunctionStmt final : public Stmt {
 };
 
 struct IfStmt final : public Stmt {
+    Token keyword;
     ExprNode condition;
     StmtNode thenBranch;
     StmtNode elseBranch;
@@ -575,8 +576,11 @@ struct IfStmt final : public Stmt {
 
     NodeType type_tag() override final { return NodeType::IfStmt; }
 
-    IfStmt(ExprNode condition, StmtNode thenBranch, StmtNode elseBranch)
-        : condition{std::move(condition)}, thenBranch{std::move(thenBranch)}, elseBranch{std::move(elseBranch)} {}
+    IfStmt(Token keyword, ExprNode condition, StmtNode thenBranch, StmtNode elseBranch)
+        : keyword{keyword},
+          condition{std::move(condition)},
+          thenBranch{std::move(thenBranch)},
+          elseBranch{std::move(elseBranch)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

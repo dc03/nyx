@@ -50,6 +50,7 @@ bool is_truthy(Value &value) {
 }
 
 void VM::run(RuntimeModule &main_module) {
+    std::size_t insn_number = 1;
     ip = &main_module.top_level_code.bytes[0];
     chunk = &main_module.top_level_code;
 
@@ -97,7 +98,7 @@ void VM::run(RuntimeModule &main_module) {
     }                                                                                                                  \
     break
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    for (;;) {
+    for (;; insn_number++) {
 #ifdef PRINT_STACK
         for (Value *begin{stack}; begin < stack_top; begin++) {
             std::cout << "[ ";
@@ -118,10 +119,10 @@ void VM::run(RuntimeModule &main_module) {
             case is Instruction::MUL: binary_arithmetic_instruction(*);
             case is Instruction::DIV:
                 if (top_from(1).is_int() && top_from(1).to_int() == 0) {
-                    runtime_error("Division by zero", {});
+                    runtime_error("Division by zero", chunk->get_line_number(insn_number));
                     break;
                 } else if (top_from(1).to_double() == 0.0f) {
-                    runtime_error("Division by zero", {});
+                    runtime_error("Division by zero", chunk->get_line_number(insn_number));
                     break;
                 }
                 binary_arithmetic_instruction(/);
@@ -134,7 +135,8 @@ void VM::run(RuntimeModule &main_module) {
 
             case is Instruction::SHIFT_LEFT: {
                 if (top_from(2).to_int() < 0 || top_from(1).to_int() < 0) {
-                    runtime_error("Bitwise shifting with negative numbers is not allowed", {});
+                    runtime_error(
+                        "Bitwise shifting with negative numbers is not allowed", chunk->get_line_number(insn_number));
                     break;
                 }
                 Value result{static_cast<int>(static_cast<unsigned int>(top_from(2).to_int())
@@ -144,7 +146,8 @@ void VM::run(RuntimeModule &main_module) {
             }
             case is Instruction::SHIFT_RIGHT: {
                 if (top_from(2).to_int() < 0 || top_from(1).to_int() < 0) {
-                    runtime_error("Bitwise shifting with negative numbers is not allowed", {});
+                    runtime_error(
+                        "Bitwise shifting with negative numbers is not allowed", chunk->get_line_number(insn_number));
                     break;
                 }
                 Value result{static_cast<int>(static_cast<unsigned int>(top_from(2).to_int()) >>
@@ -159,7 +162,8 @@ void VM::run(RuntimeModule &main_module) {
 
             case is Instruction::MOD: {
                 if (top_from(1).to_int() <= 0) {
-                    runtime_error("Cannot modulo a number with a value lesser than or equal to zero", {});
+                    runtime_error("Cannot modulo a number with a value lesser than or equal to zero",
+                        chunk->get_line_number(insn_number));
                     break;
                 }
                 Value result{top_from(2).to_int() % top_from(1).to_int()};
@@ -221,6 +225,7 @@ void VM::run(RuntimeModule &main_module) {
                 std::size_t slot = read_three_bytes();
                 stack[slot] = top_from(1);
                 push(stack[slot]);
+                break;
             }
 
             case is Instruction::POP: pop(); break;

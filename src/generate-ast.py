@@ -347,9 +347,9 @@ if __name__ == '__main__':
                   'Token name, TypeNode return_type, std::vector<std::pair<Token,TypeNode>> params, ' +
                   'StmtNode body')
 
-        decl_stmt('condition{std::move(condition)}, thenBranch{std::move(thenBranch)},' +
+        decl_stmt('keyword{keyword}, condition{std::move(condition)}, thenBranch{std::move(thenBranch)},' +
                   'elseBranch{std::move(elseBranch)}',
-                  'ExprNode condition, StmtNode thenBranch, StmtNode elseBranch')
+                  'Token keyword, ExprNode condition, StmtNode thenBranch, StmtNode elseBranch')
 
         decl_stmt('keyword{keyword}, value{std::move(value)}',
                   'Token keyword, ExprNode value')

@@ -190,8 +190,4 @@ imported::X::foo(x, 5)
 x.foo(y)
 y = 5
 */*/*/
-var i = 0
-i = 2
-for (var x = i; x < 10; x = x + 1) {
-    x * 2
-}
+5 / 0

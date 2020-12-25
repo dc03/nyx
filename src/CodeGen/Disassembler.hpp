@@ -13,6 +13,6 @@
 #include <string_view>
 
 void disassemble(Chunk &chunk, std::string_view name);
-std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::size_t byte);
+std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::size_t byte, std::size_t insn_count);
 
 #endif

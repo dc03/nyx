@@ -11,6 +11,7 @@
 
 #include <cstddef>
 #include <string>
+#include <utility>
 #include <vector>
 
 struct Chunk {
@@ -20,13 +21,18 @@ struct Chunk {
     using byte = unsigned char;
     std::vector<byte> bytes{};
     std::vector<Value> constants{};
+    std::vector<std::pair<std::size_t, std::size_t>> line_numbers{};
+    // Store line numbers of instructions using Run Length Encoding, first line number then instruction count for that
+    // line
 
     explicit Chunk() = default;
     std::size_t add_constant(Value value);
     std::size_t emit_byte(Chunk::byte value);
     std::size_t emit_bytes(Chunk::byte value_1, Chunk::byte value_2);
-    std::size_t emit_constant(Value value);
-    std::size_t emit_instruction(Instruction instruction);
+    std::size_t emit_constant(Value value, std::size_t line_number);
+    std::size_t emit_instruction(Instruction instruction, std::size_t line_number);
+
+    std::size_t get_line_number(std::size_t insn_number);
 };
 
 #endif
