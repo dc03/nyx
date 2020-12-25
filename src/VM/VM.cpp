@@ -219,11 +219,14 @@ void VM::run(RuntimeModule &main_module) {
                 break;
             }
 
+            case is Instruction::JUMP_FORWARD: {
+                ip += read_three_bytes();
+                break;
+            }
             case is Instruction::JUMP_BACKWARD: {
                 ip -= read_three_bytes();
                 break;
             }
-
             case is Instruction::JUMP_IF_FALSE: {
                 if (!is_truthy(top_from(1))) {
                     ip += read_three_bytes();

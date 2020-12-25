@@ -37,14 +37,14 @@ enum class Instruction : unsigned char {
 
     NEGATE, // Unary minus
 
-    TRUE, // True
+    TRUE,  // True
     FALSE, // False
     NULL_, // Null
 
     ACCESS_LOCAL_SHORT, // Get local from stack
     ACCESS_LOCAL_LONG,
 
-    JUMP_FORWARD,  // For Turing completeness (I think)
+    JUMP_FORWARD, // For Turing completeness (I think)
     JUMP_BACKWARD,
     JUMP_IF_FALSE,
 

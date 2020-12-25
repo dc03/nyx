@@ -227,7 +227,12 @@ StmtVisitorType Generator::visit(BlockStmt &stmt) {
     end_scope();
 }
 
-StmtVisitorType Generator::visit(BreakStmt &stmt) {}
+StmtVisitorType Generator::visit(BreakStmt &stmt) {
+    std::size_t break_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD);
+    current_chunk->emit_bytes(0, 0);
+    current_chunk->emit_byte(0);
+    break_stmts.top().push_back(break_idx);
+}
 
 StmtVisitorType Generator::visit(ClassStmt &stmt) {}
 
@@ -251,7 +256,7 @@ StmtVisitorType Generator::visit(IfStmt &stmt) {
     std::size_t before_else = current_chunk->emit_instruction(Instruction::POP);
     patch_jump(jump_idx, before_else - jump_idx - 4);
     /*
-     * The -3 because:
+     * The -4 because:
      * JUMP_IF_FALSE
      * BYTE1 -+
      * BYTE2  |-> The three bytes for the offset from the JUMP_IF_FALSE instruction to the second POP
@@ -281,6 +286,7 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
 }
 
 StmtVisitorType Generator::visit(WhileStmt &stmt) {
+    break_stmts.emplace();
     std::size_t loop_start = current_chunk->bytes.size();
     compile(stmt.condition.get());
 
@@ -300,6 +306,11 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
     patch_jump(exit_jump_idx, loop_end - exit_jump_idx - 4);
     patch_jump(loop_back_idx, loop_back_idx - loop_start + 4);
     // In this case it will be +4 because 3 additional bytes, i.e the offset have to be jumped back over
+
+    for (std::size_t break_idx : break_stmts.top()) {
+        patch_jump(break_idx, loop_end - break_idx - 3); // -4 as described before, +1 to jump after the POP instruction
+    }
+    break_stmts.pop();
 }
 
 BaseTypeVisitorType Generator::visit(PrimitiveType &type) {
