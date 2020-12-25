@@ -47,3 +47,17 @@ Value::Value(bool value) : tag{Value::BOOL}, as{value} {}
 Value::Value(double value) : tag{Value::DOUBLE}, as{value} {}
 Value::Value(std::nullptr_t) : tag{Value::NULL_}, as{nullptr} {}
 Value::Value(std::string value) : tag{Value::STRING}, as{value} {}
+
+std::string Value::repr() const noexcept {
+    if (is_int()) {
+        return std::to_string(to_int());
+    } else if (is_double()) {
+        return std::to_string(to_double());
+    } else if (is_bool()) {
+        return to_bool() ? "true" : "false";
+    } else if (is_null()) {
+        return "null";
+    } else if (is_string()) {
+        return to_string();
+    }
+}

@@ -1,6 +1,7 @@
 /* Copyright (C) 2020  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 #include "CodeGen/CodeGen.hpp"
+#include "CodeGen/Disassembler.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
 #include "Parser/Parser.hpp"
 #include "Parser/TypeResolver.hpp"
@@ -47,6 +48,7 @@ int main(const int, const char *const argv[]) {
         main_compiled.top_level_code.emit_instruction(Instruction::HALT);
         VM vm{};
         vm.run(main_compiled);
+        disassemble(main_compiled.top_level_code, main_name);
         // std::cout << vm.stack[0].to_int();
     }
     return 0;

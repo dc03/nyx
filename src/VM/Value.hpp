@@ -54,6 +54,8 @@ struct Value {
     [[nodiscard]] bool to_bool()           const noexcept { return as.boolean; }
     [[nodiscard]] std::nullptr_t to_null() const noexcept { return as.null; }
     // clang-format on
+
+    std::string repr() const noexcept;
 };
 
 #endif

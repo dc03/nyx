@@ -101,17 +101,7 @@ void VM::run(RuntimeModule &main_module) {
 #ifdef PRINT_STACK
         for (Value *begin{stack}; begin < stack_top; begin++) {
             std::cout << "[ ";
-            if (begin->is_int()) {
-                std::cout << begin->to_int();
-            } else if (begin->is_double()) {
-                std::cout << begin->to_double();
-            } else if (begin->is_bool()) {
-                std::cout << std::boolalpha << begin->to_bool();
-            } else if (begin->is_null()) {
-                std::cout << "null";
-            } else if (begin->is_string()) {
-                std::cout << begin->to_string();
-            }
+            std::cout << begin->repr();
             std::cout << " ] ";
         }
         std::cout << '\n';
