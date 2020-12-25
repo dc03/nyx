@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-#define PRINT_STACK
+//#define PRINT_STACK
 
 void VM::push(const Value &value) {
     *stack_top = Value{}; // Without this, for reasons I do not know, a segfault occurs with strings
@@ -67,13 +67,11 @@ void VM::run(RuntimeModule &main_module) {
     {                                                                                                                  \
         if (top_from(2).is_int() && top_from(1).is_int()) {                                                            \
             Value result{top_from(2).to_int() oper top_from(1).to_int()};                                              \
-            std::cout << (result.is_int() ? result.to_int() : result.to_double()) << '\n';                             \
             pop_twice_push(result);                                                                                    \
         } else {                                                                                                       \
             Value result{(top_from(2).is_int() ? top_from(2).to_int() : top_from(2).to_double())                       \
                          oper                                                                                          \
                          (top_from(1).is_int() ? top_from(1).to_int() : top_from(1).to_double())};                     \
-            std::cout << (result.is_int() ? result.to_int() : result.to_double()) << '\n';                             \
             pop_twice_push(result);                                                                                    \
         }                                                                                                              \
     }                                                                                                                  \
@@ -84,7 +82,6 @@ void VM::run(RuntimeModule &main_module) {
 #define binary_logical_instruction(oper)                                                                               \
     {                                                                                                                  \
         Value result{top_from(2).to_int() oper top_from(1).to_int()};                                                  \
-        std::cout << result.to_int() << '\n';                                                                          \
         pop_twice_push(result);                                                                                        \
     }                                                                                                                  \
     break
@@ -93,11 +90,9 @@ void VM::run(RuntimeModule &main_module) {
     if (top_from(2).is_int() || top_from(2).is_double()) {                                                             \
         Value result{(top_from(2).is_int() ? top_from(2).to_int() : top_from(2).to_double())oper(                      \
             top_from(1).is_int() ? top_from(1).to_int() : top_from(1).to_double())};                                   \
-        std::cout << std::boolalpha << result.to_bool() << '\n';                                                       \
         pop_twice_push(result);                                                                                        \
     } else if (top_from(2).is_bool()) {                                                                                \
         Value result{top_from(2).to_bool() oper top_from(1).to_bool()};                                                \
-        std::cout << std::boolalpha << result.to_bool() << '\n';                                                       \
         pop_twice_push(result);                                                                                        \
     }                                                                                                                  \
     break
@@ -154,7 +149,6 @@ void VM::run(RuntimeModule &main_module) {
                 }
                 Value result{static_cast<int>(static_cast<unsigned int>(top_from(2).to_int())
                                               << static_cast<unsigned int>(top_from(1).to_int()))};
-                std::cout << result.to_int() << '\n';
                 pop_twice_push(result);
                 break;
             }
@@ -165,7 +159,6 @@ void VM::run(RuntimeModule &main_module) {
                 }
                 Value result{static_cast<int>(static_cast<unsigned int>(top_from(2).to_int()) >>
                                               static_cast<unsigned int>(top_from(1).to_int()))};
-                std::cout << result.to_int() << '\n';
                 pop_twice_push(result);
                 break;
             }
@@ -180,7 +173,6 @@ void VM::run(RuntimeModule &main_module) {
                     break;
                 }
                 Value result{top_from(2).to_int() % top_from(1).to_int()};
-                std::cout << result.to_int() << '\n';
                 pop_twice_push(result);
                 break;
             }
@@ -190,7 +182,6 @@ void VM::run(RuntimeModule &main_module) {
             case is Instruction::EQUAL: binary_boolean_instruction(==);
             case is Instruction::NOT: {
                 bool truthiness = !is_truthy(top_from(1));
-                std::cout << std::boolalpha << truthiness << '\n';
                 pop();
                 push(Value{truthiness});
                 break;

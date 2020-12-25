@@ -190,8 +190,12 @@ imported::X::foo(x, 5)
 x.foo(y)
 y = 5
 */*/*/
-for (var i = 0; i < 10000; i = i + 1) {
-    for (var j = 0; j < 10000; j = j + 1) {
+var i = 0
+while i < 10000 {
+    var j = 0
+    while j < 10000 {
         i + j
+        j = j + 1
     }
+    i = i + 1
 }
