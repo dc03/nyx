@@ -5,6 +5,7 @@
 #include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
 
+#include <limits>
 #include <utility>
 
 std::size_t Chunk::add_constant(Value value) {
@@ -48,6 +49,20 @@ std::size_t Chunk::emit_instruction(Instruction instruction, std::size_t line_nu
         line_numbers.back().second += 1;
     }
     return bytes.size() - 1;
+}
+
+std::size_t Chunk::emit_integer(std::size_t integer) {
+    if (integer < Chunk::const_short_max) {
+        emit_byte(integer & 0xff);
+        return bytes.size() - 1;
+    } else if (integer < Chunk::const_long_max) {
+        emit_bytes((integer >> 16) & 0xff, (integer >> 8) & 0xff);
+        emit_byte(integer & 0xff);
+        return bytes.size() - 3;
+    } else {
+        compile_error("Integer is too large to fit in upto 3 bytes");
+        return std::numeric_limits<std::size_t>::max();
+    }
 }
 
 std::size_t Chunk::get_line_number(std::size_t insn_number) {

@@ -209,12 +209,12 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
 ExprVisitorType Generator::visit(VariableExpr &expr) {
     if (expr.stack_slot < Chunk::const_short_max) {
         current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_SHORT, expr.name.line);
-        current_chunk->emit_byte(expr.stack_slot & 0xff);
-    } else if (current_chunk->constants.size() < Chunk::const_long_max) {
+        current_chunk->emit_integer(expr.stack_slot);
+    } else if (expr.stack_slot < Chunk::const_long_max) {
         current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LONG, expr.name.line);
-        std::size_t constant = expr.stack_slot;
-        current_chunk->emit_bytes((constant >> 16) & 0xff, (constant >> 8) & 0xff);
-        current_chunk->emit_byte(constant & 0xff);
+        current_chunk->emit_integer(expr.stack_slot);
+    } else {
+        compile_error("Too many variables in current scope");
     }
     return {};
 }
