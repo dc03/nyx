@@ -236,7 +236,12 @@ StmtVisitorType Generator::visit(BreakStmt &stmt) {
 
 StmtVisitorType Generator::visit(ClassStmt &stmt) {}
 
-StmtVisitorType Generator::visit(ContinueStmt &stmt) {}
+StmtVisitorType Generator::visit(ContinueStmt &stmt) {
+    std::size_t continue_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
+    current_chunk->emit_bytes(0, 0);
+    current_chunk->emit_byte(0);
+    continue_stmts.top().push_back(continue_idx);
+}
 
 StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
     compile(stmt.expr.get());
@@ -286,30 +291,79 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
 }
 
 StmtVisitorType Generator::visit(WhileStmt &stmt) {
+    /*
+     * Taking an example of
+     * for (var i = 0; i < 5; i = i + 1) {
+     *      i
+     * }
+     * This code will parse into
+     * {
+     *      var i = 0;
+     *      while(i < 5) {
+     *          i
+     *      }
+     * }
+     * (and the i = i + 1 is stored separately)
+     *
+     * This will compile to
+     *
+     *   CONST_SHORT               -> 0 | value = 0
+     *   JUMP_FORWARD              | offset = +15  ---+
+     *   POP   <--------------------------------------+---+
+     *   ACCESS_LOCAL_SHORT        -> 0               |   |  ) - These two instructions are the body of the loop
+     *   POP                                          |   |  )
+     *   ACCESS_LOCAL_SHORT        -> 0               |   |  } - These five instructions are the increment
+     *   CONST_SHORT               -> 1 | value = 1   |   |  }
+     *   ADD                                          |   |  }
+     *   ASSIGN_LOCAL              | assign to 0      |   |  }
+     *   POP                                          |   |  }
+     *   ACCESS_LOCAL_SHORT        -> 0   <-----------+   |  ] - These three instructions are the condition
+     *   CONST_SHORT               -> 2 | value = 5       |  ]
+     *   LESSER                                           |  ]
+     *   JUMP_BACK_IF_TRUE         | offset = -24  -------+
+     *   POP
+     *   POP
+     *   HALT
+     *
+     *   From this, the control flow should be obvious. I have tried to mirror
+     *   what gcc generates for a loop in C.
+     */
     break_stmts.emplace();
-    std::size_t loop_start = current_chunk->bytes.size();
-    compile(stmt.condition.get());
+    continue_stmts.emplace();
 
-    std::size_t exit_jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, stmt.keyword.line);
+    std::size_t jump_begin_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
-    current_chunk->emit_instruction(Instruction::POP, 0);
 
+    std::size_t loop_back_idx = current_chunk->emit_instruction(Instruction::POP, 0);
     compile(stmt.body.get());
 
-    std::size_t loop_back_idx = current_chunk->emit_instruction(Instruction::JUMP_BACKWARD, stmt.keyword.line);
+    std::size_t increment_idx = current_chunk->bytes.size();
+    if (stmt.increment != nullptr) {
+        compile(stmt.increment.get());
+    }
+
+    std::size_t condition_idx = current_chunk->bytes.size();
+    compile(stmt.condition.get());
+
+    std::size_t jump_back_idx = current_chunk->emit_instruction(Instruction::JUMP_BACK_IF_TRUE, stmt.keyword.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
 
-    std::size_t loop_end = current_chunk->emit_instruction(Instruction::POP, 0);
+    std::size_t loop_end_idx = current_chunk->emit_instruction(Instruction::POP, 0);
 
-    patch_jump(exit_jump_idx, loop_end - exit_jump_idx - 4);
-    patch_jump(loop_back_idx, loop_back_idx - loop_start + 4);
-    // In this case it will be +4 because 3 additional bytes, i.e the offset have to be jumped back over
+    patch_jump(jump_back_idx, jump_back_idx - loop_back_idx + 4);
+    patch_jump(jump_begin_idx, condition_idx - jump_begin_idx - 4);
+
+    for (std::size_t continue_idx : continue_stmts.top()) {
+        patch_jump(continue_idx, increment_idx - continue_idx - 4);
+    }
 
     for (std::size_t break_idx : break_stmts.top()) {
-        patch_jump(break_idx, loop_end - break_idx - 3); // -4 as described before, +1 to jump after the POP instruction
+        patch_jump(break_idx, loop_end_idx - break_idx - 3);
     }
+
+    continue_stmts.pop();
     break_stmts.pop();
 }
 

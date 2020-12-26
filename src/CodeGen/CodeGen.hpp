@@ -19,6 +19,8 @@ class Generator : Visitor {
     std::stack<std::vector<std::size_t>> break_stmts{};
     // Push a new vector for every loop or switch statement encountered within a loop or switch statement, with the
     // vector tracking the indexes of the breaks
+    std::stack<std::vector<std::size_t>> continue_stmts{};
+    // Similar thing as for break statements
 
     void begin_scope();
     void end_scope();

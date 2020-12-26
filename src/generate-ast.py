@@ -366,8 +366,9 @@ if __name__ == '__main__':
                   'bool is_val, Token name, TypeNode type, ExprNode initializer, NumericConversionType conversion_type'
                   + ', bool requires_copy')
 
-        decl_stmt('keyword{keyword}, condition{std::move(condition)}, body{std::move(body)}',
-                  'Token keyword, ExprNode condition, StmtNode body')
+        decl_stmt('keyword{keyword}, condition{std::move(condition)}, body{std::move(body)}, increment{std::move(' +
+                  'increment)}',
+                  'Token keyword, ExprNode condition, StmtNode body, StmtNode increment')
 
         file.write('// End of statement node definitions\n\n')
 

@@ -654,13 +654,14 @@ struct WhileStmt final : public Stmt {
     Token keyword;
     ExprNode condition;
     StmtNode body;
+    StmtNode increment;
 
     std::string_view string_tag() override final { return "WhileStmt"; }
 
     NodeType type_tag() override final { return NodeType::WhileStmt; }
 
-    WhileStmt(Token keyword, ExprNode condition, StmtNode body)
-        : keyword{keyword}, condition{std::move(condition)}, body{std::move(body)} {}
+    WhileStmt(Token keyword, ExprNode condition, StmtNode body, StmtNode increment)
+        : keyword{keyword}, condition{std::move(condition)}, body{std::move(body)}, increment{std::move(increment)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

@@ -819,14 +819,15 @@ StmtNode Parser::for_statement() {
     }
 
     scoped_boolean_manager loop_manager{in_loop};
-    auto *modified_body = allocate_node(BlockStmt, {});
+    //    auto *modified_body = allocate_node(BlockStmt, {});
 
-    scoped_integer_manager manager2{scope_depth};
-    modified_body->stmts.emplace_back(statement()); // The actual body
-    modified_body->stmts.emplace_back(std::move(increment));
+    //    scoped_integer_manager manager2{scope_depth};
+    //    modified_body->stmts.emplace_back(statement()); // The actual body
+    //    modified_body->stmts.emplace_back(std::move(increment));
 
     StmtNode desugared_loop =
-        StmtNode{allocate_node(WhileStmt, std::move(keyword), std::move(condition), StmtNode{modified_body})};
+        StmtNode{allocate_node(WhileStmt, std::move(keyword), std::move(condition), statement(), std::move(increment))};
+    // The increment is only created for for-loops, so that the `continue` statement works properly.
 
     auto *loop = allocate_node(BlockStmt, {});
     loop->stmts.emplace_back(std::move(initializer));
@@ -911,5 +912,5 @@ StmtNode Parser::while_statement() {
     scoped_boolean_manager loop_manager{in_loop};
     StmtNode body = statement();
 
-    return StmtNode{allocate_node(WhileStmt, std::move(keyword), std::move(condition), std::move(body))};
+    return StmtNode{allocate_node(WhileStmt, std::move(keyword), std::move(condition), std::move(body), nullptr)};
 }

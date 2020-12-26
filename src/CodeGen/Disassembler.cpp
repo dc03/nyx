@@ -77,7 +77,7 @@ std::size_t four_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte
         print_tab(1) << "| " << chunk.constants[next_bytes].repr() << '\n';
     } else if (name == "JUMP_FORWARD" || name == "JUMP_IF_FALSE") {
         std::cout << "\t| offset = +" << next_bytes << ", jump to = " << byte + next_bytes + 4 << '\n';
-    } else if (name == "JUMP_BACKWARD") {
+    } else if (name == "JUMP_BACKWARD" || name == "JUMP_BACK_IF_TRUE") {
         std::cout << "\t| offset = -" << next_bytes << ", jump to = " << byte + 4 - next_bytes << '\n';
     } else if (name == "ASSIGN_LOCAL") {
         std::cout << "\t| assign to " << next_bytes << '\n';
@@ -125,6 +125,7 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::JUMP_FORWARD: return four_byte_insn(chunk, "JUMP_FORWARD", byte, insn_count);
         case Instruction::JUMP_BACKWARD: return four_byte_insn(chunk, "JUMP_BACKWARD", byte, insn_count);
         case Instruction::JUMP_IF_FALSE: return four_byte_insn(chunk, "JUMP_IF_FALSE", byte, insn_count);
+        case Instruction::JUMP_BACK_IF_TRUE: return four_byte_insn(chunk, "JUMP_BACK_IF_TRUE", byte, insn_count);
         case Instruction::ASSIGN_LOCAL: return four_byte_insn(chunk, "ASSIGN_LOCAL", byte, insn_count);
     }
     unreachable();

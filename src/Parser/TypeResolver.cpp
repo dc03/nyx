@@ -872,6 +872,9 @@ StmtVisitorType TypeResolver::visit(WhileStmt &stmt) {
     if (one_of(condition.info->data.type, Type::CLASS, Type::LIST)) {
         error("Class or list types are not implicitly convertible to bool", stmt.keyword);
     }
+    if (stmt.increment != nullptr) {
+        resolve(stmt.increment.get());
+    }
 
     resolve(stmt.body.get());
 }

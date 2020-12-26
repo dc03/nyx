@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-//#define PRINT_STACK
+#define PRINT_STACK
 
 void VM::push(const Value &value) {
     *stack_top = Value{}; // Without this, for reasons I do not know, a segfault occurs with strings
@@ -221,9 +221,19 @@ void VM::run(RuntimeModule &main_module) {
                 break;
             }
 
+            case is Instruction::JUMP_BACK_IF_TRUE: {
+                if (is_truthy(top_from(1))) {
+                    ip -= read_three_bytes();
+                } else {
+                    ip += 3;
+                }
+                break;
+            }
+
             case is Instruction::ASSIGN_LOCAL: {
                 std::size_t slot = read_three_bytes();
                 stack[slot] = top_from(1);
+                pop();
                 push(stack[slot]);
                 break;
             }
