@@ -210,14 +210,15 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
     std::size_t condition_jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, expr.question.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
-    current_chunk->emit_instruction(Instruction::POP, expr.question.line);
+    // current_chunk->emit_instruction(Instruction::POP, expr.question.line);
 
     compile(expr.middle.get());
 
     std::size_t over_false_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, expr.question.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
-    std::size_t false_to_idx = current_chunk->emit_instruction(Instruction::POP, 0);
+    // std::size_t false_to_idx = current_chunk->emit_instruction(Instruction::POP, 0);
+    std::size_t false_to_idx = current_chunk->bytes.size();
 
     compile(expr.right.get());
 
@@ -225,7 +226,8 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
 
-    std::size_t true_to_idx = current_chunk->emit_instruction(Instruction::POP, 0);
+    // std::size_t true_to_idx = current_chunk->emit_instruction(Instruction::POP, 0);
+    std::size_t true_to_idx = current_chunk->bytes.size();
 
     patch_jump(condition_jump_idx, false_to_idx - condition_jump_idx - 4);
     patch_jump(over_false_idx, true_to_idx - over_false_idx - 4);
@@ -298,9 +300,13 @@ StmtVisitorType Generator::visit(IfStmt &stmt) {
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
     // Reserve three bytes for the offset
-    current_chunk->emit_instruction(Instruction::POP, 0);
+    // current_chunk->emit_instruction(Instruction::POP, 0);
     compile(stmt.thenBranch.get());
-    std::size_t before_else = current_chunk->emit_instruction(Instruction::POP, 0);
+    // std::size_t before_else = current_chunk->emit_instruction(Instruction::POP, 0);
+    std::size_t over_else = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
+    current_chunk->emit_bytes(0, 0);
+    current_chunk->emit_byte(0);
+    std::size_t before_else = current_chunk->bytes.size();
     patch_jump(jump_idx, before_else - jump_idx - 4);
     /*
      * The -4 because:
@@ -315,6 +321,8 @@ StmtVisitorType Generator::visit(IfStmt &stmt) {
     if (stmt.elseBranch != nullptr) {
         compile(stmt.elseBranch.get());
     }
+    std::size_t after_else = current_chunk->bytes.size();
+    patch_jump(over_else, after_else - over_else - 4);
 }
 
 StmtVisitorType Generator::visit(ReturnStmt &stmt) {}
@@ -377,7 +385,8 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
 
-    std::size_t loop_back_idx = current_chunk->emit_instruction(Instruction::POP, 0);
+    // std::size_t loop_back_idx = current_chunk->emit_instruction(Instruction::POP, 0);
+    std::size_t loop_back_idx = current_chunk->bytes.size();
     compile(stmt.body.get());
 
     std::size_t increment_idx = current_chunk->bytes.size();
@@ -392,7 +401,8 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
 
-    std::size_t loop_end_idx = current_chunk->emit_instruction(Instruction::POP, 0);
+    // std::size_t loop_end_idx = current_chunk->emit_instruction(Instruction::POP, 0);
+    std::size_t loop_end_idx = current_chunk->bytes.size();
 
     patch_jump(jump_back_idx, jump_back_idx - loop_back_idx + 4);
     patch_jump(jump_begin_idx, condition_idx - jump_begin_idx - 4);

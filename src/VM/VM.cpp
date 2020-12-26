@@ -10,7 +10,10 @@
 //#define PRINT_STACK
 
 void VM::push(const Value &value) {
-    *stack_top = Value{}; // Without this, for reasons I do not know, a segfault occurs with strings
+    //*stack_top = Value{}; // Without this, for reasons I do not know, a segfault occurs with strings
+    if (value.is_string()) {
+        stack_top->as.string = std::string{};
+    }
     *(stack_top++) = value;
 }
 
@@ -188,9 +191,15 @@ void VM::run(RuntimeModule &main_module) {
                 break;
             }
             case is Instruction::NEGATE: {
-                Value result{top_from(1).is_int() ? -top_from(1).to_int() : -top_from(1).to_double()};
-                pop();
-                push(result);
+                if (top_from(1).is_int()) {
+                    Value result{-top_from(1).to_int()};
+                    pop();
+                    push(result);
+                } else {
+                    Value result{-top_from(1).to_double()};
+                    pop();
+                    push(result);
+                }
                 break;
             }
 
@@ -218,6 +227,7 @@ void VM::run(RuntimeModule &main_module) {
                 } else {
                     ip += 3;
                 }
+                pop();
                 break;
             }
 
@@ -227,6 +237,7 @@ void VM::run(RuntimeModule &main_module) {
                 } else {
                     ip += 3;
                 }
+                pop();
                 break;
             }
 
