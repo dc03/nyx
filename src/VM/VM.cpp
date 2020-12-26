@@ -233,6 +233,15 @@ void VM::run(RuntimeModule &main_module) {
                 break;
             }
 
+            case is Instruction::JUMP_IF_TRUE: {
+                if (is_truthy(top_from(1))) {
+                    ip += read_three_bytes();
+                } else {
+                    ip += 3;
+                }
+                break;
+            }
+
             case is Instruction::POP_JUMP_IF_FALSE: {
                 if (!is_truthy(top_from(1))) {
                     ip += read_three_bytes();

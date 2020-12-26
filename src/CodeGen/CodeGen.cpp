@@ -169,10 +169,12 @@ ExprVisitorType Generator::visit(LiteralExpr &expr) {
 
 ExprVisitorType Generator::visit(LogicalExpr &expr) {
     compile(expr.left.get());
+    std::size_t jump_idx{};
     if (expr.oper.type == TokenType::OR) {
-        current_chunk->emit_instruction(Instruction::NOT, expr.oper.line);
-    } // Since || / or short circuits on true, flip the boolean on top of the stack
-    std::size_t jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, expr.oper.line);
+        jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_TRUE, expr.oper.line);
+    } else { // Since || / or short circuits on true, flip the boolean on top of the stack
+        jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, expr.oper.line);
+    }
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
     current_chunk->emit_instruction(Instruction::POP, expr.oper.line);
