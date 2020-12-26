@@ -47,7 +47,8 @@ enum class Instruction : unsigned char {
     JUMP_FORWARD, // For Turing completeness (I think)
     JUMP_BACKWARD,
     JUMP_IF_FALSE,
-    JUMP_BACK_IF_TRUE,
+    POP_JUMP_IF_FALSE,
+    POP_JUMP_BACK_IF_TRUE,
 
     ASSIGN_LOCAL, // To assign to a value on the stack
 };

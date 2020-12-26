@@ -168,6 +168,17 @@ ExprVisitorType Generator::visit(LiteralExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(LogicalExpr &expr) {
+    compile(expr.left.get());
+    if (expr.oper.type == TokenType::OR) {
+        current_chunk->emit_instruction(Instruction::NOT, expr.oper.line);
+    } // Since || / or short circuits on true, flip the boolean on top of the stack
+    std::size_t jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, expr.oper.line);
+    current_chunk->emit_bytes(0, 0);
+    current_chunk->emit_byte(0);
+    current_chunk->emit_instruction(Instruction::POP, expr.oper.line);
+    compile(expr.right.get());
+    std::size_t to_idx = current_chunk->bytes.size();
+    patch_jump(jump_idx, to_idx - jump_idx - 4);
     return {};
 }
 
@@ -194,7 +205,7 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
      * This will compile to
      *
      * FALSE
-     * JUMP_IF_FALSE		| offset = +6   ----------------+
+     * POP_JUMP_IF_FALSE		| offset = +6   ----------------+
      * CONST_SHORT	        -> 0 | value = 1                |
      * JUMP_FORWARD		| offset = +2, jump to = 13   --+--+
      * CONST_SHORT	        -> 1 | value = 2    <-----------+  |
@@ -203,7 +214,8 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
      */
     compile(expr.left.get());
 
-    std::size_t condition_jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, expr.question.line);
+    std::size_t condition_jump_idx =
+        current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, expr.question.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
 
@@ -284,7 +296,7 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {}
 
 StmtVisitorType Generator::visit(IfStmt &stmt) {
     compile(stmt.condition.get());
-    std::size_t jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, stmt.keyword.line);
+    std::size_t jump_idx = current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, stmt.keyword.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
     // Reserve three bytes for the offset
@@ -299,12 +311,12 @@ StmtVisitorType Generator::visit(IfStmt &stmt) {
     /*
      * The -4 because:
      *
-     * JUMP_IF_FALSE
+     * POP_JUMP_IF_FALSE
      * BYTE1 -+
-     * BYTE2  |-> The three bytes for the offset from the JUMP_IF_FALSE instruction to the else statement
+     * BYTE2  |-> The three bytes for the offset from the POP_JUMP_IF_FALSE instruction to the else statement
      * BYTE3 -+
      * ... <- This is the body of the if statement (The ip will be here when the jump happens, but `jump_idx` will be
-     *                                              considered for JUMP_IF_FALSE)
+     *                                              considered for POP_JUMP_IF_FALSE)
      * JUMP_FORWARD
      * BYTE1
      * BYTE2
@@ -364,7 +376,7 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
      *   ACCESS_LOCAL_SHORT        -> 0   <-----------+   |  ] - These three instructions are the condition
      *   CONST_SHORT               -> 2 | value = 5       |  ]
      *   LESSER                                           |  ]
-     *   JUMP_BACK_IF_TRUE         | offset = -24  -------+
+     *   POP_JUMP_BACK_IF_TRUE         | offset = -24  -------+
      *   POP
      *   HALT
      *
@@ -389,7 +401,7 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
     std::size_t condition_idx = current_chunk->bytes.size();
     compile(stmt.condition.get());
 
-    std::size_t jump_back_idx = current_chunk->emit_instruction(Instruction::JUMP_BACK_IF_TRUE, stmt.keyword.line);
+    std::size_t jump_back_idx = current_chunk->emit_instruction(Instruction::POP_JUMP_BACK_IF_TRUE, stmt.keyword.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
 

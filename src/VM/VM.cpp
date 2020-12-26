@@ -7,7 +7,9 @@
 
 #include <iostream>
 
+#ifndef NDEBUG
 #define PRINT_STACK
+#endif
 
 void VM::push(const Value &value) {
     //*stack_top = Value{}; // Without this, for reasons I do not know, a segfault occurs with strings
@@ -221,7 +223,17 @@ void VM::run(RuntimeModule &main_module) {
                 ip -= read_three_bytes();
                 break;
             }
+
             case is Instruction::JUMP_IF_FALSE: {
+                if (!is_truthy(top_from(1))) {
+                    ip += read_three_bytes();
+                } else {
+                    ip += 3;
+                }
+                break;
+            }
+
+            case is Instruction::POP_JUMP_IF_FALSE: {
                 if (!is_truthy(top_from(1))) {
                     ip += read_three_bytes();
                 } else {
@@ -231,7 +243,7 @@ void VM::run(RuntimeModule &main_module) {
                 break;
             }
 
-            case is Instruction::JUMP_BACK_IF_TRUE: {
+            case is Instruction::POP_JUMP_BACK_IF_TRUE: {
                 if (is_truthy(top_from(1))) {
                     ip -= read_three_bytes();
                 } else {
