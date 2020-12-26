@@ -188,6 +188,48 @@ ExprVisitorType Generator::visit(SuperExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(TernaryExpr &expr) {
+    /*
+     * Consider `false ? 1 : 2`
+     * This will compile to
+     *    FALSE
+     *    JUMP_IF_FALSE		| offset = +7    --------------+
+     *    POP                                                  |
+     *    CONST_SHORT	        -> 0 | value = 1               |
+     *    JUMP_FORWARD		| offset = +7, jump to = 19  --+---+
+     *    POP    <---------------------------------------------+   |
+     *    CONST_SHORT	        -> 1 | value = 2                   |
+     *    JUMP_FORWARD		| offset = +1, jump to = 20  ------+---+
+     *    POP    <-------------------------------------------------+   |
+     *    POP    <-----------------------------------------------------+
+     *    HALT
+     *
+     *    Its not particularly efficient, and this code gen can be fixed by handling the POPs in JUMP_IF_FALSE itself
+     */
+    compile(expr.left.get());
+
+    std::size_t condition_jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, expr.question.line);
+    current_chunk->emit_bytes(0, 0);
+    current_chunk->emit_byte(0);
+    current_chunk->emit_instruction(Instruction::POP, expr.question.line);
+
+    compile(expr.middle.get());
+
+    std::size_t over_false_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, expr.question.line);
+    current_chunk->emit_bytes(0, 0);
+    current_chunk->emit_byte(0);
+    std::size_t false_to_idx = current_chunk->emit_instruction(Instruction::POP, 0);
+
+    compile(expr.right.get());
+
+    std::size_t over_true_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, expr.question.line);
+    current_chunk->emit_bytes(0, 0);
+    current_chunk->emit_byte(0);
+
+    std::size_t true_to_idx = current_chunk->emit_instruction(Instruction::POP, 0);
+
+    patch_jump(condition_jump_idx, false_to_idx - condition_jump_idx - 4);
+    patch_jump(over_false_idx, true_to_idx - over_false_idx - 4);
+    patch_jump(over_true_idx, true_to_idx + 1 - over_true_idx - 4);
     return {};
 }
 

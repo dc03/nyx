@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-#define PRINT_STACK
+//#define PRINT_STACK
 
 void VM::push(const Value &value) {
     *stack_top = Value{}; // Without this, for reasons I do not know, a segfault occurs with strings
