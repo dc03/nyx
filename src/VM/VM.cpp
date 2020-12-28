@@ -13,14 +13,15 @@
 
 void VM::push(const Value &value) {
     //*stack_top = Value{}; // Without this, for reasons I do not know, a segfault occurs with strings
-    if (value.is_string()) {
-        stack_top->as.string = std::string{};
-    }
+    // if (value.is_string()) {
+    //    stack_top->as.string = std::string{};
+    //}
     *(stack_top++) = value;
 }
 
 void VM::pop() {
-    Value destroyed = std::move(*--stack_top);
+    *(--stack_top) = Value{};
+    //    Value destroyed = std::move(*--stack_top);
 }
 
 Value &VM::top_from(std::size_t distance) const {
@@ -75,9 +76,7 @@ void VM::run(RuntimeModule &main_module) {
             Value result{top_from(2).to_int() oper top_from(1).to_int()};                                              \
             pop_twice_push(result);                                                                                    \
         } else {                                                                                                       \
-            Value result{(top_from(2).is_int() ? top_from(2).to_int() : top_from(2).to_double())                       \
-                         oper                                                                                          \
-                         (top_from(1).is_int() ? top_from(1).to_int() : top_from(1).to_double())};                     \
+            Value result{top_from(2).to_numeric() oper top_from(1).to_numeric()};                                      \
             pop_twice_push(result);                                                                                    \
         }                                                                                                              \
     }                                                                                                                  \
@@ -93,12 +92,16 @@ void VM::run(RuntimeModule &main_module) {
     break
 
 #define binary_boolean_instruction(oper)                                                                               \
-    if (top_from(2).is_int() || top_from(2).is_double()) {                                                             \
-        Value result{(top_from(2).is_int() ? top_from(2).to_int() : top_from(2).to_double())oper(                      \
-            top_from(1).is_int() ? top_from(1).to_int() : top_from(1).to_double())};                                   \
-        pop_twice_push(result);                                                                                        \
-    } else if (top_from(2).is_bool()) {                                                                                \
+    if (top_from(2).is_bool()) {                                                                                       \
         Value result{top_from(2).to_bool() oper top_from(1).to_bool()};                                                \
+        pop_twice_push(result);                                                                                        \
+    } else if (top_from(2).is_string()) {                                                                              \
+        Value result{top_from(2).to_string() oper top_from(1).to_string()};                                            \
+        pop_twice_push(result);                                                                                        \
+    } else if (top_from(2).is_null()) {                                                                                \
+        Value result{top_from(2).to_null() oper top_from(1).to_null()};                                                \
+    } else {                                                                                                           \
+        Value result{top_from(2).to_numeric() oper top_from(1).to_numeric()};                                          \
         pop_twice_push(result);                                                                                        \
     }                                                                                                                  \
     break

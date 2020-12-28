@@ -47,12 +47,14 @@ struct Value {
     [[nodiscard]] bool is_string() const noexcept { return tag == Value::STRING; }
     [[nodiscard]] bool is_bool()   const noexcept { return tag == Value::BOOL; }
     [[nodiscard]] bool is_null()   const noexcept { return tag == Value::NULL_; }
+    [[nodiscard]] bool is_numeric() const noexcept { return tag == Value::INT || tag == Value::DOUBLE; }
 
     [[nodiscard]] int to_int()             const noexcept { return as.integer; }
     [[nodiscard]] double to_double()       const noexcept { return as.real; }
     [[nodiscard]] std::string to_string()  const noexcept { return as.string; }
     [[nodiscard]] bool to_bool()           const noexcept { return as.boolean; }
     [[nodiscard]] std::nullptr_t to_null() const noexcept { return as.null; }
+    [[nodiscard]] double to_numeric()      const noexcept { return is_int() ? as.integer : as.real; }
     // clang-format on
 
     std::string repr() const noexcept;
