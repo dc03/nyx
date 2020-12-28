@@ -340,7 +340,7 @@ ExprNode Parser::or_(bool, ExprNode left) {
 }
 
 ExprNode Parser::expression() {
-    return parse_precedence(ParsePrecedence::ASSIGNMENT);
+    return parse_precedence(ParsePrecedence::COMMA);
 }
 
 ExprNode Parser::grouping(bool) {
@@ -626,7 +626,7 @@ StmtNode Parser::function_declaration() {
     auto *function_definition =
         allocate_node(FunctionStmt, std::move(name), std::move(return_type), std::move(params), std::move(body));
 
-    if (!in_class && scope_depth == 1) {
+    if (!in_class && scope_depth == 0) {
         current_module.functions[function_definition->name.lexeme] = function_definition;
     }
 

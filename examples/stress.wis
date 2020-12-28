@@ -196,4 +196,8 @@ y = 5
 //        false or x or true
 //    }
 //}
-"string" == "other_string"
+switch (1) {
+    case 1: 1
+    case 2: { 5; break; }
+    default: 6
+}

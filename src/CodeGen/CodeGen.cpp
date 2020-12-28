@@ -336,7 +336,70 @@ StmtVisitorType Generator::visit(IfStmt &stmt) {
 
 StmtVisitorType Generator::visit(ReturnStmt &stmt) {}
 
-StmtVisitorType Generator::visit(SwitchStmt &stmt) {}
+StmtVisitorType Generator::visit(SwitchStmt &stmt) {
+    /*
+     * Consider the following code:
+     *
+     * switch (1) {
+     *     case 1: 1
+     *     case 2: { 5; break; }
+     *     default: 6
+     * }
+     *
+     * This will compile to:
+     *
+     * CONST_SHORT              -> 0 | value = 1
+     * CONST_SHORT              -> 1 | value = 1
+     * POP_JUMP_IF_EQUAL        | offset = +10    ---------------+       <- case 1:
+     * CONST_SHORT              -> 2 | value = 2                 |
+     * POP_JUMP_IF_EQUAL        | offset = +7, jump to = 21    --+-+     <- case 2:
+     * JUMP_FORWARD             | offset = +10, jump to = 28   --+-+-+   <- default:
+     * CONST_SHORT              -> 3 | value = 1 <---------------+ | |
+     * POP                                                         | |
+     * CONST_SHORT              -> 4 | value = 5 <-----------------+ |
+     * POP                                                           |
+     * JUMP_FORWARD             | offset = +3, jump to = 31   -------+-+ <- This is the break statement
+     * CONST_SHORT              -> 5 | value = 6 <-------------------+ |
+     * POP <-----------------------------------------------------------+
+     * HALT
+     *
+     */
+    break_stmts.emplace();
+    compile(stmt.condition.get());
+    std::vector<std::size_t> jumps{};
+    std::size_t default_jump{};
+    for (auto &case_ : stmt.cases) {
+        compile(case_.first.get());
+        jumps.push_back(current_chunk->emit_instruction(Instruction::POP_JUMP_IF_EQUAL, 0));
+        current_chunk->emit_bytes(0, 0);
+        current_chunk->emit_byte(0);
+    }
+    if (stmt.default_case != nullptr) {
+        default_jump = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, 0);
+        current_chunk->emit_bytes(0, 0);
+        current_chunk->emit_byte(0);
+    }
+
+    std::size_t i = 0;
+    for (auto &case_ : stmt.cases) {
+        std::size_t jump_to = current_chunk->bytes.size();
+        patch_jump(jumps[i], jump_to - jumps[i] - 4);
+        compile(case_.second.get());
+        i++;
+    }
+    if (stmt.default_case != nullptr) {
+        std::size_t jump_to = current_chunk->bytes.size();
+        patch_jump(default_jump, jump_to - default_jump - 4);
+        compile(stmt.default_case.get());
+    }
+
+    for (std::size_t break_stmt : break_stmts.top()) {
+        std::size_t jump_to = current_chunk->bytes.size();
+        patch_jump(break_stmt, jump_to - break_stmt - 4);
+    }
+
+    break_stmts.pop();
+}
 
 StmtVisitorType Generator::visit(TypeStmt &stmt) {}
 

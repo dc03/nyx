@@ -245,6 +245,7 @@ void VM::run(RuntimeModule &main_module) {
             case is Instruction::POP_JUMP_IF_EQUAL: {
                 if (top_from(2) == top_from(1)) {
                     ip += read_three_bytes();
+                    pop();
                 } else {
                     ip += 3;
                 }
