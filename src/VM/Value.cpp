@@ -48,6 +48,19 @@ Value::Value(double value) : tag{Value::DOUBLE}, as{value} {}
 Value::Value(std::nullptr_t) : tag{Value::NULL_}, as{nullptr} {}
 Value::Value(std::string value) : tag{Value::STRING}, as{value} {}
 
+bool Value::operator==(const Value &other) const noexcept {
+    if (is_numeric()) {
+        return to_numeric() == other.to_numeric();
+    } else if (is_string()) {
+        return to_string() == other.to_string();
+    } else if (is_bool()) {
+        return to_bool() == other.to_bool();
+    } else if (is_null()) {
+        return true;
+    }
+    return false;
+}
+
 std::string Value::repr() const noexcept {
     if (is_int()) {
         return std::to_string(to_int());

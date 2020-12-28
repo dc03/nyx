@@ -79,8 +79,7 @@ void VM::run(RuntimeModule &main_module) {
             Value result{top_from(2).to_numeric() oper top_from(1).to_numeric()};                                      \
             pop_twice_push(result);                                                                                    \
         }                                                                                                              \
-    }                                                                                                                  \
-    break
+    }
 
     // clang-format on
 
@@ -88,8 +87,7 @@ void VM::run(RuntimeModule &main_module) {
     {                                                                                                                  \
         Value result{top_from(2).to_int() oper top_from(1).to_int()};                                                  \
         pop_twice_push(result);                                                                                        \
-    }                                                                                                                  \
-    break
+    }
 
 #define binary_boolean_instruction(oper)                                                                               \
     if (top_from(2).is_bool()) {                                                                                       \
@@ -98,13 +96,10 @@ void VM::run(RuntimeModule &main_module) {
     } else if (top_from(2).is_string()) {                                                                              \
         Value result{top_from(2).to_string() oper top_from(1).to_string()};                                            \
         pop_twice_push(result);                                                                                        \
-    } else if (top_from(2).is_null()) {                                                                                \
-        Value result{top_from(2).to_null() oper top_from(1).to_null()};                                                \
     } else {                                                                                                           \
         Value result{top_from(2).to_numeric() oper top_from(1).to_numeric()};                                          \
         pop_twice_push(result);                                                                                        \
-    }                                                                                                                  \
-    break
+    }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     for (;; insn_number++) {
 #ifdef PRINT_STACK
@@ -122,9 +117,9 @@ void VM::run(RuntimeModule &main_module) {
                 break;
             }
 
-            case is Instruction::ADD: binary_arithmetic_instruction(+);
-            case is Instruction::SUB: binary_arithmetic_instruction(-);
-            case is Instruction::MUL: binary_arithmetic_instruction(*);
+            case is Instruction::ADD: binary_arithmetic_instruction(+); break;
+            case is Instruction::SUB: binary_arithmetic_instruction(-); break;
+            case is Instruction::MUL: binary_arithmetic_instruction(*); break;
             case is Instruction::DIV:
                 if (top_from(1).is_int() && top_from(1).to_int() == 0) {
                     runtime_error("Division by zero", chunk->get_line_number(insn_number));
@@ -134,6 +129,7 @@ void VM::run(RuntimeModule &main_module) {
                     break;
                 }
                 binary_arithmetic_instruction(/);
+                break;
 
             case is Instruction::CONCAT: {
                 Value result{top_from(2).to_string() + top_from(1).to_string()};
@@ -164,9 +160,9 @@ void VM::run(RuntimeModule &main_module) {
                 break;
             }
 
-            case is Instruction::BIT_AND: binary_logical_instruction(&);
-            case is Instruction::BIT_OR: binary_logical_instruction(|);
-            case is Instruction::BIT_XOR: binary_logical_instruction(^);
+            case is Instruction::BIT_AND: binary_logical_instruction(&); break;
+            case is Instruction::BIT_OR: binary_logical_instruction(|); break;
+            case is Instruction::BIT_XOR: binary_logical_instruction(^); break;
 
             case is Instruction::MOD: {
                 if (top_from(1).to_int() <= 0) {
@@ -179,9 +175,10 @@ void VM::run(RuntimeModule &main_module) {
                 break;
             }
 
-            case is Instruction::GREATER: binary_boolean_instruction(>);
-            case is Instruction::LESSER: binary_boolean_instruction(<);
-            case is Instruction::EQUAL: binary_boolean_instruction(==);
+            case is Instruction::GREATER: binary_boolean_instruction(>); break;
+            case is Instruction::LESSER: binary_boolean_instruction(<); break;
+            case is Instruction::EQUAL: pop_twice_push(Value{top_from(2) == top_from(1)}); break;
+
             case is Instruction::NOT: {
                 bool truthiness = !is_truthy(top_from(1));
                 pop();
@@ -242,6 +239,16 @@ void VM::run(RuntimeModule &main_module) {
                 } else {
                     ip += 3;
                 }
+                break;
+            }
+
+            case is Instruction::POP_JUMP_IF_EQUAL: {
+                if (top_from(2) == top_from(1)) {
+                    ip += read_three_bytes();
+                } else {
+                    ip += 3;
+                }
+                pop();
                 break;
             }
 

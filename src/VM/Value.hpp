@@ -57,6 +57,7 @@ struct Value {
     [[nodiscard]] double to_numeric()      const noexcept { return is_int() ? as.integer : as.real; }
     // clang-format on
 
+    [[nodiscard]] bool operator==(const Value &other) const noexcept;
     std::string repr() const noexcept;
 };
 

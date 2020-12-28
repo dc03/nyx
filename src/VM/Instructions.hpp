@@ -48,6 +48,7 @@ enum class Instruction : unsigned char {
     JUMP_BACKWARD,
     JUMP_IF_FALSE,
     JUMP_IF_TRUE,
+    POP_JUMP_IF_EQUAL,
     POP_JUMP_IF_FALSE,
     POP_JUMP_BACK_IF_TRUE,
 
