@@ -207,10 +207,10 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
      * This will compile to
      *
      * FALSE
-     * POP_JUMP_IF_FALSE		| offset = +6   ----------------+
-     * CONST_SHORT	        -> 0 | value = 1                |
-     * JUMP_FORWARD		| offset = +2, jump to = 13   --+--+
-     * CONST_SHORT	        -> 1 | value = 2    <-----------+  |
+     * POP_JUMP_IF_FALSE        | offset = +6   ----------------+
+     * CONST_SHORT              -> 0 | value = 1                |
+     * JUMP_FORWARD             | offset = +2, jump to = 13   --+--+
+     * CONST_SHORT              -> 1 | value = 2    <-----------+  |
      * POP  <------------------------------------------------------+
      * HALT
      */
@@ -441,7 +441,7 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
      *   ACCESS_LOCAL_SHORT        -> 0   <-----------+   |  ] - These three instructions are the condition
      *   CONST_SHORT               -> 2 | value = 5       |  ]
      *   LESSER                                           |  ]
-     *   POP_JUMP_BACK_IF_TRUE         | offset = -24  -------+
+     *   POP_JUMP_BACK_IF_TRUE     | offset = -24  -------+
      *   POP
      *   HALT
      *
