@@ -59,7 +59,10 @@ BaseTypeVisitorType Generator::compile(BaseType *type) {
 }
 
 ExprVisitorType Generator::visit(AssignExpr &expr) {
-    compile(expr.value.get());
+    ExprTypeInfo info = compile(expr.value.get());
+    if (info.is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, expr.target.line);
+    }
     current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, expr.target.line);
     current_chunk->emit_bytes((expr.stack_slot >> 16) & 0xff, (expr.stack_slot >> 8) & 0xff);
     current_chunk->emit_byte(expr.stack_slot & 0xff);
@@ -67,8 +70,14 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(BinaryExpr &expr) {
-    compile(expr.left.get());
-    compile(expr.right.get());
+    ExprTypeInfo left_info = compile(expr.left.get());
+    if (left_info.is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, expr.oper.line);
+    }
+    ExprTypeInfo right_info = compile(expr.right.get());
+    if (right_info.is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, expr.oper.line);
+    }
 
     // clang-format off
     switch (expr.oper.type) {
@@ -262,7 +271,7 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
     } else {
         compile_error("Too many variables in current scope");
     }
-    return {};
+    return {expr.stack_slot, expr.is_ref};
 }
 
 StmtVisitorType Generator::visit(BlockStmt &stmt) {
@@ -411,7 +420,10 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
             current_chunk->emit_bytes((initializer->stack_slot >> 16) & 0xff, (initializer->stack_slot >> 8) & 0xff);
             current_chunk->emit_byte(initializer->stack_slot & 0xff);
         } else {
-            compile(stmt.initializer.get());
+            ExprTypeInfo info = compile(stmt.initializer.get());
+            if (info.is_ref && !stmt.type->data.is_ref) {
+                current_chunk->emit_instruction(Instruction::DEREF, stmt.name.line);
+            }
         }
     } else {
         current_chunk->emit_instruction(Instruction::NULL_, stmt.name.line);

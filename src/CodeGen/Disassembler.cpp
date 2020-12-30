@@ -135,6 +135,7 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
             return four_byte_insn(chunk, "POP_JUMP_BACK_IF_TRUE", byte, insn_count);
         case Instruction::ASSIGN_LOCAL: return four_byte_insn(chunk, "ASSIGN_LOCAL", byte, insn_count);
         case Instruction::MAKE_REF_TO_LOCAL: return four_byte_insn(chunk, "MAKE_REF_TO_LOCAL", byte, insn_count);
+        case Instruction::DEREF: return single_byte_insn(chunk, "DEREF", byte, insn_count);
     }
     unreachable();
 }

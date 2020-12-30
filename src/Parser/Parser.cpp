@@ -269,9 +269,8 @@ ExprNode Parser::parse_precedence(ParsePrecedence::of precedence) {
         left = std::invoke(infix, this, can_assign, std::move(left));
     }
 
-    if (match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
-            TokenType::SLASH_EQUAL) &&
-        can_assign) {
+    if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
+                          TokenType::SLASH_EQUAL)) {
         error("Invalid assignment target", previous());
         throw ParseException{previous(), "Invalid assignment target"};
     }
@@ -423,7 +422,7 @@ ExprNode Parser::variable(bool can_assign) {
     } else if (peek().type == TokenType::DOUBLE_COLON) {
         return ExprNode{allocate_node(ScopeNameExpr, std::move(name))};
     } else {
-        return ExprNode{allocate_node(VariableExpr, std::move(name), 0)};
+        return ExprNode{allocate_node(VariableExpr, std::move(name), 0, false)};
     }
 }
 
@@ -471,7 +470,7 @@ TypeNode Parser::type() {
     } else if (type == Type::LIST) {
         return list_type(is_const, is_ref);
     } else if (type == Type::TYPEOF) {
-        return TypeNode{allocate_node(TypeofType, data, expression())};
+        return TypeNode{allocate_node(TypeofType, data, parse_precedence(ParsePrecedence::LOGIC_OR))};
     } else {
         return TypeNode{allocate_node(PrimitiveType, data)};
     }

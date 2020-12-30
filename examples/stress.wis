@@ -197,8 +197,6 @@ y = 5
 //    }
 //}
 var x = 0
-var y : ref int = x
-y = 2
-var z: ref int = y
-x
-z = 3
+var y : ref typeof x = x
+var z : typeof y = y
+y = z + 3

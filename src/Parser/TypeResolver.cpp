@@ -394,7 +394,7 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
                 } else if (member_decl.second == VisibilityType::PRIVATE) {
                     error("Cannot access private member outside class", name);
                 }
-                return {member->type.get(), name};
+                return {member->type.get(), name, true};
             }
         }
 
@@ -620,6 +620,7 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
     for (auto it = values.end() - 1; !values.empty() && it >= values.begin(); it--) {
         if (it->lexeme == expr.name.lexeme) {
             expr.stack_slot = it->stack_slot;
+            expr.is_ref = it->info->data.is_ref;
             return {it->info, it->class_, expr.name, true};
         }
     }
@@ -811,6 +812,12 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
 
     if (stmt.initializer != nullptr && stmt.type != nullptr) {
         QualifiedTypeInfo type = resolve(stmt.type.get());
+        if (stmt.type->type_tag() == NodeType::TypeofType) {
+            // This jank is to make sure that typeof is sent to type_scratch_space and the resolved type is stored on
+            // the AST
+            stmt.type.swap(type_scratch_space.back());
+            type = stmt.type.get();
+        }
         ExprVisitorType initializer = resolve(stmt.initializer.get());
         if (!convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name, true)) {
             error("Cannot convert from initializer type to type of variable", stmt.name);

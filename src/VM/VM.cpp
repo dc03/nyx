@@ -291,6 +291,13 @@ void VM::run(RuntimeModule &main_module) {
                 break;
             }
 
+            case is Instruction::DEREF: {
+                Value referred = *top_from(1).to_referred();
+                pop();
+                push(referred);
+                break;
+            }
+
             case is Instruction::POP: pop(); break;
             case is Instruction::HALT: return;
         }
