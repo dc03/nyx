@@ -633,19 +633,21 @@ struct VarStmt final : public Stmt {
     ExprNode initializer;
     NumericConversionType conversion_type;
     bool requires_copy;
+    bool init_is_ref;
 
     std::string_view string_tag() override final { return "VarStmt"; }
 
     NodeType type_tag() override final { return NodeType::VarStmt; }
 
     VarStmt(bool is_val, Token name, TypeNode type, ExprNode initializer, NumericConversionType conversion_type,
-        bool requires_copy)
+        bool requires_copy, bool init_is_ref)
         : is_val{is_val},
           name{name},
           type{std::move(type)},
           initializer{std::move(initializer)},
           conversion_type{conversion_type},
-          requires_copy{requires_copy} {}
+          requires_copy{requires_copy},
+          init_is_ref{init_is_ref} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

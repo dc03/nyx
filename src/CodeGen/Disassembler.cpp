@@ -82,6 +82,8 @@ std::size_t four_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte
         std::cout << "\t| offset = -" << next_bytes << ", jump to = " << byte + 4 - next_bytes << '\n';
     } else if (name == "ASSIGN_LOCAL") {
         std::cout << "\t| assign to " << next_bytes << '\n';
+    } else if (name == "MAKE_REF_TO_LOCAL") {
+        std::cout << "\t| make ref to " << next_bytes << '\n';
     } else {
         std::cout << '\n';
     }
@@ -132,6 +134,7 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::POP_JUMP_BACK_IF_TRUE:
             return four_byte_insn(chunk, "POP_JUMP_BACK_IF_TRUE", byte, insn_count);
         case Instruction::ASSIGN_LOCAL: return four_byte_insn(chunk, "ASSIGN_LOCAL", byte, insn_count);
+        case Instruction::MAKE_REF_TO_LOCAL: return four_byte_insn(chunk, "MAKE_REF_TO_LOCAL", byte, insn_count);
     }
     unreachable();
 }

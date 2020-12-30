@@ -53,6 +53,7 @@ enum class Instruction : unsigned char {
     POP_JUMP_BACK_IF_TRUE,
 
     ASSIGN_LOCAL, // To assign to a value on the stack
+    MAKE_REF_TO_LOCAL,
 };
 
 #endif

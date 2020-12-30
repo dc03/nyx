@@ -40,7 +40,8 @@ TypeResolver::TypeResolver(Module &module)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool convertible_to(QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lvalue, const Token &where) {
+bool convertible_to(
+    QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lvalue, const Token &where, bool in_initializer) {
     bool class_condition = [&to, &from]() {
         if (to->type_tag() == NodeType::UserDefinedType && from->type_tag() == NodeType::UserDefinedType) {
             return dynamic_cast<UserDefinedType *>(to)->name.lexeme ==
@@ -52,7 +53,8 @@ bool convertible_to(QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lval
     // The class condition is used to check if the names of the classes being converted between are same
     // This is only useful if both to and from are class types, hence it is only checked if so
 
-    if (to->data.is_ref) {
+    if (to->data.is_ref &&
+        in_initializer) { // Only need to check conversion between references when we are in an initializer
         if (!from_lvalue) {
             error("Cannot bind reference to non l-value type object", where);
             return false;
@@ -160,7 +162,7 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
             ExprVisitorType value = resolve(expr.value.get());
             if (it->info->data.is_const) {
                 error("Cannot assign to a const variable", expr.target);
-            } else if (!convertible_to(it->info, value.info, value.is_lvalue, expr.target)) {
+            } else if (!convertible_to(it->info, value.info, value.is_lvalue, expr.target, false)) {
                 error("Cannot convert type of value to type of target", expr.target);
                 show_conversion_note(value.info, it->info);
             } else if (value.info->data.type == Type::FLOAT && it->info->data.type == Type::INT) {
@@ -347,7 +349,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
 
     for (std::size_t i{0}; i < expr.args.size(); i++) {
         ExprVisitorType argument = resolve(std::get<0>(expr.args[i]).get());
-        if (!convertible_to(called->params[i].second.get(), argument.info, argument.is_lvalue, argument.lexeme)) {
+        if (!convertible_to(called->params[i].second.get(), argument.info, argument.is_lvalue, argument.lexeme, true)) {
             error("Type of argument is not convertible to type of parameter", argument.lexeme);
             show_conversion_note(argument.info, called->params[i].second.get());
         } else if (argument.info->data.type == Type::FLOAT && called->params[i].second->data.type == Type::INT) {
@@ -530,7 +532,7 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
         error("Cannot assign to const attribute", expr.name);
     }
 
-    if (!convertible_to(attribute_type.info, value_type.info, value_type.is_lvalue, expr.name)) {
+    if (!convertible_to(attribute_type.info, value_type.info, value_type.is_lvalue, expr.name, false)) {
         error("Cannot convert value of assigned expresion to type of target", expr.name);
         show_conversion_note(value_type.info, attribute_type.info);
         throw TypeException{"Cannot convert value of assigned expression to type of target"};
@@ -554,8 +556,8 @@ ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
     ExprVisitorType middle = resolve(expr.middle.get());
     ExprVisitorType right = resolve(expr.right.get());
 
-    if (!convertible_to(middle.info, right.info, right.is_lvalue, expr.question) &&
-        !convertible_to(right.info, middle.info, right.is_lvalue, expr.question)) {
+    if (!convertible_to(middle.info, right.info, right.is_lvalue, expr.question, false) &&
+        !convertible_to(right.info, middle.info, right.is_lvalue, expr.question, false)) {
         error("Expected equivalent expression types for branches of ternary expression", expr.question);
         show_conversion_note(right.info, middle.info);
     }
@@ -587,19 +589,13 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
             return {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
         case TokenType::PLUS_PLUS:
         case TokenType::MINUS_MINUS:
-            if (right.info->data.is_const ||
-                (expr.right->type_tag() != NodeType::VariableExpr && expr.right->type_tag() != NodeType::GetExpr)) {
-                if (expr.oper.type == TokenType::PLUS_PLUS) {
-                    constexpr std::string_view message =
-                        "Expected non-const l-value type as argument for unary increment operator";
-                    error(message, expr.oper);
-                } else if (expr.oper.type == TokenType::MINUS_MINUS) {
-                    constexpr std::string_view message =
-                        "Expected non-const l-value type as argument for unary decrement operator";
-                    error(message, expr.oper);
-                }
-                return {make_new_type<PrimitiveType>(Type::INT, true, false), expr.oper};
-            }
+            if (!one_of(right.info->data.type, Type::INT, Type::FLOAT)) {
+                error("Expected integral or floating type as argument to increment operator", expr.oper);
+                throw TypeException{"Expected integral or floating type as argument to increment operator"};
+            } else if (right.info->data.is_const || !(right.is_lvalue || right.info->data.is_ref)) {
+                error("Expected non-const l-value or reference type as argument for increment operator", expr.oper);
+                throw TypeException{"Expected non-const l-value or reference type as argument for increment operator"};
+            };
             return {right.info, expr.oper};
         case TokenType::MINUS:
         case TokenType::PLUS:
@@ -771,7 +767,8 @@ StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
 
 StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
     ExprVisitorType return_value = resolve(stmt.value.get());
-    if (!convertible_to(current_function->return_type.get(), return_value.info, return_value.is_lvalue, stmt.keyword)) {
+    if (!convertible_to(
+            current_function->return_type.get(), return_value.info, return_value.is_lvalue, stmt.keyword, true)) {
         error("Type of expression in return statement does not match return type of function", stmt.keyword);
         show_conversion_note(return_value.info, current_function->return_type.get());
     }
@@ -784,7 +781,7 @@ StmtVisitorType TypeResolver::visit(SwitchStmt &stmt) {
 
     for (auto &case_stmt : stmt.cases) {
         ExprVisitorType case_expr = resolve(case_stmt.first.get());
-        if (!convertible_to(case_expr.info, condition.info, condition.is_lvalue, case_expr.lexeme)) {
+        if (!convertible_to(case_expr.info, condition.info, condition.is_lvalue, case_expr.lexeme, false)) {
             error("Type of case expression cannot be converted to type of switch condition", case_expr.lexeme);
             show_conversion_note(condition.info, case_expr.info);
         }
@@ -815,7 +812,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
     if (stmt.initializer != nullptr && stmt.type != nullptr) {
         QualifiedTypeInfo type = resolve(stmt.type.get());
         ExprVisitorType initializer = resolve(stmt.initializer.get());
-        if (!convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name)) {
+        if (!convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name, true)) {
             error("Cannot convert from initializer type to type of variable", stmt.name);
             show_conversion_note(initializer.info, type);
         } else if (initializer.info->data.type == Type::FLOAT && type->data.type == Type::INT) {
@@ -825,6 +822,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         }
         stmt.requires_copy =
             !type->data.is_ref && !is_builtin_type(type->data.type); // Copy semantics for object creation
+        stmt.init_is_ref = initializer.info->data.is_ref;
         if (!in_class || in_function) {
             values.push_back({stmt.name.lexeme, type, scope_depth, initializer.class_, values.size()});
         }
@@ -840,6 +838,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
             stmt.type->data.is_const = false;
         }
         stmt.requires_copy = !stmt.type->data.is_ref && !is_builtin_type(stmt.type->data.type); // Copy semantics
+        stmt.init_is_ref = initializer.info->data.is_ref;
         if (!in_class || in_function) {
             values.push_back({stmt.name.lexeme, stmt.type.get(), scope_depth, initializer.class_, values.size()});
         }

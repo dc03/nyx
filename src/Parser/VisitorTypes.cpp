@@ -43,3 +43,4 @@ ExprTypeInfo::ExprTypeInfo(QualifiedTypeInfo info, FunctionStmt *func, ClassStmt
       lexeme{std::move(token)},
       is_lvalue{is_lvalue},
       scope_type{ScopeType::NONE} {}
+ExprTypeInfo::ExprTypeInfo(std::size_t stack_slot, bool is_ref) : stack_slot{stack_slot}, is_ref{is_ref} {}

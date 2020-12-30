@@ -275,9 +275,19 @@ void VM::run(RuntimeModule &main_module) {
 
             case is Instruction::ASSIGN_LOCAL: {
                 std::size_t slot = read_three_bytes();
-                stack[slot] = top_from(1);
+                Value *assigned = &stack[slot];
+                if (assigned->is_ref()) {
+                    assigned = assigned->to_referred();
+                }
+                *assigned = top_from(1);
                 pop();
-                push(stack[slot]);
+                push(*assigned);
+                break;
+            }
+
+            case is Instruction::MAKE_REF_TO_LOCAL: {
+                std::size_t slot = read_three_bytes();
+                push(Value{&stack[slot]});
                 break;
             }
 

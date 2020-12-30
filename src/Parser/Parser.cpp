@@ -720,7 +720,7 @@ StmtNode Parser::variable_declaration() {
     consume("Expected ';' or newline after variable initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
 
     auto *variable = allocate_node(VarStmt, (keyword == TokenType::VAL), std::move(name), std::move(var_type),
-        std::move(initializer), NumericConversionType::NONE, false);
+        std::move(initializer), NumericConversionType::NONE, false, false);
     return StmtNode{variable};
 }
 

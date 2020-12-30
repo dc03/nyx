@@ -24,9 +24,17 @@ struct ExprTypeInfo {
     QualifiedTypeInfo info{nullptr};
     FunctionStmt *func{nullptr};
     ClassStmt *class_{nullptr};
-    std::size_t module_index{};
+    // I'm using unions here to make different names for things with the same type which are used exclusively to each
+    // other
+    union {
+        std::size_t module_index;
+        std::size_t stack_slot;
+    };
     Token lexeme{};
-    bool is_lvalue{};
+    union {
+        bool is_lvalue;
+        bool is_ref; // Although this is tracked in `info`, CodeGen does not use that parameter
+    };
     enum class ScopeType { CLASS, MODULE, NONE } scope_type{};
 
     ExprTypeInfo() = default;
@@ -36,6 +44,8 @@ struct ExprTypeInfo {
     ExprTypeInfo(QualifiedTypeInfo info, ClassStmt *class_, Token token, bool is_lvalue = false);
     ExprTypeInfo(QualifiedTypeInfo info, std::size_t module_index, Token token);
     ExprTypeInfo(QualifiedTypeInfo info, FunctionStmt *func, ClassStmt *class_, Token token, bool is_lvalue = false);
+    ExprTypeInfo(
+        std::size_t stack_slot, bool is_ref = false); // This is meant for use in CodeGen for making references work
 };
 
 struct LiteralValue {

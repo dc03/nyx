@@ -16,6 +16,7 @@ Value &Value::operator=(Value &&other) noexcept {
         case STRING: as.string = std::move(other.as.string); break;
         case BOOL: as.boolean = other.as.boolean; break;
         case NULL_: as.null = nullptr; break;
+        case PRIMITIVE_REF: as.reference = other.as.reference; break;
     }
     return *this;
 }
@@ -32,6 +33,7 @@ Value &Value::operator=(const Value &other) {
         case STRING: as.string = other.as.string; break;
         case BOOL: as.boolean = other.as.boolean; break;
         case NULL_: as.null = nullptr; break;
+        case PRIMITIVE_REF: as.reference = other.as.reference; break;
     }
     return *this;
 }
@@ -46,7 +48,8 @@ Value::Value(int value) : tag{Value::INT}, as{value} {}
 Value::Value(bool value) : tag{Value::BOOL}, as{value} {}
 Value::Value(double value) : tag{Value::DOUBLE}, as{value} {}
 Value::Value(std::nullptr_t) : tag{Value::NULL_}, as{nullptr} {}
-Value::Value(std::string value) : tag{Value::STRING}, as{value} {}
+Value::Value(std::string value) : tag{Value::STRING}, as{std::move(value)} {}
+Value::Value(Value *referred) : tag{Value::PRIMITIVE_REF}, as{referred} {}
 
 bool Value::operator==(const Value &other) const noexcept {
     if (is_numeric()) {
@@ -72,5 +75,9 @@ std::string Value::repr() const noexcept {
         return "null";
     } else if (is_string()) {
         return to_string();
+    } else if (is_ref()) {
+        char x[20];
+        std::sprintf(x, "%p", reinterpret_cast<void *>(to_referred()));
+        return std::string{x};
     }
 }

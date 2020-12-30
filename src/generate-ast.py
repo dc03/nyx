@@ -362,9 +362,9 @@ if __name__ == '__main__':
                   'Token name, TypeNode type')
 
         decl_stmt('is_val{is_val}, name{name}, type{std::move(type)}, initializer{std::move(initializer)},' +
-                  'conversion_type{conversion_type}, requires_copy{requires_copy}',
+                  'conversion_type{conversion_type}, requires_copy{requires_copy}, init_is_ref{init_is_ref}',
                   'bool is_val, Token name, TypeNode type, ExprNode initializer, NumericConversionType conversion_type'
-                  + ', bool requires_copy')
+                  + ', bool requires_copy, bool init_is_ref')
 
         decl_stmt('keyword{keyword}, condition{std::move(condition)}, body{std::move(body)}, increment{std::move(' +
                   'increment)}',

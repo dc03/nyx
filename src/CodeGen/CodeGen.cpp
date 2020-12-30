@@ -63,7 +63,7 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
     current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, expr.target.line);
     current_chunk->emit_bytes((expr.stack_slot >> 16) & 0xff, (expr.stack_slot >> 8) & 0xff);
     current_chunk->emit_byte(expr.stack_slot & 0xff);
-    return {};
+    return {expr.stack_slot};
 }
 
 ExprVisitorType Generator::visit(BinaryExpr &expr) {
@@ -405,7 +405,14 @@ StmtVisitorType Generator::visit(TypeStmt &stmt) {}
 
 StmtVisitorType Generator::visit(VarStmt &stmt) {
     if (stmt.initializer != nullptr) {
-        compile(stmt.initializer.get());
+        if (stmt.type->data.is_ref && !stmt.init_is_ref && stmt.initializer->type_tag() == NodeType::VariableExpr) {
+            auto *initializer = dynamic_cast<VariableExpr *>(stmt.initializer.get());
+            current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, stmt.name.line);
+            current_chunk->emit_bytes((initializer->stack_slot >> 16) & 0xff, (initializer->stack_slot >> 8) & 0xff);
+            current_chunk->emit_byte(initializer->stack_slot & 0xff);
+        } else {
+            compile(stmt.initializer.get());
+        }
     } else {
         current_chunk->emit_instruction(Instruction::NULL_, stmt.name.line);
     }
