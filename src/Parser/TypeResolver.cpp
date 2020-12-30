@@ -740,7 +740,7 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     scoped_boolean_manager special_func_manager{is_in_ctor ? in_ctor : (is_in_dtor ? in_dtor : throwaway)};
     ////////////////////////////////////////////////////////////////////////////
 
-    for (const auto &param : stmt.params) {
+    for (auto &param : stmt.params) {
         ClassStmt *param_class = nullptr;
 
         if (param.second->type_tag() == NodeType::UserDefinedType) {
@@ -749,6 +749,10 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
                 error("No such module/class exists in the current global scope", stmt.name);
                 throw TypeException{"No such module/class exists in the current global scope"};
             }
+        } else if (param.second->type_tag() == NodeType::TypeofType) {
+            resolve(dynamic_cast<TypeofType *>(param.second.get()));
+            param.second.swap(type_scratch_space.back());
+            // Same jank as VarStmt to make sure that the resolved type is stored on the AST
         }
 
         values.push_back({param.first.lexeme, param.second.get(), scope_depth, param_class, values.size()});
@@ -895,11 +899,11 @@ BaseTypeVisitorType TypeResolver::visit(UserDefinedType &type) {
 
 BaseTypeVisitorType TypeResolver::visit(ListType &type) {
     if (type.contained->type_tag() == NodeType::TypeofType) {
-        auto *contained = dynamic_cast<TypeofType *>(type.contained.get());
-        return resolve(contained->expr.get()).info;
-    } else {
-        return &type;
+        resolve(dynamic_cast<TypeofType *>(type.contained.get()));
+        type.contained.swap(type_scratch_space.back());
+        // Same jank as VarStmt to make sure that the resolved type is stored on the AST
     }
+    return &type;
 }
 
 BaseTypeVisitorType TypeResolver::visit(TypeofType &type) {
