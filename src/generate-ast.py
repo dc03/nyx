@@ -262,9 +262,9 @@ if __name__ == '__main__':
         file.write('};\n\n')
 
         decl_expr('target{target}, value{std::move(value)}, conversion_type{conversion_type}, requires_copy{' +
-                  'requires_copy}, stack_slot{stack_slot}',
+                  'requires_copy}, stack_slot{stack_slot}, oper{oper}',
                   'Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy, std::size_t'
-                  + ' stack_slot')
+                  + ' stack_slot, Token oper')
 
         decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}, resolved_type{resolved_type}',
                   'ExprNode left, Token oper, ExprNode right, ExprVisitorType resolved_type')

@@ -58,6 +58,8 @@ enum class Instruction : unsigned char {
 
     INCR_LOCAL,
     DECR_LOCAL,
+    MUL_LOCAL,
+    DIV_LOCAL,
 };
 
 #endif

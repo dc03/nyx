@@ -156,37 +156,48 @@ BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Arg
     return type_scratch_space.back().get();
 }
 
-ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
-    for (auto it = values.end() - 1; it >= values.begin(); it--) {
-        if (it->lexeme == expr.target.lexeme) {
-            ExprVisitorType value = resolve(expr.value.get());
-            if (it->info->data.is_const) {
-                error("Cannot assign to a const variable", expr.target);
-            } else if (!convertible_to(it->info, value.info, value.is_lvalue, expr.target, false)) {
-                error("Cannot convert type of value to type of target", expr.target);
-                show_conversion_note(value.info, it->info);
-            } else if (value.info->data.type == Type::FLOAT && it->info->data.type == Type::INT) {
-                expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
-            } else if (value.info->data.type == Type::INT && it->info->data.type == Type::FLOAT) {
-                expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
-            }
+template <typename T, typename... Args>
+bool one_of(T type, Args... args) {
+    const std::array arr{args...};
+    return std::any_of(arr.begin(), arr.end(), [type](const auto &arg) { return type == arg; });
+}
 
-            expr.requires_copy = !is_builtin_type(value.info->data.type);
-            // Assignment leads to copy when the type is not an inbuilt one as those are implicitly copied when the
-            // values are pushed onto the stack
-            expr.stack_slot = it->stack_slot;
-            return {it->info, expr.target};
+ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
+    auto it = values.end() - 1;
+    for (; it >= values.begin(); it--) {
+        if (it->lexeme == expr.target.lexeme) {
+            break;
         }
     }
 
-    error("No such variable in the current scope", expr.target);
-    throw TypeException{"No such variable in the current scope"};
-}
+    if (it < values.begin()) {
+        error("No such variable in the current scope", expr.target);
+        throw TypeException{"No such variable in the current scope"};
+    }
 
-template <typename... Args>
-bool one_of(Type type, Args... args) {
-    const std::array arr{args...};
-    return std::any_of(arr.begin(), arr.end(), [type](const auto &arg) { return type == arg; });
+    ExprVisitorType value = resolve(expr.value.get());
+    if (it->info->data.is_const) {
+        error("Cannot assign to a const variable", expr.oper);
+    } else if (!convertible_to(it->info, value.info, value.is_lvalue, expr.target, false)) {
+        error("Cannot convert type of value to type of target", expr.oper);
+        show_conversion_note(value.info, it->info);
+    } else if (one_of(expr.oper.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
+                   TokenType::SLASH_EQUAL) &&
+               !one_of(it->info->data.type, Type::INT, Type::FLOAT) &&
+               !one_of(value.info->data.type, Type::INT, Type::FLOAT)) {
+        error("Expected integral types for compound assignment operator", expr.oper);
+        throw TypeException{"Expected integral types for compound assignment operator"};
+    } else if (value.info->data.type == Type::FLOAT && it->info->data.type == Type::INT) {
+        expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
+    } else if (value.info->data.type == Type::INT && it->info->data.type == Type::FLOAT) {
+        expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
+    }
+
+    expr.requires_copy = !is_builtin_type(value.info->data.type);
+    // Assignment leads to copy when the type is not an inbuilt one as those are implicitly copied when the
+    // values are pushed onto the stack
+    expr.stack_slot = it->stack_slot;
+    return {it->info, expr.target};
 }
 
 ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {

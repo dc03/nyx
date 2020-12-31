@@ -63,7 +63,13 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
     if (info.is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.target.line);
     }
-    current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, expr.target.line);
+    switch (expr.oper.type) {
+        case TokenType::EQUAL: current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, expr.oper.line); break;
+        case TokenType::PLUS_EQUAL: current_chunk->emit_instruction(Instruction::INCR_LOCAL, expr.oper.line); break;
+        case TokenType::MINUS_EQUAL: current_chunk->emit_instruction(Instruction::DECR_LOCAL, expr.oper.line); break;
+        case TokenType::STAR_EQUAL: current_chunk->emit_instruction(Instruction::MUL_LOCAL, expr.oper.line); break;
+        case TokenType::SLASH_EQUAL: current_chunk->emit_instruction(Instruction::DIV_LOCAL, expr.oper.line); break;
+    }
     current_chunk->emit_bytes((expr.stack_slot >> 16) & 0xff, (expr.stack_slot >> 8) & 0xff);
     current_chunk->emit_byte(expr.stack_slot & 0xff);
     return {expr.stack_slot};

@@ -100,6 +100,22 @@ void VM::run(RuntimeModule &main_module) {
         Value result{top_from(2).to_numeric() oper top_from(1).to_numeric()};                                          \
         pop_twice_push(result);                                                                                        \
     }
+
+#define binary_compound_assignment(oper)                                                                               \
+    {                                                                                                                  \
+        Value *incremented = &stack[read_three_bytes()];                                                               \
+        if (incremented->is_ref()) {                                                                                   \
+            incremented = incremented->to_referred();                                                                  \
+        }                                                                                                              \
+        double added = top_from(1).to_numeric();                                                                       \
+        if (incremented->is_int()) {                                                                                   \
+            incremented->as.integer oper int(added);                                                                   \
+        } else {                                                                                                       \
+            incremented->as.real oper added;                                                                           \
+        }                                                                                                              \
+        pop();                                                                                                         \
+        push(*incremented);                                                                                            \
+    }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     for (;; insn_number++) {
 #ifdef PRINT_STACK
@@ -298,38 +314,17 @@ void VM::run(RuntimeModule &main_module) {
                 break;
             }
 
-            case is Instruction::INCR_LOCAL: {
-                Value *incremented = &stack[read_three_bytes()];
-                if (incremented->is_ref()) {
-                    incremented = incremented->to_referred();
+            case is Instruction::INCR_LOCAL: binary_compound_assignment(+=); break;
+            case is Instruction::DECR_LOCAL: binary_compound_assignment(-=); break;
+            case is Instruction::MUL_LOCAL: binary_compound_assignment(*=); break;
+            case is Instruction::DIV_LOCAL: {
+                if (top_from(1).to_numeric() == 0) {
+                    runtime_error("Division by zero", chunk->get_line_number(insn_number));
+                    break;
                 }
-                double added = top_from(1).to_numeric();
-                if (incremented->is_int()) {
-                    incremented->as.integer += int(added);
-                } else {
-                    incremented->as.real += added;
-                }
-                pop();
-                push(*incremented);
+                binary_compound_assignment(/=);
                 break;
             }
-
-            case is Instruction::DECR_LOCAL: {
-                Value *incremented = &stack[read_three_bytes()];
-                if (incremented->is_ref()) {
-                    incremented = incremented->to_referred();
-                }
-                double added = top_from(1).to_numeric();
-                if (incremented->is_int()) {
-                    incremented->as.integer -= int(added);
-                } else {
-                    incremented->as.real -= added;
-                }
-                pop();
-                push(*incremented);
-                break;
-            }
-
             case is Instruction::POP: pop(); break;
             case is Instruction::HALT: return;
         }

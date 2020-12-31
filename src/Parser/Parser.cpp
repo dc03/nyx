@@ -416,9 +416,10 @@ ExprNode Parser::variable(bool can_assign) {
     Token name = previous();
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
+        Token oper = previous();
         ExprNode value = expression();
-        return ExprNode{
-            allocate_node(AssignExpr, std::move(name), std::move(value), NumericConversionType::NONE, false, 0)};
+        return ExprNode{allocate_node(
+            AssignExpr, std::move(name), std::move(value), NumericConversionType::NONE, false, 0, std::move(oper))};
     } else if (peek().type == TokenType::DOUBLE_COLON) {
         return ExprNode{allocate_node(ScopeNameExpr, std::move(name))};
     } else {

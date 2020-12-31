@@ -235,18 +235,20 @@ struct AssignExpr final : public Expr {
     NumericConversionType conversion_type;
     bool requires_copy;
     std::size_t stack_slot;
+    Token oper;
 
     std::string_view string_tag() override final { return "AssignExpr"; }
 
     NodeType type_tag() override final { return NodeType::AssignExpr; }
 
-    AssignExpr(
-        Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy, std::size_t stack_slot)
+    AssignExpr(Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy,
+        std::size_t stack_slot, Token oper)
         : target{target},
           value{std::move(value)},
           conversion_type{conversion_type},
           requires_copy{requires_copy},
-          stack_slot{stack_slot} {}
+          stack_slot{stack_slot},
+          oper{oper} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
