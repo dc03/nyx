@@ -251,11 +251,25 @@ ExprVisitorType Generator::visit(ThisExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(UnaryExpr &expr) {
-    compile(expr.right.get());
+    if (expr.oper.type != TokenType::PLUS_PLUS && expr.oper.type != TokenType::MINUS_MINUS) {
+        compile(expr.right.get());
+    }
     switch (expr.oper.type) {
         case TokenType::BIT_NOT: current_chunk->emit_instruction(Instruction::BIT_NOT, expr.oper.line); break;
         case TokenType::NOT: current_chunk->emit_instruction(Instruction::NOT, expr.oper.line); break;
         case TokenType::MINUS: current_chunk->emit_instruction(Instruction::NEGATE, expr.oper.line); break;
+        case TokenType::PLUS_PLUS:
+        case TokenType::MINUS_MINUS:
+            if (expr.right->type_tag() == NodeType::VariableExpr) {
+                auto *right = dynamic_cast<VariableExpr *>(expr.right.get());
+                current_chunk->emit_constant(Value{1}, expr.oper.line);
+                current_chunk->emit_instruction(
+                    expr.oper.type == TokenType::PLUS_PLUS ? Instruction::INCR_LOCAL : Instruction::DECR_LOCAL,
+                    expr.oper.line);
+                current_chunk->emit_bytes((right->stack_slot >> 16) & 0xff, (right->stack_slot >> 8) & 0xff);
+                current_chunk->emit_byte(right->stack_slot & 0xff);
+            }
+            break;
         default: error("Bug in parser with illegal type for unary expression", expr.oper); break;
     }
     return {};

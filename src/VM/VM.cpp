@@ -298,6 +298,38 @@ void VM::run(RuntimeModule &main_module) {
                 break;
             }
 
+            case is Instruction::INCR_LOCAL: {
+                Value *incremented = &stack[read_three_bytes()];
+                if (incremented->is_ref()) {
+                    incremented = incremented->to_referred();
+                }
+                double added = top_from(1).to_numeric();
+                if (incremented->is_int()) {
+                    incremented->as.integer += int(added);
+                } else {
+                    incremented->as.real += added;
+                }
+                pop();
+                push(*incremented);
+                break;
+            }
+
+            case is Instruction::DECR_LOCAL: {
+                Value *incremented = &stack[read_three_bytes()];
+                if (incremented->is_ref()) {
+                    incremented = incremented->to_referred();
+                }
+                double added = top_from(1).to_numeric();
+                if (incremented->is_int()) {
+                    incremented->as.integer -= int(added);
+                } else {
+                    incremented->as.real -= added;
+                }
+                pop();
+                push(*incremented);
+                break;
+            }
+
             case is Instruction::POP: pop(); break;
             case is Instruction::HALT: return;
         }

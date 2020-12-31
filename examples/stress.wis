@@ -190,13 +190,13 @@ imported::X::foo(x, 5)
 x.foo(y)
 y = 5
 */*/*/
-//for (var i = 0; i < 10000; i = i + 1) {
-//    for (var j = 0; j < 4000; j = j + 1) {
-//        var x = 1
-//        false or x or true
-//    }
-//}
-var x = 0
-var y : ref typeof x = x
-var z : typeof y = y
-y = z + 3
+for (var i = 0; i < 10000; ++i) {
+    for (var j = 0; j < 10000; ++j) {
+        var x = 1
+        false or x or true
+   }
+}
+//var x = 0
+//var y : ref typeof x = x
+//var z : typeof y = y
+//y = z + 3

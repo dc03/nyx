@@ -55,6 +55,9 @@ enum class Instruction : unsigned char {
     ASSIGN_LOCAL, // To assign to a value on the stack
     MAKE_REF_TO_LOCAL,
     DEREF,
+
+    INCR_LOCAL,
+    DECR_LOCAL,
 };
 
 #endif
