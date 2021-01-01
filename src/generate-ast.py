@@ -1,11 +1,11 @@
-# Copyright (C) 2020  Dhruv Chawla
+# Copyright (C) 2021  Dhruv Chawla
 # See LICENSE at project root for license details
 from typing import *
 
 
 def make_header(file, guard: str) -> None:
     file.write('#pragma once\n\n')
-    file.write('/* Copyright (C) 2020  Dhruv Chawla */\n')
+    file.write('/* Copyright (C) 2021  Dhruv Chawla */\n')
     file.write('/* See LICENSE at project root for license details */\n\n')
     file.write('#ifndef ' + guard + '\n')
     file.write('#define ' + guard + '\n\n')
