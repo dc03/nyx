@@ -8,21 +8,18 @@
 
 #include "../Module.hpp"
 #include "Chunk.hpp"
+#include "Natives.hpp"
 
 constexpr std::size_t max_stack_frames = 1000;
 constexpr std::size_t max_locals_per_frame = 100;
 
 struct CallFrame {
     Value *stack_slots{};
+    Chunk *return_chunk{};
     Chunk::byte *return_ip{};
 };
 
 struct VM {
-    struct NativeFn {
-        Value (*code)(Value *);
-        std::size_t arity;
-    };
-
     Chunk::byte *ip{};
     Value *stack{};
     Value *stack_top{};
@@ -34,6 +31,7 @@ struct VM {
 
     void run(RuntimeModule &main_module);
     void push(const Value &value);
+    void push(Value &&value);
     void pop();
     void define_native(const std::string &name, NativeFn code);
     [[nodiscard]] Value &top_from(std::size_t distance) const;

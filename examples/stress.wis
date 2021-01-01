@@ -207,14 +207,18 @@ x -= 1
 x *= 20
 x /= 20
 */*/*/
-fn abc(x: int, a: int) -> int {
-    var y = 4
-    if (y > 5) {
-        var result = x * y + a
-        return result
+fn go(n: int, acc: int) -> int {
+    if (n > 1) {
+        return go(n - 1, acc * n)
     } else {
-        return x * y
+        return acc
     }
 }
 
-var z = abc(3, 4)
+fn factorial(n: int) -> int {
+    return go(n, 1)
+}
+
+for (var i = 0; i < 1000000; ++i) {
+    factorial(10)
+}

@@ -5,6 +5,7 @@
 #include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
 
+#include <cstring>
 #include <iostream>
 
 #ifndef NDEBUG
@@ -17,6 +18,10 @@ void VM::push(const Value &value) {
     //    stack_top->as.string = std::string{};
     //}
     *(stack_top++) = value;
+}
+
+void VM::push(Value &&value) {
+    *(stack_top++) = std::move(value);
 }
 
 void VM::pop() {
@@ -51,7 +56,7 @@ bool is_truthy(Value &value) {
     } else if (value.is_double()) {
         return value.to_double() != 0;
     } else if (value.is_string()) {
-        return value.to_string().empty();
+        return value.to_string() != nullptr && std::strlen(value.to_string()) != 0;
     } else if (value.is_null()) {
         return false;
     } else {
@@ -154,8 +159,14 @@ void VM::run(RuntimeModule &main_module) {
                 break;
 
             case is Instruction::CONCAT: {
-                Value result{top_from(2).to_string() + top_from(1).to_string()};
-                pop_twice_push(result);
+                std::size_t len1 = std::strlen(top_from(2).to_string());
+                std::size_t len2 = std::strlen(top_from(1).to_string());
+                char *result = new char[len1 + len2 + 1];
+                std::memcpy(result, top_from(2).to_string(), len1);
+                std::memcpy(result + len1, top_from(1).to_string(), len2);
+                result[len1 + len2] = '\0';
+                pop_twice_push(Value{result});
+                delete[] result;
                 break;
             }
 
@@ -338,7 +349,7 @@ void VM::run(RuntimeModule &main_module) {
 
             case is Instruction::CALL_FUNCTION: {
                 RuntimeFunction *called = top_from(1).to_function();
-                *(++frame_top) = CallFrame{stack_top - called->arity - 1, ip};
+                *(++frame_top) = CallFrame{stack_top - called->arity - 1, chunk, ip};
                 chunk = &called->code;
                 ip = &called->code.bytes[0];
                 pop();
@@ -347,11 +358,13 @@ void VM::run(RuntimeModule &main_module) {
 
             case is Instruction::RETURN: {
                 Value result = top_from(1);
+                pop();
                 std::size_t pops = read_three_bytes();
                 while (pops-- > 0) {
                     pop();
                 }
                 ip = frame_top->return_ip;
+                chunk = frame_top->return_chunk;
                 --frame_top;
                 push(result);
                 break;
@@ -360,7 +373,11 @@ void VM::run(RuntimeModule &main_module) {
             case is Instruction::CALL_NATIVE: {
                 NativeFn called = native_functions[top_from(1).to_string()];
                 pop();
-                push(called.code(stack_top - called.arity));
+                Value result = called.code(stack_top - called.arity);
+                for (std::size_t i = 0; i < called.arity; i++) {
+                    pop();
+                }
+                push(result);
                 break;
             }
 

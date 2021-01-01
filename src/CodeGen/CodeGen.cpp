@@ -71,6 +71,7 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
         case TokenType::MINUS_EQUAL: current_chunk->emit_instruction(Instruction::DECR_LOCAL, expr.oper.line); break;
         case TokenType::STAR_EQUAL: current_chunk->emit_instruction(Instruction::MUL_LOCAL, expr.oper.line); break;
         case TokenType::SLASH_EQUAL: current_chunk->emit_instruction(Instruction::DIV_LOCAL, expr.oper.line); break;
+        default: break;
     }
     current_chunk->emit_bytes((expr.stack_slot >> 16) & 0xff, (expr.stack_slot >> 8) & 0xff);
     current_chunk->emit_byte(expr.stack_slot & 0xff);
@@ -144,7 +145,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
     }
     if (expr.is_native_call) {
         auto *called = dynamic_cast<VariableExpr *>(expr.function.get());
-        current_chunk->emit_constant(Value{called->name.lexeme}, called->name.line);
+        current_chunk->emit_constant(Value{called->name.lexeme.c_str()}, called->name.line);
         current_chunk->emit_instruction(Instruction::CALL_NATIVE, expr.paren.line);
     } else {
         compile(expr.function.get());
@@ -182,7 +183,9 @@ ExprVisitorType Generator::visit(LiteralExpr &expr) {
     switch (expr.value.tag) {
         case LiteralValue::INT: current_chunk->emit_constant(Value{expr.value.as.integer}, expr.lexeme.line); break;
         case LiteralValue::DOUBLE: current_chunk->emit_constant(Value{expr.value.as.real}, expr.lexeme.line); break;
-        case LiteralValue::STRING: current_chunk->emit_constant(Value{expr.value.as.string}, expr.lexeme.line); break;
+        case LiteralValue::STRING:
+            current_chunk->emit_constant(Value{expr.value.as.string.c_str()}, expr.lexeme.line);
+            break;
         case LiteralValue::BOOL:
             if (expr.value.as.boolean) {
                 current_chunk->emit_instruction(Instruction::TRUE, expr.lexeme.line);
@@ -308,7 +311,7 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
             }
             return {expr.stack_slot, expr.is_ref};
         case IdentifierType::FUNCTION:
-            current_chunk->emit_constant(Value{expr.name.lexeme}, expr.name.line);
+            current_chunk->emit_constant(Value{expr.name.lexeme.c_str()}, expr.name.line);
             current_chunk->emit_instruction(Instruction::LOAD_FUNCTION, expr.name.line);
             return {};
         case IdentifierType::CLASS: unreachable();

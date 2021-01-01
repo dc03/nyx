@@ -147,6 +147,7 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::LOAD_FUNCTION: return single_byte_insn(chunk, "LOAD_FUNCTION", byte, insn_count);
         case Instruction::CALL_FUNCTION: return single_byte_insn(chunk, "CALL_FUNCTION", byte, insn_count);
         case Instruction::RETURN: return four_byte_insn(chunk, "RETURN", byte, insn_count);
+        case Instruction::CALL_NATIVE: return single_byte_insn(chunk, "CALL_NATIVE", byte, insn_count);
     }
     unreachable();
 }
