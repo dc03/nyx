@@ -60,6 +60,12 @@ enum class Instruction : unsigned char {
     DECR_LOCAL,
     MUL_LOCAL,
     DIV_LOCAL,
+
+    LOAD_FUNCTION,
+    CALL_FUNCTION,
+    RETURN,
+
+    CALL_NATIVE,
 };
 
 #endif

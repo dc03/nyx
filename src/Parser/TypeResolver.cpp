@@ -332,6 +332,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     if (expr.function->type_tag() == NodeType::VariableExpr) {
         auto *function = dynamic_cast<VariableExpr *>(expr.function.get());
         if (is_builtin_function(function)) {
+            expr.is_native_call = true;
             return check_inbuilt(function, expr.paren, expr.args);
         }
     }
@@ -632,15 +633,18 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
         if (it->lexeme == expr.name.lexeme) {
             expr.stack_slot = it->stack_slot;
             expr.is_ref = it->info->data.is_ref;
+            expr.type = IdentifierType::VARIABLE;
             return {it->info, it->class_, expr.name, true};
         }
     }
 
     if (FunctionStmt *func = find_function(expr.name.lexeme); func != nullptr) {
+        expr.type = IdentifierType::FUNCTION;
         return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.name};
     }
 
     if (ClassStmt *class_ = find_class(expr.name.lexeme); class_ != nullptr) {
+        expr.type = IdentifierType::CLASS;
         return {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.name};
     }
 
@@ -680,7 +684,7 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
     if (stmt.ctor == nullptr) {
         stmt.ctor = allocate_node(FunctionStmt, stmt.name,
             TypeNode{allocate_node(UserDefinedType, {Type::CLASS, false, false}, stmt.name)}, {},
-            StmtNode{allocate_node(BlockStmt, {})});
+            StmtNode{allocate_node(BlockStmt, {})}, {}, values.crbegin()->scope_depth);
         stmt.methods.emplace_back(std::unique_ptr<FunctionStmt>{stmt.ctor}, VisibilityType::PUBLIC);
     }
 
@@ -751,6 +755,9 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     scoped_boolean_manager special_func_manager{is_in_ctor ? in_ctor : (is_in_dtor ? in_dtor : throwaway)};
     ////////////////////////////////////////////////////////////////////////////
 
+    if (!values.empty()) {
+        stmt.scope_depth = values.crbegin()->scope_depth + 1;
+    }
     for (auto &param : stmt.params) {
         ClassStmt *param_class = nullptr;
 
@@ -766,10 +773,21 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
             // Same jank as VarStmt to make sure that the resolved type is stored on the AST
         }
 
-        values.push_back({param.first.lexeme, param.second.get(), scope_depth, param_class, values.size()});
+        values.push_back({param.first.lexeme, param.second.get(), scope_depth + 1, param_class, values.size()});
     }
 
     resolve(stmt.body.get());
+
+    if (stmt.return_stmts.empty()) {
+        auto *body = dynamic_cast<BlockStmt *>(stmt.body.get());
+        body->stmts.emplace_back(allocate_node(ReturnStmt, {}, {nullptr}, {}));
+        if (!values.empty()) {
+            std::size_t last_scope = (values.end() - 1)->scope_depth;
+            ReturnStmt *return_stmt = *(stmt.return_stmts.end() - 1);
+            return_stmt->locals_popped = std::count_if(values.crbegin(), values.crend(),
+                [&last_scope](const TypeResolver::Value &x) { return x.scope_depth == last_scope; });
+        }
+    }
 }
 
 StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
@@ -782,12 +800,19 @@ StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
-    ExprVisitorType return_value = resolve(stmt.value.get());
-    if (!convertible_to(
-            current_function->return_type.get(), return_value.info, return_value.is_lvalue, stmt.keyword, true)) {
+    if (stmt.value == nullptr && current_function->return_type->data.type != Type::NULL_) {
+        error("Can only have empty return expressions in functions which return 'null'", stmt.keyword);
+        throw TypeException{"Can only have empty return expressions in functions which return 'null'"};
+    } else if (ExprVisitorType return_value = resolve(stmt.value.get());
+               !convertible_to(current_function->return_type.get(), return_value.info, return_value.is_lvalue,
+                   stmt.keyword, true)) {
         error("Type of expression in return statement does not match return type of function", stmt.keyword);
         show_conversion_note(return_value.info, current_function->return_type.get());
     }
+
+    stmt.locals_popped = std::count_if(values.crbegin(), values.crend(),
+        [this](const TypeResolver::Value &x) { return x.scope_depth >= current_function->scope_depth; });
+    current_function->return_stmts.push_back(&stmt);
 }
 
 StmtVisitorType TypeResolver::visit(SwitchStmt &stmt) {

@@ -24,6 +24,10 @@ void VM::pop() {
     //    Value destroyed = std::move(*--stack_top);
 }
 
+void VM::define_native(const std::string &name, NativeFn code) {
+    native_functions[name] = code;
+}
+
 Value &VM::top_from(std::size_t distance) const {
     return *(stack_top - distance);
 }
@@ -59,6 +63,7 @@ void VM::run(RuntimeModule &main_module) {
     std::size_t insn_number = 1;
     ip = &main_module.top_level_code.bytes[0];
     chunk = &main_module.top_level_code;
+    current_module = &main_module;
 
 #define is (unsigned char)
 
@@ -124,6 +129,7 @@ void VM::run(RuntimeModule &main_module) {
             std::cout << begin->repr();
             std::cout << " ] ";
         }
+        // std::cout << ' ' << ip - &chunk->bytes[0] << '\n';
         std::cout << '\n';
 #endif
         switch (read_byte()) {
@@ -225,11 +231,8 @@ void VM::run(RuntimeModule &main_module) {
             case is Instruction::FALSE: push(Value{false}); break;
             case is Instruction::NULL_: push(Value{nullptr}); break;
 
-            case is Instruction::ACCESS_LOCAL_SHORT: push(stack[read_byte()]); break;
-            case is Instruction::ACCESS_LOCAL_LONG: {
-                push(stack[read_three_bytes()]);
-                break;
-            }
+            case is Instruction::ACCESS_LOCAL_SHORT: push(frame_top->stack_slots[read_byte()]); break;
+            case is Instruction::ACCESS_LOCAL_LONG: push(frame_top->stack_slots[read_three_bytes()]); break;
 
             case is Instruction::JUMP_FORWARD: {
                 ip += read_three_bytes();
@@ -291,7 +294,7 @@ void VM::run(RuntimeModule &main_module) {
 
             case is Instruction::ASSIGN_LOCAL: {
                 std::size_t slot = read_three_bytes();
-                Value *assigned = &stack[slot];
+                Value *assigned = &frame_top->stack_slots[slot];
                 if (assigned->is_ref()) {
                     assigned = assigned->to_referred();
                 }
@@ -303,7 +306,7 @@ void VM::run(RuntimeModule &main_module) {
 
             case is Instruction::MAKE_REF_TO_LOCAL: {
                 std::size_t slot = read_three_bytes();
-                push(Value{&stack[slot]});
+                push(Value{&frame_top->stack_slots[slot]});
                 break;
             }
 
@@ -325,6 +328,42 @@ void VM::run(RuntimeModule &main_module) {
                 binary_compound_assignment(/=);
                 break;
             }
+
+            case is Instruction::LOAD_FUNCTION: {
+                RuntimeFunction *function = &current_module->functions[top_from(1).to_string()];
+                pop();
+                push(Value{function});
+                break;
+            }
+
+            case is Instruction::CALL_FUNCTION: {
+                RuntimeFunction *called = top_from(1).to_function();
+                *(++frame_top) = CallFrame{stack_top - called->arity - 1, ip};
+                chunk = &called->code;
+                ip = &called->code.bytes[0];
+                pop();
+                break;
+            }
+
+            case is Instruction::RETURN: {
+                Value result = top_from(1);
+                std::size_t pops = read_three_bytes();
+                while (pops-- > 0) {
+                    pop();
+                }
+                ip = frame_top->return_ip;
+                --frame_top;
+                push(result);
+                break;
+            }
+
+            case is Instruction::CALL_NATIVE: {
+                NativeFn called = native_functions[top_from(1).to_string()];
+                pop();
+                push(called.code(stack_top - called.arity));
+                break;
+            }
+
             case is Instruction::POP: pop(); break;
             case is Instruction::HALT: return;
         }

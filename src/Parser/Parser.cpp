@@ -299,7 +299,7 @@ ExprNode Parser::call(bool, ExprNode function) {
         } while (match(TokenType::COMMA));
     }
     consume("Expected ')' after function call", TokenType::RIGHT_PAREN);
-    return ExprNode{allocate_node(CallExpr, std::move(function), std::move(paren), std::move(args))};
+    return ExprNode{allocate_node(CallExpr, std::move(function), std::move(paren), std::move(args), false)};
 }
 
 ExprNode Parser::comma(bool, ExprNode left) {
@@ -423,7 +423,7 @@ ExprNode Parser::variable(bool can_assign) {
     } else if (peek().type == TokenType::DOUBLE_COLON) {
         return ExprNode{allocate_node(ScopeNameExpr, std::move(name))};
     } else {
-        return ExprNode{allocate_node(VariableExpr, std::move(name), 0, false)};
+        return ExprNode{allocate_node(VariableExpr, std::move(name), 0, false, IdentifierType::VARIABLE)};
     }
 }
 
@@ -624,7 +624,7 @@ StmtNode Parser::function_declaration() {
     StmtNode body = block_statement();
 
     auto *function_definition =
-        allocate_node(FunctionStmt, std::move(name), std::move(return_type), std::move(params), std::move(body));
+        allocate_node(FunctionStmt, std::move(name), std::move(return_type), std::move(params), std::move(body), {}, 0);
 
     if (!in_class && scope_depth == 0) {
         current_module.functions[function_definition->name.lexeme] = function_definition;
@@ -866,7 +866,7 @@ StmtNode Parser::return_statement() {
     }();
 
     consume("Expected ';' or newline after return statement", TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return StmtNode{allocate_node(ReturnStmt, std::move(keyword), std::move(return_value))};
+    return StmtNode{allocate_node(ReturnStmt, std::move(keyword), std::move(return_value), 0)};
 }
 
 StmtNode Parser::switch_statement() {

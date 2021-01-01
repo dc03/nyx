@@ -273,13 +273,15 @@ struct CallExpr final : public Expr {
     ExprNode function;
     Token paren;
     std::vector<std::tuple<ExprNode, NumericConversionType, bool>> args;
+    bool is_native_call;
 
     std::string_view string_tag() override final { return "CallExpr"; }
 
     NodeType type_tag() override final { return NodeType::CallExpr; }
 
-    CallExpr(ExprNode function, Token paren, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> args)
-        : function{std::move(function)}, paren{paren}, args{std::move(args)} {}
+    CallExpr(ExprNode function, Token paren, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> args,
+        bool is_native_call)
+        : function{std::move(function)}, paren{paren}, args{std::move(args)}, is_native_call{is_native_call} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -466,17 +468,20 @@ struct UnaryExpr final : public Expr {
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
+enum class IdentifierType { VARIABLE, FUNCTION, CLASS };
+
 struct VariableExpr final : public Expr {
     Token name;
     std::size_t stack_slot;
     bool is_ref;
+    IdentifierType type;
 
     std::string_view string_tag() override final { return "VariableExpr"; }
 
     NodeType type_tag() override final { return NodeType::VariableExpr; }
 
-    VariableExpr(Token name, std::size_t stack_slot, bool is_ref)
-        : name{name}, stack_slot{stack_slot}, is_ref{is_ref} {}
+    VariableExpr(Token name, std::size_t stack_slot, bool is_ref, IdentifierType type)
+        : name{name}, stack_slot{stack_slot}, is_ref{is_ref}, type{type} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -559,13 +564,21 @@ struct FunctionStmt final : public Stmt {
     TypeNode return_type;
     std::vector<std::pair<Token, TypeNode>> params;
     StmtNode body;
+    std::vector<ReturnStmt *> return_stmts;
+    std::size_t scope_depth;
 
     std::string_view string_tag() override final { return "FunctionStmt"; }
 
     NodeType type_tag() override final { return NodeType::FunctionStmt; }
 
-    FunctionStmt(Token name, TypeNode return_type, std::vector<std::pair<Token, TypeNode>> params, StmtNode body)
-        : name{name}, return_type{std::move(return_type)}, params{std::move(params)}, body{std::move(body)} {}
+    FunctionStmt(Token name, TypeNode return_type, std::vector<std::pair<Token, TypeNode>> params, StmtNode body,
+        std::vector<ReturnStmt *> return_stmts, std::size_t scope_depth)
+        : name{name},
+          return_type{std::move(return_type)},
+          params{std::move(params)},
+          body{std::move(body)},
+          return_stmts{std::move(return_stmts)},
+          scope_depth{scope_depth} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -592,12 +605,14 @@ struct IfStmt final : public Stmt {
 struct ReturnStmt final : public Stmt {
     Token keyword;
     ExprNode value;
+    std::size_t locals_popped;
 
     std::string_view string_tag() override final { return "ReturnStmt"; }
 
     NodeType type_tag() override final { return NodeType::ReturnStmt; }
 
-    ReturnStmt(Token keyword, ExprNode value) : keyword{keyword}, value{std::move(value)} {}
+    ReturnStmt(Token keyword, ExprNode value, std::size_t locals_popped)
+        : keyword{keyword}, value{std::move(value)}, locals_popped{locals_popped} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

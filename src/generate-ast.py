@@ -269,8 +269,9 @@ if __name__ == '__main__':
         decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}, resolved_type{resolved_type}',
                   'ExprNode left, Token oper, ExprNode right, ExprVisitorType resolved_type')
 
-        decl_expr('function{std::move(function)}, paren{paren}, args{std::move(args)}',
-                  'ExprNode function, Token paren, std::vector<std::tuple<ExprNode,NumericConversionType,bool>> args')
+        decl_expr('function{std::move(function)}, paren{paren}, args{std::move(args)}, is_native_call{is_native_call}',
+                  'ExprNode function, Token paren, std::vector<std::tuple<ExprNode,NumericConversionType,bool>> args' +
+                  ', bool is_native_call')
 
         decl_expr('exprs{std::move(exprs)}',
                   'std::vector<ExprNode> exprs')
@@ -313,8 +314,14 @@ if __name__ == '__main__':
         decl_expr('oper{oper}, right{std::move(right)}',
                   'Token oper, ExprNode right')
 
-        decl_expr('name{name}, stack_slot{stack_slot}, is_ref{is_ref}',
-                  'Token name, std::size_t stack_slot, bool is_ref')
+        file.write('enum class IdentifierType {\n')
+        tab(file, 1).write('VARIABLE,\n')
+        tab(file, 1).write('FUNCTION,\n')
+        tab(file, 1).write('CLASS\n')
+        file.write('};\n\n')
+
+        decl_expr('name{name}, stack_slot{stack_slot}, is_ref{is_ref}, type{type}',
+                  'Token name, std::size_t stack_slot, bool is_ref, IdentifierType type')
 
         file.write('// End of expression node definitions\n\n')
         file.write('// Statement node definitions\n\n')
@@ -343,16 +350,17 @@ if __name__ == '__main__':
         decl_stmt('expr{std::move(expr)}',
                   'ExprNode expr')
 
-        decl_stmt('name{name}, return_type{std::move(return_type)}, params{std::move(params)}, body{std::move(body)}',
+        decl_stmt('name{name}, return_type{std::move(return_type)}, params{std::move(params)}, body{std::move(body)},' +
+                  ' return_stmts{std::move(return_stmts)}, scope_depth{scope_depth}',
                   'Token name, TypeNode return_type, std::vector<std::pair<Token,TypeNode>> params, ' +
-                  'StmtNode body')
+                  'StmtNode body, std::vector<ReturnStmt*> return_stmts, std::size_t scope_depth')
 
         decl_stmt('keyword{keyword}, condition{std::move(condition)}, thenBranch{std::move(thenBranch)},' +
                   'elseBranch{std::move(elseBranch)}',
                   'Token keyword, ExprNode condition, StmtNode thenBranch, StmtNode elseBranch')
 
-        decl_stmt('keyword{keyword}, value{std::move(value)}',
-                  'Token keyword, ExprNode value')
+        decl_stmt('keyword{keyword}, value{std::move(value)}, locals_popped{locals_popped}',
+                  'Token keyword, ExprNode value, std::size_t locals_popped')
 
         decl_stmt('condition{std::move(condition)}, cases{std::move(cases)}, default_case{std::move(default_case)}',
                   'ExprNode condition, std::vector<std::pair<ExprNode,StmtNode>> cases, ' +

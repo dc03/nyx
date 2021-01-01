@@ -3,6 +3,7 @@
 #include "Value.hpp"
 
 #include "../Common.hpp"
+#include "../Module.hpp"
 
 Value::Value(Value &&other) noexcept {
     *this = std::move(other);
@@ -17,6 +18,7 @@ Value &Value::operator=(Value &&other) noexcept {
         case BOOL: as.boolean = other.as.boolean; break;
         case NULL_: as.null = nullptr; break;
         case PRIMITIVE_REF: as.reference = other.as.reference; break;
+        case FUNCTION: as.function = other.as.function; break;
     }
     return *this;
 }
@@ -34,6 +36,7 @@ Value &Value::operator=(const Value &other) {
         case BOOL: as.boolean = other.as.boolean; break;
         case NULL_: as.null = nullptr; break;
         case PRIMITIVE_REF: as.reference = other.as.reference; break;
+        case FUNCTION: as.function = other.as.function; break;
     }
     return *this;
 }
@@ -50,6 +53,7 @@ Value::Value(double value) : tag{Value::DOUBLE}, as{value} {}
 Value::Value(std::nullptr_t) : tag{Value::NULL_}, as{nullptr} {}
 Value::Value(std::string value) : tag{Value::STRING}, as{std::move(value)} {}
 Value::Value(Value *referred) : tag{Value::PRIMITIVE_REF}, as{referred} {}
+Value::Value(RuntimeFunction *function) : tag{Value::FUNCTION}, as{function} {}
 
 bool Value::operator==(const Value &other) const noexcept {
     if (is_numeric()) {
@@ -60,6 +64,8 @@ bool Value::operator==(const Value &other) const noexcept {
         return to_bool() == other.to_bool();
     } else if (is_null()) {
         return true;
+    } else if (is_function()) {
+        return to_function() == other.to_function();
     }
     return false;
 }
@@ -74,10 +80,16 @@ std::string Value::repr() const noexcept {
     } else if (is_null()) {
         return "null";
     } else if (is_string()) {
-        return to_string();
+        using namespace std::string_literals;
+        return "\""s + to_string() + "\""s;
     } else if (is_ref()) {
-        char x[20];
-        std::sprintf(x, "%p", reinterpret_cast<void *>(to_referred()));
-        return std::string{x};
+        char name[15];
+        std::sprintf(name, "%p", reinterpret_cast<void *>(to_referred()));
+        return std::string{name};
+    } else if (is_function()) {
+        using namespace std::string_literals;
+        char name[15];
+        std::sprintf(name, "%p", reinterpret_cast<void *>(to_function()));
+        return "<function '"s + to_function()->name + "' at "s + std::string{name} + ">"s;
     }
 }

@@ -13,7 +13,8 @@ void Generator::begin_scope() {
 }
 
 void Generator::end_scope() {
-    for (std::size_t begin = scopes.top(); begin > 0; begin--) {
+    // Only emit pops for the global scope
+    for (std::size_t begin = scopes.top(); scopes.size() == 1 && begin > 0; begin--) {
         current_chunk->emit_instruction(Instruction::POP, 0);
     }
     scopes.pop();
@@ -35,6 +36,7 @@ RuntimeModule Generator::compile(Module &module) {
     RuntimeModule compiled{};
     current_chunk = &compiled.top_level_code;
     current_module = &module;
+    current_compiled = &compiled;
 
     for (auto &stmt : module.statements) {
         if (stmt != nullptr) {
@@ -137,6 +139,17 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(CallExpr &expr) {
+    for (auto &arg : expr.args) {
+        compile(std::get<0>(arg).get());
+    }
+    if (expr.is_native_call) {
+        auto *called = dynamic_cast<VariableExpr *>(expr.function.get());
+        current_chunk->emit_constant(Value{called->name.lexeme}, called->name.line);
+        current_chunk->emit_instruction(Instruction::CALL_NATIVE, expr.paren.line);
+    } else {
+        compile(expr.function.get());
+        current_chunk->emit_instruction(Instruction::CALL_FUNCTION, expr.paren.line);
+    }
     return {};
 }
 
@@ -282,16 +295,24 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(VariableExpr &expr) {
-    if (expr.stack_slot < Chunk::const_short_max) {
-        current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_SHORT, expr.name.line);
-        current_chunk->emit_integer(expr.stack_slot);
-    } else if (expr.stack_slot < Chunk::const_long_max) {
-        current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LONG, expr.name.line);
-        current_chunk->emit_integer(expr.stack_slot);
-    } else {
-        compile_error("Too many variables in current scope");
+    switch (expr.type) {
+        case IdentifierType::VARIABLE:
+            if (expr.stack_slot < Chunk::const_short_max) {
+                current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_SHORT, expr.name.line);
+                current_chunk->emit_integer(expr.stack_slot);
+            } else if (expr.stack_slot < Chunk::const_long_max) {
+                current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LONG, expr.name.line);
+                current_chunk->emit_integer(expr.stack_slot);
+            } else {
+                compile_error("Too many variables in current scope");
+            }
+            return {expr.stack_slot, expr.is_ref};
+        case IdentifierType::FUNCTION:
+            current_chunk->emit_constant(Value{expr.name.lexeme}, expr.name.line);
+            current_chunk->emit_instruction(Instruction::LOAD_FUNCTION, expr.name.line);
+            return {};
+        case IdentifierType::CLASS: unreachable();
     }
-    return {expr.stack_slot, expr.is_ref};
 }
 
 StmtVisitorType Generator::visit(BlockStmt &stmt) {
@@ -323,7 +344,19 @@ StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
     current_chunk->emit_instruction(Instruction::POP, 0);
 }
 
-StmtVisitorType Generator::visit(FunctionStmt &stmt) {}
+StmtVisitorType Generator::visit(FunctionStmt &stmt) {
+    begin_scope();
+    RuntimeFunction function{};
+    function.arity = stmt.params.size();
+    function.name = stmt.name.lexeme;
+
+    current_chunk = &function.code;
+    compile(stmt.body.get());
+
+    current_compiled->functions[stmt.name.lexeme] = std::move(function);
+    current_chunk = &current_compiled->top_level_code;
+    end_scope();
+}
 
 StmtVisitorType Generator::visit(IfStmt &stmt) {
     compile(stmt.condition.get());
@@ -363,7 +396,16 @@ StmtVisitorType Generator::visit(IfStmt &stmt) {
     patch_jump(over_else, after_else - over_else - 4);
 }
 
-StmtVisitorType Generator::visit(ReturnStmt &stmt) {}
+StmtVisitorType Generator::visit(ReturnStmt &stmt) {
+    if (stmt.value != nullptr) {
+        compile(stmt.value.get());
+    } else {
+        current_chunk->emit_instruction(Instruction::NULL_, stmt.keyword.line);
+    }
+    current_chunk->emit_instruction(Instruction::RETURN, stmt.keyword.line);
+    current_chunk->emit_bytes((stmt.locals_popped >> 16 & 0xff), (stmt.locals_popped >> 8) & 0xff);
+    current_chunk->emit_byte(stmt.locals_popped & 0xff);
+}
 
 StmtVisitorType Generator::visit(SwitchStmt &stmt) {
     /*

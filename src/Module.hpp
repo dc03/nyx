@@ -26,16 +26,15 @@ struct Module {
 };
 
 struct RuntimeFunction {
-    std::string name{};
-    Value *stack_top{};
     Chunk code{};
-    std::byte *ip{};
+    std::size_t arity{};
+    std::string name{};
 };
 
 struct RuntimeModule {
-    std::string name{};
-    std::vector<RuntimeFunction> functions{};
     Chunk top_level_code{};
+    std::unordered_map<std::string, RuntimeFunction> functions{};
+    std::string name{};
 };
 
 #endif

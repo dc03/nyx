@@ -86,6 +86,8 @@ std::size_t four_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte
         std::cout << "\t| make ref to " << next_bytes << '\n';
     } else if (name == "INCR_LOCAL" || name == "DECR_LOCAL" || name == "MUL_LOCAL" || name == "DIV_LOCAL") {
         print_tab(1) << "| modify " << next_bytes << '\n';
+    } else if (name == "RETURN") {
+        std::cout << "\t| pop " << next_bytes << " local(s)\n";
     } else {
         std::cout << '\n';
     }
@@ -142,6 +144,9 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::DECR_LOCAL: return four_byte_insn(chunk, "DECR_LOCAL", byte, insn_count);
         case Instruction::MUL_LOCAL: return four_byte_insn(chunk, "MUL_LOCAL", byte, insn_count);
         case Instruction::DIV_LOCAL: return four_byte_insn(chunk, "DIV_LOCAL", byte, insn_count);
+        case Instruction::LOAD_FUNCTION: return single_byte_insn(chunk, "LOAD_FUNCTION", byte, insn_count);
+        case Instruction::CALL_FUNCTION: return single_byte_insn(chunk, "CALL_FUNCTION", byte, insn_count);
+        case Instruction::RETURN: return four_byte_insn(chunk, "RETURN", byte, insn_count);
     }
     unreachable();
 }

@@ -200,9 +200,21 @@ for (var i = 0; i < 10000; ++i) {
 //var y : ref typeof x = x
 //var z : typeof y = y
 //y = z + 3
-*/*/*/
+
 var x = 1
 x += 1
 x -= 1
 x *= 20
 x /= 20
+*/*/*/
+fn abc(x: int, a: int) -> int {
+    var y = 4
+    if (y > 5) {
+        var result = x * y + a
+        return result
+    } else {
+        return x * y
+    }
+}
+
+var z = abc(3, 4)

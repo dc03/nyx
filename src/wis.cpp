@@ -47,7 +47,12 @@ int main(const int, const char *const argv[]) {
         RuntimeModule main_compiled = generator.compile(main);
         main_compiled.top_level_code.emit_instruction(Instruction::HALT, 0);
         disassemble(main_compiled.top_level_code, main_name);
+        std::cout << '\n';
+        for (auto &[function_name, function] : main_compiled.functions) {
+            disassemble(function.code, function_name);
+        }
         VM vm{};
+        vm.frames[0] = CallFrame{vm.stack, {}};
         vm.run(main_compiled);
         // std::cout << vm.stack[0].to_int();
     }
