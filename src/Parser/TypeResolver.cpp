@@ -449,11 +449,11 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
 
 ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
     switch (expr.value.tag) {
-        case LiteralValue::INT:
-        case LiteralValue::DOUBLE:
-        case LiteralValue::STRING:
-        case LiteralValue::BOOL:
-        case LiteralValue::NULL_: return {expr.type.get(), expr.lexeme};
+        case LiteralValue::tag::INT:
+        case LiteralValue::tag::DOUBLE:
+        case LiteralValue::tag::STRING:
+        case LiteralValue::tag::BOOL:
+        case LiteralValue::tag::NULL_: return {expr.type.get(), expr.lexeme};
 
         default:
             error("Bug in parser with illegal type for literal value", expr.lexeme);

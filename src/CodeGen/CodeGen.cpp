@@ -181,19 +181,23 @@ ExprVisitorType Generator::visit(IndexExpr &expr) {
 
 ExprVisitorType Generator::visit(LiteralExpr &expr) {
     switch (expr.value.tag) {
-        case LiteralValue::INT: current_chunk->emit_constant(Value{expr.value.as.integer}, expr.lexeme.line); break;
-        case LiteralValue::DOUBLE: current_chunk->emit_constant(Value{expr.value.as.real}, expr.lexeme.line); break;
-        case LiteralValue::STRING:
+        case LiteralValue::tag::INT:
+            current_chunk->emit_constant(Value{expr.value.as.integer}, expr.lexeme.line);
+            break;
+        case LiteralValue::tag::DOUBLE:
+            current_chunk->emit_constant(Value{expr.value.as.real}, expr.lexeme.line);
+            break;
+        case LiteralValue::tag::STRING:
             current_chunk->emit_constant(Value{expr.value.as.string.c_str()}, expr.lexeme.line);
             break;
-        case LiteralValue::BOOL:
+        case LiteralValue::tag::BOOL:
             if (expr.value.as.boolean) {
                 current_chunk->emit_instruction(Instruction::TRUE, expr.lexeme.line);
             } else {
                 current_chunk->emit_instruction(Instruction::FALSE, expr.lexeme.line);
             }
             break;
-        case LiteralValue::NULL_: current_chunk->emit_instruction(Instruction::NULL_, expr.lexeme.line); break;
+        case LiteralValue::tag::NULL_: current_chunk->emit_instruction(Instruction::NULL_, expr.lexeme.line); break;
     }
     return {};
 }

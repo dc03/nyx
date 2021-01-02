@@ -49,7 +49,7 @@ struct ExprTypeInfo {
 };
 
 struct LiteralValue {
-    enum { INT, DOUBLE, STRING, BOOL, NULL_ } tag;
+    enum class tag { INT, DOUBLE, STRING, BOOL, NULL_ } tag;
     union as {
         int integer;
         double real;
