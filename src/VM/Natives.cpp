@@ -8,6 +8,16 @@
 #include <iostream>
 #include <string>
 
+// clang-format off
+std::vector<NativeFn> native_functions{
+    {native_print,    "print",    Type::NULL_,  {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL, Type::FUNCTION, Type::NULL_}}, 1},
+    {native_int,      "int",      Type::INT,    {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL}}, 1},
+    {native_float,    "float",    Type::FLOAT,  {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL}}, 1},
+    {native_string,   "string",   Type::STRING, {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL}}, 1},
+    {native_readline, "readline", Type::STRING, {{Type::STRING}}, 1},
+};
+//clang-format on
+
 Value native_print(Value *args) {
     Value &arg = args[0];
     if (arg.is_int()) {

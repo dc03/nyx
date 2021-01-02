@@ -26,7 +26,7 @@ struct VM {
     Chunk *chunk{};
     CallFrame *frames{};
     CallFrame *frame_top{};
-    std::unordered_map<std::string, NativeFn> native_functions{};
+    std::unordered_map<std::string_view, NativeFn> natives{};
     RuntimeModule *current_module{};
 
     void run(RuntimeModule &main_module);
@@ -39,17 +39,8 @@ struct VM {
     Chunk::byte read_byte();
     std::size_t read_three_bytes();
 
-    VM() {
-        frames = new CallFrame[max_stack_frames];
-        frame_top = frames;
-        stack = new Value[max_stack_frames * max_locals_per_frame];
-        stack_top = stack;
-    }
-
-    ~VM() {
-        delete[] frames;
-        delete[] stack;
-    }
+    VM();
+    ~VM();
 };
 
 #endif

@@ -4,6 +4,7 @@
 
 #include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
+#include "../VM/Natives.hpp"
 #include "Parser.hpp"
 
 #include <algorithm>
@@ -279,55 +280,39 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
 }
 
 bool is_builtin_function(VariableExpr *expr) {
-    constexpr std::array inbuilt_functions{"print", "int", "string", "float", "readline"};
-    return std::any_of(inbuilt_functions.begin(), inbuilt_functions.end(),
-        [&expr](const char *const arg) { return expr->name.lexeme == arg; });
+    return std::any_of(native_functions.begin(), native_functions.end(),
+        [&expr](const NativeFn &native) { return native.name == expr->name.lexeme; });
 }
 
 ExprVisitorType TypeResolver::check_inbuilt(
     VariableExpr *function, const Token &oper, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> &args) {
     using namespace std::string_literals;
-    if (function->name.lexeme == "print") {
-        for (auto &arg : args) {
-            ExprVisitorType type = resolve(std::get<0>(arg).get());
-            if (type.info->data.type == Type::CLASS) {
-                error("Cannot print object of user defined type", type.lexeme);
-            }
-        }
-        return ExprVisitorType{make_new_type<PrimitiveType>(Type::NULL_, true, false), function->name};
-    } else if (function->name.lexeme == "int" || function->name.lexeme == "float" ||
-               function->name.lexeme == "string" || function->name.lexeme == "readline") {
-        if (args.size() > 1) {
-            error("Cannot pass more than one argument to builtin function '"s + function->name.lexeme + "'"s, oper);
-            throw TypeException{"Too many arguments"};
-        } else if (args.empty()) {
-            error("Cannot call builtin function '"s + function->name.lexeme + "' with zero arguments"s, oper);
-            throw TypeException{"No arguments"};
-        }
 
-        ExprVisitorType arg_type = resolve(std::get<0>(args[0]).get());
-        if (function->name.lexeme == "readline" && arg_type.info->data.type != Type::STRING) {
-            error("Can only pass a string as the prompt for 'readline'", oper);
-        } else if (!one_of(arg_type.info->data.type, Type::INT, Type::FLOAT, Type::STRING, Type::BOOL)) {
-            error("Expected one of integral, floating, string or boolean arguments to be passed to builtin "
-                  "function '"s +
-                      function->name.lexeme + "'"s,
-                oper);
-        }
+    auto it = std::find_if(native_functions.begin(), native_functions.end(),
+        [&function](const NativeFn &native) { return native.name == function->name.lexeme; });
 
-        Type return_type = [&function]() {
-            if (function->name.lexeme == "int") {
-                return Type::INT;
-            } else if (function->name.lexeme == "float") {
-                return Type::FLOAT;
-            } else {
-                return Type::STRING;
-            }
-        }();
-        return ExprVisitorType{make_new_type<PrimitiveType>(return_type, true, false), function->name};
-    } else {
-        unreachable();
+    if (args.size() != it->arity) {
+        using namespace std::string_literals;
+        std::string arity_error = "Cannot pass "s + (args.size() < it->arity ? "less"s : "more"s) + " than "s +
+                                  std::to_string(it->arity) + " argument(s) to function '"s + it->name + "'"s;
+        error(arity_error, oper);
+        throw TypeException{arity_error};
     }
+
+    for (std::size_t i = 0; i < it->arity; i++) {
+        ExprVisitorType arg = resolve(std::get<0>(args[i]).get());
+        if (!std::any_of(it->arguments[i].begin(), it->arguments[i].end(),
+                [&arg](const Type &type) { return type == arg.info->data.type; })) {
+            using namespace std::string_literals;
+            std::string type_error = "Cannot pass argument of type '"s + stringify(arg.info) +
+                                     "' as argument number "s + std::to_string(i + 1) + " to builtin function '"s +
+                                     it->name + "'";
+            error(type_error, oper);
+            throw TypeException{type_error};
+        }
+    }
+
+    return ExprVisitorType{make_new_type<PrimitiveType>(it->return_type, true, false), function->name};
 }
 
 ExprVisitorType TypeResolver::visit(CallExpr &expr) {

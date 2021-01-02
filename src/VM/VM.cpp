@@ -12,6 +12,21 @@
 #define PRINT_STACK
 #endif
 
+VM::VM() {
+    frames = new CallFrame[max_stack_frames];
+    frame_top = frames;
+    stack = new Value[max_stack_frames * max_locals_per_frame];
+    stack_top = stack;
+    for (const auto &native : native_functions) {
+        define_native(native.name, native);
+    }
+}
+
+VM::~VM() {
+    delete[] frames;
+    delete[] stack;
+}
+
 void VM::push(const Value &value) {
     //*stack_top = Value{}; // Without this, for reasons I do not know, a segfault occurs with strings
     // if (value.is_string()) {
@@ -30,7 +45,7 @@ void VM::pop() {
 }
 
 void VM::define_native(const std::string &name, NativeFn code) {
-    native_functions[name] = code;
+    natives[name] = code;
 }
 
 Value &VM::top_from(std::size_t distance) const {
@@ -371,7 +386,7 @@ void VM::run(RuntimeModule &main_module) {
             }
 
             case is Instruction::CALL_NATIVE: {
-                NativeFn called = native_functions[top_from(1).to_string()];
+                NativeFn called = natives[top_from(1).to_string()];
                 pop();
                 Value result = called.code(stack_top - called.arity);
                 for (std::size_t i = 0; i < called.arity; i++) {
