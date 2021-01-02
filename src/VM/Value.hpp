@@ -12,7 +12,7 @@
 struct RuntimeFunction;
 
 struct Value {
-    enum { INT, DOUBLE, STRING, BOOL, NULL_, PRIMITIVE_REF, FUNCTION } tag;
+    enum class tag { INT, DOUBLE, STRING, BOOL, NULL_, PRIMITIVE_REF, FUNCTION } tag;
     union as {
         int integer;
         double real;
@@ -39,7 +39,7 @@ struct Value {
         explicit as(RuntimeFunction *function) : function{function} {}
     } as;
 
-    Value() : tag{NULL_} {}
+    Value() : tag{tag::NULL_} {}
     Value(Value &&other) noexcept;
     Value &operator=(Value &&other) noexcept;
     Value(const Value &other);
@@ -55,14 +55,14 @@ struct Value {
     explicit Value(RuntimeFunction *function);
 
     // clang-format off
-    [[nodiscard]] bool is_int()      const noexcept { return tag == Value::INT; }
-    [[nodiscard]] bool is_double()   const noexcept { return tag == Value::DOUBLE; }
-    [[nodiscard]] bool is_string()   const noexcept { return tag == Value::STRING; }
-    [[nodiscard]] bool is_bool()     const noexcept { return tag == Value::BOOL; }
-    [[nodiscard]] bool is_null()     const noexcept { return tag == Value::NULL_; }
-    [[nodiscard]] bool is_numeric()  const noexcept { return tag == Value::INT || tag == Value::DOUBLE; }
-    [[nodiscard]] bool is_ref()      const noexcept { return tag == Value::PRIMITIVE_REF; }
-    [[nodiscard]] bool is_function() const noexcept { return tag == Value::FUNCTION; }
+    [[nodiscard]] bool is_int()      const noexcept { return tag == Value::tag::INT; }
+    [[nodiscard]] bool is_double()   const noexcept { return tag == Value::tag::DOUBLE; }
+    [[nodiscard]] bool is_string()   const noexcept { return tag == Value::tag::STRING; }
+    [[nodiscard]] bool is_bool()     const noexcept { return tag == Value::tag::BOOL; }
+    [[nodiscard]] bool is_null()     const noexcept { return tag == Value::tag::NULL_; }
+    [[nodiscard]] bool is_numeric()  const noexcept { return tag == Value::tag::INT || tag == Value::tag::DOUBLE; }
+    [[nodiscard]] bool is_ref()      const noexcept { return tag == Value::tag::PRIMITIVE_REF; }
+    [[nodiscard]] bool is_function() const noexcept { return tag == Value::tag::FUNCTION; }
 
     [[nodiscard]] int to_int()                   const noexcept { return as.integer; }
     [[nodiscard]] double to_double()             const noexcept { return as.real; }
