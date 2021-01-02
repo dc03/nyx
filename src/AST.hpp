@@ -191,7 +191,7 @@ struct UserDefinedType final : public BaseType {
 
     NodeType type_tag() override final { return NodeType::UserDefinedType; }
 
-    explicit UserDefinedType(SharedData data, Token name) : BaseType{data}, name{name} {}
+    explicit UserDefinedType(SharedData data, Token name) : BaseType{data}, name{std::move(name)} {}
 
     BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -242,12 +242,12 @@ struct AssignExpr final : public Expr {
 
     AssignExpr(Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy,
         std::size_t stack_slot, Token oper)
-        : target{target},
+        : target{std::move(target)},
           value{std::move(value)},
           conversion_type{conversion_type},
           requires_copy{requires_copy},
           stack_slot{stack_slot},
-          oper{oper} {}
+          oper{std::move(oper)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -263,7 +263,7 @@ struct BinaryExpr final : public Expr {
     NodeType type_tag() override final { return NodeType::BinaryExpr; }
 
     BinaryExpr(ExprNode left, Token oper, ExprNode right, ExprVisitorType resolved_type)
-        : left{std::move(left)}, oper{oper}, right{std::move(right)}, resolved_type{resolved_type} {}
+        : left{std::move(left)}, oper{std::move(oper)}, right{std::move(right)}, resolved_type{resolved_type} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -280,7 +280,10 @@ struct CallExpr final : public Expr {
 
     CallExpr(ExprNode function, Token paren, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> args,
         bool is_native_call)
-        : function{std::move(function)}, paren{paren}, args{std::move(args)}, is_native_call{is_native_call} {}
+        : function{std::move(function)},
+          paren{std::move(paren)},
+          args{std::move(args)},
+          is_native_call{is_native_call} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -305,7 +308,7 @@ struct GetExpr final : public Expr {
 
     NodeType type_tag() override final { return NodeType::GetExpr; }
 
-    GetExpr(ExprNode object, Token name) : object{std::move(object)}, name{name} {}
+    GetExpr(ExprNode object, Token name) : object{std::move(object)}, name{std::move(name)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -332,7 +335,7 @@ struct IndexExpr final : public Expr {
     NodeType type_tag() override final { return NodeType::IndexExpr; }
 
     IndexExpr(ExprNode object, Token oper, ExprNode index)
-        : object{std::move(object)}, oper{oper}, index{std::move(index)} {}
+        : object{std::move(object)}, oper{std::move(oper)}, index{std::move(index)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -362,7 +365,7 @@ struct LogicalExpr final : public Expr {
     NodeType type_tag() override final { return NodeType::LogicalExpr; }
 
     LogicalExpr(ExprNode left, Token oper, ExprNode right)
-        : left{std::move(left)}, oper{oper}, right{std::move(right)} {}
+        : left{std::move(left)}, oper{std::move(oper)}, right{std::move(right)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -375,7 +378,7 @@ struct ScopeAccessExpr final : public Expr {
 
     NodeType type_tag() override final { return NodeType::ScopeAccessExpr; }
 
-    ScopeAccessExpr(ExprNode scope, Token name) : scope{std::move(scope)}, name{name} {}
+    ScopeAccessExpr(ExprNode scope, Token name) : scope{std::move(scope)}, name{std::move(name)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -387,7 +390,7 @@ struct ScopeNameExpr final : public Expr {
 
     NodeType type_tag() override final { return NodeType::ScopeNameExpr; }
 
-    explicit ScopeNameExpr(Token name) : name{name} {}
+    explicit ScopeNameExpr(Token name) : name{std::move(name)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -405,7 +408,7 @@ struct SetExpr final : public Expr {
 
     SetExpr(ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type, bool requires_copy)
         : object{std::move(object)},
-          name{name},
+          name{std::move(name)},
           value{std::move(value)},
           conversion_type{conversion_type},
           requires_copy{requires_copy} {}
@@ -421,7 +424,7 @@ struct SuperExpr final : public Expr {
 
     NodeType type_tag() override final { return NodeType::SuperExpr; }
 
-    SuperExpr(Token keyword, Token name) : keyword{keyword}, name{name} {}
+    SuperExpr(Token keyword, Token name) : keyword{std::move(keyword)}, name{std::move(name)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -437,7 +440,7 @@ struct TernaryExpr final : public Expr {
     NodeType type_tag() override final { return NodeType::TernaryExpr; }
 
     TernaryExpr(ExprNode left, Token question, ExprNode middle, ExprNode right)
-        : left{std::move(left)}, question{question}, middle{std::move(middle)}, right{std::move(right)} {}
+        : left{std::move(left)}, question{std::move(question)}, middle{std::move(middle)}, right{std::move(right)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -449,7 +452,7 @@ struct ThisExpr final : public Expr {
 
     NodeType type_tag() override final { return NodeType::ThisExpr; }
 
-    explicit ThisExpr(Token keyword) : keyword{keyword} {}
+    explicit ThisExpr(Token keyword) : keyword{std::move(keyword)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -462,7 +465,7 @@ struct UnaryExpr final : public Expr {
 
     NodeType type_tag() override final { return NodeType::UnaryExpr; }
 
-    UnaryExpr(Token oper, ExprNode right) : oper{oper}, right{std::move(right)} {}
+    UnaryExpr(Token oper, ExprNode right) : oper{std::move(oper)}, right{std::move(right)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -480,7 +483,7 @@ struct VariableExpr final : public Expr {
     NodeType type_tag() override final { return NodeType::VariableExpr; }
 
     VariableExpr(Token name, std::size_t stack_slot, bool is_ref, IdentifierType type)
-        : name{name}, stack_slot{stack_slot}, is_ref{is_ref}, type{type} {}
+        : name{std::move(name)}, stack_slot{stack_slot}, is_ref{is_ref}, type{type} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -508,7 +511,7 @@ struct BreakStmt final : public Stmt {
 
     NodeType type_tag() override final { return NodeType::BreakStmt; }
 
-    explicit BreakStmt(Token keyword) : keyword{keyword} {}
+    explicit BreakStmt(Token keyword) : keyword{std::move(keyword)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -529,7 +532,7 @@ struct ClassStmt final : public Stmt {
     ClassStmt(Token name, FunctionStmt *ctor, FunctionStmt *dtor,
         std::vector<std::pair<std::unique_ptr<VarStmt>, VisibilityType>> members,
         std::vector<std::pair<std::unique_ptr<FunctionStmt>, VisibilityType>> methods)
-        : name{name}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, methods{std::move(methods)} {}
+        : name{std::move(name)}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, methods{std::move(methods)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -541,7 +544,7 @@ struct ContinueStmt final : public Stmt {
 
     NodeType type_tag() override final { return NodeType::ContinueStmt; }
 
-    explicit ContinueStmt(Token keyword) : keyword{keyword} {}
+    explicit ContinueStmt(Token keyword) : keyword{std::move(keyword)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -572,7 +575,7 @@ struct FunctionStmt final : public Stmt {
 
     FunctionStmt(Token name, TypeNode return_type, std::vector<std::pair<Token, TypeNode>> params, StmtNode body,
         std::vector<ReturnStmt *> return_stmts, std::size_t scope_depth)
-        : name{name},
+        : name{std::move(name)},
           return_type{std::move(return_type)},
           params{std::move(params)},
           body{std::move(body)},
@@ -593,7 +596,7 @@ struct IfStmt final : public Stmt {
     NodeType type_tag() override final { return NodeType::IfStmt; }
 
     IfStmt(Token keyword, ExprNode condition, StmtNode thenBranch, StmtNode elseBranch)
-        : keyword{keyword},
+        : keyword{std::move(keyword)},
           condition{std::move(condition)},
           thenBranch{std::move(thenBranch)},
           elseBranch{std::move(elseBranch)} {}
@@ -611,7 +614,7 @@ struct ReturnStmt final : public Stmt {
     NodeType type_tag() override final { return NodeType::ReturnStmt; }
 
     ReturnStmt(Token keyword, ExprNode value, std::size_t locals_popped)
-        : keyword{keyword}, value{std::move(value)}, locals_popped{locals_popped} {}
+        : keyword{std::move(keyword)}, value{std::move(value)}, locals_popped{locals_popped} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -639,7 +642,7 @@ struct TypeStmt final : public Stmt {
 
     NodeType type_tag() override final { return NodeType::TypeStmt; }
 
-    TypeStmt(Token name, TypeNode type) : name{name}, type{std::move(type)} {}
+    TypeStmt(Token name, TypeNode type) : name{std::move(name)}, type{std::move(type)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -660,7 +663,7 @@ struct VarStmt final : public Stmt {
     VarStmt(bool is_val, Token name, TypeNode type, ExprNode initializer, NumericConversionType conversion_type,
         bool requires_copy, bool init_is_ref)
         : is_val{is_val},
-          name{name},
+          name{std::move(name)},
           type{std::move(type)},
           initializer{std::move(initializer)},
           conversion_type{conversion_type},
@@ -681,7 +684,10 @@ struct WhileStmt final : public Stmt {
     NodeType type_tag() override final { return NodeType::WhileStmt; }
 
     WhileStmt(Token keyword, ExprNode condition, StmtNode body, StmtNode increment)
-        : keyword{keyword}, condition{std::move(condition)}, body{std::move(body)}, increment{std::move(increment)} {}
+        : keyword{std::move(keyword)},
+          condition{std::move(condition)},
+          body{std::move(body)},
+          increment{std::move(increment)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
