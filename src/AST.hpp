@@ -165,7 +165,7 @@ struct BaseType {
     SharedData data;
 
     BaseType() = default;
-    BaseType(SharedData data) : data{data} {}
+    explicit BaseType(SharedData data) : data{data} {}
     virtual std::string_view string_tag() = 0;
     virtual NodeType type_tag() = 0;
     virtual BaseTypeVisitorType accept(Visitor &visitor) = 0;
@@ -179,7 +179,7 @@ struct PrimitiveType final : public BaseType {
 
     NodeType type_tag() override final { return NodeType::PrimitiveType; }
 
-    PrimitiveType(SharedData data) : BaseType{data} {}
+    explicit PrimitiveType(SharedData data) : BaseType{data} {}
 
     BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -191,7 +191,7 @@ struct UserDefinedType final : public BaseType {
 
     NodeType type_tag() override final { return NodeType::UserDefinedType; }
 
-    UserDefinedType(SharedData data, Token name) : BaseType{data}, name{name} {}
+    explicit UserDefinedType(SharedData data, Token name) : BaseType{data}, name{name} {}
 
     BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -217,7 +217,7 @@ struct TypeofType final : public BaseType {
 
     NodeType type_tag() override final { return NodeType::TypeofType; }
 
-    TypeofType(SharedData data, ExprNode expr) : BaseType{data}, expr{std::move(expr)} {}
+    explicit TypeofType(SharedData data, ExprNode expr) : BaseType{data}, expr{std::move(expr)} {}
 
     BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -292,7 +292,7 @@ struct CommaExpr final : public Expr {
 
     NodeType type_tag() override final { return NodeType::CommaExpr; }
 
-    CommaExpr(std::vector<ExprNode> exprs) : exprs{std::move(exprs)} {}
+    explicit CommaExpr(std::vector<ExprNode> exprs) : exprs{std::move(exprs)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -317,7 +317,7 @@ struct GroupingExpr final : public Expr {
 
     NodeType type_tag() override final { return NodeType::GroupingExpr; }
 
-    GroupingExpr(ExprNode expr) : expr{std::move(expr)} {}
+    explicit GroupingExpr(ExprNode expr) : expr{std::move(expr)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -387,7 +387,7 @@ struct ScopeNameExpr final : public Expr {
 
     NodeType type_tag() override final { return NodeType::ScopeNameExpr; }
 
-    ScopeNameExpr(Token name) : name{name} {}
+    explicit ScopeNameExpr(Token name) : name{name} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -449,7 +449,7 @@ struct ThisExpr final : public Expr {
 
     NodeType type_tag() override final { return NodeType::ThisExpr; }
 
-    ThisExpr(Token keyword) : keyword{keyword} {}
+    explicit ThisExpr(Token keyword) : keyword{keyword} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -496,7 +496,7 @@ struct BlockStmt final : public Stmt {
 
     NodeType type_tag() override final { return NodeType::BlockStmt; }
 
-    BlockStmt(std::vector<StmtNode> stmts) : stmts{std::move(stmts)} {}
+    explicit BlockStmt(std::vector<StmtNode> stmts) : stmts{std::move(stmts)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -508,7 +508,7 @@ struct BreakStmt final : public Stmt {
 
     NodeType type_tag() override final { return NodeType::BreakStmt; }
 
-    BreakStmt(Token keyword) : keyword{keyword} {}
+    explicit BreakStmt(Token keyword) : keyword{keyword} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -541,7 +541,7 @@ struct ContinueStmt final : public Stmt {
 
     NodeType type_tag() override final { return NodeType::ContinueStmt; }
 
-    ContinueStmt(Token keyword) : keyword{keyword} {}
+    explicit ContinueStmt(Token keyword) : keyword{keyword} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -553,7 +553,7 @@ struct ExpressionStmt final : public Stmt {
 
     NodeType type_tag() override final { return NodeType::ExpressionStmt; }
 
-    ExpressionStmt(ExprNode expr) : expr{std::move(expr)} {}
+    explicit ExpressionStmt(ExprNode expr) : expr{std::move(expr)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

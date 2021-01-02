@@ -5,6 +5,7 @@
 #include "../Common.hpp"
 
 #include <iomanip>
+#include <iostream>
 
 std::ostream &print_tab(std::size_t quantity, std::size_t tab_size = 8) {
     for (std::size_t i = 0; i < quantity * tab_size; i++) {

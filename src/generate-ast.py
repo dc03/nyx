@@ -65,46 +65,14 @@ def declare_base(file, base_name: str) -> None:
     return None
 
 
-def declare_derived(file, base_name: str, derived_name: str, ctor_args: str, members: str) -> None:
-    file.write('struct ' + derived_name +
-               ' final: public ' + base_name + ' {\n')
-
-    if members != '':
-        for member in members.split(', '):
-            tab(file, 1).write(member.strip() + ';\n')
-        file.write('\n')
-        # Class members
-
-    tab(file, 1).write('std::string_view string_tag() override final {\n')
-    tab(file, 2).write('return "' + derived_name + '";\n')
-    tab(file, 1).write('}\n\n')
-    # string_tag() method
-
-    tab(file, 1).write('NodeType type_tag() override final {\n')
-    tab(file, 2).write('return NodeType::' + derived_name + ';\n')
-    tab(file, 1).write('}\n\n')
-    # type_tag() method
-
-    tab(file, 1).write(derived_name + '(' + members + ')' + (':\n' if ctor_args != '' else '\n'))
-    tab(file, 2).write(ctor_args + ' {}\n')
-    file.write('\n')
-    # Class constructor
-
-    tab(file, 1).write(base_name + 'VisitorType accept(Visitor &visitor) override final {\n')
-    tab(file, 2).write('return visitor.visit(*this);\n')
-    tab(file, 1).write('}\n')
-    # Accept method
-    file.write('};\n\n')
-    return None
-
-
 def declare_derived_type(file, base_name: str, derived_name: str, ctor_args: str, members: str, ctor_params: str) \
         -> None:
     file.write('struct ' + derived_name +
                ' final: public ' + base_name + ' {\n')
 
+    member_list = members.split(', ')
     if members != '':
-        for member in members.split(', '):
+        for member in member_list:
             tab(file, 1).write(member.strip() + ';\n')
         file.write('\n')
         # Class members
@@ -119,7 +87,7 @@ def declare_derived_type(file, base_name: str, derived_name: str, ctor_args: str
     tab(file, 1).write('}\n\n')
     # type_tag() method
 
-    tab(file, 1).write(derived_name + '(' + ctor_params + ')' + (':\n' if ctor_args != '' else '\n'))
+    tab(file, 1).write(('explicit ' if len(member_list) == 1 else '') + derived_name + '(' + ctor_params + ')' + (':\n' if ctor_args != '' else '\n'))
     tab(file, 2).write(ctor_args + ' {}\n')
     file.write('\n')
     # Class constructor
@@ -156,16 +124,16 @@ expr_count: int = 0
 stmt_count: int = 0
 
 
-def decl_expr(ctor_args: str, members: str) -> None:
+def declare_expr_type(ctor_args: str, members: str) -> None:
     global expr_count
-    declare_derived(file, 'Expr', Exprs[expr_count], ctor_args, members)
+    declare_derived_type(file, 'Expr', Exprs[expr_count], ctor_args, members, members)
     expr_count += 1
     return None
 
 
-def decl_stmt(ctor_args: str, members: str) -> None:
+def declare_stmt_type(ctor_args: str, members: str) -> None:
     global stmt_count
-    declare_derived(file, 'Stmt', Stmts[stmt_count], ctor_args, members)
+    declare_derived_type(file, 'Stmt', Stmts[stmt_count], ctor_args, members, members)
     stmt_count += 1
     return None
 
@@ -223,7 +191,7 @@ if __name__ == '__main__':
         file.write('struct BaseType {\n')
         tab(file, 1).write('SharedData data;\n\n')
         tab(file, 1).write('BaseType() = default;\n')
-        tab(file, 1).write('BaseType(SharedData data): data{data} {}\n')
+        tab(file, 1).write('explicit BaseType(SharedData data): data{data} {}\n')
         tab(file, 1).write('virtual std::string_view string_tag() = 0;\n')
         tab(file, 1).write('virtual NodeType type_tag() = 0;\n')
         tab(file, 1).write('virtual BaseTypeVisitorType accept(Visitor& visitor) = 0;\n')
@@ -260,58 +228,60 @@ if __name__ == '__main__':
         tab(file, 1).write('NONE\n')
         file.write('};\n\n')
 
-        decl_expr('target{target}, value{std::move(value)}, conversion_type{conversion_type}, requires_copy{' +
-                  'requires_copy}, stack_slot{stack_slot}, oper{oper}',
-                  'Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy, std::size_t'
-                  + ' stack_slot, Token oper')
+        declare_expr_type('target{target}, value{std::move(value)}, conversion_type{conversion_type}, requires_copy{'
+                          'requires_copy}, stack_slot{stack_slot}, oper{oper}',
+                          'Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy, '
+                          'std::size_t stack_slot, Token oper')
 
-        decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}, resolved_type{resolved_type}',
-                  'ExprNode left, Token oper, ExprNode right, ExprVisitorType resolved_type')
+        declare_expr_type('left{std::move(left)}, oper{oper}, right{std::move(right)}, resolved_type{resolved_type}',
+                          'ExprNode left, Token oper, ExprNode right, ExprVisitorType resolved_type')
 
-        decl_expr('function{std::move(function)}, paren{paren}, args{std::move(args)}, is_native_call{is_native_call}',
-                  'ExprNode function, Token paren, std::vector<std::tuple<ExprNode,NumericConversionType,bool>> args' +
-                  ', bool is_native_call')
+        declare_expr_type(
+            'function{std::move(function)}, paren{paren}, args{std::move(args)}, is_native_call{is_native_call}',
+            'ExprNode function, Token paren, std::vector<std::tuple<ExprNode,NumericConversionType,bool>> args,'
+            ' bool is_native_call')
 
-        decl_expr('exprs{std::move(exprs)}',
-                  'std::vector<ExprNode> exprs')
+        declare_expr_type('exprs{std::move(exprs)}',
+                          'std::vector<ExprNode> exprs')
 
-        decl_expr('object{std::move(object)}, name{name}',
-                  'ExprNode object, Token name')
+        declare_expr_type('object{std::move(object)}, name{name}',
+                          'ExprNode object, Token name')
 
-        decl_expr('expr{std::move(expr)}',
-                  'ExprNode expr')
+        declare_expr_type('expr{std::move(expr)}',
+                          'ExprNode expr')
 
-        decl_expr('object{std::move(object)}, oper{oper}, index{std::move(index)}',
-                  'ExprNode object, Token oper, ExprNode index')
+        declare_expr_type('object{std::move(object)}, oper{oper}, index{std::move(index)}',
+                          'ExprNode object, Token oper, ExprNode index')
 
-        decl_expr('value{std::move(value)}, lexeme{std::move(lexeme)}, type{std::move(type)}',
-                  'LiteralValue value, Token lexeme, TypeNode type')
+        declare_expr_type('value{std::move(value)}, lexeme{std::move(lexeme)}, type{std::move(type)}',
+                          'LiteralValue value, Token lexeme, TypeNode type')
 
-        decl_expr('left{std::move(left)}, oper{oper}, right{std::move(right)}',
-                  'ExprNode left, Token oper, ExprNode right')
+        declare_expr_type('left{std::move(left)}, oper{oper}, right{std::move(right)}',
+                          'ExprNode left, Token oper, ExprNode right')
 
-        decl_expr('scope{std::move(scope)}, name{name}',
-                  'ExprNode scope, Token name')
+        declare_expr_type('scope{std::move(scope)}, name{name}',
+                          'ExprNode scope, Token name')
 
-        decl_expr('name{name}',
-                  'Token name')
+        declare_expr_type('name{name}',
+                          'Token name')
 
-        decl_expr('object{std::move(object)}, name{name}, value{std::move(value)}, conversion_type{conversion_type}, ' +
-                  'requires_copy{requires_copy}',
-                  'ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type, bool ' +
-                  'requires_copy')
+        declare_expr_type(
+            'object{std::move(object)}, name{name}, value{std::move(value)}, conversion_type{conversion_type}, '
+            'requires_copy{requires_copy}',
+            'ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type, bool requires_copy')
 
-        decl_expr('keyword{keyword}, name{name}',
-                  'Token keyword, Token name')
+        declare_expr_type('keyword{keyword}, name{name}',
+                          'Token keyword, Token name')
 
-        decl_expr('left{std::move(left)}, question{question}, middle{std::move(middle)}, right{std::move(right)}',
-                  'ExprNode left, Token question, ExprNode middle, ExprNode right')
+        declare_expr_type(
+            'left{std::move(left)}, question{question}, middle{std::move(middle)}, right{std::move(right)}',
+            'ExprNode left, Token question, ExprNode middle, ExprNode right')
 
-        decl_expr('keyword{keyword}',
-                  'Token keyword')
+        declare_expr_type('keyword{keyword}',
+                          'Token keyword')
 
-        decl_expr('oper{oper}, right{std::move(right)}',
-                  'Token oper, ExprNode right')
+        declare_expr_type('oper{oper}, right{std::move(right)}',
+                          'Token oper, ExprNode right')
 
         file.write('enum class IdentifierType {\n')
         tab(file, 1).write('VARIABLE,\n')
@@ -319,17 +289,17 @@ if __name__ == '__main__':
         tab(file, 1).write('CLASS\n')
         file.write('};\n\n')
 
-        decl_expr('name{name}, stack_slot{stack_slot}, is_ref{is_ref}, type{type}',
-                  'Token name, std::size_t stack_slot, bool is_ref, IdentifierType type')
+        declare_expr_type('name{name}, stack_slot{stack_slot}, is_ref{is_ref}, type{type}',
+                          'Token name, std::size_t stack_slot, bool is_ref, IdentifierType type')
 
         file.write('// End of expression node definitions\n\n')
         file.write('// Statement node definitions\n\n')
 
-        decl_stmt('stmts{std::move(stmts)}',
-                  'std::vector<StmtNode> stmts')
+        declare_stmt_type('stmts{std::move(stmts)}',
+                          'std::vector<StmtNode> stmts')
 
-        decl_stmt('keyword{keyword}',
-                  'Token keyword')
+        declare_stmt_type('keyword{keyword}',
+                          'Token keyword')
 
         file.write('enum class VisibilityType {\n')
         tab(file, 1).write('PRIVATE,\n')
@@ -337,45 +307,45 @@ if __name__ == '__main__':
         tab(file, 1).write('PUBLIC\n')
         file.write('};\n\n')
 
-        decl_stmt('name{name}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, ' +
-                  'methods{std::move(methods)}',
-                  'Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<std::pair<std::unique_ptr<VarStmt>,'
-                  + 'VisibilityType>> members, std::vector<std::pair<std::unique_ptr<FunctionStmt>,VisibilityType>>'
-                  + 'methods')
+        declare_stmt_type('name{name}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, methods{std::move(methods)}'
+                          , 'Token name, FunctionStmt *ctor, FunctionStmt *dtor, '
+                            'std::vector<std::pair<std::unique_ptr<VarStmt>,VisibilityType>> members, '
+                            'std::vector<std::pair<std::unique_ptr<FunctionStmt>,VisibilityType>> methods')
 
-        decl_stmt('keyword{keyword}',
-                  'Token keyword')
+        declare_stmt_type('keyword{keyword}',
+                          'Token keyword')
 
-        decl_stmt('expr{std::move(expr)}',
-                  'ExprNode expr')
+        declare_stmt_type('expr{std::move(expr)}',
+                          'ExprNode expr')
 
-        decl_stmt('name{name}, return_type{std::move(return_type)}, params{std::move(params)}, body{std::move(body)},' +
-                  ' return_stmts{std::move(return_stmts)}, scope_depth{scope_depth}',
-                  'Token name, TypeNode return_type, std::vector<std::pair<Token,TypeNode>> params, ' +
-                  'StmtNode body, std::vector<ReturnStmt*> return_stmts, std::size_t scope_depth')
+        declare_stmt_type(
+            'name{name}, return_type{std::move(return_type)}, params{std::move(params)}, body{std::move(body)},'
+            ' return_stmts{std::move(return_stmts)}, scope_depth{scope_depth}',
+            'Token name, TypeNode return_type, std::vector<std::pair<Token,TypeNode>> params, '
+            'StmtNode body, std::vector<ReturnStmt*> return_stmts, std::size_t scope_depth')
 
-        decl_stmt('keyword{keyword}, condition{std::move(condition)}, thenBranch{std::move(thenBranch)},' +
-                  'elseBranch{std::move(elseBranch)}',
-                  'Token keyword, ExprNode condition, StmtNode thenBranch, StmtNode elseBranch')
+        declare_stmt_type('keyword{keyword}, condition{std::move(condition)}, thenBranch{std::move(thenBranch)},'
+                          'elseBranch{std::move(elseBranch)}',
+                          'Token keyword, ExprNode condition, StmtNode thenBranch, StmtNode elseBranch')
 
-        decl_stmt('keyword{keyword}, value{std::move(value)}, locals_popped{locals_popped}',
-                  'Token keyword, ExprNode value, std::size_t locals_popped')
+        declare_stmt_type('keyword{keyword}, value{std::move(value)}, locals_popped{locals_popped}',
+                          'Token keyword, ExprNode value, std::size_t locals_popped')
 
-        decl_stmt('condition{std::move(condition)}, cases{std::move(cases)}, default_case{std::move(default_case)}',
-                  'ExprNode condition, std::vector<std::pair<ExprNode,StmtNode>> cases, ' +
-                  'StmtNode default_case')
+        declare_stmt_type(
+            'condition{std::move(condition)}, cases{std::move(cases)}, default_case{std::move(default_case)}',
+            'ExprNode condition, std::vector<std::pair<ExprNode,StmtNode>> cases, StmtNode default_case')
 
-        decl_stmt('name{name}, type{std::move(type)}',
-                  'Token name, TypeNode type')
+        declare_stmt_type('name{name}, type{std::move(type)}',
+                          'Token name, TypeNode type')
 
-        decl_stmt('is_val{is_val}, name{name}, type{std::move(type)}, initializer{std::move(initializer)},' +
-                  'conversion_type{conversion_type}, requires_copy{requires_copy}, init_is_ref{init_is_ref}',
-                  'bool is_val, Token name, TypeNode type, ExprNode initializer, NumericConversionType conversion_type'
-                  + ', bool requires_copy, bool init_is_ref')
+        declare_stmt_type('is_val{is_val}, name{name}, type{std::move(type)}, initializer{std::move(initializer)},'
+                          'conversion_type{conversion_type}, requires_copy{requires_copy}, init_is_ref{init_is_ref}',
+                          'bool is_val, Token name, TypeNode type, ExprNode initializer, NumericConversionType '
+                          'conversion_type, bool requires_copy, bool init_is_ref')
 
-        decl_stmt('keyword{keyword}, condition{std::move(condition)}, body{std::move(body)}, increment{std::move(' +
-                  'increment)}',
-                  'Token keyword, ExprNode condition, StmtNode body, StmtNode increment')
+        declare_stmt_type(
+            'keyword{keyword}, condition{std::move(condition)}, body{std::move(body)}, increment{std::move(increment)}',
+            'Token keyword, ExprNode condition, StmtNode body, StmtNode increment')
 
         file.write('// End of statement node definitions\n\n')
 
