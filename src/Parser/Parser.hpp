@@ -14,7 +14,7 @@
 #include <vector>
 
 struct ParsePrecedence {
-    enum of {
+    enum class of {
         NONE,
         COMMA,      // ,
         ASSIGNMENT, // = += -= *= /= ?:

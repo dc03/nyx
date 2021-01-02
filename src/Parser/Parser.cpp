@@ -88,83 +88,83 @@ void Parser::synchronize() {
 Parser::Parser(const std::vector<Token> &tokens, Module &module, std::size_t current_depth)
     : tokens{tokens}, current_module{module}, current_module_depth{current_depth} {
     // clang-format off
-    add_rule(TokenType::COMMA,         {nullptr, &Parser::comma, ParsePrecedence::COMMA});
-    add_rule(TokenType::EQUAL,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::PLUS_EQUAL,    {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::MINUS_EQUAL,   {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::STAR_EQUAL,    {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::SLASH_EQUAL,   {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::QUESTION,      {nullptr, &Parser::ternary, ParsePrecedence::ASSIGNMENT});
-    add_rule(TokenType::COLON,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::BIT_OR,        {nullptr, &Parser::binary, ParsePrecedence::BIT_OR});
-    add_rule(TokenType::BIT_XOR,       {nullptr, &Parser::binary, ParsePrecedence::BIT_XOR});
-    add_rule(TokenType::BIT_AND,       {nullptr, &Parser::binary, ParsePrecedence::BIT_AND});
-    add_rule(TokenType::NOT_EQUAL,     {nullptr, &Parser::binary, ParsePrecedence::EQUALITY});
-    add_rule(TokenType::EQUAL_EQUAL,   {nullptr, &Parser::binary, ParsePrecedence::EQUALITY});
-    add_rule(TokenType::GREATER,       {nullptr, &Parser::binary, ParsePrecedence::ORDERING});
-    add_rule(TokenType::GREATER_EQUAL, {nullptr, &Parser::binary, ParsePrecedence::ORDERING});
-    add_rule(TokenType::LESS,          {nullptr, &Parser::binary, ParsePrecedence::ORDERING});
-    add_rule(TokenType::LESS_EQUAL,    {nullptr, &Parser::binary, ParsePrecedence::ORDERING});
-    add_rule(TokenType::RIGHT_SHIFT,   {nullptr, &Parser::binary, ParsePrecedence::SHIFT});
-    add_rule(TokenType::LEFT_SHIFT,    {nullptr, &Parser::binary, ParsePrecedence::SHIFT});
-    add_rule(TokenType::MINUS,         {&Parser::unary, &Parser::binary, ParsePrecedence::SUM});
-    add_rule(TokenType::PLUS,          {&Parser::unary, &Parser::binary, ParsePrecedence::SUM});
-    add_rule(TokenType::MODULO,        {nullptr, &Parser::binary, ParsePrecedence::PRODUCT});
-    add_rule(TokenType::SLASH,         {nullptr, &Parser::binary, ParsePrecedence::PRODUCT});
-    add_rule(TokenType::STAR,          {nullptr, &Parser::binary, ParsePrecedence::PRODUCT});
-    add_rule(TokenType::NOT,           {&Parser::unary, nullptr, ParsePrecedence::UNARY});
-    add_rule(TokenType::BIT_NOT,       {&Parser::unary, nullptr, ParsePrecedence::UNARY});
-    add_rule(TokenType::PLUS_PLUS,     {&Parser::unary, nullptr, ParsePrecedence::UNARY});
-    add_rule(TokenType::MINUS_MINUS,   {&Parser::unary, nullptr, ParsePrecedence::UNARY});
-    add_rule(TokenType::DOT,           {nullptr, &Parser::dot, ParsePrecedence::CALL});
-    add_rule(TokenType::LEFT_PAREN,    {&Parser::grouping, &Parser::call, ParsePrecedence::CALL});
-    add_rule(TokenType::RIGHT_PAREN,   {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::LEFT_INDEX,    {nullptr, &Parser::index, ParsePrecedence::CALL});
-    add_rule(TokenType::RIGHT_INDEX,   {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::LEFT_BRACE,    {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::RIGHT_BRACE,   {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::DOUBLE_COLON,  {nullptr, &Parser::scope_access, ParsePrecedence::PRIMARY});
-    add_rule(TokenType::SEMICOLON,     {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::ARROW,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::IDENTIFIER,    {&Parser::variable, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::STRING_VALUE,  {&Parser::literal, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::INT_VALUE,     {&Parser::literal, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::FLOAT_VALUE,   {&Parser::literal, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::AND,           {nullptr, &Parser::and_, ParsePrecedence::LOGIC_AND});
-    add_rule(TokenType::BREAK,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::CASE,          {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::CLASS,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::CONST,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::CONTINUE,      {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::DEFAULT,       {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::ELSE,          {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::FALSE,         {&Parser::literal, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::FLOAT,         {&Parser::variable, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::FN,            {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::FOR,           {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::IF,            {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::IMPORT,        {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::INT,           {&Parser::variable, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::NULL_,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::OR,            {nullptr, &Parser::or_, ParsePrecedence::LOGIC_OR});
-    add_rule(TokenType::PROTECTED,     {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::PRIVATE,       {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::PUBLIC,        {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::REF,           {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::RETURN,        {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::STRING,        {&Parser::variable, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::SUPER,         {&Parser::super, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::SWITCH,        {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::THIS,          {&Parser::this_expr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::TRUE,          {&Parser::literal, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::TYPE,          {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::TYPEOF,        {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::VAL,           {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::VAR,           {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::WHILE,         {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::NONE,          {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::END_OF_LINE,   {nullptr, nullptr, ParsePrecedence::NONE});
-    add_rule(TokenType::END_OF_FILE,   {nullptr, nullptr, ParsePrecedence::NONE});
+    add_rule(TokenType::COMMA,         {nullptr, &Parser::comma, ParsePrecedence::of::COMMA});
+    add_rule(TokenType::EQUAL,         {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::PLUS_EQUAL,    {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::MINUS_EQUAL,   {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::STAR_EQUAL,    {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::SLASH_EQUAL,   {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::QUESTION,      {nullptr, &Parser::ternary, ParsePrecedence::of::ASSIGNMENT});
+    add_rule(TokenType::COLON,         {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::BIT_OR,        {nullptr, &Parser::binary, ParsePrecedence::of::BIT_OR});
+    add_rule(TokenType::BIT_XOR,       {nullptr, &Parser::binary, ParsePrecedence::of::BIT_XOR});
+    add_rule(TokenType::BIT_AND,       {nullptr, &Parser::binary, ParsePrecedence::of::BIT_AND});
+    add_rule(TokenType::NOT_EQUAL,     {nullptr, &Parser::binary, ParsePrecedence::of::EQUALITY});
+    add_rule(TokenType::EQUAL_EQUAL,   {nullptr, &Parser::binary, ParsePrecedence::of::EQUALITY});
+    add_rule(TokenType::GREATER,       {nullptr, &Parser::binary, ParsePrecedence::of::ORDERING});
+    add_rule(TokenType::GREATER_EQUAL, {nullptr, &Parser::binary, ParsePrecedence::of::ORDERING});
+    add_rule(TokenType::LESS,          {nullptr, &Parser::binary, ParsePrecedence::of::ORDERING});
+    add_rule(TokenType::LESS_EQUAL,    {nullptr, &Parser::binary, ParsePrecedence::of::ORDERING});
+    add_rule(TokenType::RIGHT_SHIFT,   {nullptr, &Parser::binary, ParsePrecedence::of::SHIFT});
+    add_rule(TokenType::LEFT_SHIFT,    {nullptr, &Parser::binary, ParsePrecedence::of::SHIFT});
+    add_rule(TokenType::MINUS,         {&Parser::unary, &Parser::binary, ParsePrecedence::of::SUM});
+    add_rule(TokenType::PLUS,          {&Parser::unary, &Parser::binary, ParsePrecedence::of::SUM});
+    add_rule(TokenType::MODULO,        {nullptr, &Parser::binary, ParsePrecedence::of::PRODUCT});
+    add_rule(TokenType::SLASH,         {nullptr, &Parser::binary, ParsePrecedence::of::PRODUCT});
+    add_rule(TokenType::STAR,          {nullptr, &Parser::binary, ParsePrecedence::of::PRODUCT});
+    add_rule(TokenType::NOT,           {&Parser::unary, nullptr, ParsePrecedence::of::UNARY});
+    add_rule(TokenType::BIT_NOT,       {&Parser::unary, nullptr, ParsePrecedence::of::UNARY});
+    add_rule(TokenType::PLUS_PLUS,     {&Parser::unary, nullptr, ParsePrecedence::of::UNARY});
+    add_rule(TokenType::MINUS_MINUS,   {&Parser::unary, nullptr, ParsePrecedence::of::UNARY});
+    add_rule(TokenType::DOT,           {nullptr, &Parser::dot, ParsePrecedence::of::CALL});
+    add_rule(TokenType::LEFT_PAREN,    {&Parser::grouping, &Parser::call, ParsePrecedence::of::CALL});
+    add_rule(TokenType::RIGHT_PAREN,   {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::LEFT_INDEX,    {nullptr, &Parser::index, ParsePrecedence::of::CALL});
+    add_rule(TokenType::RIGHT_INDEX,   {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::LEFT_BRACE,    {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::RIGHT_BRACE,   {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::DOUBLE_COLON,  {nullptr, &Parser::scope_access, ParsePrecedence::of::PRIMARY});
+    add_rule(TokenType::SEMICOLON,     {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::ARROW,         {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::IDENTIFIER,    {&Parser::variable, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::STRING_VALUE,  {&Parser::literal, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::INT_VALUE,     {&Parser::literal, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::FLOAT_VALUE,   {&Parser::literal, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::AND,           {nullptr, &Parser::and_, ParsePrecedence::of::LOGIC_AND});
+    add_rule(TokenType::BREAK,         {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::CASE,          {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::CLASS,         {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::CONST,         {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::CONTINUE,      {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::DEFAULT,       {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::ELSE,          {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::FALSE,         {&Parser::literal, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::FLOAT,         {&Parser::variable, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::FN,            {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::FOR,           {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::IF,            {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::IMPORT,        {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::INT,           {&Parser::variable, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::NULL_,         {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::OR,            {nullptr, &Parser::or_, ParsePrecedence::of::LOGIC_OR});
+    add_rule(TokenType::PROTECTED,     {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::PRIVATE,       {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::PUBLIC,        {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::REF,           {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::RETURN,        {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::STRING,        {&Parser::variable, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::SUPER,         {&Parser::super, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::SWITCH,        {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::THIS,          {&Parser::this_expr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::TRUE,          {&Parser::literal, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::TYPE,          {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::TYPEOF,        {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::VAL,           {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::VAR,           {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::WHILE,         {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::NONE,          {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::END_OF_LINE,   {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::END_OF_FILE,   {nullptr, nullptr, ParsePrecedence::of::NONE});
     // clang-format on
 }
 
@@ -261,7 +261,7 @@ ExprNode Parser::parse_precedence(ParsePrecedence::of precedence) {
         throw ParseException{previous(), message};
     }
 
-    bool can_assign = precedence <= ParsePrecedence::ASSIGNMENT;
+    bool can_assign = precedence <= ParsePrecedence::of::ASSIGNMENT;
     ExprNode left = std::invoke(prefix, this, can_assign);
 
     while (precedence <= get_rule(peek().type).precedence) {
@@ -280,13 +280,14 @@ ExprNode Parser::parse_precedence(ParsePrecedence::of precedence) {
 
 ExprNode Parser::and_(bool, ExprNode left) {
     Token oper = previous();
-    ExprNode right = parse_precedence(ParsePrecedence::LOGIC_AND);
+    ExprNode right = parse_precedence(ParsePrecedence::of::LOGIC_AND);
     return ExprNode{allocate_node(LogicalExpr, std::move(left), std::move(oper), std::move(right))};
 }
 
 ExprNode Parser::binary(bool, ExprNode left) {
     Token oper = previous();
-    ExprNode right = parse_precedence(ParsePrecedence::of(get_rule(previous().type).precedence + 1));
+    ExprNode right = parse_precedence(
+        ParsePrecedence::of{static_cast<int>(ParsePrecedence::of(get_rule(previous().type).precedence)) + 1});
     return ExprNode{allocate_node(BinaryExpr, std::move(left), std::move(oper), std::move(right), {})};
 }
 
@@ -295,7 +296,7 @@ ExprNode Parser::call(bool, ExprNode function) {
     std::vector<std::tuple<ExprNode, NumericConversionType, bool>> args{};
     if (peek().type != TokenType::RIGHT_PAREN) {
         do {
-            args.emplace_back(parse_precedence(ParsePrecedence::ASSIGNMENT), NumericConversionType::NONE, false);
+            args.emplace_back(parse_precedence(ParsePrecedence::of::ASSIGNMENT), NumericConversionType::NONE, false);
         } while (match(TokenType::COMMA));
     }
     consume("Expected ')' after function call", TokenType::RIGHT_PAREN);
@@ -306,7 +307,7 @@ ExprNode Parser::comma(bool, ExprNode left) {
     std::vector<ExprNode> exprs{};
     exprs.emplace_back(std::move(left));
     do {
-        exprs.emplace_back(parse_precedence(ParsePrecedence::ASSIGNMENT));
+        exprs.emplace_back(parse_precedence(ParsePrecedence::of::ASSIGNMENT));
     } while (match(TokenType::COMMA));
 
     return ExprNode{allocate_node(CommaExpr, std::move(exprs))};
@@ -334,12 +335,12 @@ ExprNode Parser::index(bool, ExprNode object) {
 
 ExprNode Parser::or_(bool, ExprNode left) {
     Token oper = previous();
-    ExprNode right = parse_precedence(ParsePrecedence::LOGIC_OR);
+    ExprNode right = parse_precedence(ParsePrecedence::of::LOGIC_OR);
     return ExprNode{allocate_node(LogicalExpr, std::move(left), std::move(oper), std::move(right))};
 }
 
 ExprNode Parser::expression() {
-    return parse_precedence(ParsePrecedence::COMMA);
+    return parse_precedence(ParsePrecedence::of::COMMA);
 }
 
 ExprNode Parser::grouping(bool) {
@@ -429,9 +430,9 @@ ExprNode Parser::variable(bool can_assign) {
 
 ExprNode Parser::ternary(bool, ExprNode left) {
     Token question = previous();
-    ExprNode middle = parse_precedence(ParsePrecedence::LOGIC_OR);
+    ExprNode middle = parse_precedence(ParsePrecedence::of::LOGIC_OR);
     consume("Expected colon in ternary expression", TokenType::COLON);
-    ExprNode right = parse_precedence(ParsePrecedence::LOGIC_OR);
+    ExprNode right = parse_precedence(ParsePrecedence::of::LOGIC_OR);
     return ExprNode{allocate_node(TernaryExpr, std::move(left), question, std::move(middle), std::move(right))};
 }
 
@@ -471,7 +472,7 @@ TypeNode Parser::type() {
     } else if (type == Type::LIST) {
         return list_type(is_const, is_ref);
     } else if (type == Type::TYPEOF) {
-        return TypeNode{allocate_node(TypeofType, data, parse_precedence(ParsePrecedence::LOGIC_OR))};
+        return TypeNode{allocate_node(TypeofType, data, parse_precedence(ParsePrecedence::of::LOGIC_OR))};
     } else {
         return TypeNode{allocate_node(PrimitiveType, data)};
     }
