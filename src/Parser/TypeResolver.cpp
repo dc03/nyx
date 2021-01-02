@@ -12,9 +12,6 @@
 #include <stdexcept>
 #include <string_view>
 
-#define allocate_node(T, ...)                                                                                          \
-    new T { __VA_ARGS__ }
-
 struct TypeException : public std::runtime_error {
     explicit TypeException(std::string_view string) : std::runtime_error{std::string{string}} {}
 };

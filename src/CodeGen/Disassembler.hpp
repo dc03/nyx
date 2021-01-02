@@ -9,7 +9,6 @@
 #include "../VM/Chunk.hpp"
 #include "../VM/Instructions.hpp"
 
-#include <iostream>
 #include <string_view>
 
 void disassemble(Chunk &chunk, std::string_view name);

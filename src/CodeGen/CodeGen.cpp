@@ -314,8 +314,9 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
             current_chunk->emit_constant(Value{expr.name.lexeme.c_str()}, expr.name.line);
             current_chunk->emit_instruction(Instruction::LOAD_FUNCTION, expr.name.line);
             return {};
-        case IdentifierType::CLASS: unreachable();
+        case IdentifierType::CLASS: break;
     }
+    unreachable();
 }
 
 StmtVisitorType Generator::visit(BlockStmt &stmt) {

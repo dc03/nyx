@@ -6,8 +6,6 @@
 #ifndef INSTRUCTIONS_HPP
 #define INSTRUCTIONS_HPP
 
-#include <cstddef>
-
 enum class Instruction : unsigned char {
     HALT, // Stop the interpreter
     POP,  // Pop the value at the top of the stack

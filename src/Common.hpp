@@ -17,4 +17,7 @@
 #define unreachable() __builtin_unreachable()
 #endif
 
+#define allocate_node(T, ...)                                                                                          \
+    new T { __VA_ARGS__ }
+
 #endif

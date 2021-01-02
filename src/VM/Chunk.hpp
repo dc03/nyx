@@ -9,7 +9,6 @@
 #include "Instructions.hpp"
 #include "Value.hpp"
 
-#include <cstddef>
 #include <string>
 #include <utility>
 #include <vector>

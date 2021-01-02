@@ -4,9 +4,6 @@
 
 #include "Common.hpp"
 
-#define allocate_node(T, ...)                                                                                          \
-    new T { __VA_ARGS__ }
-
 std::string stringify(BaseType *node) {
     std::string result{};
     if (node->data.is_const) {
@@ -42,10 +39,10 @@ BaseTypeVisitorType copy_type(BaseType *node) {
     if (node->type_tag() == NodeType::PrimitiveType) {
         return allocate_node(PrimitiveType, node->data);
     } else if (node->type_tag() == NodeType::UserDefinedType) {
-        UserDefinedType *type = dynamic_cast<UserDefinedType *>(node);
+        auto *type = dynamic_cast<UserDefinedType *>(node);
         return allocate_node(UserDefinedType, type->data, type->name);
     } else if (node->type_tag() == NodeType::ListType) {
-        ListType *type = dynamic_cast<ListType *>(node);
+        auto *type = dynamic_cast<ListType *>(node);
         return allocate_node(ListType, type->data, TypeNode{copy_type(type->contained.get())}, nullptr);
     }
     unreachable();

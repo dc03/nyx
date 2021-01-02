@@ -13,9 +13,6 @@
 #include <string_view>
 #include <vector>
 
-#define allocate_node(T, ...)                                                                                          \
-    new T { __VA_ARGS__ }
-
 struct ParsePrecedence {
     enum of {
         NONE,

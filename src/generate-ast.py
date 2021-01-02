@@ -176,7 +176,6 @@ if __name__ == '__main__':
         file.write('#include "Parser/VisitorTypes.hpp"\n')
         file.write('#include "Token.hpp"\n\n')
         file.write('#include <memory>\n')
-        file.write('#include <optional>\n')
         file.write('#include <string>\n')
         file.write('#include <string_view>\n')
         file.write('#include <tuple>\n')
