@@ -279,7 +279,7 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
 }
 
 bool is_builtin_function(VariableExpr *expr) {
-    constexpr std::array inbuilt_functions{"print", "int", "string", "float"};
+    constexpr std::array inbuilt_functions{"print", "int", "string", "float", "readline"};
     return std::any_of(inbuilt_functions.begin(), inbuilt_functions.end(),
         [&expr](const char *const arg) { return expr->name.lexeme == arg; });
 }
@@ -296,7 +296,7 @@ ExprVisitorType TypeResolver::check_inbuilt(
         }
         return ExprVisitorType{make_new_type<PrimitiveType>(Type::NULL_, true, false), function->name};
     } else if (function->name.lexeme == "int" || function->name.lexeme == "float" ||
-               function->name.lexeme == "string") {
+               function->name.lexeme == "string" || function->name.lexeme == "readline") {
         if (args.size() > 1) {
             error("Cannot pass more than one argument to builtin function '"s + function->name.lexeme + "'"s, oper);
             throw TypeException{"Too many arguments"};
@@ -306,7 +306,9 @@ ExprVisitorType TypeResolver::check_inbuilt(
         }
 
         ExprVisitorType arg_type = resolve(std::get<0>(args[0]).get());
-        if (!one_of(arg_type.info->data.type, Type::INT, Type::FLOAT, Type::STRING, Type::BOOL)) {
+        if (function->name.lexeme == "readline" && arg_type.info->data.type != Type::STRING) {
+            error("Can only pass a string as the prompt for 'readline'", oper);
+        } else if (!one_of(arg_type.info->data.type, Type::INT, Type::FLOAT, Type::STRING, Type::BOOL)) {
             error("Expected one of integral, floating, string or boolean arguments to be passed to builtin "
                   "function '"s +
                       function->name.lexeme + "'"s,

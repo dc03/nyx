@@ -56,6 +56,7 @@ int main(const int, const char *const argv[]) {
         vm.define_native("int", {native_int, 1});
         vm.define_native("float", {native_float, 1});
         vm.define_native("string", {native_string, 1});
+        vm.define_native("readline", {native_readline, 1});
         vm.frames[0] = CallFrame{vm.stack, {}};
         vm.run(main_compiled);
         // std::cout << vm.stack[0].to_int();

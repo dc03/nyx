@@ -72,3 +72,10 @@ Value native_string(Value *args) {
     }
     unreachable();
 }
+
+Value native_readline(Value *args) {
+    std::cout << args[0].to_string();
+    std::string result{};
+    std::getline(std::cin, result);
+    return Value{result.c_str()};
+}

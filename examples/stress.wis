@@ -219,6 +219,5 @@ fn factorial(n: int) -> int {
     return go(n, 1)
 }
 
-for (var i = 0; i < 1000000; ++i) {
-    factorial(10)
-}
+var x = int(readline("Enter a number: "))
+print("The factorial of '" + string(x) + "' is: " + string(factorial(x)))
