@@ -65,19 +65,7 @@ std::size_t VM::read_three_bytes() {
 }
 
 bool is_truthy(Value &value) {
-    if (value.is_int()) {
-        return value.to_int() != 0;
-    } else if (value.is_bool()) {
-        return value.to_bool();
-    } else if (value.is_double()) {
-        return value.to_double() != 0;
-    } else if (value.is_string()) {
-        return !value.to_string().empty();
-    } else if (value.is_null()) {
-        return false;
-    } else {
-        unreachable();
-    }
+    return bool(value);
 }
 
 void VM::run(RuntimeModule &main_module) {
@@ -135,9 +123,9 @@ void VM::run(RuntimeModule &main_module) {
         }                                                                                                              \
         double added = top_from(1).to_numeric();                                                                       \
         if (incremented->is_int()) {                                                                                   \
-            incremented->as.integer oper int(added);                                                                   \
+            incremented->to_int() oper int(added);                                                                     \
         } else {                                                                                                       \
-            incremented->as.real oper added;                                                                           \
+            incremented->to_double() oper added;                                                                       \
         }                                                                                                              \
         pop();                                                                                                         \
         push(*incremented);                                                                                            \
@@ -220,7 +208,11 @@ void VM::run(RuntimeModule &main_module) {
 
             case is Instruction::GREATER: binary_boolean_instruction(>); break;
             case is Instruction::LESSER: binary_boolean_instruction(<); break;
-            case is Instruction::EQUAL: pop_twice_push(Value{top_from(2) == top_from(1)}); break;
+            case is Instruction::EQUAL: {
+                Value result{top_from(2) == top_from(1)};
+                pop_twice_push(result);
+                break;
+            }
 
             case is Instruction::NOT: {
                 bool truthiness = !is_truthy(top_from(1));

@@ -5,94 +5,25 @@
 #include "../Common.hpp"
 #include "../Module.hpp"
 
-Value::Value(Value &&other) noexcept : tag{tag::NULL_}, as{} {
-    *this = std::move(other);
-}
+Value::Value(int value) : as{value} {}
+Value::Value(bool value) : as{value} {}
+Value::Value(double value) : as{value} {}
+Value::Value(std::nullptr_t) : as{nullptr} {}
+Value::Value(const std::string &value) : as{value} {}
+Value::Value(std::string &&value) : as{std::move(value)} {}
+Value::Value(Value *referred) : as{referred} {}
+Value::Value(RuntimeFunction *function) : as{function} {}
 
-Value &Value::operator=(Value &&other) noexcept {
-    if (other.tag != tag::STRING && tag == tag::STRING) {
-        as.string.~basic_string<char>();
-    }
-    switch (other.tag) {
-        case tag::INT: as.integer = other.as.integer; break;
-        case tag::DOUBLE: as.real = other.as.real; break;
-        case tag::STRING: {
-            if (tag != tag::STRING) {
-                new(&as.string) std::string{};
-            }
-            as.string = std::move(other.as.string);
-            break;
-        }
-        case tag::BOOL: as.boolean = other.as.boolean; break;
-        case tag::NULL_: as.null = nullptr; break;
-        case tag::PRIMITIVE_REF: as.reference = other.as.reference; break;
-        case tag::FUNCTION: as.function = other.as.function; break;
-    }
-    tag = other.tag;
-    return *this;
-}
-
-Value::Value(const Value &other) : tag{tag::NULL_}, as{} {
-    *this = other;
-}
-
-Value &Value::operator=(const Value &other) {
-    if (other.tag != tag::STRING && tag == tag::STRING) {
-        as.string.~basic_string<char>();
-    }
-    switch (other.tag) {
-        case tag::INT: as.integer = other.as.integer; break;
-        case tag::DOUBLE: as.real = other.as.real; break;
-        case tag::STRING: {
-            if (tag != tag::STRING) {
-                new(&as.string) std::string{};
-            }
-            as.string = other.as.string;
-            break;
-        }
-        case tag::BOOL: as.boolean = other.as.boolean; break;
-        case tag::NULL_: as.null = nullptr; break;
-        case tag::PRIMITIVE_REF: as.reference = other.as.reference; break;
-        case tag::FUNCTION: as.function = other.as.function; break;
-    }
-    tag = other.tag;
-    return *this;
-}
-
-Value::~Value() {
-    if (tag == Value::tag::STRING) {
-        as.string.~basic_string<char>();
-    }
-}
-
-Value::Value(int value) : tag{Value::tag::INT}, as{value} {}
-Value::Value(bool value) : tag{Value::tag::BOOL}, as{value} {}
-Value::Value(double value) : tag{Value::tag::DOUBLE}, as{value} {}
-Value::Value(std::nullptr_t) : tag{Value::tag::NULL_}, as{nullptr} {}
-Value::Value(const std::string &value) : tag{Value::tag::STRING}, as{value} {}
-Value::Value(std::string &&value) : tag{Value::tag::STRING}, as{std::move(value)} {}
-Value::Value(Value *referred) : tag{Value::tag::PRIMITIVE_REF}, as{referred} {}
-Value::Value(RuntimeFunction *function) : tag{Value::tag::FUNCTION}, as{function} {}
-
-bool Value::operator==(Value &other) noexcept {
-    if (is_numeric()) {
-        return to_numeric() == other.to_numeric();
-    } else if (is_string()) {
-        return to_string() == other.to_string();
-    } else if (is_bool()) {
-        return to_bool() == other.to_bool();
-    } else if (is_null()) {
-        return true;
-    } else if (is_function()) {
-        return to_function() == other.to_function();
-    } else if (is_ref()) {
+bool Value::operator==(Value &other) const noexcept {
+    if (is_ref()) {
         if (other.is_ref()) {
             return *to_referred() == *other.to_referred();
         } else {
             return *to_referred() == other;
         }
+    } else {
+        return as == other.as;
     }
-    return false;
 }
 
 std::string Value::repr() noexcept {
@@ -118,4 +49,20 @@ std::string Value::repr() noexcept {
         return "<function '"s + to_function()->name + "' at "s + std::string{name} + ">"s;
     }
     unreachable();
+}
+
+Value::operator bool() noexcept {
+    if (is_int()) {
+        return to_int() != 0;
+    } else if (is_bool()) {
+        return to_bool();
+    } else if (is_double()) {
+        return to_double() != 0;
+    } else if (is_string()) {
+        return !to_string().empty();
+    } else if (is_null()) {
+        return false;
+    } else {
+        unreachable();
+    }
 }
