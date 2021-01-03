@@ -11,16 +11,16 @@ Value::Value(Value &&other) noexcept : tag{tag::NULL_}, as{} {
 
 Value &Value::operator=(Value &&other) noexcept {
     if (other.tag != tag::STRING && tag == tag::STRING) {
-        delete[] as.string;
+        as.string.~basic_string<char>();
     }
     switch (other.tag) {
         case tag::INT: as.integer = other.as.integer; break;
         case tag::DOUBLE: as.real = other.as.real; break;
         case tag::STRING: {
             if (tag != tag::STRING) {
-                as.string = nullptr;
+                new(&as.string) std::string{};
             }
-            std::swap(as.string, other.as.string);
+            as.string = std::move(other.as.string);
             break;
         }
         case tag::BOOL: as.boolean = other.as.boolean; break;
@@ -38,26 +38,16 @@ Value::Value(const Value &other) : tag{tag::NULL_}, as{} {
 
 Value &Value::operator=(const Value &other) {
     if (other.tag != tag::STRING && tag == tag::STRING) {
-        delete[] as.string;
+        as.string.~basic_string<char>();
     }
     switch (other.tag) {
         case tag::INT: as.integer = other.as.integer; break;
         case tag::DOUBLE: as.real = other.as.real; break;
         case tag::STRING: {
             if (tag != tag::STRING) {
-                as.string = nullptr;
+                new(&as.string) std::string{};
             }
-            if (other.as.string == nullptr) {
-                delete[] as.string;
-                as.string = nullptr;
-                return *this;
-            }
-            std::size_t len = std::strlen(other.as.string);
-            if (as.string == nullptr) {
-                as.string = new char[len + 1];
-            }
-            std::memcpy(as.string, other.as.string, len + 1);
-            as.string[len] = '\0';
+            as.string = other.as.string;
             break;
         }
         case tag::BOOL: as.boolean = other.as.boolean; break;
@@ -71,7 +61,7 @@ Value &Value::operator=(const Value &other) {
 
 Value::~Value() {
     if (tag == Value::tag::STRING) {
-        delete[] as.string;
+        as.string.~basic_string<char>();
     }
 }
 
@@ -79,11 +69,12 @@ Value::Value(int value) : tag{Value::tag::INT}, as{value} {}
 Value::Value(bool value) : tag{Value::tag::BOOL}, as{value} {}
 Value::Value(double value) : tag{Value::tag::DOUBLE}, as{value} {}
 Value::Value(std::nullptr_t) : tag{Value::tag::NULL_}, as{nullptr} {}
-Value::Value(const char *value) : tag{Value::tag::STRING}, as{value} {}
+Value::Value(const std::string &value) : tag{Value::tag::STRING}, as{value} {}
+Value::Value(std::string &&value) : tag{Value::tag::STRING}, as{std::move(value)} {}
 Value::Value(Value *referred) : tag{Value::tag::PRIMITIVE_REF}, as{referred} {}
 Value::Value(RuntimeFunction *function) : tag{Value::tag::FUNCTION}, as{function} {}
 
-bool Value::operator==(const Value &other) const noexcept {
+bool Value::operator==(Value &other) noexcept {
     if (is_numeric()) {
         return to_numeric() == other.to_numeric();
     } else if (is_string()) {
@@ -104,7 +95,7 @@ bool Value::operator==(const Value &other) const noexcept {
     return false;
 }
 
-std::string Value::repr() const noexcept {
+std::string Value::repr() noexcept {
     if (is_int()) {
         return std::to_string(to_int());
     } else if (is_double()) {

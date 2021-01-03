@@ -16,7 +16,7 @@ struct Value {
     union as {
         int integer;
         double real;
-        char *string;
+        std::string string;
         bool boolean;
         std::nullptr_t null;
         Value *reference;
@@ -27,12 +27,8 @@ struct Value {
 
         explicit as(int value) : integer{value} {}
         explicit as(double value) : real{value} {}
-        explicit as(const char *value) {
-            std::size_t len = std::strlen(value);
-            string = new char[len + 1];
-            std::memcpy(string, value, len);
-            string[len] = '\0';
-        }
+        explicit as(const std::string &value) : string{value} {}
+        explicit as(std::string &&value) : string{std::move(value)} {}
         explicit as(bool value) : boolean{value} {}
         explicit as(std::nullptr_t) : null{nullptr} {}
         explicit as(Value *referred) : reference{referred} {}
@@ -48,7 +44,8 @@ struct Value {
 
     explicit Value(int value);
     explicit Value(double value);
-    explicit Value(const char *value);
+    explicit Value(const std::string &value);
+    explicit Value(std::string &&value);
     explicit Value(bool value);
     explicit Value(std::nullptr_t);
     explicit Value(Value *referred);
@@ -64,18 +61,18 @@ struct Value {
     [[nodiscard]] bool is_ref()      const noexcept { return tag == Value::tag::PRIMITIVE_REF; }
     [[nodiscard]] bool is_function() const noexcept { return tag == Value::tag::FUNCTION; }
 
-    [[nodiscard]] int to_int()                   const noexcept { return as.integer; }
-    [[nodiscard]] double to_double()             const noexcept { return as.real; }
-    [[nodiscard]] char *to_string()              const noexcept { return as.string; }
-    [[nodiscard]] bool to_bool()                 const noexcept { return as.boolean; }
-    [[nodiscard]] std::nullptr_t to_null()       const noexcept { return as.null; }
+    [[nodiscard]] int &to_int()                        noexcept { return as.integer; }
+    [[nodiscard]] double &to_double()                  noexcept { return as.real; }
+    [[nodiscard]] std::string &to_string()             noexcept { return as.string; }
+    [[nodiscard]] bool &to_bool()                      noexcept { return as.boolean; }
+    [[nodiscard]] std::nullptr_t &to_null()            noexcept { return as.null; }
     [[nodiscard]] double to_numeric()            const noexcept { return is_int() ? as.integer : as.real; }
     [[nodiscard]] Value *to_referred()           const noexcept { return as.reference; }
     [[nodiscard]] RuntimeFunction *to_function() const noexcept { return as.function; }
     // clang-format on
 
-    [[nodiscard]] bool operator==(const Value &other) const noexcept;
-    [[nodiscard]] std::string repr() const noexcept;
+    [[nodiscard]] bool operator==(Value &other) noexcept;
+    [[nodiscard]] std::string repr() noexcept;
 };
 
 #endif

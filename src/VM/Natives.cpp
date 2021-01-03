@@ -69,14 +69,14 @@ Value native_float(Value *args) {
 Value native_string(Value *args) {
     Value &arg = args[0];
     if (arg.is_int()) {
-        return Value{std::to_string(arg.to_int()).c_str()};
+        return Value{std::to_string(arg.to_int())};
     } else if (arg.is_double()) {
-        return Value{std::to_string(arg.to_double()).c_str()};
+        return Value{std::to_string(arg.to_double())};
     } else if (arg.is_string()) {
         return Value{arg.to_string()};
     } else if (arg.is_bool()) {
         using namespace std::string_literals;
-        return Value{arg.to_bool() ? "true" : "false"};
+        return Value{arg.to_bool() ? "true"s : "false"s};
     } else if (arg.is_ref()) {
         return native_string(arg.to_referred());
     }
@@ -87,5 +87,5 @@ Value native_readline(Value *args) {
     std::cout << args[0].to_string();
     std::string result{};
     std::getline(std::cin, result);
-    return Value{result.c_str()};
+    return Value{result};
 }

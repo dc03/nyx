@@ -145,7 +145,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
     }
     if (expr.is_native_call) {
         auto *called = dynamic_cast<VariableExpr *>(expr.function.get());
-        current_chunk->emit_constant(Value{called->name.lexeme.c_str()}, called->name.line);
+        current_chunk->emit_constant(Value{called->name.lexeme}, called->name.line);
         current_chunk->emit_instruction(Instruction::CALL_NATIVE, expr.paren.line);
     } else {
         compile(expr.function.get());
@@ -188,7 +188,7 @@ ExprVisitorType Generator::visit(LiteralExpr &expr) {
             current_chunk->emit_constant(Value{expr.value.as.real}, expr.lexeme.line);
             break;
         case LiteralValue::tag::STRING:
-            current_chunk->emit_constant(Value{expr.value.as.string.c_str()}, expr.lexeme.line);
+            current_chunk->emit_constant(Value{expr.value.as.string}, expr.lexeme.line);
             break;
         case LiteralValue::tag::BOOL:
             if (expr.value.as.boolean) {
@@ -315,7 +315,7 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
             }
             return {expr.stack_slot, expr.is_ref};
         case IdentifierType::FUNCTION:
-            current_chunk->emit_constant(Value{expr.name.lexeme.c_str()}, expr.name.line);
+            current_chunk->emit_constant(Value{expr.name.lexeme}, expr.name.line);
             current_chunk->emit_instruction(Instruction::LOAD_FUNCTION, expr.name.line);
             return {};
         case IdentifierType::CLASS: break;

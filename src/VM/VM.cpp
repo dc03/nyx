@@ -7,6 +7,7 @@
 
 #include <cstring>
 #include <iostream>
+#include <utility>
 
 #ifndef NDEBUG
 #define PRINT_STACK
@@ -71,7 +72,7 @@ bool is_truthy(Value &value) {
     } else if (value.is_double()) {
         return value.to_double() != 0;
     } else if (value.is_string()) {
-        return value.to_string() != nullptr && std::strlen(value.to_string()) != 0;
+        return !value.to_string().empty();
     } else if (value.is_null()) {
         return false;
     } else {
@@ -174,14 +175,8 @@ void VM::run(RuntimeModule &main_module) {
                 break;
 
             case is Instruction::CONCAT: {
-                std::size_t len1 = std::strlen(top_from(2).to_string());
-                std::size_t len2 = std::strlen(top_from(1).to_string());
-                char *result = new char[len1 + len2 + 1];
-                std::memcpy(result, top_from(2).to_string(), len1);
-                std::memcpy(result + len1, top_from(1).to_string(), len2);
-                result[len1 + len2] = '\0';
-                pop_twice_push(Value{result});
-                delete[] result;
+                Value result{top_from(2).to_string() + top_from(1).to_string()};
+                pop_twice_push(result);
                 break;
             }
 
