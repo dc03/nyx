@@ -180,18 +180,16 @@ ExprVisitorType Generator::visit(IndexExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(LiteralExpr &expr) {
-    switch (expr.value.tag) {
-        case LiteralValue::tag::INT:
-            current_chunk->emit_constant(Value{expr.value.as.integer}, expr.lexeme.line);
-            break;
+    switch (expr.value.index()) {
+        case LiteralValue::tag::INT: current_chunk->emit_constant(Value{expr.value.to_int()}, expr.lexeme.line); break;
         case LiteralValue::tag::DOUBLE:
-            current_chunk->emit_constant(Value{expr.value.as.real}, expr.lexeme.line);
+            current_chunk->emit_constant(Value{expr.value.to_double()}, expr.lexeme.line);
             break;
         case LiteralValue::tag::STRING:
-            current_chunk->emit_constant(Value{expr.value.as.string}, expr.lexeme.line);
+            current_chunk->emit_constant(Value{expr.value.to_string()}, expr.lexeme.line);
             break;
         case LiteralValue::tag::BOOL:
-            if (expr.value.as.boolean) {
+            if (expr.value.to_bool()) {
                 current_chunk->emit_instruction(Instruction::TRUE, expr.lexeme.line);
             } else {
                 current_chunk->emit_instruction(Instruction::FALSE, expr.lexeme.line);

@@ -448,7 +448,7 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
-    switch (expr.value.tag) {
+    switch (expr.value.index()) {
         case LiteralValue::tag::INT:
         case LiteralValue::tag::DOUBLE:
         case LiteralValue::tag::STRING:

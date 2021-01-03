@@ -3,26 +3,12 @@
 #include "../AST.hpp"
 #include "../Common.hpp"
 
-LiteralValue::LiteralValue(int value) : tag{LiteralValue::tag::INT}, as{value} {}
-LiteralValue::LiteralValue(bool value) : tag{LiteralValue::tag::BOOL}, as{value} {}
-LiteralValue::LiteralValue(double value) : tag{LiteralValue::tag::DOUBLE}, as{value} {}
-LiteralValue::LiteralValue(std::nullptr_t) : tag{LiteralValue::tag::NULL_}, as{nullptr} {}
-LiteralValue::LiteralValue(const std::string &value) : tag{LiteralValue::tag::STRING}, as{value} {}
-LiteralValue::LiteralValue(LiteralValue &&other) noexcept {
-    tag = other.tag;
-    switch (other.tag) {
-        case tag::INT: as.integer = other.as.integer; break;
-        case tag::DOUBLE: as.real = other.as.real; break;
-        case tag::STRING: as.string = std::move(other.as.string); break;
-        case tag::BOOL: as.boolean = other.as.boolean; break;
-        case tag::NULL_: as.null = nullptr; break;
-    }
-}
-LiteralValue::~LiteralValue() {
-    if (tag == LiteralValue::tag::STRING) {
-        as.string.std::string::~basic_string<char>();
-    }
-}
+LiteralValue::LiteralValue(int value) : value{value} {}
+LiteralValue::LiteralValue(bool value) : value{value} {}
+LiteralValue::LiteralValue(double value) : value{value} {}
+LiteralValue::LiteralValue(std::nullptr_t) : value{nullptr} {}
+LiteralValue::LiteralValue(const std::string &value) : value{value} {}
+LiteralValue::LiteralValue(std::string &&value) : value{std::move(value)} {}
 
 ExprTypeInfo::ExprTypeInfo(QualifiedTypeInfo info, Token token, bool is_lvalue)
     : info{info}, lexeme{std::move(token)}, is_lvalue{is_lvalue}, scope_type{ScopeType::NONE} {}

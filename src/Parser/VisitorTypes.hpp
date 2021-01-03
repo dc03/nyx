@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <string>
+#include <variant>
 
 enum class Type { BOOL, INT, FLOAT, STRING, CLASS, LIST, TYPEOF, NULL_, FUNCTION, MODULE };
 
@@ -49,32 +50,33 @@ struct ExprTypeInfo {
 };
 
 struct LiteralValue {
-    enum class tag { INT, DOUBLE, STRING, BOOL, NULL_ } tag;
-    union as {
-        int integer;
-        double real;
-        std::string string;
-        bool boolean;
-        std::nullptr_t null;
-
-        as() : string{} {}
-        ~as() {}
-        explicit as(int value) : integer{value} {}
-        explicit as(double value) : real{value} {}
-        explicit as(const std::string &value) : string{value} {}
-        explicit as(std::string &&value) : string{std::move(value)} {}
-        explicit as(bool value) : boolean{value} { boolean = value; }
-        explicit as(std::nullptr_t) : null{nullptr} {}
-    } as;
+    enum tag { INT, DOUBLE, STRING, BOOL, NULL_ };
+    std::variant<int, double, std::string, bool, std::nullptr_t> value;
 
     explicit LiteralValue(int value);
     explicit LiteralValue(double value);
     explicit LiteralValue(const std::string &value);
+    explicit LiteralValue(std::string &&value);
     explicit LiteralValue(bool value);
     explicit LiteralValue(std::nullptr_t);
 
-    LiteralValue(LiteralValue &&other) noexcept;
-    ~LiteralValue();
+    // clang-format off
+    [[nodiscard]] bool is_int()     const noexcept { return value.index() == LiteralValue::tag::INT; }
+    [[nodiscard]] bool is_double()  const noexcept { return value.index() == LiteralValue::tag::DOUBLE; }
+    [[nodiscard]] bool is_string()  const noexcept { return value.index() == LiteralValue::tag::STRING; }
+    [[nodiscard]] bool is_bool()    const noexcept { return value.index() == LiteralValue::tag::BOOL; }
+    [[nodiscard]] bool is_null()    const noexcept { return value.index() == LiteralValue::tag::NULL_; }
+    [[nodiscard]] bool is_numeric() const noexcept { return value.index() == LiteralValue::tag::INT || value.index() == LiteralValue::tag::DOUBLE; }
+
+    [[nodiscard]] int &to_int()                   noexcept { return std::get<INT>(value); }
+    [[nodiscard]] double &to_double()             noexcept { return std::get<DOUBLE>(value); }
+    [[nodiscard]] std::string &to_string()        noexcept { return std::get<STRING>(value); }
+    [[nodiscard]] bool &to_bool()                 noexcept { return std::get<BOOL>(value); }
+    [[nodiscard]] std::nullptr_t &to_null()       noexcept { return std::get<NULL_>(value); }
+    [[nodiscard]] double to_numeric()       const noexcept { return is_int() ? std::get<INT>(value) : std::get<DOUBLE>(value); }
+    // clang-format on
+
+    [[nodiscard]] std::size_t index() const noexcept { return value.index(); }
 };
 
 using StmtVisitorType = void;
