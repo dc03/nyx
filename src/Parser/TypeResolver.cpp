@@ -761,17 +761,6 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     }
 
     resolve(stmt.body.get());
-
-    if (stmt.return_stmts.empty()) {
-        auto *body = dynamic_cast<BlockStmt *>(stmt.body.get());
-        body->stmts.emplace_back(allocate_node(ReturnStmt, {}, {nullptr}, {}));
-        if (!values.empty()) {
-            std::size_t last_scope = (values.end() - 1)->scope_depth;
-            ReturnStmt *return_stmt = *(stmt.return_stmts.end() - 1);
-            return_stmt->locals_popped = std::count_if(values.crbegin(), values.crend(),
-                [&last_scope](const TypeResolver::Value &x) { return x.scope_depth == last_scope; });
-        }
-    }
 }
 
 StmtVisitorType TypeResolver::visit(IfStmt &stmt) {

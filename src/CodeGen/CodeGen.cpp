@@ -359,6 +359,10 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
     current_chunk = &function.code;
     compile(stmt.body.get());
 
+    for (std::size_t i = 0; i < scopes.top() + stmt.params.size(); i++) {
+        current_chunk->emit_instruction(Instruction::POP, 0);
+    }
+
     current_compiled->functions[stmt.name.lexeme] = std::move(function);
     current_chunk = &current_compiled->top_level_code;
     end_scope();
