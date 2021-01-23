@@ -48,6 +48,8 @@ std::string Value::repr() noexcept {
                 case '\n':
                 case '\r':
                 case '\t':
+                case '\'':
+                case '\"':
                 case '\\': return true;
                 default: return false;
             }
@@ -58,6 +60,8 @@ std::string Value::repr() noexcept {
                 case '\n': return "\\n";
                 case '\r': return "\\r";
                 case '\t': return "\\t";
+                case '\'': return "\\\'";
+                case '\"': return "\\\"";
                 case '\\': return "\\\\";
                 default: return "";
             }

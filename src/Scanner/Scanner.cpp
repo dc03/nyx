@@ -130,6 +130,13 @@ void Scanner::string(const char delimiter) {
                 lexeme += '\t';
             } else if (match('\\')) {
                 lexeme += '\\';
+            } else if (match('\'')) {
+                lexeme += '\'';
+            } else if (match('\"')) {
+                lexeme += '\"';
+            } else {
+                advance();
+                warning("Unrecognized escape sequence", previous());
             }
         } else {
             lexeme += advance();
