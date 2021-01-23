@@ -46,6 +46,8 @@ class TypeResolver final : Visitor {
         std::vector<std::tuple<ExprNode, NumericConversionType, bool>> &args);
     ClassStmt *find_class(const std::string &class_name);
     FunctionStmt *find_function(const std::string &function_name);
+    bool convertible_to(
+        QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lvalue, const Token &where, bool in_initializer);
 
   public:
     TypeResolver(Module &module);
@@ -65,6 +67,7 @@ class TypeResolver final : Visitor {
     ExprVisitorType visit(GetExpr &expr) override final;
     ExprVisitorType visit(GroupingExpr &expr) override final;
     ExprVisitorType visit(IndexExpr &expr) override final;
+    ExprVisitorType visit(ListAssignExpr &expr) override final;
     ExprVisitorType visit(LiteralExpr &expr) override final;
     ExprVisitorType visit(LogicalExpr &expr) override final;
     ExprVisitorType visit(ScopeAccessExpr &expr) override final;

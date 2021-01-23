@@ -6,14 +6,17 @@
 #ifndef VALUE_HPP
 #define VALUE_HPP
 
+#include "List.hpp"
+
 #include <string>
 #include <variant>
+#include <vector>
 
 struct RuntimeFunction;
 
 struct Value {
-    enum tag { INT, DOUBLE, STRING, BOOL, NULL_, PRIMITIVE_REF, FUNCTION };
-    std::variant<int, double, std::string, bool, std::nullptr_t, Value *, RuntimeFunction *> as;
+    enum tag { INT, DOUBLE, STRING, BOOL, NULL_, PRIMITIVE_REF, FUNCTION, LIST };
+    std::variant<int, double, std::string, bool, std::nullptr_t, Value *, RuntimeFunction *, List> as;
 
     Value() = default;
 
@@ -25,6 +28,7 @@ struct Value {
     explicit Value(std::nullptr_t);
     explicit Value(Value *referred);
     explicit Value(RuntimeFunction *function);
+    explicit Value(List list);
 
     // clang-format off
     [[nodiscard]] bool is_int()      const noexcept { return as.index() == Value::tag::INT; }
@@ -35,6 +39,7 @@ struct Value {
     [[nodiscard]] bool is_numeric()  const noexcept { return as.index() == Value::tag::INT || as.index() == Value::tag::DOUBLE; }
     [[nodiscard]] bool is_ref()      const noexcept { return as.index() == Value::tag::PRIMITIVE_REF; }
     [[nodiscard]] bool is_function() const noexcept { return as.index() == Value::tag::FUNCTION; }
+    [[nodiscard]] bool is_list()     const noexcept { return as.index() == Value::tag::LIST; }
 
     [[nodiscard]] int &to_int()                        noexcept { return std::get<INT>(as); }
     [[nodiscard]] double &to_double()                  noexcept { return std::get<DOUBLE>(as); }
@@ -44,6 +49,7 @@ struct Value {
     [[nodiscard]] double to_numeric()            const noexcept { return is_int() ? std::get<INT>(as) : std::get<DOUBLE>(as); }
     [[nodiscard]] Value *to_referred()           const noexcept { return std::get<PRIMITIVE_REF>(as); }
     [[nodiscard]] RuntimeFunction *to_function() const noexcept { return std::get<FUNCTION>(as); }
+    [[nodiscard]] List &to_list()                      noexcept { return std::get<LIST>(as); }
     // clang-format on
 
     [[nodiscard]] bool operator==(Value &other) const noexcept;

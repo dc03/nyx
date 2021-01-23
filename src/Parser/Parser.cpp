@@ -326,10 +326,17 @@ ExprNode Parser::dot(bool can_assign, ExprNode left) {
     }
 }
 
-ExprNode Parser::index(bool, ExprNode object) {
+ExprNode Parser::index(bool can_assign, ExprNode object) {
     Token oper = previous();
     ExprNode index = expression();
     consume("Expected ']' after array subscript index", TokenType::RIGHT_INDEX);
+    if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
+                          TokenType::SLASH_EQUAL)) {
+        Token equals = previous();
+        ExprNode value = expression();
+        return ExprNode{allocate_node(ListAssignExpr, IndexExpr{std::move(object), std::move(oper), std::move(index)},
+            std::move(equals), std::move(value), NumericConversionType::NONE, false)};
+    }
     return ExprNode{allocate_node(IndexExpr, std::move(object), std::move(oper), std::move(index))};
 }
 

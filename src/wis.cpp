@@ -31,7 +31,7 @@ int main(const int, const char *const argv[]) {
     TypeResolver resolver{main};
     main.statements = parser.program();
     resolver.check(main.statements);
-
+    /*
     if (!logger.had_error) {
         std::sort(Parser::parsed_modules.begin(), Parser::parsed_modules.end(),
             [](const auto &x1, const auto &x2) { return x1.second > x2.second; });
@@ -56,5 +56,6 @@ int main(const int, const char *const argv[]) {
         vm.run(main_compiled);
         // std::cout << vm.stack[0].to_int();
     }
+    */
     return 0;
 }

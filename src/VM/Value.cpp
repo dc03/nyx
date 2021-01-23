@@ -13,6 +13,7 @@ Value::Value(const std::string &value) : as{value} {}
 Value::Value(std::string &&value) : as{std::move(value)} {}
 Value::Value(Value *referred) : as{referred} {}
 Value::Value(RuntimeFunction *function) : as{function} {}
+Value::Value(List list) : as{std::move(list)} {}
 
 bool Value::operator==(Value &other) const noexcept {
     if (is_ref()) {

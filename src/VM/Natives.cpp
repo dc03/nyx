@@ -10,7 +10,7 @@
 
 // clang-format off
 std::vector<NativeFn> native_functions{
-    {native_print,    "print",    Type::NULL_,  {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL, Type::FUNCTION, Type::NULL_}}, 1},
+    {native_print,    "print",    Type::NULL_,  {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL, Type::FUNCTION, Type::NULL_, Type::LIST}}, 1},
     {native_int,      "int",      Type::INT,    {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL}}, 1},
     {native_float,    "float",    Type::FLOAT,  {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL}}, 1},
     {native_string,   "string",   Type::STRING, {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL}}, 1},

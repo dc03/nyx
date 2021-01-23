@@ -156,7 +156,7 @@ if __name__ == '__main__':
         declare_alias(file, 'TypeNode', 'BaseType')
         # Base class and alias declarations complete
 
-        Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'Literal',
+        Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'ListAssign', 'Literal',
                             'Logical', 'ScopeAccess', 'ScopeName', 'Set', 'Super', 'Ternary', 'This', 'Unary',
                             'Variable']
         Stmts: List[str] = ['Block', 'Break', 'Class', 'Continue', 'Expression', 'Function',
@@ -255,6 +255,11 @@ if __name__ == '__main__':
 
         declare_expr_type('object{std::move(object)}, oper{std::move(oper)}, index{std::move(index)}',
                           'ExprNode object, Token oper, ExprNode index')
+
+        declare_expr_type('list{std::move(list)}, equals{std::move(equals)}, value{std::move(value)}, '
+                          'conversion_type{conversion_type}, requires_copy{requires_copy}',
+                          'IndexExpr list, Token equals, ExprNode value, NumericConversionType conversion_type, '
+                          'bool requires_copy')
 
         declare_expr_type('value{std::move(value)}, lexeme{std::move(lexeme)}, type{std::move(type)}',
                           'LiteralValue value, Token lexeme, TypeNode type')

@@ -38,7 +38,7 @@ TypeResolver::TypeResolver(Module &module)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool convertible_to(
+bool TypeResolver::convertible_to(
     QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lvalue, const Token &where, bool in_initializer) {
     bool class_condition = [&to, &from]() {
         if (to->type_tag() == NodeType::UserDefinedType && from->type_tag() == NodeType::UserDefinedType) {
@@ -61,11 +61,38 @@ bool convertible_to(
             return false;
         }
 
+        if (from->data.type == Type::LIST && to->data.type == Type::LIST) {
+            auto *from_list = dynamic_cast<ListType *>(resolve(from));
+            auto *to_list = dynamic_cast<ListType *>(resolve(to));
+            if (from_list->contained->data.type != Type::LIST && to_list->contained->data.type != Type::LIST) {
+                auto *from_contained = from_list->contained.get();
+                auto *to_contained = to_list->contained.get();
+                return from_contained->data.type == to_contained->data.type &&
+                       from_contained->data.is_const == to_contained->data.is_const &&
+                       from_contained->data.is_ref == to_contained->data.is_ref;
+                // The types contained in two lists have to match *exactly*.
+            }
+            return convertible_to(
+                from_list->contained.get(), to_list->contained.get(), from_lvalue, where, in_initializer);
+        }
+
         return from->data.type == to->data.type && class_condition;
     } else if ((from->data.type == Type::FLOAT && to->data.type == Type::INT) ||
                (from->data.type == Type::INT && to->data.type == Type::FLOAT)) {
         warning("Implicit conversion from float to int", where);
         return true;
+    } else if (from->data.type == Type::LIST && to->data.type == Type::LIST) {
+        auto *from_list = dynamic_cast<ListType *>(resolve(from));
+        auto *to_list = dynamic_cast<ListType *>(resolve(to));
+        if (from_list->contained->data.type != Type::LIST && to_list->contained->data.type != Type::LIST) {
+            auto *from_contained = from_list->contained.get();
+            auto *to_contained = to_list->contained.get();
+            return from_contained->data.type == to_contained->data.type &&
+                   from_contained->data.is_const == to_contained->data.is_const &&
+                   from_contained->data.is_ref == to_contained->data.is_ref;
+            // The types contained in two lists have to match *exactly*.
+        }
+        return convertible_to(from_list->contained.get(), to_list->contained.get(), from_lvalue, where, in_initializer);
     } else {
         return from->data.type == to->data.type && class_condition;
     }
@@ -74,6 +101,12 @@ bool convertible_to(
 void show_conversion_note(QualifiedTypeInfo from, QualifiedTypeInfo to) {
     using namespace std::string_literals;
     std::string note_message = "Trying to convert from '"s + stringify(from) + "' to '" + stringify(to) + "'";
+    note(note_message);
+}
+
+void show_equality_note(QualifiedTypeInfo from, QualifiedTypeInfo to) {
+    using namespace std::string_literals;
+    std::string note_message = "Trying to check equality of '"s + stringify(from) + "' and '" + stringify(to) + "'";
     note(note_message);
 }
 
@@ -220,7 +253,15 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             return {left_expr.info, expr.oper};
         case TokenType::NOT_EQUAL:
         case TokenType::EQUAL_EQUAL:
-            if (one_of(left_expr.info->data.type, Type::BOOL, Type::STRING, Type::LIST, Type::NULL_)) {
+            if (left_expr.info->data.type == Type::LIST && right_expr.info->data.type == Type::LIST) {
+                if (!convertible_to(left_expr.info, right_expr.info, false, expr.oper, false) &&
+                    !convertible_to(right_expr.info, left_expr.info, false, expr.oper, false)) {
+                    error("Cannot compare two lists that have incompatible contained types", expr.oper);
+                    show_equality_note(left_expr.info, right_expr.info);
+                }
+                expr.resolved_type = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+                return expr.resolved_type;
+            } else if (one_of(left_expr.info->data.type, Type::BOOL, Type::STRING, Type::NULL_)) {
                 if (left_expr.info->data.type != right_expr.info->data.type) {
                     error("Cannot compare equality of objects of different types", expr.oper);
                 }
@@ -376,6 +417,7 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
             error("Can only get 'size' attribute of a list", name);
             throw TypeException{"Can only get 'size' attribute of a list"};
         }
+        return ExprVisitorType{make_new_type<PrimitiveType>(Type::INT, true, false), name};
     } else if (object.info->data.type == Type::CLASS) {
         ClassStmt *accessed_type = object.class_;
 
@@ -430,21 +472,45 @@ ExprVisitorType TypeResolver::visit(GroupingExpr &expr) {
 
 ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
     ExprVisitorType list = resolve(expr.object.get());
-
-    if (list.info->data.type != Type::LIST) {
-        error("Expected list type for indexing", expr.oper);
-        throw TypeException{"Expected list type for indexing"};
-    }
+    // I think calling a string a list is fair since its technically just a list of chars
 
     ExprVisitorType index = resolve(expr.index.get());
 
     if (index.info->data.type != Type::INT) {
-        error("Expected integral type for list index", expr.oper);
-        throw TypeException{"Expected integral type for list index"};
+        error("Expected integral type for index", expr.oper);
+        throw TypeException{"Expected integral type for index"};
     }
 
-    auto *contained_type = dynamic_cast<ListType *>(list.info)->contained.get();
-    return {contained_type, expr.oper};
+    if (list.info->data.type == Type::LIST) {
+        auto *contained_type = dynamic_cast<ListType *>(list.info)->contained.get();
+        return {contained_type, expr.oper, true};
+    } else if (list.info->data.type == Type::STRING) {
+        return {list.info, expr.oper, false}; // For now, strings are immutable.
+    } else {
+        error("Expected list or string type for indexing", expr.oper);
+        throw TypeException{"Expected list or string type for indexing"};
+    }
+}
+
+ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
+    ExprVisitorType contained = resolve(&expr.list);
+    ExprVisitorType value = resolve(expr.value.get());
+    if (!contained.is_lvalue) {
+        error("Cannot assign to non-lvalue element", expr.equals);
+        note("String elements are non-assignable");
+        throw TypeException{"Cannot assign to non-lvalue element"};
+    }
+
+    if (contained.info->data.is_const) {
+        error("Cannot assign to constant value", expr.equals);
+        throw TypeException{"Cannot assign to constant value"};
+    } else if (!convertible_to(contained.info, value.info, value.is_lvalue, expr.equals, false)) {
+        error("Cannot convert from contained type of list to type being assigned", expr.equals);
+        show_conversion_note(contained.info, value.info);
+        throw TypeException{"Cannot convert from contained type of list to type being assigned"};
+    }
+
+    return {contained.info, expr.list.oper, false};
 }
 
 ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {

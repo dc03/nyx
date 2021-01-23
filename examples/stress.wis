@@ -206,7 +206,7 @@ x += 1
 x -= 1
 x *= 20
 x /= 20
-*/*/*/
+//*/*/*/
 fn go(n: int, acc: int) -> int {
     if (n > 1) {
         return go(n - 1, acc * n)
@@ -221,3 +221,9 @@ fn factorial(n: int) -> int {
 
 var x = int(readline("Enter a number: "))
 print("The factorial of '" + string(x) + "' is: " + string(factorial(x)))
+*/*/*/
+var x: [int, 5]
+for (var i = 0; i < x.size; ++i) {
+    x[i] = i
+}
+var y: const [int, x.size] = x

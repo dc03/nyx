@@ -26,8 +26,9 @@ std::string stringify(BaseType *node) {
             break;
         }
         case Type::LIST: {
+            using namespace std::string_literals;
             auto type = dynamic_cast<ListType *>(node);
-            result += stringify(type->contained.get());
+            result += "["s + stringify(type->contained.get()) + "]"s;
             break;
         }
         default: unreachable();

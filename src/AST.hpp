@@ -32,6 +32,7 @@ struct CommaExpr;
 struct GetExpr;
 struct GroupingExpr;
 struct IndexExpr;
+struct ListAssignExpr;
 struct LiteralExpr;
 struct LogicalExpr;
 struct ScopeAccessExpr;
@@ -73,6 +74,7 @@ struct Visitor {
     virtual ExprVisitorType visit(GetExpr &expr) = 0;
     virtual ExprVisitorType visit(GroupingExpr &expr) = 0;
     virtual ExprVisitorType visit(IndexExpr &expr) = 0;
+    virtual ExprVisitorType visit(ListAssignExpr &expr) = 0;
     virtual ExprVisitorType visit(LiteralExpr &expr) = 0;
     virtual ExprVisitorType visit(LogicalExpr &expr) = 0;
     virtual ExprVisitorType visit(ScopeAccessExpr &expr) = 0;
@@ -111,6 +113,7 @@ enum class NodeType {
     GetExpr,
     GroupingExpr,
     IndexExpr,
+    ListAssignExpr,
     LiteralExpr,
     LogicalExpr,
     ScopeAccessExpr,
@@ -336,6 +339,28 @@ struct IndexExpr final : public Expr {
 
     IndexExpr(ExprNode object, Token oper, ExprNode index)
         : object{std::move(object)}, oper{std::move(oper)}, index{std::move(index)} {}
+
+    ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct ListAssignExpr final : public Expr {
+    IndexExpr list;
+    Token equals;
+    ExprNode value;
+    NumericConversionType conversion_type;
+    bool requires_copy;
+
+    std::string_view string_tag() override final { return "ListAssignExpr"; }
+
+    NodeType type_tag() override final { return NodeType::ListAssignExpr; }
+
+    ListAssignExpr(
+        IndexExpr list, Token equals, ExprNode value, NumericConversionType conversion_type, bool requires_copy)
+        : list{std::move(list)},
+          equals{std::move(equals)},
+          value{std::move(value)},
+          conversion_type{conversion_type},
+          requires_copy{requires_copy} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
