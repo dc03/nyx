@@ -79,7 +79,7 @@ bool TypeResolver::convertible_to(
         return from->data.type == to->data.type && class_condition;
     } else if ((from->data.type == Type::FLOAT && to->data.type == Type::INT) ||
                (from->data.type == Type::INT && to->data.type == Type::FLOAT)) {
-        warning("Implicit conversion from float to int", where);
+        warning("Implicit conversion between float and int", where);
         return true;
     } else if (from->data.type == Type::LIST && to->data.type == Type::LIST) {
         auto *from_list = dynamic_cast<ListType *>(resolve(from));

@@ -5,6 +5,8 @@
 #include "../Common.hpp"
 #include "../Module.hpp"
 
+#include <algorithm>
+
 Value::Value(int value) : as{value} {}
 Value::Value(bool value) : as{value} {}
 Value::Value(double value) : as{value} {}
@@ -38,7 +40,37 @@ std::string Value::repr() noexcept {
         return "null";
     } else if (is_string()) {
         using namespace std::string_literals;
-        return "\""s + to_string() + "\""s;
+        std::string &string_value = to_string();
+        std::string result{};
+        auto is_escape = [](char ch) {
+            switch (ch) {
+                case '\b':
+                case '\n':
+                case '\r':
+                case '\t':
+                case '\\': return true;
+                default: return false;
+            }
+        };
+        auto repr_escape = [](char ch) {
+            switch (ch) {
+                case '\b': return "\\b";
+                case '\n': return "\\n";
+                case '\r': return "\\r";
+                case '\t': return "\\t";
+                case '\\': return "\\\\";
+                default: return "";
+            }
+        };
+        result.reserve(string_value.size() + std::count_if(string_value.begin(), string_value.end(), is_escape));
+        for (char ch : string_value) {
+            if (is_escape(ch)) {
+                result += repr_escape(ch);
+            } else {
+                result += ch;
+            }
+        }
+        return "\""s + result + "\""s;
     } else if (is_ref()) {
         char name[15];
         std::sprintf(name, "ref to %p", reinterpret_cast<void *>(to_referred()));
