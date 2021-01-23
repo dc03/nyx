@@ -324,7 +324,7 @@ const std::vector<Token> &Scanner::scan() {
         scan_token();
     }
 
-    if (tokens.back().type != TokenType::END_OF_LINE) {
+    if (!tokens.empty() && tokens.back().type != TokenType::END_OF_LINE) {
         tokens.emplace_back(TokenType::END_OF_LINE, "\n", line, 0, 0);
     }
     tokens.emplace_back(TokenType::END_OF_FILE, "", line, 0, 0);
