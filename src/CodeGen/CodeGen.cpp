@@ -14,7 +14,7 @@ void Generator::begin_scope() {
 
 void Generator::end_scope() {
     // Only emit pops for the global scope
-    for (std::size_t begin = scopes.top(); scopes.size() == 1 && begin > 0; begin--) {
+    for (std::size_t begin = scopes.top(); begin > 0; begin--) {
         current_chunk->emit_instruction(Instruction::POP, 0);
     }
     scopes.pop();
