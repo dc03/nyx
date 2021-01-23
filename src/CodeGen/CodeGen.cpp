@@ -48,6 +48,21 @@ RuntimeModule Generator::compile(Module &module) {
     return compiled;
 }
 
+void Generator::emit_conversion(NumericConversionType conversion_type, std::size_t line_number) {
+    using namespace std::string_literals;
+    switch (conversion_type) {
+        case NumericConversionType::FLOAT_TO_INT:
+            current_chunk->emit_constant(Value{"int"s}, line_number);
+            current_chunk->emit_instruction(Instruction::CALL_NATIVE, line_number);
+            break;
+        case NumericConversionType::INT_TO_FLOAT:
+            current_chunk->emit_constant(Value{"float"s}, line_number);
+            current_chunk->emit_instruction(Instruction::CALL_NATIVE, line_number);
+            break;
+        default: break;
+    }
+}
+
 ExprVisitorType Generator::compile(Expr *expr) {
     return expr->accept(*this);
 }
@@ -65,6 +80,11 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
     if (info.is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.target.line);
     }
+
+    if (expr.conversion_type != NumericConversionType::NONE) {
+        emit_conversion(expr.conversion_type, expr.oper.line);
+    }
+
     switch (expr.oper.type) {
         case TokenType::EQUAL: current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, expr.oper.line); break;
         case TokenType::PLUS_EQUAL: current_chunk->emit_instruction(Instruction::INCR_LOCAL, expr.oper.line); break;
@@ -142,6 +162,9 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
 ExprVisitorType Generator::visit(CallExpr &expr) {
     for (auto &arg : expr.args) {
         compile(std::get<0>(arg).get());
+        if (std::get<1>(arg) != NumericConversionType::NONE) {
+            emit_conversion(std::get<1>(arg), 0);
+        }
     }
     if (expr.is_native_call) {
         auto *called = dynamic_cast<VariableExpr *>(expr.function.get());
@@ -176,6 +199,10 @@ ExprVisitorType Generator::visit(GroupingExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(IndexExpr &expr) {
+    return {};
+}
+
+ExprVisitorType Generator::visit(ListAssignExpr &expr) {
     return {};
 }
 
@@ -495,6 +522,10 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
             ExprTypeInfo info = compile(stmt.initializer.get());
             if (info.is_ref && !stmt.type->data.is_ref) {
                 current_chunk->emit_instruction(Instruction::DEREF, stmt.name.line);
+            }
+
+            if (stmt.conversion_type != NumericConversionType::NONE) {
+                emit_conversion(stmt.conversion_type, stmt.name.line);
             }
         }
     } else {

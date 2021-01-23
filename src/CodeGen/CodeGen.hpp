@@ -26,6 +26,7 @@ class Generator : Visitor {
     void begin_scope();
     void end_scope();
     void patch_jump(std::size_t jump_idx, std::size_t jump_amount);
+    void emit_conversion(NumericConversionType conversion_type, std::size_t line_number);
 
   public:
     static std::vector<RuntimeModule> compiled_modules;
@@ -44,6 +45,7 @@ class Generator : Visitor {
     ExprVisitorType visit(GetExpr &expr) override final;
     ExprVisitorType visit(GroupingExpr &expr) override final;
     ExprVisitorType visit(IndexExpr &expr) override final;
+    ExprVisitorType visit(ListAssignExpr &expr) override final;
     ExprVisitorType visit(LiteralExpr &expr) override final;
     ExprVisitorType visit(LogicalExpr &expr) override final;
     ExprVisitorType visit(ScopeAccessExpr &expr) override final;
