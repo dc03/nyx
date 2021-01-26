@@ -511,8 +511,49 @@ StmtVisitorType Generator::visit(SwitchStmt &stmt) {
 
 StmtVisitorType Generator::visit(TypeStmt &stmt) {}
 
+std::size_t Generator::recursively_compile_size(ListType *list) {
+    if (list->contained->data.type == Type::LIST) {
+        std::size_t inner = recursively_compile_size(dynamic_cast<ListType *>(list->contained.get()));
+        if (list->size != nullptr) {
+            compile(list->size.get());
+        } else {
+            current_chunk->emit_constant(Value{1}, 0);
+        }
+        return inner + 1;
+    } else {
+        compile(list);
+        if (list->size != nullptr) {
+            compile(list->size.get());
+        } else {
+            current_chunk->emit_constant(Value{1}, 0);
+        }
+        return 1;
+    }
+}
+
 StmtVisitorType Generator::visit(VarStmt &stmt) {
-    if (stmt.initializer != nullptr) {
+    if (stmt.type->data.type == Type::LIST && stmt.initializer == nullptr) {
+        auto *list = dynamic_cast<ListType *>(stmt.type.get());
+        compile(stmt.type.get());
+        std::size_t num_lists = 1;
+        if (list->contained->data.type == Type::LIST) {
+            num_lists += recursively_compile_size(dynamic_cast<ListType *>(list->contained.get()));
+            if (list->size != nullptr) {
+                compile(list->size.get());
+            } else {
+                current_chunk->emit_constant(Value{1}, stmt.name.line);
+            }
+            current_chunk->emit_instruction(Instruction::ALLOC_NESTED_LISTS, stmt.name.line);
+            current_chunk->emit_byte(num_lists & 0xff); // Upto 255 nested lists, I don't want to allow more.
+        } else {
+            if (list->size != nullptr) {
+                compile(list->size.get());
+            } else {
+                current_chunk->emit_constant(Value{1}, stmt.name.line);
+            }
+            current_chunk->emit_instruction(Instruction::ALLOC_AT_LEAST, stmt.name.line);
+        }
+    } else if (stmt.initializer != nullptr) {
         if (stmt.type->data.is_ref && !stmt.init_is_ref && stmt.initializer->type_tag() == NodeType::VariableExpr) {
             auto *initializer = dynamic_cast<VariableExpr *>(stmt.initializer.get());
             current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, stmt.name.line);
@@ -618,6 +659,18 @@ BaseTypeVisitorType Generator::visit(UserDefinedType &type) {
 }
 
 BaseTypeVisitorType Generator::visit(ListType &type) {
+    current_chunk->emit_instruction(Instruction::MAKE_LIST, 0);
+    if (type.contained->data.is_ref) {
+        current_chunk->emit_integer(List::tag::REF_LIST);
+    } else
+        switch (type.contained->data.type) {
+            case Type::INT: current_chunk->emit_integer(List::tag::INT_LIST); break;
+            case Type::FLOAT: current_chunk->emit_integer(List::tag::FLOAT_LIST); break;
+            case Type::STRING: current_chunk->emit_integer(List::tag::STRING_LIST); break;
+            case Type::BOOL: current_chunk->emit_integer(List::tag::BOOL_LIST); break;
+            case Type::LIST: current_chunk->emit_integer(List::tag::LIST_LIST); break;
+            default: break;
+        }
     return {};
 }
 

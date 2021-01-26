@@ -13,10 +13,10 @@ std::vector<NativeFn> native_functions{
     {native_print,    "print",    Type::NULL_,  {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL, Type::FUNCTION, Type::NULL_, Type::LIST}}, 1},
     {native_int,      "int",      Type::INT,    {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL}}, 1},
     {native_float,    "float",    Type::FLOAT,  {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL}}, 1},
-    {native_string,   "string",   Type::STRING, {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL}}, 1},
+    {native_string,   "string",   Type::STRING, {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL, Type::LIST}}, 1},
     {native_readline, "readline", Type::STRING, {{Type::STRING}}, 1},
 };
-//clang-format on
+// clang-format on
 
 Value native_print(Value *args) {
     Value &arg = args[0];
@@ -34,6 +34,10 @@ Value native_print(Value *args) {
         native_print(arg.to_referred());
     } else if (arg.is_null()) {
         std::cout << "null";
+    } else if (arg.is_list()) {
+        std::cout << "\"";
+        std::cout << arg.repr();
+        std::cout << "\"";
     }
     return Value{nullptr};
 }
@@ -79,6 +83,8 @@ Value native_string(Value *args) {
         return Value{arg.to_bool() ? "true"s : "false"s};
     } else if (arg.is_ref()) {
         return native_string(arg.to_referred());
+    } else if (arg.is_list()) {
+        return Value{arg.repr()};
     }
     unreachable();
 }

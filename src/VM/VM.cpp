@@ -5,6 +5,7 @@
 #include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
 
+#include <algorithm>
 #include <cstring>
 #include <iostream>
 #include <utility>
@@ -66,6 +67,38 @@ std::size_t VM::read_three_bytes() {
 
 bool is_truthy(Value &value) {
     return bool(value);
+}
+
+void VM::recursively_size_list(List &list, Value *size, std::size_t depth) {
+    if (depth > 1) {
+        std::vector<std::unique_ptr<List>> &stored_list = list.to_list_list();
+        stored_list.resize(size->to_int());
+        if (depth > 2) {
+            std::generate(stored_list.begin(), stored_list.end(),
+                []() { return std::make_unique<List>(std::vector<std::unique_ptr<List>>{}); });
+        } else {
+            auto &assigned = (size - 2)->to_list();
+            std::generate(stored_list.begin(), stored_list.end(), [&assigned]() {
+                if (assigned.is_int_list()) {
+                    return std::make_unique<List>(assigned.to_int_list());
+                } else if (assigned.is_float_list()) {
+                    return std::make_unique<List>(assigned.to_float_list());
+                } else if (assigned.is_string_list()) {
+                    return std::make_unique<List>(assigned.to_string_list());
+                } else if (assigned.is_ref_list()) {
+                    return std::make_unique<List>(assigned.to_ref_list());
+                } else if (assigned.is_bool_list()) {
+                    return std::make_unique<List>(assigned.to_bool_list());
+                }
+                unreachable();
+            });
+        }
+        for (auto &contained : stored_list) {
+            recursively_size_list(*contained, size - 1, depth - 1);
+        }
+    } else {
+        list.resize(size->to_int());
+    }
 }
 
 void VM::run(RuntimeModule &main_module) {
@@ -380,6 +413,43 @@ void VM::run(RuntimeModule &main_module) {
                     pop();
                 }
                 push(result);
+                break;
+            }
+
+            case is Instruction::MAKE_LIST: {
+                Chunk::byte type = read_byte();
+                switch (type) {
+                    case List::tag::INT_LIST: push(Value{List{std::vector<int>{}}}); break;
+                    case List::tag::FLOAT_LIST: push(Value{List{std::vector<double>{}}}); break;
+                    case List::tag::STRING_LIST: push(Value{List{std::vector<std::string>{}}}); break;
+                    case List::tag::BOOL_LIST: push(Value{List{std::vector<char>{}}}); break;
+                    case List::tag::REF_LIST: push(Value{List{std::vector<Value *>{}}}); break;
+                    case List::tag::LIST_LIST: push(Value{List{std::vector<std::unique_ptr<List>>{}}}); break;
+                    default: break;
+                }
+                break;
+            }
+
+            case is Instruction::ALLOC_AT_LEAST: {
+                std::size_t size = top_from(1).to_int();
+                pop();
+                List &list = top_from(1).to_list();
+                if (list.size() >= size) {
+                    break;
+                }
+
+                list.resize(size);
+                break;
+            }
+
+            case is Instruction::ALLOC_NESTED_LISTS: {
+                std::size_t depth = read_byte();
+                List &list = top_from(depth + 2).to_list();
+                recursively_size_list(list, &top_from(1), depth);
+                while (depth-- > 0) {
+                    pop(); // The sizes
+                }
+                pop(); // The innermost list
                 break;
             }
 

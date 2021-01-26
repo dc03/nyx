@@ -7,6 +7,7 @@
 #define VALUE_HPP
 
 #include "List.hpp"
+#include "SharedUniquePtr.hpp"
 
 #include <string>
 #include <variant>
@@ -16,7 +17,7 @@ struct RuntimeFunction;
 
 struct Value {
     enum tag { INT, DOUBLE, STRING, BOOL, NULL_, PRIMITIVE_REF, FUNCTION, LIST };
-    std::variant<int, double, std::string, bool, std::nullptr_t, Value *, RuntimeFunction *, List> as;
+    std::variant<int, double, std::string, bool, std::nullptr_t, Value *, RuntimeFunction *, SharedUniquePtr<List>> as;
 
     Value() = default;
 
@@ -28,7 +29,8 @@ struct Value {
     explicit Value(std::nullptr_t);
     explicit Value(Value *referred);
     explicit Value(RuntimeFunction *function);
-    explicit Value(List list);
+    explicit Value(List &&list);
+    explicit Value(const SharedUniquePtr<List> &list);
 
     // clang-format off
     [[nodiscard]] bool is_int()      const noexcept { return as.index() == Value::tag::INT; }
@@ -49,10 +51,10 @@ struct Value {
     [[nodiscard]] double to_numeric()            const noexcept { return is_int() ? std::get<INT>(as) : std::get<DOUBLE>(as); }
     [[nodiscard]] Value *to_referred()           const noexcept { return std::get<PRIMITIVE_REF>(as); }
     [[nodiscard]] RuntimeFunction *to_function() const noexcept { return std::get<FUNCTION>(as); }
-    [[nodiscard]] List &to_list()                      noexcept { return std::get<LIST>(as); }
+    [[nodiscard]] List &to_list()                      noexcept { return *std::get<LIST>(as); }
     // clang-format on
 
-    [[nodiscard]] bool operator==(Value &other) const noexcept;
+    [[nodiscard]] bool operator==(Value &other) noexcept;
     [[nodiscard]] std::string repr() noexcept;
     [[nodiscard]] explicit operator bool() noexcept;
 };

@@ -6,6 +6,7 @@
 #ifndef LIST_HPP
 #define LIST_HPP
 
+#include <memory>
 #include <string>
 #include <variant>
 #include <vector>
@@ -13,9 +14,9 @@
 struct Value;
 
 struct List {
-    enum tag { INT_LIST, FLOAT_LIST, STRING_LIST, BOOL_LIST, REF_LIST };
+    enum tag { INT_LIST, FLOAT_LIST, STRING_LIST, BOOL_LIST, REF_LIST, LIST_LIST };
     std::variant<std::vector<int>, std::vector<double>, std::vector<std::string>, std::vector<char>,
-        std::vector<Value *>>
+        std::vector<Value *>, std::vector<std::unique_ptr<List>>>
         as;
 
     explicit List(std::vector<int> value);
@@ -23,6 +24,7 @@ struct List {
     explicit List(std::vector<std::string> value);
     explicit List(std::vector<char> value);
     explicit List(std::vector<Value *> value);
+    explicit List(std::vector<std::unique_ptr<List>> value);
 
     // clang-format off
     [[nodiscard]] bool is_int_list()    const noexcept { return as.index() == List::tag::INT_LIST; }
@@ -30,15 +32,19 @@ struct List {
     [[nodiscard]] bool is_string_list() const noexcept { return as.index() == List::tag::STRING_LIST; }
     [[nodiscard]] bool is_bool_list()   const noexcept { return as.index() == List::tag::BOOL_LIST; }
     [[nodiscard]] bool is_ref_list()    const noexcept { return as.index() == List::tag::REF_LIST; }
+    [[nodiscard]] bool is_list_list()   const noexcept { return as.index() == List::tag::LIST_LIST; }
 
     [[nodiscard]] std::vector<int> &to_int_list()            noexcept { return std::get<INT_LIST>(as); }
     [[nodiscard]] std::vector<double> &to_float_list()       noexcept { return std::get<FLOAT_LIST>(as); }
     [[nodiscard]] std::vector<std::string> &to_string_list() noexcept { return std::get<STRING_LIST>(as); }
     [[nodiscard]] std::vector<char> &to_bool_list()          noexcept { return std::get<BOOL_LIST>(as); }
     [[nodiscard]] std::vector<Value *> &to_ref_list()        noexcept { return std::get<REF_LIST>(as); }
+    [[nodiscard]] std::vector<std::unique_ptr<List>> &to_list_list() noexcept { return std::get<LIST_LIST>(as); }
     // clang-format on
 
     [[nodiscard]] bool operator==(const List &other) const noexcept;
+    [[nodiscard]] std::size_t size() noexcept;
+    void resize(std::size_t size) noexcept;
 };
 
 #endif

@@ -27,6 +27,7 @@ class Generator : Visitor {
     void end_scope();
     void patch_jump(std::size_t jump_idx, std::size_t jump_amount);
     void emit_conversion(NumericConversionType conversion_type, std::size_t line_number);
+    std::size_t recursively_compile_size(ListType *list);
 
   public:
     static std::vector<RuntimeModule> compiled_modules;

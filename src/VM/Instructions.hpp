@@ -64,6 +64,10 @@ enum class Instruction : unsigned char {
     RETURN,
 
     CALL_NATIVE,
+
+    MAKE_LIST,
+    ALLOC_NESTED_LISTS,
+    ALLOC_AT_LEAST,
 };
 
 #endif

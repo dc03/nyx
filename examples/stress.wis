@@ -221,7 +221,7 @@ fn factorial(n: int) -> int {
 
 var x = int(readline("Enter a number: "))
 print("The factorial of '" + string(x) + "' is: " + string(factorial(x)))
-*/*/*/
+
 fn f(y: int) -> null {
     print(string(y) + '\n')
     var z: float = y
@@ -235,3 +235,18 @@ fn f(y: int) -> null {
 var x: float = 5
 print(string(x) + '\n')
 f(x)
+
+var x: [int, 5]
+for (var i = 0; i < x.size; ++i) {
+    x[i] = i
+}
+var y: [int] = x
+fn f(z: [int]) -> null {
+    for (var i = 0; i < z.size; ++i) {
+        print(z[i])
+    }
+}
+*/*/*/
+var x: [[int, 5], 3]
+print(string(x) + '\n')
+//x[1] = 2
