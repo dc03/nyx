@@ -154,7 +154,7 @@ void VM::run(RuntimeModule &main_module) {
 
 #define binary_compound_assignment(oper)                                                                               \
     {                                                                                                                  \
-        Value *incremented = &stack[read_three_bytes()];                                                               \
+        Value *incremented = &frame_top->stack_slots[read_three_bytes()];                                              \
         if (incremented->is_ref()) {                                                                                   \
             incremented = incremented->to_referred();                                                                  \
         }                                                                                                              \

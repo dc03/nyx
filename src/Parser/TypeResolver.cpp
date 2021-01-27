@@ -808,6 +808,8 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     if (!values.empty()) {
         stmt.scope_depth = values.crbegin()->scope_depth + 1;
     }
+
+    std::size_t i = 0;
     for (auto &param : stmt.params) {
         ClassStmt *param_class = nullptr;
 
@@ -823,7 +825,7 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
             // Same jank as VarStmt to make sure that the resolved type is stored on the AST
         }
 
-        values.push_back({param.first.lexeme, param.second.get(), scope_depth + 1, param_class, values.size()});
+        values.push_back({param.first.lexeme, param.second.get(), scope_depth + 1, param_class, i++});
     }
 
     resolve(stmt.body.get());
@@ -910,7 +912,8 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
             !type->data.is_ref && !is_builtin_type(type->data.type); // Copy semantics for object creation
         stmt.init_is_ref = initializer.info->data.is_ref;
         if (!in_class || in_function) {
-            values.push_back({stmt.name.lexeme, type, scope_depth, initializer.class_, values.size()});
+            values.push_back({stmt.name.lexeme, type, scope_depth, initializer.class_,
+                (values.empty() ? 0 : values.back().stack_slot + 1)});
         }
     } else if (stmt.initializer != nullptr) {
         ExprVisitorType initializer = resolve(stmt.initializer.get());
@@ -926,7 +929,8 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         stmt.requires_copy = !stmt.type->data.is_ref && !is_builtin_type(stmt.type->data.type); // Copy semantics
         stmt.init_is_ref = initializer.info->data.is_ref;
         if (!in_class || in_function) {
-            values.push_back({stmt.name.lexeme, stmt.type.get(), scope_depth, initializer.class_, values.size()});
+            values.push_back({stmt.name.lexeme, stmt.type.get(), scope_depth, initializer.class_,
+                (values.empty() ? 0 : values.back().stack_slot + 1)});
         }
     } else if (stmt.type != nullptr) {
         QualifiedTypeInfo type = resolve(stmt.type.get());
@@ -941,7 +945,8 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         }
 
         if (!in_class || in_function) {
-            values.push_back({stmt.name.lexeme, type, scope_depth, stmt_class, values.size()});
+            values.push_back(
+                {stmt.name.lexeme, type, scope_depth, stmt_class, (values.empty() ? 0 : values.back().stack_slot + 1)});
         }
     } else {
         error("Expected type for variable", stmt.name);

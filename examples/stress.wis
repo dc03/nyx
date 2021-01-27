@@ -246,10 +246,25 @@ fn f(z: [int]) -> null {
         print(z[i])
     }
 }
-*/*/*/
+
 var x: [int, 10000]
 for (var i = 0; i < 10000; ++i) {
     for (var j = 0; j < 10000; ++j) {
         x[i] = i + j
     }
 }
+*/*/*/
+var y: [int, 5]
+for (var i = 0; i < 5; ++i) {
+    y[i] = i
+}
+
+fn f(x: [int]) -> int {
+    var sum = 0
+    for (var i = 0; i < 5; ++i) {
+        sum += x[i]
+    }
+    return sum
+}
+
+print(f(y))
