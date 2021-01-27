@@ -247,6 +247,9 @@ fn f(z: [int]) -> null {
     }
 }
 */*/*/
-var x: [[int, 5], 3]
-print(string(x) + '\n')
-//x[1] = 2
+var x: [int, 10000]
+for (var i = 0; i < 10000; ++i) {
+    for (var j = 0; j < 10000; ++j) {
+        x[i] = i + j
+    }
+}

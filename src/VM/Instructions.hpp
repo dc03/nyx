@@ -68,6 +68,9 @@ enum class Instruction : unsigned char {
     MAKE_LIST,
     ALLOC_NESTED_LISTS,
     ALLOC_AT_LEAST,
+    INDEX_LIST,
+    CHECK_INDEX,
+    ASSIGN_LIST_AT,
 };
 
 #endif

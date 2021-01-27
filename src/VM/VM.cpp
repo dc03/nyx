@@ -42,7 +42,11 @@ void VM::push(Value &&value) {
 }
 
 void VM::pop() {
-    *(--stack_top) = Value{};
+    if (top_from(1).is_list()) {
+        Value destroyed = std::move(*--stack_top);
+    } else {
+        --stack_top;
+    }
     //    Value destroyed = std::move(*--stack_top);
 }
 
@@ -450,6 +454,34 @@ void VM::run(RuntimeModule &main_module) {
                     pop(); // The sizes
                 }
                 pop(); // The innermost list
+                break;
+            }
+
+            case is Instruction::INDEX_LIST: {
+                List &list = top_from(2).to_list();
+                std::size_t index = top_from(1).to_int();
+                Value result = list.at(index);
+                pop_twice_push(result);
+                break;
+            }
+
+            case is Instruction::CHECK_INDEX: {
+                List &list = top_from(2).to_list();
+                std::size_t index = top_from(1).to_int();
+                if (index >= list.size()) {
+                    runtime_error("List index out of range", chunk->get_line_number(insn_number));
+                    return;
+                }
+                break;
+            }
+
+            case is Instruction::ASSIGN_LIST_AT: {
+                List &list = top_from(3).to_list();
+                std::size_t index = top_from(2).to_int();
+                Value &value = top_from(1);
+                Value result = list.assign_at(index, value);
+                pop();
+                pop_twice_push(result);
                 break;
             }
 

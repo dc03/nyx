@@ -199,10 +199,19 @@ ExprVisitorType Generator::visit(GroupingExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(IndexExpr &expr) {
+    compile(expr.object.get());
+    compile(expr.index.get());
+    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.oper.line);
+    current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.oper.line);
     return {};
 }
 
 ExprVisitorType Generator::visit(ListAssignExpr &expr) {
+    compile(expr.list.object.get());
+    compile(expr.list.index.get());
+    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.equals.line);
+    compile(expr.value.get());
+    current_chunk->emit_instruction(Instruction::ASSIGN_LIST_AT, expr.equals.line);
     return {};
 }
 

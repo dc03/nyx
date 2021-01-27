@@ -13,11 +13,13 @@
 
 struct Value;
 
-struct List {
-    enum tag { INT_LIST, FLOAT_LIST, STRING_LIST, BOOL_LIST, REF_LIST, LIST_LIST };
+class List {
     std::variant<std::vector<int>, std::vector<double>, std::vector<std::string>, std::vector<char>,
         std::vector<Value *>, std::vector<std::unique_ptr<List>>>
         as;
+
+  public:
+    enum tag { INT_LIST, FLOAT_LIST, STRING_LIST, BOOL_LIST, REF_LIST, LIST_LIST };
 
     explicit List(std::vector<int> value);
     explicit List(std::vector<double> value);
@@ -45,6 +47,8 @@ struct List {
     [[nodiscard]] bool operator==(const List &other) const noexcept;
     [[nodiscard]] std::size_t size() noexcept;
     void resize(std::size_t size) noexcept;
+    Value at(std::size_t index) noexcept;
+    Value assign_at(std::size_t index, Value &value) noexcept;
 };
 
 #endif
