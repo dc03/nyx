@@ -101,57 +101,57 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
 ExprVisitorType Generator::visit(BinaryExpr &expr) {
     ExprTypeInfo left_info = compile(expr.left.get());
     if (left_info.is_ref) {
-        current_chunk->emit_instruction(Instruction::DEREF, expr.oper.line);
+        current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.lexeme.line);
     }
     ExprTypeInfo right_info = compile(expr.right.get());
     if (right_info.is_ref) {
-        current_chunk->emit_instruction(Instruction::DEREF, expr.oper.line);
+        current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.lexeme.line);
     }
 
     // clang-format off
-    switch (expr.oper.type) {
-        case TokenType::LEFT_SHIFT:    current_chunk->emit_instruction(Instruction::SHIFT_LEFT, expr.oper.line);  break;
-        case TokenType::RIGHT_SHIFT:   current_chunk->emit_instruction(Instruction::SHIFT_RIGHT, expr.oper.line); break;
-        case TokenType::BIT_AND:       current_chunk->emit_instruction(Instruction::BIT_AND, expr.oper.line);     break;
-        case TokenType::BIT_OR:        current_chunk->emit_instruction(Instruction::BIT_OR, expr.oper.line);      break;
-        case TokenType::BIT_XOR:       current_chunk->emit_instruction(Instruction::BIT_XOR, expr.oper.line);     break;
-        case TokenType::MODULO:        current_chunk->emit_instruction(Instruction::MOD, expr.oper.line);         break;
+    switch (expr.resolved.lexeme.type) {
+        case TokenType::LEFT_SHIFT:    current_chunk->emit_instruction(Instruction::SHIFT_LEFT, expr.resolved.lexeme.line);  break;
+        case TokenType::RIGHT_SHIFT:   current_chunk->emit_instruction(Instruction::SHIFT_RIGHT, expr.resolved.lexeme.line); break;
+        case TokenType::BIT_AND:       current_chunk->emit_instruction(Instruction::BIT_AND, expr.resolved.lexeme.line);     break;
+        case TokenType::BIT_OR:        current_chunk->emit_instruction(Instruction::BIT_OR, expr.resolved.lexeme.line);      break;
+        case TokenType::BIT_XOR:       current_chunk->emit_instruction(Instruction::BIT_XOR, expr.resolved.lexeme.line);     break;
+        case TokenType::MODULO:        current_chunk->emit_instruction(Instruction::MOD, expr.resolved.lexeme.line);         break;
 
-        case TokenType::EQUAL_EQUAL:   current_chunk->emit_instruction(Instruction::EQUAL, expr.oper.line);       break;
-        case TokenType::GREATER:       current_chunk->emit_instruction(Instruction::GREATER, expr.oper.line);     break;
-        case TokenType::LESS:          current_chunk->emit_instruction(Instruction::LESSER, expr.oper.line);      break;
+        case TokenType::EQUAL_EQUAL:   current_chunk->emit_instruction(Instruction::EQUAL, expr.resolved.lexeme.line);       break;
+        case TokenType::GREATER:       current_chunk->emit_instruction(Instruction::GREATER, expr.resolved.lexeme.line);     break;
+        case TokenType::LESS:          current_chunk->emit_instruction(Instruction::LESSER, expr.resolved.lexeme.line);      break;
 
         case TokenType::NOT_EQUAL:
-            current_chunk->emit_instruction(Instruction::EQUAL, expr.oper.line);
-            current_chunk->emit_instruction(Instruction::NOT, expr.oper.line);
+            current_chunk->emit_instruction(Instruction::EQUAL, expr.resolved.lexeme.line);
+            current_chunk->emit_instruction(Instruction::NOT, expr.resolved.lexeme.line);
             break;
         case TokenType::GREATER_EQUAL:
-            current_chunk->emit_instruction(Instruction::LESSER, expr.oper.line);
-            current_chunk->emit_instruction(Instruction::NOT, expr.oper.line);
+            current_chunk->emit_instruction(Instruction::LESSER, expr.resolved.lexeme.line);
+            current_chunk->emit_instruction(Instruction::NOT, expr.resolved.lexeme.line);
             break;
         case TokenType::LESS_EQUAL:
-            current_chunk->emit_instruction(Instruction::GREATER, expr.oper.line);
-            current_chunk->emit_instruction(Instruction::NOT, expr.oper.line);
+            current_chunk->emit_instruction(Instruction::GREATER, expr.resolved.lexeme.line);
+            current_chunk->emit_instruction(Instruction::NOT, expr.resolved.lexeme.line);
             break;
 
         case TokenType::PLUS:
             switch (expr.resolved.info->data.type) {
                 case Type::INT:
                 case Type::FLOAT:
-                    current_chunk->emit_instruction(Instruction::ADD, expr.oper.line); break;
-                case Type::STRING: current_chunk->emit_instruction(Instruction::CONCAT, expr.oper.line); break;
+                    current_chunk->emit_instruction(Instruction::ADD, expr.resolved.lexeme.line); break;
+                case Type::STRING: current_chunk->emit_instruction(Instruction::CONCAT, expr.resolved.lexeme.line); break;
 
                 default:
                     unreachable();
             }
             break;
 
-        case TokenType::MINUS: current_chunk->emit_instruction(Instruction::SUB, expr.oper.line); break;
-        case TokenType::SLASH: current_chunk->emit_instruction(Instruction::DIV, expr.oper.line); break;
-        case TokenType::STAR:  current_chunk->emit_instruction(Instruction::MUL, expr.oper.line); break;
+        case TokenType::MINUS: current_chunk->emit_instruction(Instruction::SUB, expr.resolved.lexeme.line); break;
+        case TokenType::SLASH: current_chunk->emit_instruction(Instruction::DIV, expr.resolved.lexeme.line); break;
+        case TokenType::STAR:  current_chunk->emit_instruction(Instruction::MUL, expr.resolved.lexeme.line); break;
 
         default:
-            error("Bug in parser with illegal token type of expression's operator", expr.oper);
+            error("Bug in parser with illegal token type of expression's operator", expr.resolved.lexeme);
             break;
     }
     // clang-format on

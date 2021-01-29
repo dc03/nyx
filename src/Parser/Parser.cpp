@@ -288,7 +288,9 @@ ExprNode Parser::binary(bool, ExprNode left) {
     Token oper = previous();
     ExprNode right = parse_precedence(
         ParsePrecedence::of{static_cast<int>(ParsePrecedence::of(get_rule(previous().type).precedence)) + 1});
-    return ExprNode{allocate_node(BinaryExpr, std::move(left), std::move(oper), std::move(right))};
+    auto *node = allocate_node(BinaryExpr, std::move(left), std::move(right));
+    node->resolved.lexeme = std::move(oper);
+    return ExprNode{node};
 }
 
 ExprNode Parser::call(bool, ExprNode function) {

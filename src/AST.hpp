@@ -258,15 +258,13 @@ struct AssignExpr final : public Expr {
 
 struct BinaryExpr final : public Expr {
     ExprNode left;
-    Token oper;
     ExprNode right;
 
     std::string_view string_tag() override final { return "BinaryExpr"; }
 
     NodeType type_tag() override final { return NodeType::BinaryExpr; }
 
-    BinaryExpr(ExprNode left, Token oper, ExprNode right)
-        : left{std::move(left)}, oper{std::move(oper)}, right{std::move(right)} {}
+    BinaryExpr(ExprNode left, ExprNode right) : left{std::move(left)}, right{std::move(right)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

@@ -235,8 +235,8 @@ if __name__ == '__main__':
                           'Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy, '
                           'std::size_t stack_slot, Token oper')
 
-        declare_expr_type('left{std::move(left)}, oper{std::move(oper)}, right{std::move(right)}',
-                          'ExprNode left, Token oper, ExprNode right')
+        declare_expr_type('left{std::move(left)}, right{std::move(right)}',
+                          'ExprNode left, ExprNode right')
 
         declare_expr_type(
             'function{std::move(function)}, paren{std::move(paren)}, args{std::move(args)}, '

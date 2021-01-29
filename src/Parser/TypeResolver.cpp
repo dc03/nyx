@@ -234,7 +234,7 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
 ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
     ExprVisitorType left_expr = resolve(expr.left.get());
     ExprVisitorType right_expr = resolve(expr.right.get());
-    switch (expr.oper.type) {
+    switch (expr.resolved.lexeme.type) {
         case TokenType::LEFT_SHIFT:
         case TokenType::RIGHT_SHIFT:
         case TokenType::BIT_AND:
@@ -242,28 +242,29 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
         case TokenType::BIT_XOR:
         case TokenType::MODULO:
             if (left_expr.info->data.type != Type::INT || right_expr.info->data.type != Type::INT) {
-                if (expr.oper.type == TokenType::MODULO) {
-                    error("Wrong types of arguments to modulo operator (expected integral arguments)", expr.oper);
+                if (expr.resolved.lexeme.type == TokenType::MODULO) {
+                    error("Wrong types of arguments to modulo operator (expected integral arguments)",
+                        expr.resolved.lexeme);
                 } else {
-                    error(
-                        "Wrong types of arguments to bitwise binary operator (expected integral arguments)", expr.oper);
+                    error("Wrong types of arguments to bitwise binary operator (expected integral arguments)",
+                        expr.resolved.lexeme);
                 }
             }
-            return expr.resolved = {left_expr.info, expr.oper};
+            return expr.resolved = {left_expr.info, expr.resolved.lexeme};
         case TokenType::NOT_EQUAL:
         case TokenType::EQUAL_EQUAL:
             if (left_expr.info->data.type == Type::LIST && right_expr.info->data.type == Type::LIST) {
-                if (!convertible_to(left_expr.info, right_expr.info, false, expr.oper, false) &&
-                    !convertible_to(right_expr.info, left_expr.info, false, expr.oper, false)) {
-                    error("Cannot compare two lists that have incompatible contained types", expr.oper);
+                if (!convertible_to(left_expr.info, right_expr.info, false, expr.resolved.lexeme, false) &&
+                    !convertible_to(right_expr.info, left_expr.info, false, expr.resolved.lexeme, false)) {
+                    error("Cannot compare two lists that have incompatible contained types", expr.resolved.lexeme);
                     show_equality_note(left_expr.info, right_expr.info);
                 }
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.lexeme};
             } else if (one_of(left_expr.info->data.type, Type::BOOL, Type::STRING, Type::NULL_)) {
                 if (left_expr.info->data.type != right_expr.info->data.type) {
-                    error("Cannot compare equality of objects of different types", expr.oper);
+                    error("Cannot compare equality of objects of different types", expr.resolved.lexeme);
                 }
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.lexeme};
             }
             [[fallthrough]];
         case TokenType::GREATER:
@@ -273,18 +274,18 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             if (one_of(left_expr.info->data.type, Type::INT, Type::FLOAT) &&
                 one_of(right_expr.info->data.type, Type::INT, Type::FLOAT)) {
                 if (left_expr.info->data.type != right_expr.info->data.type) {
-                    warning("Comparison between objects of types int and float", expr.oper);
+                    warning("Comparison between objects of types int and float", expr.resolved.lexeme);
                 }
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.lexeme};
             } else if (left_expr.info->data.type == Type::BOOL && right_expr.info->data.type == Type::BOOL) {
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.lexeme};
             } else {
-                error("Cannot compare objects of incompatible types", expr.oper);
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+                error("Cannot compare objects of incompatible types", expr.resolved.lexeme);
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.lexeme};
             }
         case TokenType::PLUS:
             if (left_expr.info->data.type == Type::STRING && right_expr.info->data.type == Type::STRING) {
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::STRING, true, false), expr.oper};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::STRING, true, false), expr.resolved.lexeme};
             }
             [[fallthrough]];
         case TokenType::MINUS:
@@ -293,17 +294,17 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             if (one_of(left_expr.info->data.type, Type::INT, Type::FLOAT) &&
                 one_of(right_expr.info->data.type, Type::INT, Type::FLOAT)) {
                 if (left_expr.info->data.type == Type::INT && right_expr.info->data.type == Type::INT) {
-                    return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.oper};
+                    return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.lexeme};
                 }
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::FLOAT, true, false), expr.oper};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::FLOAT, true, false), expr.resolved.lexeme};
                 // Integral promotion
             } else {
-                error("Cannot use arithmetic operators on objects of incompatible types", expr.oper);
+                error("Cannot use arithmetic operators on objects of incompatible types", expr.resolved.lexeme);
                 throw TypeException{"Cannot use arithmetic operators on objects of incompatible types"};
             }
 
         default:
-            error("Bug in parser with illegal token type of expression's operator", expr.oper);
+            error("Bug in parser with illegal token type of expression's operator", expr.resolved.lexeme);
             throw TypeException{"Bug in parser with illegal token type of expression's operator"};
     }
 }
