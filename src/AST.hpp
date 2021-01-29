@@ -145,6 +145,7 @@ enum class NodeType {
 };
 
 struct Expr {
+    ExprVisitorType resolved{};
     virtual std::string_view string_tag() = 0;
     virtual NodeType type_tag() = 0;
     virtual ExprVisitorType accept(Visitor &visitor) = 0;
@@ -259,14 +260,13 @@ struct BinaryExpr final : public Expr {
     ExprNode left;
     Token oper;
     ExprNode right;
-    ExprVisitorType resolved_type;
 
     std::string_view string_tag() override final { return "BinaryExpr"; }
 
     NodeType type_tag() override final { return NodeType::BinaryExpr; }
 
-    BinaryExpr(ExprNode left, Token oper, ExprNode right, ExprVisitorType resolved_type)
-        : left{std::move(left)}, oper{std::move(oper)}, right{std::move(right)}, resolved_type{resolved_type} {}
+    BinaryExpr(ExprNode left, Token oper, ExprNode right)
+        : left{std::move(left)}, oper{std::move(oper)}, right{std::move(right)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

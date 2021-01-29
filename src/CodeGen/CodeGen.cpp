@@ -135,7 +135,7 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
             break;
 
         case TokenType::PLUS:
-            switch (expr.resolved_type.info->data.type) {
+            switch (expr.resolved.info->data.type) {
                 case Type::INT:
                 case Type::FLOAT:
                     current_chunk->emit_instruction(Instruction::ADD, expr.oper.line); break;

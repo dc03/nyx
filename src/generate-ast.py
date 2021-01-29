@@ -55,8 +55,9 @@ def declare_visitor(file, visitor: str, exprs: List[str], stmts: List[str], expr
     return None
 
 
-def declare_base(file, base_name: str) -> None:
+def declare_base(file, base_name: str, members: str = '') -> None:
     file.write('struct ' + base_name + ' {\n')
+    tab(file, 1).write(members + '\n')
     tab(file, 1).write('virtual std::string_view string_tag() = 0;\n')
     tab(file, 1).write('virtual NodeType type_tag() = 0;\n')
     tab(file, 1).write('virtual ' + base_name + 'VisitorType accept(Visitor &visitor) = 0;\n')
@@ -180,7 +181,7 @@ if __name__ == '__main__':
         declare_tag_enum(file, Exprs, Stmts, Types)
         # Visitor declaration complete
 
-        declare_base(file, 'Expr')
+        declare_base(file, 'Expr', 'ExprVisitorType resolved{};')
         declare_base(file, 'Stmt')
 
         file.write('struct SharedData {\n')
@@ -234,9 +235,8 @@ if __name__ == '__main__':
                           'Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy, '
                           'std::size_t stack_slot, Token oper')
 
-        declare_expr_type('left{std::move(left)}, oper{std::move(oper)}, right{std::move(right)}, '
-                          'resolved_type{resolved_type}',
-                          'ExprNode left, Token oper, ExprNode right, ExprVisitorType resolved_type')
+        declare_expr_type('left{std::move(left)}, oper{std::move(oper)}, right{std::move(right)}',
+                          'ExprNode left, Token oper, ExprNode right')
 
         declare_expr_type(
             'function{std::move(function)}, paren{std::move(paren)}, args{std::move(args)}, '
