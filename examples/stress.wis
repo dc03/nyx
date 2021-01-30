@@ -255,17 +255,28 @@ for (var i = 0; i < 10000; ++i) {
 }
 */*/*/
 var y: [int, 5]
-var x = 0
-for (var i: ref typeof(x) = x; i < 5; ++i) {
-    y[i] = i
-}
-
-fn f(x: [int]) -> int {
-    var sum = 0
+fn fill(x: ref [int]) -> const ref [int] {
     for (var i = 0; i < 5; ++i) {
-        sum += x[i]
+        x[i] = i
     }
-    return sum
+    return x
 }
 
-print(f(y))
+var x: typeof(y) = fill(y)
+x[1] = 200
+print(string(y) + '\n' + string(x) + '\n')
+
+fn foo(x: ref int) -> ref int {
+    return x
+}
+
+var a = 0
+var b: ref typeof(a) = foo(a)
+b = 45
+print(string(a) + '\n')
+
+fn bar(x: [int, 20]) -> [int] {
+    return x
+}
+
+print(string(bar(y)) + '\n')

@@ -105,6 +105,19 @@ void VM::recursively_size_list(List &list, Value *size, std::size_t depth) {
     }
 }
 
+List VM::make_list(List::tag type) {
+    switch (type) {
+        case List::tag::INT_LIST: return List{std::vector<int>{}};
+        case List::tag::FLOAT_LIST: return List{std::vector<double>{}};
+        case List::tag::STRING_LIST: return List{std::vector<std::string>{}};
+        case List::tag::BOOL_LIST: return List{std::vector<char>{}};
+        case List::tag::REF_LIST: return List{std::vector<Value *>{}};
+        case List::tag::LIST_LIST: return List{std::vector<std::unique_ptr<List>>{}};
+        default: break;
+    }
+    unreachable();
+}
+
 void VM::run(RuntimeModule &main_module) {
     std::size_t insn_number = 1;
     ip = &main_module.top_level_code.bytes[0];
@@ -396,7 +409,7 @@ void VM::run(RuntimeModule &main_module) {
             }
 
             case is Instruction::RETURN: {
-                Value result = top_from(1);
+                Value result = std::move(top_from(1));
                 pop();
                 std::size_t pops = read_three_bytes();
                 while (pops-- > 0) {
@@ -405,7 +418,7 @@ void VM::run(RuntimeModule &main_module) {
                 ip = frame_top->return_ip;
                 chunk = frame_top->return_chunk;
                 --frame_top;
-                push(result);
+                push(std::move(result));
                 break;
             }
 
@@ -422,15 +435,7 @@ void VM::run(RuntimeModule &main_module) {
 
             case is Instruction::MAKE_LIST: {
                 Chunk::byte type = read_byte();
-                switch (type) {
-                    case List::tag::INT_LIST: push(Value{List{std::vector<int>{}}}); break;
-                    case List::tag::FLOAT_LIST: push(Value{List{std::vector<double>{}}}); break;
-                    case List::tag::STRING_LIST: push(Value{List{std::vector<std::string>{}}}); break;
-                    case List::tag::BOOL_LIST: push(Value{List{std::vector<char>{}}}); break;
-                    case List::tag::REF_LIST: push(Value{List{std::vector<Value *>{}}}); break;
-                    case List::tag::LIST_LIST: push(Value{List{std::vector<std::unique_ptr<List>>{}}}); break;
-                    default: break;
-                }
+                push(Value{make_list(static_cast<List::tag>(type))});
                 break;
             }
 
@@ -482,6 +487,22 @@ void VM::run(RuntimeModule &main_module) {
                 Value result = list.assign_at(index, value);
                 pop();
                 pop_twice_push(result);
+                break;
+            }
+
+            case is Instruction::COPY: {
+                Value &copied = top_from(1);
+                if (copied.is_list()) {
+                    List &list = copied.to_list();
+                    List copy = make_list(list.type());
+                    copy.resize(list.size());
+                    for (std::size_t i = 0; i < copy.size(); i++) {
+                        Value assigned = list.at(i);
+                        copy.assign_at(i, assigned);
+                    }
+                    pop();
+                    push(Value{std::move(copy)});
+                }
                 break;
             }
 

@@ -155,6 +155,7 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::INDEX_LIST: return single_byte_insn(chunk, "INDEX_LIST", byte, insn_count);
         case Instruction::CHECK_INDEX: return single_byte_insn(chunk, "CHECK_INDEX", byte, insn_count);
         case Instruction::ASSIGN_LIST_AT: return single_byte_insn(chunk, "ASSIGN_LIST_AT", byte, insn_count);
+        case Instruction::COPY: return single_byte_insn(chunk, "COPY", byte, insn_count);
     }
     unreachable();
 }

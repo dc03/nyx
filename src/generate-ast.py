@@ -333,8 +333,9 @@ if __name__ == '__main__':
                           'thenBranch{std::move(thenBranch)}, elseBranch{std::move(elseBranch)}',
                           'Token keyword, ExprNode condition, StmtNode thenBranch, StmtNode elseBranch')
 
-        declare_stmt_type('keyword{std::move(keyword)}, value{std::move(value)}, locals_popped{locals_popped}',
-                          'Token keyword, ExprNode value, std::size_t locals_popped')
+        declare_stmt_type('keyword{std::move(keyword)}, value{std::move(value)}, locals_popped{locals_popped}, '
+                          'function{function}',
+                          'Token keyword, ExprNode value, std::size_t locals_popped, FunctionStmt *function')
 
         declare_stmt_type(
             'condition{std::move(condition)}, cases{std::move(cases)}, default_case{std::move(default_case)}',

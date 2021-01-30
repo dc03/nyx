@@ -911,7 +911,7 @@ StmtNode Parser::return_statement() {
     }();
 
     consume("Expected ';' or newline after return statement", TokenType::SEMICOLON, TokenType::END_OF_LINE);
-    return StmtNode{allocate_node(ReturnStmt, std::move(keyword), std::move(return_value), 0)};
+    return StmtNode{allocate_node(ReturnStmt, std::move(keyword), std::move(return_value), 0, nullptr)};
 }
 
 StmtNode Parser::switch_statement() {

@@ -36,6 +36,7 @@ struct VM {
     void define_native(const std::string &name, NativeFn code);
     [[nodiscard]] Value &top_from(std::size_t distance) const;
     void recursively_size_list(List &list, Value *size, std::size_t depth);
+    static List make_list(List::tag type);
 
     Chunk::byte read_byte();
     std::size_t read_three_bytes();

@@ -77,8 +77,12 @@ BaseTypeVisitorType Generator::compile(BaseType *type) {
 
 ExprVisitorType Generator::visit(AssignExpr &expr) {
     compile(expr.value.get());
-    if (expr.value->resolved.info->data.is_ref) {
+    if (expr.value->resolved.info->data.is_ref && expr.value->resolved.info->data.type != Type::LIST) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.target.line);
+    } // As there is no difference between a list and a reference to a list, there is no need to add an explicit
+      // Instruction::DEREF
+    if (expr.requires_copy) {
+        current_chunk->emit_instruction(Instruction::COPY, expr.target.line);
     }
 
     if (expr.conversion_type != NumericConversionType::NONE) {
@@ -170,11 +174,41 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(CallExpr &expr) {
+    std::size_t i = 0;
     for (auto &arg : expr.args) {
-        compile(std::get<0>(arg).get());
-        if (std::get<1>(arg) != NumericConversionType::NONE) {
-            emit_conversion(std::get<1>(arg), std::get<0>(arg)->resolved.token.line);
+        ExprNode &value = std::get<0>(arg);
+        if (!expr.is_native_call) {
+            if (auto &param = expr.function->resolved.func->params[i]; param.second->data.is_ref &&
+                                                                       param.second->data.type != Type::LIST &&
+                                                                       !value->resolved.info->data.is_ref) {
+                current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, value->resolved.token.line);
+                current_chunk->emit_bytes(
+                    (value->resolved.stack_slot >> 16) & 0xff, (value->resolved.stack_slot >> 8) & 0xff);
+                current_chunk->emit_byte(value->resolved.stack_slot & 0xff);
+            } else {
+                compile(value.get());
+            }
+        } else {
+            compile(value.get());
         }
+
+        if (std::get<1>(arg) != NumericConversionType::NONE) {
+            emit_conversion(std::get<1>(arg), value->resolved.token.line);
+        }
+        if (std::get<2>(arg)) { // bool requires_copy
+            current_chunk->emit_instruction(Instruction::COPY, value->resolved.token.line);
+        }
+
+        // This ALLOC_AT_LEAST is emitted after the COPY since the list that is copied needs to be resized and not the
+        // list that is being copied.
+        if (!expr.is_native_call && expr.function->resolved.func->params[i].second->data.type == Type::LIST) {
+            auto *list = dynamic_cast<ListType *>(expr.function->resolved.func->params[i].second.get());
+            if (list->size != nullptr) {
+                compile(list->size.get());
+                current_chunk->emit_instruction(Instruction::ALLOC_AT_LEAST, list->size->resolved.token.line);
+            }
+        }
+        i++;
     }
     if (expr.is_native_call) {
         auto *called = dynamic_cast<VariableExpr *>(expr.function.get());
@@ -229,6 +263,9 @@ ExprVisitorType Generator::visit(ListAssignExpr &expr) {
     compile(expr.value.get());
     if (expr.value->resolved.info->data.is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.value->resolved.token.line);
+    }
+    if (expr.requires_copy) {
+        current_chunk->emit_instruction(Instruction::COPY, expr.resolved.token.line);
     }
     current_chunk->emit_instruction(Instruction::ASSIGN_LIST_AT, expr.resolved.token.line);
     return {};
@@ -468,6 +505,10 @@ StmtVisitorType Generator::visit(IfStmt &stmt) {
 StmtVisitorType Generator::visit(ReturnStmt &stmt) {
     if (stmt.value != nullptr) {
         compile(stmt.value.get());
+        if (auto &return_type = stmt.function->return_type;
+            return_type->data.type == Type::LIST && !return_type->data.is_ref) {
+            current_chunk->emit_instruction(Instruction::COPY, stmt.keyword.line);
+        }
     } else {
         current_chunk->emit_instruction(Instruction::NULL_, stmt.keyword.line);
     }
@@ -593,13 +634,17 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
             current_chunk->emit_byte(stmt.initializer->resolved.stack_slot & 0xff);
         } else {
             compile(stmt.initializer.get());
-            if (stmt.initializer->resolved.info->data.is_ref && !stmt.type->data.is_ref) {
+            if (stmt.initializer->resolved.info->data.is_ref && !stmt.type->data.is_ref &&
+                stmt.initializer->resolved.info->data.type != Type::LIST) {
                 current_chunk->emit_instruction(Instruction::DEREF, stmt.name.line);
             }
 
             if (stmt.conversion_type != NumericConversionType::NONE) {
                 emit_conversion(stmt.conversion_type, stmt.name.line);
             }
+        }
+        if (stmt.requires_copy) {
+            current_chunk->emit_instruction(Instruction::COPY, stmt.name.line);
         }
     } else {
         current_chunk->emit_instruction(Instruction::NULL_, stmt.name.line);

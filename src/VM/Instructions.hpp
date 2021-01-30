@@ -71,6 +71,8 @@ enum class Instruction : unsigned char {
     INDEX_LIST,
     CHECK_INDEX,
     ASSIGN_LIST_AT,
+
+    COPY,
 };
 
 #endif

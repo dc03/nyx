@@ -53,7 +53,7 @@ bool TypeResolver::convertible_to(
 
     if (to->data.is_ref &&
         in_initializer) { // Only need to check conversion between references when we are in an initializer
-        if (!from_lvalue) {
+        if (!from_lvalue && !from->data.is_ref) {
             error("Cannot bind reference to non l-value type object", where);
             return false;
         } else if (from->data.is_const && !to->data.is_const) {
@@ -496,7 +496,12 @@ ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
 
     if (contained.info->data.is_const) {
         error("Cannot assign to constant value", expr.resolved.token);
+        show_conversion_note(value.info, contained.info);
         throw TypeException{"Cannot assign to constant value"};
+    } else if (expr.list.object->resolved.info->data.is_const) {
+        error("Cannot assign to constant list", expr.resolved.token);
+        show_conversion_note(value.info, expr.list.object->resolved.info);
+        throw TypeException{"Cannot assign to constant list"};
     } else if (!convertible_to(contained.info, value.info, value.is_lvalue, expr.resolved.token, false)) {
         error("Cannot convert from contained type of list to type being assigned", expr.resolved.token);
         show_conversion_note(contained.info, value.info);
@@ -837,9 +842,11 @@ StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
-    if (stmt.value == nullptr && current_function->return_type->data.type != Type::NULL_) {
-        error("Can only have empty return expressions in functions which return 'null'", stmt.keyword);
-        throw TypeException{"Can only have empty return expressions in functions which return 'null'"};
+    if (stmt.value == nullptr) {
+        if (current_function->return_type->data.type != Type::NULL_) {
+            error("Can only have empty return expressions in functions which return 'null'", stmt.keyword);
+            throw TypeException{"Can only have empty return expressions in functions which return 'null'"};
+        }
     } else if (ExprVisitorType return_value = resolve(stmt.value.get());
                !convertible_to(current_function->return_type.get(), return_value.info, return_value.is_lvalue,
                    stmt.keyword, true)) {
@@ -849,6 +856,7 @@ StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
 
     stmt.locals_popped = std::count_if(values.crbegin(), values.crend(),
         [this](const TypeResolver::Value &x) { return x.scope_depth >= current_function->scope_depth; });
+    stmt.function = current_function;
     current_function->return_stmts.push_back(&stmt);
 }
 

@@ -609,13 +609,14 @@ struct ReturnStmt final : public Stmt {
     Token keyword;
     ExprNode value;
     std::size_t locals_popped;
+    FunctionStmt *function;
 
     std::string_view string_tag() override final { return "ReturnStmt"; }
 
     NodeType type_tag() override final { return NodeType::ReturnStmt; }
 
-    ReturnStmt(Token keyword, ExprNode value, std::size_t locals_popped)
-        : keyword{std::move(keyword)}, value{std::move(value)}, locals_popped{locals_popped} {}
+    ReturnStmt(Token keyword, ExprNode value, std::size_t locals_popped, FunctionStmt *function)
+        : keyword{std::move(keyword)}, value{std::move(value)}, locals_popped{locals_popped}, function{function} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
