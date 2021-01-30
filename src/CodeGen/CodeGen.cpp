@@ -211,6 +211,9 @@ ExprVisitorType Generator::visit(GroupingExpr &expr) {
 ExprVisitorType Generator::visit(IndexExpr &expr) {
     compile(expr.object.get());
     compile(expr.index.get());
+    if (expr.index->resolved.info->data.is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, expr.index->resolved.token.line);
+    }
     current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.token.line);
     current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.resolved.token.line);
     return {};
@@ -219,8 +222,14 @@ ExprVisitorType Generator::visit(IndexExpr &expr) {
 ExprVisitorType Generator::visit(ListAssignExpr &expr) {
     compile(expr.list.object.get());
     compile(expr.list.index.get());
+    if (expr.list.index->resolved.info->data.is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, expr.list.index->resolved.token.line);
+    }
     current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.token.line);
     compile(expr.value.get());
+    if (expr.value->resolved.info->data.is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, expr.value->resolved.token.line);
+    }
     current_chunk->emit_instruction(Instruction::ASSIGN_LIST_AT, expr.resolved.token.line);
     return {};
 }
