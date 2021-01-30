@@ -255,7 +255,8 @@ for (var i = 0; i < 10000; ++i) {
 }
 */*/*/
 var y: [int, 5]
-for (var i = 0; i < 5; ++i) {
+var x = 0
+for (var i: ref typeof(x) = x; i < 5; ++i) {
     y[i] = i
 }
 

@@ -76,8 +76,8 @@ BaseTypeVisitorType Generator::compile(BaseType *type) {
 }
 
 ExprVisitorType Generator::visit(AssignExpr &expr) {
-    ExprTypeInfo info = compile(expr.value.get());
-    if (info.is_ref) {
+    compile(expr.value.get());
+    if (expr.value->resolved.info->data.is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.target.line);
     }
 
@@ -105,16 +105,16 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
     }
     current_chunk->emit_bytes((expr.resolved.stack_slot >> 16) & 0xff, (expr.resolved.stack_slot >> 8) & 0xff);
     current_chunk->emit_byte(expr.resolved.stack_slot & 0xff);
-    return {expr.resolved.stack_slot};
+    return {};
 }
 
 ExprVisitorType Generator::visit(BinaryExpr &expr) {
-    ExprTypeInfo left_info = compile(expr.left.get());
-    if (left_info.is_ref) {
+    compile(expr.left.get());
+    if (expr.left->resolved.info->data.is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.token.line);
     }
-    ExprTypeInfo right_info = compile(expr.right.get());
-    if (right_info.is_ref) {
+    compile(expr.right.get());
+    if (expr.right->resolved.info->data.is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.token.line);
     }
 
@@ -361,7 +361,7 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
             } else {
                 compile_error("Too many variables in current scope");
             }
-            return {expr.resolved.stack_slot, expr.resolved.info->data.is_ref};
+            return {};
         case IdentifierType::FUNCTION:
             current_chunk->emit_constant(Value{expr.name.lexeme}, expr.name.line);
             current_chunk->emit_instruction(Instruction::LOAD_FUNCTION, expr.name.line);
@@ -583,8 +583,8 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
                 (stmt.initializer->resolved.stack_slot >> 8) & 0xff);
             current_chunk->emit_byte(stmt.initializer->resolved.stack_slot & 0xff);
         } else {
-            ExprTypeInfo info = compile(stmt.initializer.get());
-            if (info.is_ref && !stmt.type->data.is_ref) {
+            compile(stmt.initializer.get());
+            if (stmt.initializer->resolved.info->data.is_ref && !stmt.type->data.is_ref) {
                 current_chunk->emit_instruction(Instruction::DEREF, stmt.name.line);
             }
 
