@@ -82,20 +82,30 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
     }
 
     if (expr.conversion_type != NumericConversionType::NONE) {
-        emit_conversion(expr.conversion_type, expr.oper.line);
+        emit_conversion(expr.conversion_type, expr.resolved.lexeme.line);
     }
 
-    switch (expr.oper.type) {
-        case TokenType::EQUAL: current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, expr.oper.line); break;
-        case TokenType::PLUS_EQUAL: current_chunk->emit_instruction(Instruction::INCR_LOCAL, expr.oper.line); break;
-        case TokenType::MINUS_EQUAL: current_chunk->emit_instruction(Instruction::DECR_LOCAL, expr.oper.line); break;
-        case TokenType::STAR_EQUAL: current_chunk->emit_instruction(Instruction::MUL_LOCAL, expr.oper.line); break;
-        case TokenType::SLASH_EQUAL: current_chunk->emit_instruction(Instruction::DIV_LOCAL, expr.oper.line); break;
+    switch (expr.resolved.lexeme.type) {
+        case TokenType::EQUAL:
+            current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, expr.resolved.lexeme.line);
+            break;
+        case TokenType::PLUS_EQUAL:
+            current_chunk->emit_instruction(Instruction::INCR_LOCAL, expr.resolved.lexeme.line);
+            break;
+        case TokenType::MINUS_EQUAL:
+            current_chunk->emit_instruction(Instruction::DECR_LOCAL, expr.resolved.lexeme.line);
+            break;
+        case TokenType::STAR_EQUAL:
+            current_chunk->emit_instruction(Instruction::MUL_LOCAL, expr.resolved.lexeme.line);
+            break;
+        case TokenType::SLASH_EQUAL:
+            current_chunk->emit_instruction(Instruction::DIV_LOCAL, expr.resolved.lexeme.line);
+            break;
         default: break;
     }
-    current_chunk->emit_bytes((expr.stack_slot >> 16) & 0xff, (expr.stack_slot >> 8) & 0xff);
-    current_chunk->emit_byte(expr.stack_slot & 0xff);
-    return {expr.stack_slot};
+    current_chunk->emit_bytes((expr.resolved.stack_slot >> 16) & 0xff, (expr.resolved.stack_slot >> 8) & 0xff);
+    current_chunk->emit_byte(expr.resolved.stack_slot & 0xff);
+    return {expr.resolved.stack_slot};
 }
 
 ExprVisitorType Generator::visit(BinaryExpr &expr) {
@@ -217,21 +227,25 @@ ExprVisitorType Generator::visit(ListAssignExpr &expr) {
 
 ExprVisitorType Generator::visit(LiteralExpr &expr) {
     switch (expr.value.index()) {
-        case LiteralValue::tag::INT: current_chunk->emit_constant(Value{expr.value.to_int()}, expr.lexeme.line); break;
+        case LiteralValue::tag::INT:
+            current_chunk->emit_constant(Value{expr.value.to_int()}, expr.resolved.lexeme.line);
+            break;
         case LiteralValue::tag::DOUBLE:
-            current_chunk->emit_constant(Value{expr.value.to_double()}, expr.lexeme.line);
+            current_chunk->emit_constant(Value{expr.value.to_double()}, expr.resolved.lexeme.line);
             break;
         case LiteralValue::tag::STRING:
-            current_chunk->emit_constant(Value{expr.value.to_string()}, expr.lexeme.line);
+            current_chunk->emit_constant(Value{expr.value.to_string()}, expr.resolved.lexeme.line);
             break;
         case LiteralValue::tag::BOOL:
             if (expr.value.to_bool()) {
-                current_chunk->emit_instruction(Instruction::TRUE, expr.lexeme.line);
+                current_chunk->emit_instruction(Instruction::TRUE, expr.resolved.lexeme.line);
             } else {
-                current_chunk->emit_instruction(Instruction::FALSE, expr.lexeme.line);
+                current_chunk->emit_instruction(Instruction::FALSE, expr.resolved.lexeme.line);
             }
             break;
-        case LiteralValue::tag::NULL_: current_chunk->emit_instruction(Instruction::NULL_, expr.lexeme.line); break;
+        case LiteralValue::tag::NULL_:
+            current_chunk->emit_instruction(Instruction::NULL_, expr.resolved.lexeme.line);
+            break;
     }
     return {};
 }
@@ -239,14 +253,14 @@ ExprVisitorType Generator::visit(LiteralExpr &expr) {
 ExprVisitorType Generator::visit(LogicalExpr &expr) {
     compile(expr.left.get());
     std::size_t jump_idx{};
-    if (expr.oper.type == TokenType::OR) {
-        jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_TRUE, expr.oper.line);
+    if (expr.resolved.lexeme.type == TokenType::OR) {
+        jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_TRUE, expr.resolved.lexeme.line);
     } else { // Since || / or short circuits on true, flip the boolean on top of the stack
-        jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, expr.oper.line);
+        jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, expr.resolved.lexeme.line);
     }
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
-    current_chunk->emit_instruction(Instruction::POP, expr.oper.line);
+    current_chunk->emit_instruction(Instruction::POP, expr.resolved.lexeme.line);
     compile(expr.right.get());
     std::size_t to_idx = current_chunk->bytes.size();
     patch_jump(jump_idx, to_idx - jump_idx - 4);
@@ -321,13 +335,13 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
         case TokenType::PLUS_PLUS:
         case TokenType::MINUS_MINUS:
             if (expr.right->type_tag() == NodeType::VariableExpr) {
-                auto *right = dynamic_cast<VariableExpr *>(expr.right.get());
                 current_chunk->emit_constant(Value{1}, expr.oper.line);
                 current_chunk->emit_instruction(
                     expr.oper.type == TokenType::PLUS_PLUS ? Instruction::INCR_LOCAL : Instruction::DECR_LOCAL,
                     expr.oper.line);
-                current_chunk->emit_bytes((right->stack_slot >> 16) & 0xff, (right->stack_slot >> 8) & 0xff);
-                current_chunk->emit_byte(right->stack_slot & 0xff);
+                current_chunk->emit_bytes(
+                    (expr.right->resolved.stack_slot >> 16) & 0xff, (expr.right->resolved.stack_slot >> 8) & 0xff);
+                current_chunk->emit_byte(expr.right->resolved.stack_slot & 0xff);
             }
             break;
         default: error("Bug in parser with illegal type for unary expression", expr.oper); break;
@@ -338,16 +352,16 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
 ExprVisitorType Generator::visit(VariableExpr &expr) {
     switch (expr.type) {
         case IdentifierType::VARIABLE:
-            if (expr.stack_slot < Chunk::const_short_max) {
+            if (expr.resolved.stack_slot < Chunk::const_short_max) {
                 current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_SHORT, expr.name.line);
-                current_chunk->emit_integer(expr.stack_slot);
-            } else if (expr.stack_slot < Chunk::const_long_max) {
+                current_chunk->emit_integer(expr.resolved.stack_slot);
+            } else if (expr.resolved.stack_slot < Chunk::const_long_max) {
                 current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LONG, expr.name.line);
-                current_chunk->emit_integer(expr.stack_slot);
+                current_chunk->emit_integer(expr.resolved.stack_slot);
             } else {
                 compile_error("Too many variables in current scope");
             }
-            return {expr.stack_slot, expr.is_ref};
+            return {expr.resolved.stack_slot, expr.resolved.info->data.is_ref};
         case IdentifierType::FUNCTION:
             current_chunk->emit_constant(Value{expr.name.lexeme}, expr.name.line);
             current_chunk->emit_instruction(Instruction::LOAD_FUNCTION, expr.name.line);
@@ -564,10 +578,10 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
         }
     } else if (stmt.initializer != nullptr) {
         if (stmt.type->data.is_ref && !stmt.init_is_ref && stmt.initializer->type_tag() == NodeType::VariableExpr) {
-            auto *initializer = dynamic_cast<VariableExpr *>(stmt.initializer.get());
             current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, stmt.name.line);
-            current_chunk->emit_bytes((initializer->stack_slot >> 16) & 0xff, (initializer->stack_slot >> 8) & 0xff);
-            current_chunk->emit_byte(initializer->stack_slot & 0xff);
+            current_chunk->emit_bytes((stmt.initializer->resolved.stack_slot >> 16) & 0xff,
+                (stmt.initializer->resolved.stack_slot >> 8) & 0xff);
+            current_chunk->emit_byte(stmt.initializer->resolved.stack_slot & 0xff);
         } else {
             ExprTypeInfo info = compile(stmt.initializer.get());
             if (info.is_ref && !stmt.type->data.is_ref) {

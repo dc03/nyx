@@ -237,21 +237,16 @@ struct AssignExpr final : public Expr {
     ExprNode value;
     NumericConversionType conversion_type;
     bool requires_copy;
-    std::size_t stack_slot;
-    Token oper;
 
     std::string_view string_tag() override final { return "AssignExpr"; }
 
     NodeType type_tag() override final { return NodeType::AssignExpr; }
 
-    AssignExpr(Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy,
-        std::size_t stack_slot, Token oper)
+    AssignExpr(Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy)
         : target{std::move(target)},
           value{std::move(value)},
           conversion_type{conversion_type},
-          requires_copy{requires_copy},
-          stack_slot{stack_slot},
-          oper{std::move(oper)} {}
+          requires_copy{requires_copy} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -356,30 +351,26 @@ struct ListAssignExpr final : public Expr {
 
 struct LiteralExpr final : public Expr {
     LiteralValue value;
-    Token lexeme;
     TypeNode type;
 
     std::string_view string_tag() override final { return "LiteralExpr"; }
 
     NodeType type_tag() override final { return NodeType::LiteralExpr; }
 
-    LiteralExpr(LiteralValue value, Token lexeme, TypeNode type)
-        : value{std::move(value)}, lexeme{std::move(lexeme)}, type{std::move(type)} {}
+    LiteralExpr(LiteralValue value, TypeNode type) : value{std::move(value)}, type{std::move(type)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct LogicalExpr final : public Expr {
     ExprNode left;
-    Token oper;
     ExprNode right;
 
     std::string_view string_tag() override final { return "LogicalExpr"; }
 
     NodeType type_tag() override final { return NodeType::LogicalExpr; }
 
-    LogicalExpr(ExprNode left, Token oper, ExprNode right)
-        : left{std::move(left)}, oper{std::move(oper)}, right{std::move(right)} {}
+    LogicalExpr(ExprNode left, ExprNode right) : left{std::move(left)}, right{std::move(right)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -488,16 +479,13 @@ enum class IdentifierType { VARIABLE, FUNCTION, CLASS };
 
 struct VariableExpr final : public Expr {
     Token name;
-    std::size_t stack_slot;
-    bool is_ref;
     IdentifierType type;
 
     std::string_view string_tag() override final { return "VariableExpr"; }
 
     NodeType type_tag() override final { return NodeType::VariableExpr; }
 
-    VariableExpr(Token name, std::size_t stack_slot, bool is_ref, IdentifierType type)
-        : name{std::move(name)}, stack_slot{stack_slot}, is_ref{is_ref}, type{type} {}
+    VariableExpr(Token name, IdentifierType type) : name{std::move(name)}, type{type} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

@@ -281,7 +281,9 @@ ExprNode Parser::parse_precedence(ParsePrecedence::of precedence) {
 ExprNode Parser::and_(bool, ExprNode left) {
     Token oper = previous();
     ExprNode right = parse_precedence(ParsePrecedence::of::LOGIC_AND);
-    return ExprNode{allocate_node(LogicalExpr, std::move(left), std::move(oper), std::move(right))};
+    auto *node = allocate_node(LogicalExpr, std::move(left), std::move(right));
+    node->resolved.lexeme = std::move(oper);
+    return ExprNode{node};
 }
 
 ExprNode Parser::binary(bool, ExprNode left) {
@@ -356,7 +358,9 @@ ExprNode Parser::index(bool can_assign, ExprNode object) {
 ExprNode Parser::or_(bool, ExprNode left) {
     Token oper = previous();
     ExprNode right = parse_precedence(ParsePrecedence::of::LOGIC_OR);
-    return ExprNode{allocate_node(LogicalExpr, std::move(left), std::move(oper), std::move(right))};
+    auto *node = allocate_node(LogicalExpr, std::move(left), std::move(right));
+    node->resolved.lexeme = std::move(oper);
+    return ExprNode{node};
 }
 
 ExprNode Parser::expression() {
@@ -370,42 +374,53 @@ ExprNode Parser::grouping(bool) {
 }
 
 ExprNode Parser::literal(bool) {
-    TypeNode type = TypeNode{allocate_node(PrimitiveType, SharedData{Type::INT, true, false})};
+    auto *type = allocate_node(PrimitiveType, SharedData{Type::INT, true, false});
+    auto *node = allocate_node(LiteralExpr, LiteralValue{nullptr}, TypeNode{type});
+    node->resolved.lexeme = previous();
     switch (previous().type) {
         case TokenType::INT_VALUE: {
-            int value = std::stoi(previous().lexeme);
-            return ExprNode{allocate_node(LiteralExpr, LiteralValue{value}, previous(), std::move(type))};
+            node->value = LiteralValue{std::stoi(previous().lexeme)};
+            break;
         }
         case TokenType::FLOAT_VALUE: {
-            double value = std::stod(previous().lexeme);
-            type->data.type = Type::FLOAT;
-            return ExprNode{allocate_node(LiteralExpr, LiteralValue{value}, previous(), std::move(type))};
+            node->value = LiteralValue{std::stod(previous().lexeme)};
+            node->type->data.type = Type::FLOAT;
+            break;
         }
         case TokenType::STRING_VALUE: {
-            type->data.type = Type::STRING;
-            return ExprNode{allocate_node(LiteralExpr, LiteralValue{previous().lexeme}, previous(), std::move(type))};
+            node->type->data.type = Type::STRING;
+            node->value = LiteralValue{previous().lexeme};
+            break;
         }
         case TokenType::FALSE: {
-            type->data.type = Type::BOOL;
-            return ExprNode{allocate_node(LiteralExpr, LiteralValue{false}, previous(), std::move(type))};
+            node->type->data.type = Type::BOOL;
+            node->value = LiteralValue{false};
+            break;
         }
         case TokenType::TRUE: {
-            type->data.type = Type::BOOL;
-            return ExprNode{allocate_node(LiteralExpr, LiteralValue{true}, previous(), std::move(type))};
+            node->type->data.type = Type::BOOL;
+            node->value = LiteralValue{true};
+            break;
         }
         case TokenType::NULL_: {
-            type->data.type = Type::NULL_;
-            return ExprNode{allocate_node(LiteralExpr, LiteralValue{nullptr}, previous(), std::move(type))};
+            node->type->data.type = Type::NULL_;
+            node->value = LiteralValue{nullptr};
+            break;
         }
 
         default: throw ParseException{previous(), "Unexpected TokenType passed to literal parser"};
     }
+
+    return ExprNode{node};
 }
 
 ExprNode Parser::scope_access(bool, ExprNode left) {
+    Token colon_colon = previous();
     consume("Expected identifier to be accessed after scope name", TokenType::IDENTIFIER);
     Token name = previous();
-    return ExprNode{allocate_node(ScopeAccessExpr, std::move(left), std::move(name))};
+    auto *node = allocate_node(ScopeAccessExpr, std::move(left), std::move(name));
+    node->resolved.lexeme = std::move(colon_colon);
+    return ExprNode{node};
 }
 
 ExprNode Parser::super(bool) {
@@ -439,12 +454,17 @@ ExprNode Parser::variable(bool can_assign) {
                           TokenType::SLASH_EQUAL)) {
         Token oper = previous();
         ExprNode value = expression();
-        return ExprNode{allocate_node(
-            AssignExpr, std::move(name), std::move(value), NumericConversionType::NONE, false, 0, std::move(oper))};
+        auto *node = allocate_node(AssignExpr, std::move(name), std::move(value), NumericConversionType::NONE, false);
+        node->resolved.lexeme = std::move(oper);
+        return ExprNode{node};
     } else if (peek().type == TokenType::DOUBLE_COLON) {
-        return ExprNode{allocate_node(ScopeNameExpr, std::move(name))};
+        auto *node = allocate_node(ScopeNameExpr, name);
+        node->resolved.lexeme = std::move(name);
+        return ExprNode{node};
     } else {
-        return ExprNode{allocate_node(VariableExpr, std::move(name), 0, false, IdentifierType::VARIABLE)};
+        auto *node = allocate_node(VariableExpr, name, IdentifierType::VARIABLE);
+        node->resolved.lexeme = std::move(name);
+        return ExprNode{node};
     }
 }
 

@@ -208,15 +208,15 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
 
     ExprVisitorType value = resolve(expr.value.get());
     if (it->info->data.is_const) {
-        error("Cannot assign to a const variable", expr.oper);
+        error("Cannot assign to a const variable", expr.resolved.lexeme);
     } else if (!convertible_to(it->info, value.info, value.is_lvalue, expr.target, false)) {
-        error("Cannot convert type of value to type of target", expr.oper);
+        error("Cannot convert type of value to type of target", expr.resolved.lexeme);
         show_conversion_note(value.info, it->info);
-    } else if (one_of(expr.oper.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
+    } else if (one_of(expr.resolved.lexeme.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                    TokenType::SLASH_EQUAL) &&
                !one_of(it->info->data.type, Type::INT, Type::FLOAT) &&
                !one_of(value.info->data.type, Type::INT, Type::FLOAT)) {
-        error("Expected integral types for compound assignment operator", expr.oper);
+        error("Expected integral types for compound assignment operator", expr.resolved.lexeme);
         throw TypeException{"Expected integral types for compound assignment operator"};
     } else if (value.info->data.type == Type::FLOAT && it->info->data.type == Type::INT) {
         expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
@@ -227,8 +227,9 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
     expr.requires_copy = !is_builtin_type(value.info->data.type);
     // Assignment leads to copy when the type is not an inbuilt one as those are implicitly copied when the
     // values are pushed onto the stack
-    expr.stack_slot = it->stack_slot;
-    return expr.resolved = {it->info, expr.target};
+    expr.resolved.info = it->info;
+    expr.resolved.stack_slot = it->stack_slot;
+    return expr.resolved;
 }
 
 ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
@@ -511,10 +512,10 @@ ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
         case LiteralValue::tag::DOUBLE:
         case LiteralValue::tag::STRING:
         case LiteralValue::tag::BOOL:
-        case LiteralValue::tag::NULL_: return expr.resolved = {expr.type.get(), expr.lexeme};
+        case LiteralValue::tag::NULL_: return expr.resolved = {expr.type.get(), expr.resolved.lexeme};
 
         default:
-            error("Bug in parser with illegal type for literal value", expr.lexeme);
+            error("Bug in parser with illegal type for literal value", expr.resolved.lexeme);
             throw TypeException{"Bug in parser with illegal type for literal value"};
     }
 }
@@ -522,7 +523,7 @@ ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
 ExprVisitorType TypeResolver::visit(LogicalExpr &expr) {
     resolve(expr.left.get());
     resolve(expr.right.get());
-    return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+    return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.lexeme};
 }
 
 ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
@@ -533,7 +534,7 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
             for (auto &method : left.class_->methods) {
                 if (method.first->name == expr.name) {
                     return expr.resolved = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
-                               method.first.get(), left.class_, expr.name};
+                               method.first.get(), left.class_, expr.resolved.lexeme};
                 }
             }
             error("No such method exists in the class", expr.name);
@@ -542,13 +543,13 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
         case ExprTypeInfo::ScopeType::MODULE: {
             auto &module = Parser::parsed_modules[left.module_index].first;
             if (auto class_ = module.classes.find(expr.name.lexeme); class_ != module.classes.end()) {
-                return expr.resolved = {
-                           make_new_type<PrimitiveType>(Type::CLASS, true, false), class_->second, expr.name};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_->second,
+                           expr.resolved.lexeme};
             }
 
             if (auto func = module.functions.find(expr.name.lexeme); func != module.functions.end()) {
-                return expr.resolved = {
-                           make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func->second, expr.name};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func->second,
+                           expr.resolved.lexeme};
             }
         }
             error("No such function/class exists in the module", expr.name);
@@ -565,12 +566,12 @@ ExprVisitorType TypeResolver::visit(ScopeNameExpr &expr) {
     for (std::size_t i{0}; i < Parser::parsed_modules.size(); i++) {
         if (Parser::parsed_modules[i].first.name.substr(0, Parser::parsed_modules[i].first.name.find_last_of('.')) ==
             expr.name.lexeme) {
-            return expr.resolved = {make_new_type<PrimitiveType>(Type::MODULE, true, false), i, expr.name};
+            return expr.resolved = {make_new_type<PrimitiveType>(Type::MODULE, true, false), i, expr.resolved.lexeme};
         }
     }
 
     if (ClassStmt *class_ = find_class(expr.name.lexeme); class_ != nullptr) {
-        return expr.resolved = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.name};
+        return expr.resolved = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.resolved.lexeme};
     }
 
     error("No such scope exists with the given name", expr.name);
@@ -637,12 +638,12 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
             if (right.info->data.type != Type::INT) {
                 error("Wrong type of argument to bitwise unary operator (expected integral argument)", expr.oper);
             }
-            return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.oper};
+            return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.lexeme};
         case TokenType::NOT:
             if (one_of(right.info->data.type, Type::CLASS, Type::LIST, Type::NULL_)) {
                 error("Wrong type of argument to logical not operator", expr.oper);
             }
-            return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.oper};
+            return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.lexeme};
         case TokenType::PLUS_PLUS:
         case TokenType::MINUS_MINUS:
             if (!one_of(right.info->data.type, Type::INT, Type::FLOAT)) {
@@ -657,9 +658,9 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
         case TokenType::PLUS:
             if (!one_of(right.info->data.type, Type::INT, Type::FLOAT)) {
                 error("Expected integral or floating point argument to operator", expr.oper);
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.oper};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.lexeme};
             }
-            return expr.resolved = {right.info, expr.oper};
+            return expr.resolved = {right.info, expr.resolved.lexeme};
 
         default:
             error("Bug in parser with illegal type for unary expression", expr.oper);
@@ -675,21 +676,21 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
 
     for (auto it = values.end() - 1; !values.empty() && it >= values.begin(); it--) {
         if (it->lexeme == expr.name.lexeme) {
-            expr.stack_slot = it->stack_slot;
-            expr.is_ref = it->info->data.is_ref;
             expr.type = IdentifierType::VARIABLE;
-            return expr.resolved = {it->info, it->class_, expr.name, true};
+            expr.resolved = {it->info, it->class_, expr.resolved.lexeme, true};
+            expr.resolved.stack_slot = it->stack_slot;
+            return expr.resolved;
         }
     }
 
     if (FunctionStmt *func = find_function(expr.name.lexeme); func != nullptr) {
         expr.type = IdentifierType::FUNCTION;
-        return expr.resolved = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.name};
+        return expr.resolved = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.resolved.lexeme};
     }
 
     if (ClassStmt *class_ = find_class(expr.name.lexeme); class_ != nullptr) {
         expr.type = IdentifierType::CLASS;
-        return expr.resolved = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.name};
+        return expr.resolved = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.resolved.lexeme};
     }
 
     error("No such variable/function in the current module's scope", expr.name);

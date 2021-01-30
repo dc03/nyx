@@ -231,9 +231,8 @@ if __name__ == '__main__':
         file.write('};\n\n')
 
         declare_expr_type('target{std::move(target)}, value{std::move(value)}, conversion_type{conversion_type},'
-                          'requires_copy{requires_copy}, stack_slot{stack_slot}, oper{std::move(oper)}',
-                          'Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy, '
-                          'std::size_t stack_slot, Token oper')
+                          'requires_copy{requires_copy}',
+                          'Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy')
 
         declare_expr_type('left{std::move(left)}, right{std::move(right)}',
                           'ExprNode left, ExprNode right')
@@ -258,11 +257,11 @@ if __name__ == '__main__':
                           'requires_copy{requires_copy}',
                           'IndexExpr list, ExprNode value, NumericConversionType conversion_type, bool requires_copy')
 
-        declare_expr_type('value{std::move(value)}, lexeme{std::move(lexeme)}, type{std::move(type)}',
-                          'LiteralValue value, Token lexeme, TypeNode type')
+        declare_expr_type('value{std::move(value)}, type{std::move(type)}',
+                          'LiteralValue value, TypeNode type')
 
-        declare_expr_type('left{std::move(left)}, oper{std::move(oper)}, right{std::move(right)}',
-                          'ExprNode left, Token oper, ExprNode right')
+        declare_expr_type('left{std::move(left)}, right{std::move(right)}',
+                          'ExprNode left, ExprNode right')
 
         declare_expr_type('scope{std::move(scope)}, name{std::move(name)}',
                           'ExprNode scope, Token name')
@@ -294,8 +293,8 @@ if __name__ == '__main__':
         tab(file, 1).write('CLASS\n')
         file.write('};\n\n')
 
-        declare_expr_type('name{std::move(name)}, stack_slot{stack_slot}, is_ref{is_ref}, type{type}',
-                          'Token name, std::size_t stack_slot, bool is_ref, IdentifierType type')
+        declare_expr_type('name{std::move(name)}, type{type}',
+                          'Token name, IdentifierType type')
 
         file.write('// End of expression node definitions\n\n')
         file.write('// Statement node definitions\n\n')
