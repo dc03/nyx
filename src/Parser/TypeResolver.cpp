@@ -208,15 +208,15 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
 
     ExprVisitorType value = resolve(expr.value.get());
     if (it->info->data.is_const) {
-        error("Cannot assign to a const variable", expr.resolved.lexeme);
+        error("Cannot assign to a const variable", expr.resolved.token);
     } else if (!convertible_to(it->info, value.info, value.is_lvalue, expr.target, false)) {
-        error("Cannot convert type of value to type of target", expr.resolved.lexeme);
+        error("Cannot convert type of value to type of target", expr.resolved.token);
         show_conversion_note(value.info, it->info);
-    } else if (one_of(expr.resolved.lexeme.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
+    } else if (one_of(expr.resolved.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                    TokenType::SLASH_EQUAL) &&
                !one_of(it->info->data.type, Type::INT, Type::FLOAT) &&
                !one_of(value.info->data.type, Type::INT, Type::FLOAT)) {
-        error("Expected integral types for compound assignment operator", expr.resolved.lexeme);
+        error("Expected integral types for compound assignment operator", expr.resolved.token);
         throw TypeException{"Expected integral types for compound assignment operator"};
     } else if (value.info->data.type == Type::FLOAT && it->info->data.type == Type::INT) {
         expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
@@ -235,7 +235,7 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
 ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
     ExprVisitorType left_expr = resolve(expr.left.get());
     ExprVisitorType right_expr = resolve(expr.right.get());
-    switch (expr.resolved.lexeme.type) {
+    switch (expr.resolved.token.type) {
         case TokenType::LEFT_SHIFT:
         case TokenType::RIGHT_SHIFT:
         case TokenType::BIT_AND:
@@ -243,29 +243,29 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
         case TokenType::BIT_XOR:
         case TokenType::MODULO:
             if (left_expr.info->data.type != Type::INT || right_expr.info->data.type != Type::INT) {
-                if (expr.resolved.lexeme.type == TokenType::MODULO) {
+                if (expr.resolved.token.type == TokenType::MODULO) {
                     error("Wrong types of arguments to modulo operator (expected integral arguments)",
-                        expr.resolved.lexeme);
+                        expr.resolved.token);
                 } else {
                     error("Wrong types of arguments to bitwise binary operator (expected integral arguments)",
-                        expr.resolved.lexeme);
+                        expr.resolved.token);
                 }
             }
-            return expr.resolved = {left_expr.info, expr.resolved.lexeme};
+            return expr.resolved = {left_expr.info, expr.resolved.token};
         case TokenType::NOT_EQUAL:
         case TokenType::EQUAL_EQUAL:
             if (left_expr.info->data.type == Type::LIST && right_expr.info->data.type == Type::LIST) {
-                if (!convertible_to(left_expr.info, right_expr.info, false, expr.resolved.lexeme, false) &&
-                    !convertible_to(right_expr.info, left_expr.info, false, expr.resolved.lexeme, false)) {
-                    error("Cannot compare two lists that have incompatible contained types", expr.resolved.lexeme);
+                if (!convertible_to(left_expr.info, right_expr.info, false, expr.resolved.token, false) &&
+                    !convertible_to(right_expr.info, left_expr.info, false, expr.resolved.token, false)) {
+                    error("Cannot compare two lists that have incompatible contained types", expr.resolved.token);
                     show_equality_note(left_expr.info, right_expr.info);
                 }
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.lexeme};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             } else if (one_of(left_expr.info->data.type, Type::BOOL, Type::STRING, Type::NULL_)) {
                 if (left_expr.info->data.type != right_expr.info->data.type) {
-                    error("Cannot compare equality of objects of different types", expr.resolved.lexeme);
+                    error("Cannot compare equality of objects of different types", expr.resolved.token);
                 }
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.lexeme};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             }
             [[fallthrough]];
         case TokenType::GREATER:
@@ -275,18 +275,18 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             if (one_of(left_expr.info->data.type, Type::INT, Type::FLOAT) &&
                 one_of(right_expr.info->data.type, Type::INT, Type::FLOAT)) {
                 if (left_expr.info->data.type != right_expr.info->data.type) {
-                    warning("Comparison between objects of types int and float", expr.resolved.lexeme);
+                    warning("Comparison between objects of types int and float", expr.resolved.token);
                 }
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.lexeme};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             } else if (left_expr.info->data.type == Type::BOOL && right_expr.info->data.type == Type::BOOL) {
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.lexeme};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             } else {
-                error("Cannot compare objects of incompatible types", expr.resolved.lexeme);
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.lexeme};
+                error("Cannot compare objects of incompatible types", expr.resolved.token);
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             }
         case TokenType::PLUS:
             if (left_expr.info->data.type == Type::STRING && right_expr.info->data.type == Type::STRING) {
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::STRING, true, false), expr.resolved.lexeme};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::STRING, true, false), expr.resolved.token};
             }
             [[fallthrough]];
         case TokenType::MINUS:
@@ -295,17 +295,17 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             if (one_of(left_expr.info->data.type, Type::INT, Type::FLOAT) &&
                 one_of(right_expr.info->data.type, Type::INT, Type::FLOAT)) {
                 if (left_expr.info->data.type == Type::INT && right_expr.info->data.type == Type::INT) {
-                    return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.lexeme};
+                    return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
                 }
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::FLOAT, true, false), expr.resolved.lexeme};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::FLOAT, true, false), expr.resolved.token};
                 // Integral promotion
             } else {
-                error("Cannot use arithmetic operators on objects of incompatible types", expr.resolved.lexeme);
+                error("Cannot use arithmetic operators on objects of incompatible types", expr.resolved.token);
                 throw TypeException{"Cannot use arithmetic operators on objects of incompatible types"};
             }
 
         default:
-            error("Bug in parser with illegal token type of expression's operator", expr.resolved.lexeme);
+            error("Bug in parser with illegal token type of expression's operator", expr.resolved.token);
             throw TypeException{"Bug in parser with illegal token type of expression's operator"};
     }
 }
@@ -351,7 +351,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         auto *function = dynamic_cast<VariableExpr *>(expr.function.get());
         if (is_builtin_function(function)) {
             expr.is_native_call = true;
-            return expr.resolved = check_inbuilt(function, expr.resolved.lexeme, expr.args);
+            return expr.resolved = check_inbuilt(function, expr.resolved.token, expr.args);
         }
     }
 
@@ -360,7 +360,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     FunctionStmt *called = callee.func;
     if (callee.class_ != nullptr) {
         for (auto &method_decl : callee.class_->methods) {
-            if (method_decl.first->name == callee.lexeme) {
+            if (method_decl.first->name == callee.token) {
                 called = method_decl.first.get();
             }
         }
@@ -373,14 +373,14 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     }
 
     if (called->params.size() != expr.args.size()) {
-        error("Number of arguments passed to function must match the number of parameters", expr.resolved.lexeme);
+        error("Number of arguments passed to function must match the number of parameters", expr.resolved.token);
         throw TypeException{"Number of arguments passed to function must match the number of parameters"};
     }
 
     for (std::size_t i{0}; i < expr.args.size(); i++) {
         ExprVisitorType argument = resolve(std::get<0>(expr.args[i]).get());
-        if (!convertible_to(called->params[i].second.get(), argument.info, argument.is_lvalue, argument.lexeme, true)) {
-            error("Type of argument is not convertible to type of parameter", argument.lexeme);
+        if (!convertible_to(called->params[i].second.get(), argument.info, argument.is_lvalue, argument.token, true)) {
+            error("Type of argument is not convertible to type of parameter", argument.token);
             show_conversion_note(argument.info, called->params[i].second.get());
         } else if (argument.info->data.type == Type::FLOAT && called->params[i].second->data.type == Type::INT) {
             std::get<1>(expr.args[i]) = NumericConversionType::FLOAT_TO_INT;
@@ -392,7 +392,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         // Arguments are copied when they do not bind to references
     }
 
-    return expr.resolved = {called->return_type.get(), called, callee.class_, expr.resolved.lexeme};
+    return expr.resolved = {called->return_type.get(), called, callee.class_, expr.resolved.token};
 }
 
 ExprVisitorType TypeResolver::visit(CommaExpr &expr) {
@@ -470,17 +470,17 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
     ExprVisitorType index = resolve(expr.index.get());
 
     if (index.info->data.type != Type::INT) {
-        error("Expected integral type for index", expr.resolved.lexeme);
+        error("Expected integral type for index", expr.resolved.token);
         throw TypeException{"Expected integral type for index"};
     }
 
     if (list.info->data.type == Type::LIST) {
         auto *contained_type = dynamic_cast<ListType *>(list.info)->contained.get();
-        return expr.resolved = {contained_type, expr.resolved.lexeme, true};
+        return expr.resolved = {contained_type, expr.resolved.token, true};
     } else if (list.info->data.type == Type::STRING) {
-        return expr.resolved = {list.info, expr.resolved.lexeme, false}; // For now, strings are immutable.
+        return expr.resolved = {list.info, expr.resolved.token, false}; // For now, strings are immutable.
     } else {
-        error("Expected list or string type for indexing", expr.resolved.lexeme);
+        error("Expected list or string type for indexing", expr.resolved.token);
         throw TypeException{"Expected list or string type for indexing"};
     }
 }
@@ -489,21 +489,21 @@ ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
     ExprVisitorType contained = resolve(&expr.list);
     ExprVisitorType value = resolve(expr.value.get());
     if (!contained.is_lvalue) {
-        error("Cannot assign to non-lvalue element", expr.resolved.lexeme);
+        error("Cannot assign to non-lvalue element", expr.resolved.token);
         note("String elements are non-assignable");
         throw TypeException{"Cannot assign to non-lvalue element"};
     }
 
     if (contained.info->data.is_const) {
-        error("Cannot assign to constant value", expr.resolved.lexeme);
+        error("Cannot assign to constant value", expr.resolved.token);
         throw TypeException{"Cannot assign to constant value"};
-    } else if (!convertible_to(contained.info, value.info, value.is_lvalue, expr.resolved.lexeme, false)) {
-        error("Cannot convert from contained type of list to type being assigned", expr.resolved.lexeme);
+    } else if (!convertible_to(contained.info, value.info, value.is_lvalue, expr.resolved.token, false)) {
+        error("Cannot convert from contained type of list to type being assigned", expr.resolved.token);
         show_conversion_note(contained.info, value.info);
         throw TypeException{"Cannot convert from contained type of list to type being assigned"};
     }
 
-    return expr.resolved = {contained.info, expr.resolved.lexeme, false};
+    return expr.resolved = {contained.info, expr.resolved.token, false};
 }
 
 ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
@@ -512,10 +512,10 @@ ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
         case LiteralValue::tag::DOUBLE:
         case LiteralValue::tag::STRING:
         case LiteralValue::tag::BOOL:
-        case LiteralValue::tag::NULL_: return expr.resolved = {expr.type.get(), expr.resolved.lexeme};
+        case LiteralValue::tag::NULL_: return expr.resolved = {expr.type.get(), expr.resolved.token};
 
         default:
-            error("Bug in parser with illegal type for literal value", expr.resolved.lexeme);
+            error("Bug in parser with illegal type for literal value", expr.resolved.token);
             throw TypeException{"Bug in parser with illegal type for literal value"};
     }
 }
@@ -523,7 +523,7 @@ ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
 ExprVisitorType TypeResolver::visit(LogicalExpr &expr) {
     resolve(expr.left.get());
     resolve(expr.right.get());
-    return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.lexeme};
+    return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
 }
 
 ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
@@ -534,7 +534,7 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
             for (auto &method : left.class_->methods) {
                 if (method.first->name == expr.name) {
                     return expr.resolved = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
-                               method.first.get(), left.class_, expr.resolved.lexeme};
+                               method.first.get(), left.class_, expr.resolved.token};
                 }
             }
             error("No such method exists in the class", expr.name);
@@ -543,13 +543,13 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
         case ExprTypeInfo::ScopeType::MODULE: {
             auto &module = Parser::parsed_modules[left.module_index].first;
             if (auto class_ = module.classes.find(expr.name.lexeme); class_ != module.classes.end()) {
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_->second,
-                           expr.resolved.lexeme};
+                return expr.resolved = {
+                           make_new_type<PrimitiveType>(Type::CLASS, true, false), class_->second, expr.resolved.token};
             }
 
             if (auto func = module.functions.find(expr.name.lexeme); func != module.functions.end()) {
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func->second,
-                           expr.resolved.lexeme};
+                           expr.resolved.token};
             }
         }
             error("No such function/class exists in the module", expr.name);
@@ -566,12 +566,12 @@ ExprVisitorType TypeResolver::visit(ScopeNameExpr &expr) {
     for (std::size_t i{0}; i < Parser::parsed_modules.size(); i++) {
         if (Parser::parsed_modules[i].first.name.substr(0, Parser::parsed_modules[i].first.name.find_last_of('.')) ==
             expr.name.lexeme) {
-            return expr.resolved = {make_new_type<PrimitiveType>(Type::MODULE, true, false), i, expr.resolved.lexeme};
+            return expr.resolved = {make_new_type<PrimitiveType>(Type::MODULE, true, false), i, expr.resolved.token};
         }
     }
 
     if (ClassStmt *class_ = find_class(expr.name.lexeme); class_ != nullptr) {
-        return expr.resolved = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.resolved.lexeme};
+        return expr.resolved = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.resolved.token};
     }
 
     error("No such scope exists with the given name", expr.name);
@@ -600,12 +600,12 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
     }
 
     expr.requires_copy = !is_builtin_type(value_type.info->data.type); // Similar case to AssignExpr
-    return expr.resolved = {attribute_type.info, expr.resolved.lexeme};
+    return expr.resolved = {attribute_type.info, expr.resolved.token};
 }
 
 ExprVisitorType TypeResolver::visit(SuperExpr &expr) {
     // TODO: Implement me
-    expr.resolved.lexeme = expr.keyword;
+    expr.resolved.token = expr.keyword;
     throw TypeException{"Super expressions/inheritance not implemented yet"};
 }
 
@@ -614,13 +614,13 @@ ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
     ExprVisitorType middle = resolve(expr.middle.get());
     ExprVisitorType right = resolve(expr.right.get());
 
-    if (!convertible_to(middle.info, right.info, right.is_lvalue, expr.resolved.lexeme, false) &&
-        !convertible_to(right.info, middle.info, right.is_lvalue, expr.resolved.lexeme, false)) {
-        error("Expected equivalent expression types for branches of ternary expression", expr.resolved.lexeme);
+    if (!convertible_to(middle.info, right.info, right.is_lvalue, expr.resolved.token, false) &&
+        !convertible_to(right.info, middle.info, right.is_lvalue, expr.resolved.token, false)) {
+        error("Expected equivalent expression types for branches of ternary expression", expr.resolved.token);
         show_conversion_note(right.info, middle.info);
     }
 
-    return expr.resolved = {middle.info, expr.resolved.lexeme};
+    return expr.resolved = {middle.info, expr.resolved.token};
 }
 
 ExprVisitorType TypeResolver::visit(ThisExpr &expr) {
@@ -639,12 +639,12 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
             if (right.info->data.type != Type::INT) {
                 error("Wrong type of argument to bitwise unary operator (expected integral argument)", expr.oper);
             }
-            return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.lexeme};
+            return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
         case TokenType::NOT:
             if (one_of(right.info->data.type, Type::CLASS, Type::LIST, Type::NULL_)) {
                 error("Wrong type of argument to logical not operator", expr.oper);
             }
-            return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.lexeme};
+            return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
         case TokenType::PLUS_PLUS:
         case TokenType::MINUS_MINUS:
             if (!one_of(right.info->data.type, Type::INT, Type::FLOAT)) {
@@ -659,9 +659,9 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
         case TokenType::PLUS:
             if (!one_of(right.info->data.type, Type::INT, Type::FLOAT)) {
                 error("Expected integral or floating point argument to operator", expr.oper);
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.lexeme};
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
             }
-            return expr.resolved = {right.info, expr.resolved.lexeme};
+            return expr.resolved = {right.info, expr.resolved.token};
 
         default:
             error("Bug in parser with illegal type for unary expression", expr.oper);
@@ -678,7 +678,7 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
     for (auto it = values.end() - 1; !values.empty() && it >= values.begin(); it--) {
         if (it->lexeme == expr.name.lexeme) {
             expr.type = IdentifierType::VARIABLE;
-            expr.resolved = {it->info, it->class_, expr.resolved.lexeme, true};
+            expr.resolved = {it->info, it->class_, expr.resolved.token, true};
             expr.resolved.stack_slot = it->stack_slot;
             return expr.resolved;
         }
@@ -686,12 +686,12 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
 
     if (FunctionStmt *func = find_function(expr.name.lexeme); func != nullptr) {
         expr.type = IdentifierType::FUNCTION;
-        return expr.resolved = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.resolved.lexeme};
+        return expr.resolved = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.resolved.token};
     }
 
     if (ClassStmt *class_ = find_class(expr.name.lexeme); class_ != nullptr) {
         expr.type = IdentifierType::CLASS;
-        return expr.resolved = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.resolved.lexeme};
+        return expr.resolved = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.resolved.token};
     }
 
     error("No such variable/function in the current module's scope", expr.name);
@@ -859,8 +859,8 @@ StmtVisitorType TypeResolver::visit(SwitchStmt &stmt) {
 
     for (auto &case_stmt : stmt.cases) {
         ExprVisitorType case_expr = resolve(case_stmt.first.get());
-        if (!convertible_to(case_expr.info, condition.info, condition.is_lvalue, case_expr.lexeme, false)) {
-            error("Type of case expression cannot be converted to type of switch condition", case_expr.lexeme);
+        if (!convertible_to(case_expr.info, condition.info, condition.is_lvalue, case_expr.token, false)) {
+            error("Type of case expression cannot be converted to type of switch condition", case_expr.token);
             show_conversion_note(condition.info, case_expr.info);
         }
         resolve(case_stmt.second.get());

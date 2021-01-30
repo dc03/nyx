@@ -31,7 +31,7 @@ struct ExprTypeInfo {
         std::size_t module_index;
         std::size_t stack_slot;
     };
-    Token lexeme{};
+    Token token{};
     union {
         bool is_lvalue;
         bool is_ref; // Although this is tracked in `info`, CodeGen does not use that parameter

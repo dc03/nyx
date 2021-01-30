@@ -82,24 +82,24 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
     }
 
     if (expr.conversion_type != NumericConversionType::NONE) {
-        emit_conversion(expr.conversion_type, expr.resolved.lexeme.line);
+        emit_conversion(expr.conversion_type, expr.resolved.token.line);
     }
 
-    switch (expr.resolved.lexeme.type) {
+    switch (expr.resolved.token.type) {
         case TokenType::EQUAL:
-            current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, expr.resolved.lexeme.line);
+            current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, expr.resolved.token.line);
             break;
         case TokenType::PLUS_EQUAL:
-            current_chunk->emit_instruction(Instruction::INCR_LOCAL, expr.resolved.lexeme.line);
+            current_chunk->emit_instruction(Instruction::INCR_LOCAL, expr.resolved.token.line);
             break;
         case TokenType::MINUS_EQUAL:
-            current_chunk->emit_instruction(Instruction::DECR_LOCAL, expr.resolved.lexeme.line);
+            current_chunk->emit_instruction(Instruction::DECR_LOCAL, expr.resolved.token.line);
             break;
         case TokenType::STAR_EQUAL:
-            current_chunk->emit_instruction(Instruction::MUL_LOCAL, expr.resolved.lexeme.line);
+            current_chunk->emit_instruction(Instruction::MUL_LOCAL, expr.resolved.token.line);
             break;
         case TokenType::SLASH_EQUAL:
-            current_chunk->emit_instruction(Instruction::DIV_LOCAL, expr.resolved.lexeme.line);
+            current_chunk->emit_instruction(Instruction::DIV_LOCAL, expr.resolved.token.line);
             break;
         default: break;
     }
@@ -111,57 +111,57 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
 ExprVisitorType Generator::visit(BinaryExpr &expr) {
     ExprTypeInfo left_info = compile(expr.left.get());
     if (left_info.is_ref) {
-        current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.lexeme.line);
+        current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.token.line);
     }
     ExprTypeInfo right_info = compile(expr.right.get());
     if (right_info.is_ref) {
-        current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.lexeme.line);
+        current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.token.line);
     }
 
     // clang-format off
-    switch (expr.resolved.lexeme.type) {
-        case TokenType::LEFT_SHIFT:    current_chunk->emit_instruction(Instruction::SHIFT_LEFT, expr.resolved.lexeme.line);  break;
-        case TokenType::RIGHT_SHIFT:   current_chunk->emit_instruction(Instruction::SHIFT_RIGHT, expr.resolved.lexeme.line); break;
-        case TokenType::BIT_AND:       current_chunk->emit_instruction(Instruction::BIT_AND, expr.resolved.lexeme.line);     break;
-        case TokenType::BIT_OR:        current_chunk->emit_instruction(Instruction::BIT_OR, expr.resolved.lexeme.line);      break;
-        case TokenType::BIT_XOR:       current_chunk->emit_instruction(Instruction::BIT_XOR, expr.resolved.lexeme.line);     break;
-        case TokenType::MODULO:        current_chunk->emit_instruction(Instruction::MOD, expr.resolved.lexeme.line);         break;
+    switch (expr.resolved.token.type) {
+        case TokenType::LEFT_SHIFT:    current_chunk->emit_instruction(Instruction::SHIFT_LEFT, expr.resolved.token.line);  break;
+        case TokenType::RIGHT_SHIFT:   current_chunk->emit_instruction(Instruction::SHIFT_RIGHT, expr.resolved.token.line); break;
+        case TokenType::BIT_AND:       current_chunk->emit_instruction(Instruction::BIT_AND, expr.resolved.token.line);     break;
+        case TokenType::BIT_OR:        current_chunk->emit_instruction(Instruction::BIT_OR, expr.resolved.token.line);      break;
+        case TokenType::BIT_XOR:       current_chunk->emit_instruction(Instruction::BIT_XOR, expr.resolved.token.line);     break;
+        case TokenType::MODULO:        current_chunk->emit_instruction(Instruction::MOD, expr.resolved.token.line);         break;
 
-        case TokenType::EQUAL_EQUAL:   current_chunk->emit_instruction(Instruction::EQUAL, expr.resolved.lexeme.line);       break;
-        case TokenType::GREATER:       current_chunk->emit_instruction(Instruction::GREATER, expr.resolved.lexeme.line);     break;
-        case TokenType::LESS:          current_chunk->emit_instruction(Instruction::LESSER, expr.resolved.lexeme.line);      break;
+        case TokenType::EQUAL_EQUAL:   current_chunk->emit_instruction(Instruction::EQUAL, expr.resolved.token.line);       break;
+        case TokenType::GREATER:       current_chunk->emit_instruction(Instruction::GREATER, expr.resolved.token.line);     break;
+        case TokenType::LESS:          current_chunk->emit_instruction(Instruction::LESSER, expr.resolved.token.line);      break;
 
         case TokenType::NOT_EQUAL:
-            current_chunk->emit_instruction(Instruction::EQUAL, expr.resolved.lexeme.line);
-            current_chunk->emit_instruction(Instruction::NOT, expr.resolved.lexeme.line);
+            current_chunk->emit_instruction(Instruction::EQUAL, expr.resolved.token.line);
+            current_chunk->emit_instruction(Instruction::NOT, expr.resolved.token.line);
             break;
         case TokenType::GREATER_EQUAL:
-            current_chunk->emit_instruction(Instruction::LESSER, expr.resolved.lexeme.line);
-            current_chunk->emit_instruction(Instruction::NOT, expr.resolved.lexeme.line);
+            current_chunk->emit_instruction(Instruction::LESSER, expr.resolved.token.line);
+            current_chunk->emit_instruction(Instruction::NOT, expr.resolved.token.line);
             break;
         case TokenType::LESS_EQUAL:
-            current_chunk->emit_instruction(Instruction::GREATER, expr.resolved.lexeme.line);
-            current_chunk->emit_instruction(Instruction::NOT, expr.resolved.lexeme.line);
+            current_chunk->emit_instruction(Instruction::GREATER, expr.resolved.token.line);
+            current_chunk->emit_instruction(Instruction::NOT, expr.resolved.token.line);
             break;
 
         case TokenType::PLUS:
             switch (expr.resolved.info->data.type) {
                 case Type::INT:
                 case Type::FLOAT:
-                    current_chunk->emit_instruction(Instruction::ADD, expr.resolved.lexeme.line); break;
-                case Type::STRING: current_chunk->emit_instruction(Instruction::CONCAT, expr.resolved.lexeme.line); break;
+                    current_chunk->emit_instruction(Instruction::ADD, expr.resolved.token.line); break;
+                case Type::STRING: current_chunk->emit_instruction(Instruction::CONCAT, expr.resolved.token.line); break;
 
                 default:
                     unreachable();
             }
             break;
 
-        case TokenType::MINUS: current_chunk->emit_instruction(Instruction::SUB, expr.resolved.lexeme.line); break;
-        case TokenType::SLASH: current_chunk->emit_instruction(Instruction::DIV, expr.resolved.lexeme.line); break;
-        case TokenType::STAR:  current_chunk->emit_instruction(Instruction::MUL, expr.resolved.lexeme.line); break;
+        case TokenType::MINUS: current_chunk->emit_instruction(Instruction::SUB, expr.resolved.token.line); break;
+        case TokenType::SLASH: current_chunk->emit_instruction(Instruction::DIV, expr.resolved.token.line); break;
+        case TokenType::STAR:  current_chunk->emit_instruction(Instruction::MUL, expr.resolved.token.line); break;
 
         default:
-            error("Bug in parser with illegal token type of expression's operator", expr.resolved.lexeme);
+            error("Bug in parser with illegal token type of expression's operator", expr.resolved.token);
             break;
     }
     // clang-format on
@@ -173,16 +173,16 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
     for (auto &arg : expr.args) {
         compile(std::get<0>(arg).get());
         if (std::get<1>(arg) != NumericConversionType::NONE) {
-            emit_conversion(std::get<1>(arg), std::get<0>(arg)->resolved.lexeme.line);
+            emit_conversion(std::get<1>(arg), std::get<0>(arg)->resolved.token.line);
         }
     }
     if (expr.is_native_call) {
         auto *called = dynamic_cast<VariableExpr *>(expr.function.get());
         current_chunk->emit_constant(Value{called->name.lexeme}, called->name.line);
-        current_chunk->emit_instruction(Instruction::CALL_NATIVE, expr.resolved.lexeme.line);
+        current_chunk->emit_instruction(Instruction::CALL_NATIVE, expr.resolved.token.line);
     } else {
         compile(expr.function.get());
-        current_chunk->emit_instruction(Instruction::CALL_FUNCTION, expr.resolved.lexeme.line);
+        current_chunk->emit_instruction(Instruction::CALL_FUNCTION, expr.resolved.token.line);
     }
     return {};
 }
@@ -192,7 +192,7 @@ ExprVisitorType Generator::visit(CommaExpr &expr) {
 
     for (auto next = std::next(it); next != end(expr.exprs); it = next, ++next) {
         compile(it->get());
-        current_chunk->emit_instruction(Instruction::POP, (*it)->resolved.lexeme.line);
+        current_chunk->emit_instruction(Instruction::POP, (*it)->resolved.token.line);
     }
 
     compile(it->get());
@@ -211,40 +211,40 @@ ExprVisitorType Generator::visit(GroupingExpr &expr) {
 ExprVisitorType Generator::visit(IndexExpr &expr) {
     compile(expr.object.get());
     compile(expr.index.get());
-    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.lexeme.line);
-    current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.resolved.lexeme.line);
+    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.token.line);
+    current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.resolved.token.line);
     return {};
 }
 
 ExprVisitorType Generator::visit(ListAssignExpr &expr) {
     compile(expr.list.object.get());
     compile(expr.list.index.get());
-    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.lexeme.line);
+    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.token.line);
     compile(expr.value.get());
-    current_chunk->emit_instruction(Instruction::ASSIGN_LIST_AT, expr.resolved.lexeme.line);
+    current_chunk->emit_instruction(Instruction::ASSIGN_LIST_AT, expr.resolved.token.line);
     return {};
 }
 
 ExprVisitorType Generator::visit(LiteralExpr &expr) {
     switch (expr.value.index()) {
         case LiteralValue::tag::INT:
-            current_chunk->emit_constant(Value{expr.value.to_int()}, expr.resolved.lexeme.line);
+            current_chunk->emit_constant(Value{expr.value.to_int()}, expr.resolved.token.line);
             break;
         case LiteralValue::tag::DOUBLE:
-            current_chunk->emit_constant(Value{expr.value.to_double()}, expr.resolved.lexeme.line);
+            current_chunk->emit_constant(Value{expr.value.to_double()}, expr.resolved.token.line);
             break;
         case LiteralValue::tag::STRING:
-            current_chunk->emit_constant(Value{expr.value.to_string()}, expr.resolved.lexeme.line);
+            current_chunk->emit_constant(Value{expr.value.to_string()}, expr.resolved.token.line);
             break;
         case LiteralValue::tag::BOOL:
             if (expr.value.to_bool()) {
-                current_chunk->emit_instruction(Instruction::TRUE, expr.resolved.lexeme.line);
+                current_chunk->emit_instruction(Instruction::TRUE, expr.resolved.token.line);
             } else {
-                current_chunk->emit_instruction(Instruction::FALSE, expr.resolved.lexeme.line);
+                current_chunk->emit_instruction(Instruction::FALSE, expr.resolved.token.line);
             }
             break;
         case LiteralValue::tag::NULL_:
-            current_chunk->emit_instruction(Instruction::NULL_, expr.resolved.lexeme.line);
+            current_chunk->emit_instruction(Instruction::NULL_, expr.resolved.token.line);
             break;
     }
     return {};
@@ -253,14 +253,14 @@ ExprVisitorType Generator::visit(LiteralExpr &expr) {
 ExprVisitorType Generator::visit(LogicalExpr &expr) {
     compile(expr.left.get());
     std::size_t jump_idx{};
-    if (expr.resolved.lexeme.type == TokenType::OR) {
-        jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_TRUE, expr.resolved.lexeme.line);
+    if (expr.resolved.token.type == TokenType::OR) {
+        jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_TRUE, expr.resolved.token.line);
     } else { // Since || / or short circuits on true, flip the boolean on top of the stack
-        jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, expr.resolved.lexeme.line);
+        jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, expr.resolved.token.line);
     }
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
-    current_chunk->emit_instruction(Instruction::POP, expr.resolved.lexeme.line);
+    current_chunk->emit_instruction(Instruction::POP, expr.resolved.token.line);
     compile(expr.right.get());
     std::size_t to_idx = current_chunk->bytes.size();
     patch_jump(jump_idx, to_idx - jump_idx - 4);
@@ -300,13 +300,13 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
     compile(expr.left.get());
 
     std::size_t condition_jump_idx =
-        current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, expr.resolved.lexeme.line);
+        current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, expr.resolved.token.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
 
     compile(expr.middle.get());
 
-    std::size_t over_false_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, expr.resolved.lexeme.line);
+    std::size_t over_false_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, expr.resolved.token.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
     std::size_t false_to_idx = current_chunk->bytes.size();
