@@ -350,7 +350,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         auto *function = dynamic_cast<VariableExpr *>(expr.function.get());
         if (is_builtin_function(function)) {
             expr.is_native_call = true;
-            return expr.resolved = check_inbuilt(function, expr.paren, expr.args);
+            return expr.resolved = check_inbuilt(function, expr.resolved.lexeme, expr.args);
         }
     }
 
@@ -372,7 +372,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     }
 
     if (called->params.size() != expr.args.size()) {
-        error("Number of arguments passed to function must match the number of parameters", expr.paren);
+        error("Number of arguments passed to function must match the number of parameters", expr.resolved.lexeme);
         throw TypeException{"Number of arguments passed to function must match the number of parameters"};
     }
 
@@ -391,7 +391,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         // Arguments are copied when they do not bind to references
     }
 
-    return expr.resolved = {called->return_type.get(), called, callee.class_, expr.paren};
+    return expr.resolved = {called->return_type.get(), called, callee.class_, expr.resolved.lexeme};
 }
 
 ExprVisitorType TypeResolver::visit(CommaExpr &expr) {
@@ -469,17 +469,17 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
     ExprVisitorType index = resolve(expr.index.get());
 
     if (index.info->data.type != Type::INT) {
-        error("Expected integral type for index", expr.oper);
+        error("Expected integral type for index", expr.resolved.lexeme);
         throw TypeException{"Expected integral type for index"};
     }
 
     if (list.info->data.type == Type::LIST) {
         auto *contained_type = dynamic_cast<ListType *>(list.info)->contained.get();
-        return expr.resolved = {contained_type, expr.oper, true};
+        return expr.resolved = {contained_type, expr.resolved.lexeme, true};
     } else if (list.info->data.type == Type::STRING) {
-        return expr.resolved = {list.info, expr.oper, false}; // For now, strings are immutable.
+        return expr.resolved = {list.info, expr.resolved.lexeme, false}; // For now, strings are immutable.
     } else {
-        error("Expected list or string type for indexing", expr.oper);
+        error("Expected list or string type for indexing", expr.resolved.lexeme);
         throw TypeException{"Expected list or string type for indexing"};
     }
 }
@@ -488,21 +488,21 @@ ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
     ExprVisitorType contained = resolve(&expr.list);
     ExprVisitorType value = resolve(expr.value.get());
     if (!contained.is_lvalue) {
-        error("Cannot assign to non-lvalue element", expr.equals);
+        error("Cannot assign to non-lvalue element", expr.resolved.lexeme);
         note("String elements are non-assignable");
         throw TypeException{"Cannot assign to non-lvalue element"};
     }
 
     if (contained.info->data.is_const) {
-        error("Cannot assign to constant value", expr.equals);
+        error("Cannot assign to constant value", expr.resolved.lexeme);
         throw TypeException{"Cannot assign to constant value"};
-    } else if (!convertible_to(contained.info, value.info, value.is_lvalue, expr.equals, false)) {
-        error("Cannot convert from contained type of list to type being assigned", expr.equals);
+    } else if (!convertible_to(contained.info, value.info, value.is_lvalue, expr.resolved.lexeme, false)) {
+        error("Cannot convert from contained type of list to type being assigned", expr.resolved.lexeme);
         show_conversion_note(contained.info, value.info);
         throw TypeException{"Cannot convert from contained type of list to type being assigned"};
     }
 
-    return expr.resolved = {contained.info, expr.list.oper, false};
+    return expr.resolved = {contained.info, expr.resolved.lexeme, false};
 }
 
 ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
@@ -599,7 +599,7 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
     }
 
     expr.requires_copy = !is_builtin_type(value_type.info->data.type); // Similar case to AssignExpr
-    return expr.resolved = {attribute_type.info, expr.name};
+    return expr.resolved = {attribute_type.info, expr.resolved.lexeme};
 }
 
 ExprVisitorType TypeResolver::visit(SuperExpr &) {

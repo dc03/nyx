@@ -271,7 +271,6 @@ struct BinaryExpr final : public Expr {
 
 struct CallExpr final : public Expr {
     ExprNode function;
-    Token paren;
     std::vector<std::tuple<ExprNode, NumericConversionType, bool>> args;
     bool is_native_call;
 
@@ -279,12 +278,9 @@ struct CallExpr final : public Expr {
 
     NodeType type_tag() override final { return NodeType::CallExpr; }
 
-    CallExpr(ExprNode function, Token paren, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> args,
-        bool is_native_call)
-        : function{std::move(function)},
-          paren{std::move(paren)},
-          args{std::move(args)},
-          is_native_call{is_native_call} {}
+    CallExpr(
+        ExprNode function, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> args, bool is_native_call)
+        : function{std::move(function)}, args{std::move(args)}, is_native_call{is_native_call} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -328,22 +324,19 @@ struct GroupingExpr final : public Expr {
 
 struct IndexExpr final : public Expr {
     ExprNode object;
-    Token oper;
     ExprNode index;
 
     std::string_view string_tag() override final { return "IndexExpr"; }
 
     NodeType type_tag() override final { return NodeType::IndexExpr; }
 
-    IndexExpr(ExprNode object, Token oper, ExprNode index)
-        : object{std::move(object)}, oper{std::move(oper)}, index{std::move(index)} {}
+    IndexExpr(ExprNode object, ExprNode index) : object{std::move(object)}, index{std::move(index)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct ListAssignExpr final : public Expr {
     IndexExpr list;
-    Token equals;
     ExprNode value;
     NumericConversionType conversion_type;
     bool requires_copy;
@@ -352,10 +345,8 @@ struct ListAssignExpr final : public Expr {
 
     NodeType type_tag() override final { return NodeType::ListAssignExpr; }
 
-    ListAssignExpr(
-        IndexExpr list, Token equals, ExprNode value, NumericConversionType conversion_type, bool requires_copy)
+    ListAssignExpr(IndexExpr list, ExprNode value, NumericConversionType conversion_type, bool requires_copy)
         : list{std::move(list)},
-          equals{std::move(equals)},
           value{std::move(value)},
           conversion_type{conversion_type},
           requires_copy{requires_copy} {}

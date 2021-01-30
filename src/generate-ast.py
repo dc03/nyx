@@ -239,10 +239,8 @@ if __name__ == '__main__':
                           'ExprNode left, ExprNode right')
 
         declare_expr_type(
-            'function{std::move(function)}, paren{std::move(paren)}, args{std::move(args)}, '
-            'is_native_call{is_native_call}',
-            'ExprNode function, Token paren, std::vector<std::tuple<ExprNode,NumericConversionType,bool>> args,'
-            ' bool is_native_call')
+            'function{std::move(function)}, args{std::move(args)}, is_native_call{is_native_call}',
+            'ExprNode function, std::vector<std::tuple<ExprNode,NumericConversionType,bool>> args, bool is_native_call')
 
         declare_expr_type('exprs{std::move(exprs)}',
                           'std::vector<ExprNode> exprs')
@@ -253,13 +251,12 @@ if __name__ == '__main__':
         declare_expr_type('expr{std::move(expr)}',
                           'ExprNode expr')
 
-        declare_expr_type('object{std::move(object)}, oper{std::move(oper)}, index{std::move(index)}',
-                          'ExprNode object, Token oper, ExprNode index')
+        declare_expr_type('object{std::move(object)}, index{std::move(index)}',
+                          'ExprNode object, ExprNode index')
 
-        declare_expr_type('list{std::move(list)}, equals{std::move(equals)}, value{std::move(value)}, '
-                          'conversion_type{conversion_type}, requires_copy{requires_copy}',
-                          'IndexExpr list, Token equals, ExprNode value, NumericConversionType conversion_type, '
-                          'bool requires_copy')
+        declare_expr_type('list{std::move(list)}, value{std::move(value)}, conversion_type{conversion_type}, '
+                          'requires_copy{requires_copy}',
+                          'IndexExpr list, ExprNode value, NumericConversionType conversion_type, bool requires_copy')
 
         declare_expr_type('value{std::move(value)}, lexeme{std::move(lexeme)}, type{std::move(type)}',
                           'LiteralValue value, Token lexeme, TypeNode type')

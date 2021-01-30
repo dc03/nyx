@@ -163,16 +163,16 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
     for (auto &arg : expr.args) {
         compile(std::get<0>(arg).get());
         if (std::get<1>(arg) != NumericConversionType::NONE) {
-            emit_conversion(std::get<1>(arg), 0);
+            emit_conversion(std::get<1>(arg), std::get<0>(arg)->resolved.lexeme.line);
         }
     }
     if (expr.is_native_call) {
         auto *called = dynamic_cast<VariableExpr *>(expr.function.get());
         current_chunk->emit_constant(Value{called->name.lexeme}, called->name.line);
-        current_chunk->emit_instruction(Instruction::CALL_NATIVE, expr.paren.line);
+        current_chunk->emit_instruction(Instruction::CALL_NATIVE, expr.resolved.lexeme.line);
     } else {
         compile(expr.function.get());
-        current_chunk->emit_instruction(Instruction::CALL_FUNCTION, expr.paren.line);
+        current_chunk->emit_instruction(Instruction::CALL_FUNCTION, expr.resolved.lexeme.line);
     }
     return {};
 }
@@ -182,7 +182,7 @@ ExprVisitorType Generator::visit(CommaExpr &expr) {
 
     for (auto next = std::next(it); next != end(expr.exprs); it = next, ++next) {
         compile(it->get());
-        current_chunk->emit_instruction(Instruction::POP, 0);
+        current_chunk->emit_instruction(Instruction::POP, (*it)->resolved.lexeme.line);
     }
 
     compile(it->get());
@@ -201,17 +201,17 @@ ExprVisitorType Generator::visit(GroupingExpr &expr) {
 ExprVisitorType Generator::visit(IndexExpr &expr) {
     compile(expr.object.get());
     compile(expr.index.get());
-    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.oper.line);
-    current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.oper.line);
+    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.lexeme.line);
+    current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.resolved.lexeme.line);
     return {};
 }
 
 ExprVisitorType Generator::visit(ListAssignExpr &expr) {
     compile(expr.list.object.get());
     compile(expr.list.index.get());
-    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.equals.line);
+    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.lexeme.line);
     compile(expr.value.get());
-    current_chunk->emit_instruction(Instruction::ASSIGN_LIST_AT, expr.equals.line);
+    current_chunk->emit_instruction(Instruction::ASSIGN_LIST_AT, expr.resolved.lexeme.line);
     return {};
 }
 

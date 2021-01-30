@@ -302,7 +302,9 @@ ExprNode Parser::call(bool, ExprNode function) {
         } while (match(TokenType::COMMA));
     }
     consume("Expected ')' after function call", TokenType::RIGHT_PAREN);
-    return ExprNode{allocate_node(CallExpr, std::move(function), std::move(paren), std::move(args), false)};
+    auto *node = allocate_node(CallExpr, std::move(function), std::move(args), false);
+    node->resolved.lexeme = std::move(paren);
+    return ExprNode{node};
 }
 
 ExprNode Parser::comma(bool, ExprNode left) {
@@ -320,9 +322,13 @@ ExprNode Parser::dot(bool can_assign, ExprNode left) {
     Token name = previous();
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
+        Token oper = previous();
         ExprNode value = expression();
-        return ExprNode{allocate_node(
-            SetExpr, std::move(left), std::move(name), std::move(value), NumericConversionType::NONE, false)};
+
+        auto *node = allocate_node(
+            SetExpr, std::move(left), std::move(name), std::move(value), NumericConversionType::NONE, false);
+        node->resolved.lexeme = std::move(oper);
+        return ExprNode{node};
     } else {
         return ExprNode{allocate_node(GetExpr, std::move(left), std::move(name))};
     }
@@ -332,14 +338,19 @@ ExprNode Parser::index(bool can_assign, ExprNode object) {
     Token oper = previous();
     ExprNode index = expression();
     consume("Expected ']' after array subscript index", TokenType::RIGHT_INDEX);
+    auto ind = IndexExpr{std::move(object), std::move(index)};
+    ind.resolved.lexeme = std::move(oper);
+
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
         Token equals = previous();
         ExprNode value = expression();
-        return ExprNode{allocate_node(ListAssignExpr, IndexExpr{std::move(object), std::move(oper), std::move(index)},
-            std::move(equals), std::move(value), NumericConversionType::NONE, false)};
+        auto *assignment =
+            allocate_node(ListAssignExpr, std::move(ind), std::move(value), NumericConversionType::NONE, false);
+        assignment->resolved.lexeme = std::move(equals);
+        return ExprNode{assignment};
     }
-    return ExprNode{allocate_node(IndexExpr, std::move(object), std::move(oper), std::move(index))};
+    return ExprNode{allocate_node(IndexExpr, std::move(ind))};
 }
 
 ExprNode Parser::or_(bool, ExprNode left) {
