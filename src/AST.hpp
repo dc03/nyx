@@ -436,7 +436,6 @@ struct SuperExpr final : public Expr {
 
 struct TernaryExpr final : public Expr {
     ExprNode left;
-    Token question;
     ExprNode middle;
     ExprNode right;
 
@@ -444,8 +443,8 @@ struct TernaryExpr final : public Expr {
 
     NodeType type_tag() override final { return NodeType::TernaryExpr; }
 
-    TernaryExpr(ExprNode left, Token question, ExprNode middle, ExprNode right)
-        : left{std::move(left)}, question{std::move(question)}, middle{std::move(middle)}, right{std::move(right)} {}
+    TernaryExpr(ExprNode left, ExprNode middle, ExprNode right)
+        : left{std::move(left)}, middle{std::move(middle)}, right{std::move(right)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

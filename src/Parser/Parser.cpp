@@ -434,6 +434,16 @@ ExprNode Parser::super(bool) {
     return ExprNode{allocate_node(SuperExpr, std::move(super), std::move(name))};
 }
 
+ExprNode Parser::ternary(bool, ExprNode left) {
+    Token question = previous();
+    ExprNode middle = parse_precedence(ParsePrecedence::of::LOGIC_OR);
+    consume("Expected colon in ternary expression", TokenType::COLON);
+    ExprNode right = parse_precedence(ParsePrecedence::of::LOGIC_OR);
+    auto *node = allocate_node(TernaryExpr, std::move(left), std::move(middle), std::move(right));
+    node->resolved.lexeme = std::move(question);
+    return ExprNode{node};
+}
+
 ExprNode Parser::this_expr(bool) {
     if (!(in_class && in_function)) {
         throw_parse_error("Cannot use 'this' keyword outside a class's constructor or destructor");
@@ -445,7 +455,9 @@ ExprNode Parser::this_expr(bool) {
 ExprNode Parser::unary(bool) {
     Token oper = previous();
     ExprNode expr = parse_precedence(get_rule(previous().type).precedence);
-    return ExprNode{allocate_node(UnaryExpr, std::move(oper), std::move(expr))};
+    auto *node = allocate_node(UnaryExpr, std::move(oper), std::move(expr));
+    node->resolved.lexeme = node->oper;
+    return ExprNode{node};
 }
 
 ExprNode Parser::variable(bool can_assign) {
@@ -466,14 +478,6 @@ ExprNode Parser::variable(bool can_assign) {
         node->resolved.lexeme = std::move(name);
         return ExprNode{node};
     }
-}
-
-ExprNode Parser::ternary(bool, ExprNode left) {
-    Token question = previous();
-    ExprNode middle = parse_precedence(ParsePrecedence::of::LOGIC_OR);
-    consume("Expected colon in ternary expression", TokenType::COLON);
-    ExprNode right = parse_precedence(ParsePrecedence::of::LOGIC_OR);
-    return ExprNode{allocate_node(TernaryExpr, std::move(left), question, std::move(middle), std::move(right))};
 }
 
 ////////////////////////////////////////////////////////////////////////////////

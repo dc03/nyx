@@ -300,13 +300,13 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
     compile(expr.left.get());
 
     std::size_t condition_jump_idx =
-        current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, expr.question.line);
+        current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, expr.resolved.lexeme.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
 
     compile(expr.middle.get());
 
-    std::size_t over_false_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, expr.question.line);
+    std::size_t over_false_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, expr.resolved.lexeme.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
     std::size_t false_to_idx = current_chunk->bytes.size();

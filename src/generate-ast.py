@@ -278,8 +278,8 @@ if __name__ == '__main__':
                           'Token keyword, Token name')
 
         declare_expr_type(
-            'left{std::move(left)}, question{std::move(question)}, middle{std::move(middle)}, right{std::move(right)}',
-            'ExprNode left, Token question, ExprNode middle, ExprNode right')
+            'left{std::move(left)}, middle{std::move(middle)}, right{std::move(right)}',
+            'ExprNode left, ExprNode middle, ExprNode right')
 
         declare_expr_type('keyword{std::move(keyword)}',
                           'Token keyword')

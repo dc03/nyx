@@ -603,8 +603,9 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
     return expr.resolved = {attribute_type.info, expr.resolved.lexeme};
 }
 
-ExprVisitorType TypeResolver::visit(SuperExpr &) {
+ExprVisitorType TypeResolver::visit(SuperExpr &expr) {
     // TODO: Implement me
+    expr.resolved.lexeme = expr.keyword;
     throw TypeException{"Super expressions/inheritance not implemented yet"};
 }
 
@@ -613,13 +614,13 @@ ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
     ExprVisitorType middle = resolve(expr.middle.get());
     ExprVisitorType right = resolve(expr.right.get());
 
-    if (!convertible_to(middle.info, right.info, right.is_lvalue, expr.question, false) &&
-        !convertible_to(right.info, middle.info, right.is_lvalue, expr.question, false)) {
-        error("Expected equivalent expression types for branches of ternary expression", expr.question);
+    if (!convertible_to(middle.info, right.info, right.is_lvalue, expr.resolved.lexeme, false) &&
+        !convertible_to(right.info, middle.info, right.is_lvalue, expr.resolved.lexeme, false)) {
+        error("Expected equivalent expression types for branches of ternary expression", expr.resolved.lexeme);
         show_conversion_note(right.info, middle.info);
     }
 
-    return expr.resolved = {middle.info, expr.question};
+    return expr.resolved = {middle.info, expr.resolved.lexeme};
 }
 
 ExprVisitorType TypeResolver::visit(ThisExpr &expr) {
