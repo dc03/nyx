@@ -93,7 +93,7 @@ std::string Value::repr() noexcept {
         }
         return "\""s + result + "\""s;
     } else if (is_ref()) {
-        char name[15];
+        char name[25];
         std::sprintf(name, "ref to %p", reinterpret_cast<void *>(to_referred()));
         return std::string{name};
     } else if (is_function()) {
