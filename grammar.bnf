@@ -1,0 +1,88 @@
+CONST          ::= "const"
+REF            ::= "ref"
+ALPHA          ::= "A-Za-z"
+NUM            ::= "0-9"
+UNDER          ::= "_"
+ESCAPE         ::= "\n"|"\r"|"\t"|"\b"|"\\"|"\'"|"\""
+EOL            ::= ";"|"\n"
+IDENTIFIER     ::= (ALPHA|UNDER)(NUM|ALPHA|UNDER)*
+
+BUILTIN        ::= CONST? REF? ("int"|"float"|"string"|"bool")
+TYPE           ::= BUILTIN
+                 | CONST? REF? IDENTIFIER
+                 | CONST? REF? "[" TYPE ("," expression)? "]"
+                 | "typeof" expression
+
+STRING         ::= "\'" (NUM|ALPHA|UNDER|ESCAPE)*  "\'"
+                 | "\"" (NUM|ALPHA|UNDER|ESCAPE)*  "\""
+NUMBER         ::= NUM+ "."? NUM+ ("e" NUM+)? ;
+LITERAL        ::= "false"|"true"|"null"|STRING|NUMBER
+
+expression     ::= comma
+comma          ::= assignment     ("," assignment)*
+assignment     ::= (call ".")? IDENTIFIER ("="|"+="|"-="|"*="|"/=") assignment?
+                 | ternary
+ternary        ::= logic_or       ("?" logic_or ":" ternary)*
+logic_or       ::= logic_and      (("or"|"||") logic_and)*
+logic_and      ::= bit_or         (("and"|"&&") bit_or)*
+bit_or         ::= bit_xor        ("|" bit_xor)*
+bit_xor        ::= bit_and        ("^" bit_and)*
+bit_and        ::= equality       ("&" equality)*
+equality       ::= comparison     (("!="|"==") comparison)*
+comparison     ::= bitshift       ((">"|">="|"<"|"<=") bitshift)*
+bitshift       ::= addition       (("<<"|">>") addition)*
+addition       ::= multiplication (("-"|"+"|"%") multiplication)*
+multiplication ::= unary          (("/"|"*") unary)*
+unary          ::= ("!"|"-"|"~"|"++"|"--") unary
+                 | call
+
+arguments      ::= assignment     ("," assignment)*
+call           ::= get            ("(" arguments? ")")*
+
+get            ::= expression "." IDENTIFIER
+                 | primary
+index          ::= expression "[" expression "]"
+super          ::= "super" "." IDENTIFIER
+
+primary        ::= LITERAL|IDENTIFIER|index
+                 | super|"this"
+                 | "(" expression ")"
+                 | expression "::" IDENTIFIER
+
+declaration    ::= statement
+                 | import
+                 | var
+                 | fn
+                 | type_decl
+                 | class
+
+import         ::= "import" STRING EOL
+var            ::= ("var"|"val") IDENTIFIER ((":" TYPE)? "=" expression)? EOL
+
+params         ::= (IDENTIFIER ":" TYPE)*
+fn             ::= "fn" IDENTIFIER "(" params ")" "->" TYPE block
+
+type_decl      ::= "type" IDENTIFIER "=" TYPE EOL
+class          ::= "class" IDENTIFIER "{" (("private"|"public"|"protected")(var|fn|"~" fn))* "}"
+
+statement      ::= expr_stmt
+                 | for
+                 | if
+                 | while
+                 | switch
+                 | break
+                 | continue
+                 | return
+                 | block
+
+expr_stmt      ::= expression EOL
+for            ::= "for" "(" (var|expr_stmt|";") expression? ";" expression? ")" statement
+if             ::= "if" expression statement ("else" statement)?
+while          ::= "while" expression statement
+switch         ::= "switch" expression "{" ("case" expression ":" statement)* ("default" ":" statement)? "}"
+break          ::= "break" EOL
+continue       ::= "continue" EOL
+return         ::= "return" expression? EOL
+block          ::= "{" (var|statement)* "}"
+
+program        ::= declaration* EOF
