@@ -23,6 +23,7 @@ struct Token {
         : type{type}, lexeme{std::move(lexeme)}, line{line}, start{start}, end{end} {}
 
     bool operator==(const Token &other) { return lexeme == other.lexeme; }
+    bool operator!=(const Token &other) { return lexeme != other.lexeme; }
 };
 
 #endif

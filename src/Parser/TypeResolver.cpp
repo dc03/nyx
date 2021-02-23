@@ -425,13 +425,17 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
         for (auto &member_decl : accessed_type->members) {
             auto *member = member_decl.first.get();
             if (member->name == name) {
-                if (member_decl.second == VisibilityType::PUBLIC ||
-                    (in_class && current_class->name == accessed_type->name)) {
-                    return {member->type.get(), name};
-                } else if (member_decl.second == VisibilityType::PROTECTED) {
-                    error("Cannot access protected member outside class", name);
-                } else if (member_decl.second == VisibilityType::PRIVATE) {
-                    error("Cannot access private member outside class", name);
+                if (!in_class || (in_class && current_class->name != accessed_type->name)) {
+                    if (member_decl.second == VisibilityType::PROTECTED) {
+                        error("Cannot access protected member outside class", name);
+                    } else if (member_decl.second == VisibilityType::PRIVATE) {
+                        error("Cannot access private member outside class", name);
+                    }
+                }
+
+                if (member->type->type_tag() == NodeType::UserDefinedType) {
+                    return {member->type.get(),
+                        find_class(dynamic_cast<UserDefinedType *>(member->type.get())->name.lexeme), name, true};
                 }
                 return {member->type.get(), name, true};
             }

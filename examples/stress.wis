@@ -281,3 +281,18 @@ fn bar(x: [int, 20]) -> [int] {
 
 print(string(bar(y)) + '\n')
 */*/*/
+var x = 0
+
+class Foo {
+    public var y: ref int = x
+}
+
+var foo = Foo()
+
+class Bar {
+    public var z: ref Foo = foo
+}
+
+fn baz(bar: const Bar) -> null {
+    bar.z.y = 5
+}
