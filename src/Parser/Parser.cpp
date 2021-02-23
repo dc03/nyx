@@ -278,6 +278,14 @@ ExprNode Parser::parse_precedence(ParsePrecedence::of precedence) {
     return left;
 }
 
+ExprNode Parser::expression() {
+    return parse_precedence(ParsePrecedence::of::COMMA);
+}
+
+ExprNode Parser::assignment() {
+    return parse_precedence(ParsePrecedence::of::ASSIGNMENT);
+}
+
 ExprNode Parser::and_(bool, ExprNode left) {
     Token oper = previous();
     ExprNode right = parse_precedence(ParsePrecedence::of::LOGIC_AND);
@@ -300,7 +308,7 @@ ExprNode Parser::call(bool, ExprNode function) {
     std::vector<std::tuple<ExprNode, NumericConversionType, bool>> args{};
     if (peek().type != TokenType::RIGHT_PAREN) {
         do {
-            args.emplace_back(parse_precedence(ParsePrecedence::of::ASSIGNMENT), NumericConversionType::NONE, false);
+            args.emplace_back(assignment(), NumericConversionType::NONE, false);
         } while (match(TokenType::COMMA));
     }
     consume("Expected ')' after function call", TokenType::RIGHT_PAREN);
@@ -313,7 +321,7 @@ ExprNode Parser::comma(bool, ExprNode left) {
     std::vector<ExprNode> exprs{};
     exprs.emplace_back(std::move(left));
     do {
-        exprs.emplace_back(parse_precedence(ParsePrecedence::of::ASSIGNMENT));
+        exprs.emplace_back(assignment());
     } while (match(TokenType::COMMA));
 
     return ExprNode{allocate_node(CommaExpr, std::move(exprs))};
@@ -361,10 +369,6 @@ ExprNode Parser::or_(bool, ExprNode left) {
     auto *node = allocate_node(LogicalExpr, std::move(left), std::move(right));
     node->resolved.token = std::move(oper);
     return ExprNode{node};
-}
-
-ExprNode Parser::expression() {
-    return parse_precedence(ParsePrecedence::of::COMMA);
 }
 
 ExprNode Parser::grouping(bool) {

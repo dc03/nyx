@@ -11,7 +11,7 @@ BUILTIN        ::= CONST? REF? ("int"|"float"|"string"|"bool")
 TYPE           ::= BUILTIN
                  | CONST? REF? IDENTIFIER
                  | CONST? REF? "[" TYPE ("," expression)? "]"
-                 | "typeof" expression
+                 | "typeof" logic_or
 
 STRING         ::= "\'" (NUM|ALPHA|UNDER|ESCAPE)*  "\'"
                  | "\"" (NUM|ALPHA|UNDER|ESCAPE)*  "\""

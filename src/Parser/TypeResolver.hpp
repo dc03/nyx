@@ -49,6 +49,8 @@ class TypeResolver final : Visitor {
     bool convertible_to(
         QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lvalue, const Token &where, bool in_initializer);
 
+    void replace_if_typeof(TypeNode &type);
+
   public:
     TypeResolver(Module &module);
 

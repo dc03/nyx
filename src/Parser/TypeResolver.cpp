@@ -187,6 +187,14 @@ BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Arg
     return type_scratch_space.back().get();
 }
 
+void TypeResolver::replace_if_typeof(TypeNode &type) {
+    if (type->type_tag() == NodeType::TypeofType) {
+        resolve(type.get());
+        using std::swap;
+        type.swap(type_scratch_space.back());
+    }
+}
+
 template <typename T, typename... Args>
 bool one_of(T type, Args... args) {
     const std::array arr{args...};
@@ -810,9 +818,12 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
         stmt.scope_depth = values.crbegin()->scope_depth + 1;
     }
 
+    replace_if_typeof(stmt.return_type);
+
     std::size_t i = 0;
     for (auto &param : stmt.params) {
         ClassStmt *param_class = nullptr;
+        replace_if_typeof(param.second);
 
         if (param.second->type_tag() == NodeType::UserDefinedType) {
             param_class = find_class(dynamic_cast<UserDefinedType &>(*param.second).name.lexeme);
@@ -820,10 +831,6 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
                 error("No such module/class exists in the current global scope", stmt.name);
                 throw TypeException{"No such module/class exists in the current global scope"};
             }
-        } else if (param.second->type_tag() == NodeType::TypeofType) {
-            resolve(dynamic_cast<TypeofType *>(param.second.get()));
-            param.second.swap(type_scratch_space.back());
-            // Same jank as VarStmt to make sure that the resolved type is stored on the AST
         }
 
         values.push_back({param.first.lexeme, param.second.get(), scope_depth + 1, param_class, i++});
@@ -896,13 +903,8 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
     }
 
     if (stmt.initializer != nullptr && stmt.type != nullptr) {
+        replace_if_typeof(stmt.type);
         QualifiedTypeInfo type = resolve(stmt.type.get());
-        if (stmt.type->type_tag() == NodeType::TypeofType) {
-            // This jank is to make sure that typeof is sent to type_scratch_space and the resolved type is stored on
-            // the AST
-            stmt.type.swap(type_scratch_space.back());
-            type = stmt.type.get();
-        }
         ExprVisitorType initializer = resolve(stmt.initializer.get());
         if (!convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name, true)) {
             error("Cannot convert from initializer type to type of variable", stmt.name);
@@ -937,6 +939,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
                 (values.empty() ? 0 : values.back().stack_slot + 1)});
         }
     } else if (stmt.type != nullptr) {
+        replace_if_typeof(stmt.type);
         QualifiedTypeInfo type = resolve(stmt.type.get());
         ClassStmt *stmt_class = nullptr;
 
@@ -982,10 +985,10 @@ BaseTypeVisitorType TypeResolver::visit(UserDefinedType &type) {
 }
 
 BaseTypeVisitorType TypeResolver::visit(ListType &type) {
-    if (type.contained->type_tag() == NodeType::TypeofType) {
-        resolve(dynamic_cast<TypeofType *>(type.contained.get()));
-        type.contained.swap(type_scratch_space.back());
-        // Same jank as VarStmt to make sure that the resolved type is stored on the AST
+    replace_if_typeof(type.contained);
+    resolve(type.contained.get());
+    if (type.size != nullptr) {
+        resolve(type.size.get());
     }
     return &type;
 }

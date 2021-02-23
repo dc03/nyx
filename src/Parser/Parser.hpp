@@ -87,6 +87,7 @@ class Parser {
     // Expression parsing
     ExprNode parse_precedence(ParsePrecedence::of precedence);
     ExprNode expression();
+    ExprNode assignment();
 
     ExprNode and_(bool, ExprNode left);
     ExprNode binary(bool, ExprNode left);
