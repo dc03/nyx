@@ -270,9 +270,12 @@ ExprVisitorType ASTPrinter::visit(SetExpr &expr) {
     current_depth++;
     print(expr.object.get());
     print_tabs(current_depth);
+    std::cout << "Accessing:\n";
+    print_tabs(current_depth);
     print_token(expr.name) << '\n';
     print_tabs(current_depth);
     std::cout << "^^^ assigning value vvv\n";
+    print(expr.value.get());
     current_depth--;
     return {};
 }
