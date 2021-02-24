@@ -280,7 +280,7 @@ fn bar(x: [int, 20]) -> [int] {
 }
 
 print(string(bar(y)) + '\n')
-*/*/*/
+
 var x = 0
 
 class Foo {
@@ -295,4 +295,27 @@ class Bar {
 
 fn baz(bar: const Bar) -> null {
     bar.z.y = 5
+}
+*/*/*/
+var x: [int, 4]
+5 - 6 * 7, 8 + 9 - 45 / 5, 64 - 8 + 9 * 2, -5, 5 ? 6 : 7, x[5], x[5] = 6, x.size
+var y = 0
+y = 5
+
+print(string('Hello world!\n' + string(5)))
+
+fn foo(x: int) -> null {
+    x = 5
+}
+
+class Foo {
+    public var x: int = 0
+    public fn fo() -> int {
+        return 6;
+    }
+}
+
+switch (1) {
+    case 1: 5 * 67
+    case 2: 6 * 65
 }

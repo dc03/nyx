@@ -1,5 +1,6 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
+#include "ASTPrinter.hpp"
 #include "CodeGen/CodeGen.hpp"
 #include "CodeGen/Disassembler.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
@@ -31,6 +32,8 @@ int main(const int, const char *const argv[]) {
     TypeResolver resolver{main};
     main.statements = parser.program();
     resolver.check(main.statements);
+
+    ASTPrinter{}.print_stmts(main.statements);
     /*
     if (!logger.had_error) {
         std::sort(Parser::parsed_modules.begin(), Parser::parsed_modules.end(),
