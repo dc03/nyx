@@ -747,7 +747,7 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
     if (stmt.ctor == nullptr) {
         stmt.ctor = allocate_node(FunctionStmt, stmt.name,
             TypeNode{allocate_node(UserDefinedType, {Type::CLASS, false, false}, stmt.name)}, {},
-            StmtNode{allocate_node(BlockStmt, {})}, {}, values.crbegin()->scope_depth);
+            StmtNode{allocate_node(BlockStmt, {})}, {}, values.empty() ? 0 : values.crbegin()->scope_depth);
         stmt.methods.emplace_back(std::unique_ptr<FunctionStmt>{stmt.ctor}, VisibilityType::PUBLIC);
     }
 

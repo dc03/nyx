@@ -588,7 +588,7 @@ StmtNode Parser::class_declaration() {
             }
         }();
 
-        if (match(TokenType::VAR, TokenType::VAR)) {
+        if (match(TokenType::VAR, TokenType::VAL)) {
             try {
                 std::unique_ptr<VarStmt> member{dynamic_cast<VarStmt *>(variable_declaration().release())};
                 members.emplace_back(std::move(member), visibility);
@@ -636,7 +636,7 @@ StmtNode Parser::class_declaration() {
 StmtNode Parser::function_declaration() {
     consume("Expected function name after 'fn' keyword", TokenType::IDENTIFIER);
 
-    if (current_module.functions.find(previous().lexeme) != current_module.functions.end()) {
+    if (!in_class && current_module.functions.find(previous().lexeme) != current_module.functions.end()) {
         throw_parse_error("Function already defined");
     }
 

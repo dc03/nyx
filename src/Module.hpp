@@ -23,6 +23,12 @@ struct Module {
     std::vector<std::size_t> imported{}; // Indexes into Parser::parsed_modules (better than pointers)
 
     explicit Module(std::string_view name, std::string_view dir) : name{name}, module_directory{dir} {}
+
+    Module(const Module &) = default;
+    Module &operator=(const Module &) = default;
+    Module(Module &&) noexcept = default;
+    Module &operator=(Module &&) noexcept = default;
+    ~Module() = default;
 };
 
 struct RuntimeFunction {

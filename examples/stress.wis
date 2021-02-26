@@ -320,12 +320,12 @@ switch (1) {
     case 2: 6 * 65
 }
 */*/*/
-var y:[int, 5]
-
 class F {
     public var x: int = 0
     public var y = 0
 }
+
+var y:[int, 5]
 
 var f = F()
 
