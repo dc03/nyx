@@ -333,7 +333,7 @@ ExprNode Parser::dot(bool can_assign, ExprNode left) {
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
         Token oper = previous();
-        ExprNode value = expression();
+        ExprNode value = assignment();
 
         auto *node = allocate_node(
             SetExpr, std::move(left), std::move(name), std::move(value), NumericConversionType::NONE, false);
@@ -354,7 +354,7 @@ ExprNode Parser::index(bool can_assign, ExprNode object) {
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
         Token equals = previous();
-        ExprNode value = expression();
+        ExprNode value = assignment();
         auto *assignment =
             allocate_node(ListAssignExpr, std::move(ind), std::move(value), NumericConversionType::NONE, false);
         assignment->resolved.token = std::move(equals);
@@ -469,7 +469,7 @@ ExprNode Parser::variable(bool can_assign) {
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
         Token oper = previous();
-        ExprNode value = expression();
+        ExprNode value = assignment();
         auto *node = allocate_node(AssignExpr, std::move(name), std::move(value), NumericConversionType::NONE, false);
         node->resolved.token = std::move(oper);
         return ExprNode{node};

@@ -296,7 +296,7 @@ class Bar {
 fn baz(bar: const Bar) -> null {
     bar.z.y = 5
 }
-*/*/*/
+
 var x: [int, 4]
 5 - 6 * 7, 8 + 9 - 45 / 5, 64 - 8 + 9 * 2, -5, 5 ? 6 : 7, x[5], x[5] = 6, x.size
 var y = 0
@@ -319,3 +319,15 @@ switch (1) {
     case 1: 5 * 67
     case 2: 6 * 65
 }
+*/*/*/
+var y:[int, 5]
+
+class F {
+    public var x: int = 0
+    public var y = 0
+}
+
+var f = F()
+
+var x = 0
+x = 5, 6, f.x = 7, y[1] = 4

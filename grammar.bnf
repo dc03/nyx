@@ -41,7 +41,7 @@ call           ::= get            ("(" arguments? ")")*
 
 get            ::= expression "." IDENTIFIER
                  | primary
-index          ::= expression "[" expression "]"
+index          ::= expression "[" expression "]" ("=" assignment)?
 super          ::= "super" "." IDENTIFIER
 
 primary        ::= LITERAL|IDENTIFIER|index
