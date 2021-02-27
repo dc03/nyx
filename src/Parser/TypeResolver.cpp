@@ -456,8 +456,6 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
         error("Expected class or list type to take attribute of", name);
         throw TypeException{"Expected class or list type to take attribute of"};
     }
-
-    unreachable();
 }
 
 ExprVisitorType TypeResolver::visit(GetExpr &expr) {
