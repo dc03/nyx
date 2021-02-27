@@ -413,13 +413,7 @@ ExprVisitorType TypeResolver::visit(CommaExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, const Token &name) {
-    if (object.info->data.type == Type::LIST) {
-        if (name.lexeme != "size") {
-            error("Can only get 'size' attribute of a list", name);
-            throw TypeException{"Can only get 'size' attribute of a list"};
-        }
-        return ExprVisitorType{make_new_type<PrimitiveType>(Type::INT, true, false), name};
-    } else if (object.info->data.type == Type::CLASS) {
+    if (object.info->data.type == Type::CLASS) {
         ClassStmt *accessed_type = object.class_;
 
         for (auto &member_decl : accessed_type->members) {

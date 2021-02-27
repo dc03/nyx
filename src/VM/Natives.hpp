@@ -27,5 +27,6 @@ Value native_int(Value *args);
 Value native_float(Value *args);
 Value native_string(Value *args);
 Value native_readline(Value *args);
+Value native_size(Value *args);
 
 #endif

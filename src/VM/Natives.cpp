@@ -15,6 +15,7 @@ std::vector<NativeFn> native_functions{
     {native_float,    "float",    Type::FLOAT,  {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL}}, 1},
     {native_string,   "string",   Type::STRING, {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL, Type::LIST}}, 1},
     {native_readline, "readline", Type::STRING, {{Type::STRING}}, 1},
+    {native_size,     "size",     Type::INT,    {{Type::LIST, Type::STRING}}, 1}
 };
 // clang-format on
 
@@ -94,4 +95,14 @@ Value native_readline(Value *args) {
     std::string result{};
     std::getline(std::cin, result);
     return Value{result};
+}
+
+Value native_size(Value *args) {
+    Value &arg = args[0];
+    if (arg.is_list()) {
+        return Value{static_cast<int>(arg.to_list().size())};
+    } else if (arg.is_string()) {
+        return Value{static_cast<int>(arg.to_string().size())};
+    }
+    unreachable();
 }
