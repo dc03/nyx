@@ -16,21 +16,21 @@ struct TypeException : public std::runtime_error {
     explicit TypeException(std::string_view string) : std::runtime_error{std::string{string}} {}
 };
 
-struct scoped_boolean_manager {
+struct ScopedBooleanManager {
     bool &scoped_bool;
     bool previous_value{};
-    explicit scoped_boolean_manager(bool &controlled) : scoped_bool{controlled} {
+    explicit ScopedBooleanManager(bool &controlled) : scoped_bool{controlled} {
         previous_value = controlled;
         controlled = true;
     }
 
-    ~scoped_boolean_manager() { scoped_bool = previous_value; }
+    ~ScopedBooleanManager() { scoped_bool = previous_value; }
 };
 
-struct scoped_scope_manager {
+struct ScopedScopeManager {
     TypeResolver &resolver;
-    explicit scoped_scope_manager(TypeResolver &resolver) : resolver{resolver} { resolver.begin_scope(); }
-    ~scoped_scope_manager() { resolver.end_scope(); }
+    explicit ScopedScopeManager(TypeResolver &resolver) : resolver{resolver} { resolver.begin_scope(); }
+    ~ScopedScopeManager() { resolver.end_scope(); }
 };
 
 TypeResolver::TypeResolver(Module &module)
@@ -708,7 +708,7 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
 }
 
 StmtVisitorType TypeResolver::visit(BlockStmt &stmt) {
-    scoped_scope_manager manager{*this};
+    ScopedScopeManager manager{*this};
     for (auto &statement : stmt.stmts) {
         if (statement != nullptr) {
             try {
@@ -721,17 +721,17 @@ StmtVisitorType TypeResolver::visit(BlockStmt &stmt) {
 StmtVisitorType TypeResolver::visit(BreakStmt &) {}
 
 StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
-    scoped_boolean_manager class_manager{in_class};
+    ScopedBooleanManager class_manager{in_class};
 
     ////////////////////////////////////////////////////////////////////////////
-    struct scoped_class_manager {
+    struct ScopedClassManager {
         ClassStmt *&managed_class;
         ClassStmt *previous_value{nullptr};
-        scoped_class_manager(ClassStmt *(&current_class), ClassStmt *stmt)
+        ScopedClassManager(ClassStmt *(&current_class), ClassStmt *stmt)
             : managed_class{current_class}, previous_value{current_class} {
             current_class = stmt;
         }
-        ~scoped_class_manager() { managed_class = previous_value; }
+        ~ScopedClassManager() { managed_class = previous_value; }
     } pointer_manager{current_class, &stmt};
     ////////////////////////////////////////////////////////////////////////////
 
@@ -788,18 +788,18 @@ StmtVisitorType TypeResolver::visit(ExpressionStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
-    // scoped_scope_manager manager{*this};
-    scoped_boolean_manager function_manager{in_function};
+    // ScopedScopeManager manager{*this};
+    ScopedBooleanManager function_manager{in_function};
 
     ////////////////////////////////////////////////////////////////////////////
-    struct scoped_function_manager {
+    struct ScopedFunctionmanager {
         FunctionStmt *&managed_class;
         FunctionStmt *previous_value{nullptr};
-        scoped_function_manager(FunctionStmt *(&current_class), FunctionStmt *stmt)
+        ScopedFunctionmanager(FunctionStmt *(&current_class), FunctionStmt *stmt)
             : managed_class{current_class}, previous_value{current_class} {
             current_class = stmt;
         }
-        ~scoped_function_manager() { managed_class = previous_value; }
+        ~ScopedFunctionmanager() { managed_class = previous_value; }
     } pointer_manager{current_function, &stmt};
 
     bool throwaway{};
@@ -807,7 +807,7 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     bool is_in_dtor = current_class != nullptr && stmt.name.lexeme[0] == '~' &&
                       (stmt.name.lexeme.substr(1) == current_class->name.lexeme);
 
-    scoped_boolean_manager special_func_manager{is_in_ctor ? in_ctor : (is_in_dtor ? in_dtor : throwaway)};
+    ScopedBooleanManager special_func_manager{is_in_ctor ? in_ctor : (is_in_dtor ? in_dtor : throwaway)};
     ////////////////////////////////////////////////////////////////////////////
 
     if (!values.empty()) {
@@ -864,7 +864,7 @@ StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(SwitchStmt &stmt) {
-    scoped_boolean_manager switch_manager{in_switch};
+    ScopedBooleanManager switch_manager{in_switch};
 
     ExprVisitorType condition = resolve(stmt.condition.get());
 
@@ -958,8 +958,8 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(WhileStmt &stmt) {
-    // scoped_scope_manager manager{*this};
-    scoped_boolean_manager loop_manager{in_loop};
+    // ScopedScopeManager manager{*this};
+    ScopedBooleanManager loop_manager{in_loop};
 
     ExprVisitorType condition = resolve(stmt.condition.get());
     if (one_of(condition.info->data.type, Type::CLASS, Type::LIST)) {
