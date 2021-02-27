@@ -30,7 +30,7 @@
 - [ ] Fix bug in accessing variables from outer scope (by implementing
   `Instruction::ACCESS_OUTER_SHORT`, `Instruction::ACCESS_OUTER_LONG`,
   `Instruction::MAKE_REF_TO_OUTER`)
-- [ ] Fix `Chunk::get_line_number` relying on instruction number (which is
+- [x] Fix `Chunk::get_line_number` relying on instruction number (which is
   wrong), it should rely on the instruction pointer
 - [ ] Fix bug in parser where function defined inside class with same name as
   one outside causes an error

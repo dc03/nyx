@@ -23,21 +23,19 @@ void disassemble(Chunk &chunk, std::string_view name) {
     print_tab(1, 4) << "--------";
     print_tab(1, 4) << "----------- ------------------------------------------------------\n";
     std::size_t i = 0;
-    std::size_t insn_count = 1;
     while (i < chunk.bytes.size()) {
-        i += disassemble_instruction(chunk, static_cast<Instruction>(chunk.bytes[i]), i, insn_count);
-        insn_count++;
+        i += disassemble_instruction(chunk, static_cast<Instruction>(chunk.bytes[i]), i, i + 1);
     }
 }
 
-std::ostream &print_preamble(Chunk &chunk, std::string_view name, std::size_t byte, std::size_t insn_count) {
+std::ostream &print_preamble(Chunk &chunk, std::string_view name, std::size_t byte, std::size_t insn_ptr) {
     static std::size_t previous_line_number = -1;
-    if (std::size_t line_number = chunk.get_line_number(insn_count); line_number == previous_line_number) {
+    if (std::size_t line_number = chunk.get_line_number(insn_ptr); line_number == previous_line_number) {
         std::cout << std::setw(4) << std::setfill(' ') << "|"
                   << "  ";
     } else {
         previous_line_number = line_number;
-        std::cout << std::setw(4) << std::setfill('0') << chunk.get_line_number(insn_count) << "  ";
+        std::cout << std::setw(4) << std::setfill('0') << chunk.get_line_number(insn_ptr) << "  ";
     }
     std::cout << std::hex << std::setw(8) << std::setfill('0') << byte;
     std::cout << std::resetiosflags(std::ios_base::hex);
@@ -45,13 +43,13 @@ std::ostream &print_preamble(Chunk &chunk, std::string_view name, std::size_t by
     return print_tab(1, 4) << name;
 }
 
-std::size_t single_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte, std::size_t insn_count) {
-    print_preamble(chunk, name, byte, insn_count) << '\n';
+std::size_t single_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte, std::size_t insn_ptr) {
+    print_preamble(chunk, name, byte, insn_ptr) << '\n';
     return 1;
 }
 
-std::size_t two_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte, std::size_t insn_count) {
-    print_preamble(chunk, name, byte, insn_count);
+std::size_t two_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte, std::size_t insn_ptr) {
+    print_preamble(chunk, name, byte, insn_ptr);
     std::size_t next_byte = chunk.bytes[byte + 1];
     if (name == "CONST_SHORT") {
         std::cout << '\t';
@@ -62,15 +60,15 @@ std::size_t two_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte,
 
     for (int i = 1; i < 2; i++) {
         std::size_t offset_bit = chunk.bytes[byte + i];
-        print_preamble(chunk, "", byte + i, insn_count) << "| " << std::hex << std::setw(8) << offset_bit;
+        print_preamble(chunk, "", byte + i, insn_ptr) << "| " << std::hex << std::setw(8) << offset_bit;
         print_tab(1, 2) << std::resetiosflags(std::ios_base::hex) << std::setw(8) << offset_bit << '\n';
     }
 
     return 2;
 }
 
-std::size_t four_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte, std::size_t insn_count) {
-    print_preamble(chunk, name, byte, insn_count) << '\t';
+std::size_t four_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte, std::size_t insn_ptr) {
+    print_preamble(chunk, name, byte, insn_ptr) << '\t';
     std::size_t next_bytes = chunk.bytes[byte + 1];
     next_bytes = (next_bytes << 8) | chunk.bytes[byte + 2];
     next_bytes = (next_bytes << 8) | chunk.bytes[byte + 3];
@@ -95,67 +93,66 @@ std::size_t four_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte
 
     for (int i = 1; i < 4; i++) {
         std::size_t offset_bit = chunk.bytes[byte + i];
-        print_preamble(chunk, "", byte + i, insn_count) << "| " << std::hex << std::setw(8) << offset_bit;
+        print_preamble(chunk, "", byte + i, insn_ptr) << "| " << std::hex << std::setw(8) << offset_bit;
         print_tab(1, 2) << std::resetiosflags(std::ios_base::hex) << std::setw(8) << offset_bit << '\n';
     }
 
     return 4;
 }
 
-std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::size_t byte, std::size_t insn_count) {
+std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::size_t byte, std::size_t insn_ptr) {
     switch (instruction) {
-        case Instruction::HALT: return single_byte_insn(chunk, "HALT", byte, insn_count);
-        case Instruction::POP: return single_byte_insn(chunk, "POP", byte, insn_count);
-        case Instruction::CONST_SHORT: return two_byte_insn(chunk, "CONST_SHORT", byte, insn_count);
-        case Instruction::CONST_LONG: return four_byte_insn(chunk, "CONST_LONG", byte, insn_count);
-        case Instruction::CONCAT: return single_byte_insn(chunk, "CONCAT", byte, insn_count);
-        case Instruction::ADD: return single_byte_insn(chunk, "ADD", byte, insn_count);
-        case Instruction::SUB: return single_byte_insn(chunk, "SUB", byte, insn_count);
-        case Instruction::MUL: return single_byte_insn(chunk, "MUL", byte, insn_count);
-        case Instruction::DIV: return single_byte_insn(chunk, "DIV", byte, insn_count);
-        case Instruction::MOD: return single_byte_insn(chunk, "MOD", byte, insn_count);
-        case Instruction::SHIFT_LEFT: return single_byte_insn(chunk, "SHIFT_LEFT", byte, insn_count);
-        case Instruction::SHIFT_RIGHT: return single_byte_insn(chunk, "SHIFT_RIGHT", byte, insn_count);
-        case Instruction::BIT_AND: return single_byte_insn(chunk, "BIT_AND", byte, insn_count);
-        case Instruction::BIT_OR: return single_byte_insn(chunk, "BIT_OR", byte, insn_count);
-        case Instruction::BIT_NOT: return single_byte_insn(chunk, "BIT_NOT", byte, insn_count);
-        case Instruction::BIT_XOR: return single_byte_insn(chunk, "BIT_XOR", byte, insn_count);
-        case Instruction::NOT: return single_byte_insn(chunk, "NOT", byte, insn_count);
-        case Instruction::EQUAL: return single_byte_insn(chunk, "EQUAL", byte, insn_count);
-        case Instruction::GREATER: return single_byte_insn(chunk, "GREATER", byte, insn_count);
-        case Instruction::LESSER: return single_byte_insn(chunk, "LESSER", byte, insn_count);
-        case Instruction::NEGATE: return single_byte_insn(chunk, "NEGATE", byte, insn_count);
-        case Instruction::TRUE: return single_byte_insn(chunk, "TRUE", byte, insn_count);
-        case Instruction::FALSE: return single_byte_insn(chunk, "FALSE", byte, insn_count);
-        case Instruction::NULL_: return single_byte_insn(chunk, "NULL_", byte, insn_count);
-        case Instruction::ACCESS_LOCAL_SHORT: return two_byte_insn(chunk, "ACCESS_LOCAL_SHORT", byte, insn_count);
-        case Instruction::ACCESS_LOCAL_LONG: return four_byte_insn(chunk, "ACCESS_LOCAL_LONG", byte, insn_count);
-        case Instruction::JUMP_FORWARD: return four_byte_insn(chunk, "JUMP_FORWARD", byte, insn_count);
-        case Instruction::JUMP_BACKWARD: return four_byte_insn(chunk, "JUMP_BACKWARD", byte, insn_count);
-        case Instruction::JUMP_IF_FALSE: return four_byte_insn(chunk, "JUMP_IF_FALSE", byte, insn_count);
-        case Instruction::JUMP_IF_TRUE: return four_byte_insn(chunk, "JUMP_IF_TRUE", byte, insn_count);
-        case Instruction::POP_JUMP_IF_EQUAL: return four_byte_insn(chunk, "POP_JUMP_IF_EQUAL", byte, insn_count);
-        case Instruction::POP_JUMP_IF_FALSE: return four_byte_insn(chunk, "POP_JUMP_IF_FALSE", byte, insn_count);
-        case Instruction::POP_JUMP_BACK_IF_TRUE:
-            return four_byte_insn(chunk, "POP_JUMP_BACK_IF_TRUE", byte, insn_count);
-        case Instruction::ASSIGN_LOCAL: return four_byte_insn(chunk, "ASSIGN_LOCAL", byte, insn_count);
-        case Instruction::MAKE_REF_TO_LOCAL: return four_byte_insn(chunk, "MAKE_REF_TO_LOCAL", byte, insn_count);
-        case Instruction::DEREF: return single_byte_insn(chunk, "DEREF", byte, insn_count);
-        case Instruction::INCR_LOCAL: return four_byte_insn(chunk, "INCR_LOCAL", byte, insn_count);
-        case Instruction::DECR_LOCAL: return four_byte_insn(chunk, "DECR_LOCAL", byte, insn_count);
-        case Instruction::MUL_LOCAL: return four_byte_insn(chunk, "MUL_LOCAL", byte, insn_count);
-        case Instruction::DIV_LOCAL: return four_byte_insn(chunk, "DIV_LOCAL", byte, insn_count);
-        case Instruction::LOAD_FUNCTION: return single_byte_insn(chunk, "LOAD_FUNCTION", byte, insn_count);
-        case Instruction::CALL_FUNCTION: return single_byte_insn(chunk, "CALL_FUNCTION", byte, insn_count);
-        case Instruction::RETURN: return four_byte_insn(chunk, "RETURN", byte, insn_count);
-        case Instruction::CALL_NATIVE: return single_byte_insn(chunk, "CALL_NATIVE", byte, insn_count);
-        case Instruction::MAKE_LIST: return two_byte_insn(chunk, "MAKE_LIST", byte, insn_count);
-        case Instruction::ALLOC_AT_LEAST: return single_byte_insn(chunk, "ALLOC_AT_LEAST", byte, insn_count);
-        case Instruction::ALLOC_NESTED_LISTS: return two_byte_insn(chunk, "ALLOC_NESTED_LISTS", byte, insn_count);
-        case Instruction::INDEX_LIST: return single_byte_insn(chunk, "INDEX_LIST", byte, insn_count);
-        case Instruction::CHECK_INDEX: return single_byte_insn(chunk, "CHECK_INDEX", byte, insn_count);
-        case Instruction::ASSIGN_LIST_AT: return single_byte_insn(chunk, "ASSIGN_LIST_AT", byte, insn_count);
-        case Instruction::COPY: return single_byte_insn(chunk, "COPY", byte, insn_count);
+        case Instruction::HALT: return single_byte_insn(chunk, "HALT", byte, insn_ptr);
+        case Instruction::POP: return single_byte_insn(chunk, "POP", byte, insn_ptr);
+        case Instruction::CONST_SHORT: return two_byte_insn(chunk, "CONST_SHORT", byte, insn_ptr);
+        case Instruction::CONST_LONG: return four_byte_insn(chunk, "CONST_LONG", byte, insn_ptr);
+        case Instruction::CONCAT: return single_byte_insn(chunk, "CONCAT", byte, insn_ptr);
+        case Instruction::ADD: return single_byte_insn(chunk, "ADD", byte, insn_ptr);
+        case Instruction::SUB: return single_byte_insn(chunk, "SUB", byte, insn_ptr);
+        case Instruction::MUL: return single_byte_insn(chunk, "MUL", byte, insn_ptr);
+        case Instruction::DIV: return single_byte_insn(chunk, "DIV", byte, insn_ptr);
+        case Instruction::MOD: return single_byte_insn(chunk, "MOD", byte, insn_ptr);
+        case Instruction::SHIFT_LEFT: return single_byte_insn(chunk, "SHIFT_LEFT", byte, insn_ptr);
+        case Instruction::SHIFT_RIGHT: return single_byte_insn(chunk, "SHIFT_RIGHT", byte, insn_ptr);
+        case Instruction::BIT_AND: return single_byte_insn(chunk, "BIT_AND", byte, insn_ptr);
+        case Instruction::BIT_OR: return single_byte_insn(chunk, "BIT_OR", byte, insn_ptr);
+        case Instruction::BIT_NOT: return single_byte_insn(chunk, "BIT_NOT", byte, insn_ptr);
+        case Instruction::BIT_XOR: return single_byte_insn(chunk, "BIT_XOR", byte, insn_ptr);
+        case Instruction::NOT: return single_byte_insn(chunk, "NOT", byte, insn_ptr);
+        case Instruction::EQUAL: return single_byte_insn(chunk, "EQUAL", byte, insn_ptr);
+        case Instruction::GREATER: return single_byte_insn(chunk, "GREATER", byte, insn_ptr);
+        case Instruction::LESSER: return single_byte_insn(chunk, "LESSER", byte, insn_ptr);
+        case Instruction::NEGATE: return single_byte_insn(chunk, "NEGATE", byte, insn_ptr);
+        case Instruction::TRUE: return single_byte_insn(chunk, "TRUE", byte, insn_ptr);
+        case Instruction::FALSE: return single_byte_insn(chunk, "FALSE", byte, insn_ptr);
+        case Instruction::NULL_: return single_byte_insn(chunk, "NULL_", byte, insn_ptr);
+        case Instruction::ACCESS_LOCAL_SHORT: return two_byte_insn(chunk, "ACCESS_LOCAL_SHORT", byte, insn_ptr);
+        case Instruction::ACCESS_LOCAL_LONG: return four_byte_insn(chunk, "ACCESS_LOCAL_LONG", byte, insn_ptr);
+        case Instruction::JUMP_FORWARD: return four_byte_insn(chunk, "JUMP_FORWARD", byte, insn_ptr);
+        case Instruction::JUMP_BACKWARD: return four_byte_insn(chunk, "JUMP_BACKWARD", byte, insn_ptr);
+        case Instruction::JUMP_IF_FALSE: return four_byte_insn(chunk, "JUMP_IF_FALSE", byte, insn_ptr);
+        case Instruction::JUMP_IF_TRUE: return four_byte_insn(chunk, "JUMP_IF_TRUE", byte, insn_ptr);
+        case Instruction::POP_JUMP_IF_EQUAL: return four_byte_insn(chunk, "POP_JUMP_IF_EQUAL", byte, insn_ptr);
+        case Instruction::POP_JUMP_IF_FALSE: return four_byte_insn(chunk, "POP_JUMP_IF_FALSE", byte, insn_ptr);
+        case Instruction::POP_JUMP_BACK_IF_TRUE: return four_byte_insn(chunk, "POP_JUMP_BACK_IF_TRUE", byte, insn_ptr);
+        case Instruction::ASSIGN_LOCAL: return four_byte_insn(chunk, "ASSIGN_LOCAL", byte, insn_ptr);
+        case Instruction::MAKE_REF_TO_LOCAL: return four_byte_insn(chunk, "MAKE_REF_TO_LOCAL", byte, insn_ptr);
+        case Instruction::DEREF: return single_byte_insn(chunk, "DEREF", byte, insn_ptr);
+        case Instruction::INCR_LOCAL: return four_byte_insn(chunk, "INCR_LOCAL", byte, insn_ptr);
+        case Instruction::DECR_LOCAL: return four_byte_insn(chunk, "DECR_LOCAL", byte, insn_ptr);
+        case Instruction::MUL_LOCAL: return four_byte_insn(chunk, "MUL_LOCAL", byte, insn_ptr);
+        case Instruction::DIV_LOCAL: return four_byte_insn(chunk, "DIV_LOCAL", byte, insn_ptr);
+        case Instruction::LOAD_FUNCTION: return single_byte_insn(chunk, "LOAD_FUNCTION", byte, insn_ptr);
+        case Instruction::CALL_FUNCTION: return single_byte_insn(chunk, "CALL_FUNCTION", byte, insn_ptr);
+        case Instruction::RETURN: return four_byte_insn(chunk, "RETURN", byte, insn_ptr);
+        case Instruction::CALL_NATIVE: return single_byte_insn(chunk, "CALL_NATIVE", byte, insn_ptr);
+        case Instruction::MAKE_LIST: return two_byte_insn(chunk, "MAKE_LIST", byte, insn_ptr);
+        case Instruction::ALLOC_AT_LEAST: return single_byte_insn(chunk, "ALLOC_AT_LEAST", byte, insn_ptr);
+        case Instruction::ALLOC_NESTED_LISTS: return two_byte_insn(chunk, "ALLOC_NESTED_LISTS", byte, insn_ptr);
+        case Instruction::INDEX_LIST: return single_byte_insn(chunk, "INDEX_LIST", byte, insn_ptr);
+        case Instruction::CHECK_INDEX: return single_byte_insn(chunk, "CHECK_INDEX", byte, insn_ptr);
+        case Instruction::ASSIGN_LIST_AT: return single_byte_insn(chunk, "ASSIGN_LIST_AT", byte, insn_ptr);
+        case Instruction::COPY: return single_byte_insn(chunk, "COPY", byte, insn_ptr);
     }
     unreachable();
 }

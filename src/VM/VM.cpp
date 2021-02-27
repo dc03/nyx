@@ -119,7 +119,6 @@ List VM::make_list(List::tag type) {
 }
 
 void VM::run(RuntimeModule &main_module) {
-    std::size_t insn_number = 1;
     ip = &main_module.top_level_code.bytes[0];
     chunk = &main_module.top_level_code;
     current_module = &main_module;
@@ -181,7 +180,7 @@ void VM::run(RuntimeModule &main_module) {
         push(*incremented);                                                                                            \
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    for (;; insn_number++) {
+    for (;;) {
 #ifdef PRINT_STACK
         for (Value *begin{stack}; begin < stack_top; begin++) {
             std::cout << "[ ";
@@ -203,11 +202,11 @@ void VM::run(RuntimeModule &main_module) {
             case is Instruction::MUL: binary_arithmetic_instruction(*); break;
             case is Instruction::DIV:
                 if (top_from(1).is_int() && top_from(1).to_int() == 0) {
-                    runtime_error("Division by zero", chunk->get_line_number(insn_number));
-                    break;
+                    runtime_error("Division by zero", chunk->get_line_number(ip - &chunk->bytes[0] - 1));
+                    return;
                 } else if (top_from(1).to_double() == 0.0f) {
-                    runtime_error("Division by zero", chunk->get_line_number(insn_number));
-                    break;
+                    runtime_error("Division by zero", chunk->get_line_number(ip - &chunk->bytes[0] - 1));
+                    return;
                 }
                 binary_arithmetic_instruction(/);
                 break;
@@ -220,9 +219,9 @@ void VM::run(RuntimeModule &main_module) {
 
             case is Instruction::SHIFT_LEFT: {
                 if (top_from(2).to_int() < 0 || top_from(1).to_int() < 0) {
-                    runtime_error(
-                        "Bitwise shifting with negative numbers is not allowed", chunk->get_line_number(insn_number));
-                    break;
+                    runtime_error("Bitwise shifting with negative numbers is not allowed",
+                        chunk->get_line_number(ip - &chunk->bytes[0] - 1));
+                    return;
                 }
                 Value result{static_cast<int>(static_cast<unsigned int>(top_from(2).to_int())
                                               << static_cast<unsigned int>(top_from(1).to_int()))};
@@ -231,9 +230,9 @@ void VM::run(RuntimeModule &main_module) {
             }
             case is Instruction::SHIFT_RIGHT: {
                 if (top_from(2).to_int() < 0 || top_from(1).to_int() < 0) {
-                    runtime_error(
-                        "Bitwise shifting with negative numbers is not allowed", chunk->get_line_number(insn_number));
-                    break;
+                    runtime_error("Bitwise shifting with negative numbers is not allowed",
+                        chunk->get_line_number(ip - &chunk->bytes[0] - 1));
+                    return;
                 }
                 Value result{static_cast<int>(static_cast<unsigned int>(top_from(2).to_int()) >>
                                               static_cast<unsigned int>(top_from(1).to_int()))};
@@ -248,8 +247,8 @@ void VM::run(RuntimeModule &main_module) {
             case is Instruction::MOD: {
                 if (top_from(1).to_int() <= 0) {
                     runtime_error("Cannot modulo a number with a value lesser than or equal to zero",
-                        chunk->get_line_number(insn_number));
-                    break;
+                        chunk->get_line_number(ip - &chunk->bytes[0] - 1));
+                    return;
                 }
                 Value result{top_from(2).to_int() % top_from(1).to_int()};
                 pop_twice_push(result);
@@ -385,8 +384,8 @@ void VM::run(RuntimeModule &main_module) {
             case is Instruction::MUL_LOCAL: binary_compound_assignment(*=); break;
             case is Instruction::DIV_LOCAL: {
                 if (top_from(1).to_numeric() == 0) {
-                    runtime_error("Division by zero", chunk->get_line_number(insn_number));
-                    break;
+                    runtime_error("Division by zero", chunk->get_line_number(ip - &chunk->bytes[0] - 1));
+                    return;
                 }
                 binary_compound_assignment(/=);
                 break;
@@ -474,7 +473,7 @@ void VM::run(RuntimeModule &main_module) {
                 List &list = top_from(2).to_list();
                 std::size_t index = top_from(1).to_int();
                 if (index >= list.size()) {
-                    runtime_error("List index out of range", chunk->get_line_number(insn_number));
+                    runtime_error("List index out of range", chunk->get_line_number(ip - &chunk->bytes[0] - 1));
                     return;
                 }
                 break;

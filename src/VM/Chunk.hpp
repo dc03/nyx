@@ -32,7 +32,7 @@ struct Chunk {
     std::size_t emit_instruction(Instruction instruction, std::size_t line_number);
     std::size_t emit_integer(std::size_t integer);
 
-    std::size_t get_line_number(std::size_t insn_number);
+    std::size_t get_line_number(std::size_t insn_ptr);
 };
 
 #endif

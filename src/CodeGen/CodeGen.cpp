@@ -13,7 +13,6 @@ void Generator::begin_scope() {
 }
 
 void Generator::end_scope() {
-    // Only emit pops for the global scope
     for (std::size_t begin = scopes.top(); begin > 0; begin--) {
         current_chunk->emit_instruction(Instruction::POP, 0);
     }
@@ -443,7 +442,7 @@ StmtVisitorType Generator::visit(ContinueStmt &stmt) {
 
 StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
     compile(stmt.expr.get());
-    current_chunk->emit_instruction(Instruction::POP, 0);
+    current_chunk->emit_instruction(Instruction::POP, current_chunk->line_numbers.back().first);
 }
 
 StmtVisitorType Generator::visit(FunctionStmt &stmt) {
@@ -551,7 +550,8 @@ StmtVisitorType Generator::visit(SwitchStmt &stmt) {
     std::size_t default_jump{};
     for (auto &case_ : stmt.cases) {
         compile(case_.first.get());
-        jumps.push_back(current_chunk->emit_instruction(Instruction::POP_JUMP_IF_EQUAL, 0));
+        jumps.push_back(
+            current_chunk->emit_instruction(Instruction::POP_JUMP_IF_EQUAL, current_chunk->line_numbers.back().first));
         current_chunk->emit_bytes(0, 0);
         current_chunk->emit_byte(0);
     }

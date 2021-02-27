@@ -319,7 +319,7 @@ switch (1) {
     case 1: 5 * 67
     case 2: 6 * 65
 }
-*/*/*/
+
 class F {
     public var x: int = 0
     public var y = 0
@@ -331,3 +331,11 @@ var f = F()
 
 var x = 0
 x = 5, 6, f.x = 7, y[1] = 4
+*/*/*/
+var x = 5 * 6
+print(x)
+for (var i = 0; i < 5; ++i) {
+    if i == 4 {
+        5 / 0
+    }
+}

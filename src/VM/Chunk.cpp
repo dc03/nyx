@@ -15,12 +15,22 @@ std::size_t Chunk::add_constant(Value value) {
 
 std::size_t Chunk::emit_byte(Chunk::byte value) {
     bytes.push_back(value);
+    if (line_numbers.empty()) {
+        line_numbers.emplace_back(1, 1);
+    } else {
+        line_numbers.back().second += 1;
+    }
     return bytes.size() - 1;
 }
 
 std::size_t Chunk::emit_bytes(Chunk::byte value_1, Chunk::byte value_2) {
     bytes.push_back(value_1);
     bytes.push_back(value_2);
+    if (line_numbers.empty()) {
+        line_numbers.emplace_back(1, 2);
+    } else {
+        line_numbers.back().second += 2;
+    }
     return bytes.size() - 2;
 }
 
@@ -65,9 +75,9 @@ std::size_t Chunk::emit_integer(std::size_t integer) {
     }
 }
 
-std::size_t Chunk::get_line_number(std::size_t insn_number) {
+std::size_t Chunk::get_line_number(std::size_t insn_ptr) {
     std::size_t i = 0;
-    long long signed_insn_number = insn_number;
+    long long signed_insn_number = insn_ptr;
     while (signed_insn_number > 0 && i < line_numbers.size()) {
         signed_insn_number -= static_cast<long long>(line_numbers[i].second);
         i++;
