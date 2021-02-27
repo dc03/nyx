@@ -60,10 +60,10 @@ import         ::= "import" STRING EOL
 var            ::= ("var"|"val") IDENTIFIER ((":" TYPE)? "=" expression)? EOL
 
 params         ::= (IDENTIFIER ":" TYPE)*
-fn             ::= "fn" IDENTIFIER "(" params ")" "->" TYPE block
+fn             ::= "fn" "~"? IDENTIFIER "(" params ")" "->" TYPE block
 
 type_decl      ::= "type" IDENTIFIER "=" TYPE EOL
-class          ::= "class" IDENTIFIER "{" (("private"|"public"|"protected")(var|fn|"~" fn))* "}"
+class          ::= "class" IDENTIFIER "{" (("private"|"public"|"protected")(var|fn))* "}"
 
 statement      ::= expr_stmt
                  | for
