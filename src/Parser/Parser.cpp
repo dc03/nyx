@@ -13,6 +13,7 @@
 #include <fstream>
 #include <functional>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 std::vector<std::pair<Module, std::size_t>> Parser::parsed_modules{};
@@ -40,6 +41,14 @@ struct ScopedIntegerManager {
     ~ScopedIntegerManager() { scoped_int--; }
 };
 
+template <typename T, typename = std::enable_if_t<std::is_pointer_v<T>>>
+struct ScopedPointerManager {
+    T &controlled;
+    T previous;
+    explicit ScopedPointerManager(T &controlled) : controlled{controlled}, previous{controlled} {}
+    ~ScopedPointerManager() { controlled = previous; }
+};
+
 void Parser::add_rule(TokenType type, ParseRule rule) noexcept {
     rules[static_cast<std::size_t>(type)] = rule;
 }
@@ -54,11 +63,17 @@ void Parser::throw_parse_error(const std::string_view message) const {
     throw ParseException{erroneous, message};
 }
 
+void Parser::throw_parse_error(const std::string_view message, const Token &where) const {
+    error(message, where);
+    throw ParseException{where, message};
+}
+
 void Parser::synchronize() {
     advance();
 
     while (!is_at_end()) {
-        if (previous().type == TokenType::SEMICOLON || previous().type == TokenType::END_OF_LINE) {
+        if (previous().type == TokenType::SEMICOLON || previous().type == TokenType::END_OF_LINE ||
+            previous().type == TokenType::RIGHT_BRACE) {
             return;
         }
 
@@ -570,6 +585,9 @@ StmtNode Parser::class_declaration() {
     std::vector<ClassStmt::MemberType> members{};
     std::vector<ClassStmt::MethodType> methods{};
 
+    ScopedPointerManager<std::vector<ClassStmt::MethodType> *> current_methods_manager{current_methods};
+    current_methods = &methods;
+
     // ScopedIntegerManager depth_manager{scope_depth};
 
     consume("Expected '{' after class name", TokenType::LEFT_BRACE);
@@ -638,6 +656,11 @@ StmtNode Parser::function_declaration() {
 
     if (!in_class && current_module.functions.find(previous().lexeme) != current_module.functions.end()) {
         throw_parse_error("Function already defined");
+    } else if (in_class && std::find_if(current_methods->cbegin(), current_methods->cend(),
+                               [previous = previous()](const ClassStmt::MethodType &arg) {
+                                   return arg.first->name == previous;
+                               }) != current_methods->end()) {
+        throw_parse_error("Method already defined", previous());
     }
 
     Token name = previous();

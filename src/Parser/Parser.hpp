@@ -57,7 +57,7 @@ class Parser {
     bool in_function{false};
     bool in_switch{false};
 
-    std::vector<std::pair<std::unique_ptr<FunctionStmt>, VisibilityType>> *current_methods{};
+    std::vector<ClassStmt::MethodType> *current_methods{};
 
     void add_rule(TokenType type, ParseRule rule) noexcept;
     [[nodiscard]] constexpr const ParseRule &get_rule(TokenType type) const noexcept;
@@ -66,6 +66,7 @@ class Parser {
     template <typename Allocated>
     StmtNode single_token_statement(std::string_view token, bool condition, std::string_view error_message);
     void throw_parse_error(const std::string_view message) const;
+    void throw_parse_error(const std::string_view message, const Token &where) const;
 
   public:
     static std::vector<std::pair<Module, std::size_t>> parsed_modules;

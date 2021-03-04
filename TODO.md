@@ -32,5 +32,5 @@
   `Instruction::MAKE_REF_TO_OUTER`)
 - [x] Fix `Chunk::get_line_number` relying on instruction number (which is
   wrong), it should rely on the instruction pointer
-- [ ] Fix bug in parser where function defined inside class with same name as
+- [x] Fix bug in parser where function defined inside class with same name as
   one outside causes an error
