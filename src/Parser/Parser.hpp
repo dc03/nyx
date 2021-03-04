@@ -57,6 +57,8 @@ class Parser {
     bool in_function{false};
     bool in_switch{false};
 
+    std::vector<std::pair<std::unique_ptr<FunctionStmt>, VisibilityType>> *current_methods{};
+
     void add_rule(TokenType type, ParseRule rule) noexcept;
     [[nodiscard]] constexpr const ParseRule &get_rule(TokenType type) const noexcept;
     void synchronize();

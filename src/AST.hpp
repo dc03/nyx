@@ -520,19 +520,21 @@ struct BreakStmt final : public Stmt {
 enum class VisibilityType { PRIVATE, PROTECTED, PUBLIC };
 
 struct ClassStmt final : public Stmt {
+    using MemberType = std::pair<std::unique_ptr<VarStmt>, VisibilityType>;
+    using MethodType = std::pair<std::unique_ptr<FunctionStmt>, VisibilityType>;
+
     Token name;
     FunctionStmt *ctor;
     FunctionStmt *dtor;
-    std::vector<std::pair<std::unique_ptr<VarStmt>, VisibilityType>> members;
-    std::vector<std::pair<std::unique_ptr<FunctionStmt>, VisibilityType>> methods;
+    std::vector<MemberType> members;
+    std::vector<MethodType> methods;
 
     std::string_view string_tag() override final { return "ClassStmt"; }
 
     NodeType type_tag() override final { return NodeType::ClassStmt; }
 
-    ClassStmt(Token name, FunctionStmt *ctor, FunctionStmt *dtor,
-        std::vector<std::pair<std::unique_ptr<VarStmt>, VisibilityType>> members,
-        std::vector<std::pair<std::unique_ptr<FunctionStmt>, VisibilityType>> methods)
+    ClassStmt(Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<MemberType> members,
+        std::vector<MethodType> methods)
         : name{std::move(name)}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, methods{std::move(methods)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }

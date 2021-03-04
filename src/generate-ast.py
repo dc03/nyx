@@ -66,10 +66,15 @@ def declare_base(file, base_name: str, members: str = '') -> None:
     return None
 
 
-def declare_derived_type(file, base_name: str, derived_name: str, ctor_args: str, members: str, ctor_params: str) \
-        -> None:
+def declare_derived_type(file, base_name: str, derived_name: str, ctor_args: str, members: str, ctor_params: str,
+                         typedefs: List[str] = None) -> None:
     file.write('struct ' + derived_name +
                ' final: public ' + base_name + ' {\n')
+
+    if typedefs is not None:
+        for typedef in typedefs:
+            tab(file, 1).write(typedef.strip() + ';\n')
+    file.write('\n')
 
     member_list = members.split(', ')
     if members != '':
@@ -133,9 +138,9 @@ def declare_expr_type(ctor_args: str, members: str) -> None:
     return None
 
 
-def declare_stmt_type(ctor_args: str, members: str) -> None:
+def declare_stmt_type(ctor_args: str, members: str, typedefs: List[str] = None) -> None:
     global stmt_count
-    declare_derived_type(file, 'Stmt', Stmts[stmt_count], ctor_args, members, members)
+    declare_derived_type(file, 'Stmt', Stmts[stmt_count], ctor_args, members, members, typedefs)
     stmt_count += 1
     return None
 
@@ -314,8 +319,10 @@ if __name__ == '__main__':
         declare_stmt_type('name{std::move(name)}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, '
                           'methods{std::move(methods)}',
                           'Token name, FunctionStmt *ctor, FunctionStmt *dtor, '
-                          'std::vector<std::pair<std::unique_ptr<VarStmt>,VisibilityType>> members, '
-                          'std::vector<std::pair<std::unique_ptr<FunctionStmt>,VisibilityType>> methods')
+                          'std::vector<MemberType> members, '
+                          'std::vector<MethodType> methods',
+                          ['using MemberType = std::pair<std::unique_ptr<VarStmt>,VisibilityType>',
+                           'using MethodType = std::pair<std::unique_ptr<FunctionStmt>,VisibilityType>'])
 
         declare_stmt_type('keyword{std::move(keyword)}',
                           'Token keyword')

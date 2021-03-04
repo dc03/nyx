@@ -567,8 +567,8 @@ StmtNode Parser::class_declaration() {
     Token name = previous();
     FunctionStmt *ctor{nullptr};
     FunctionStmt *dtor{nullptr};
-    std::vector<std::pair<std::unique_ptr<VarStmt>, VisibilityType>> members{};
-    std::vector<std::pair<std::unique_ptr<FunctionStmt>, VisibilityType>> methods{};
+    std::vector<ClassStmt::MemberType> members{};
+    std::vector<ClassStmt::MethodType> methods{};
 
     // ScopedIntegerManager depth_manager{scope_depth};
 
@@ -758,7 +758,7 @@ StmtNode Parser::type_declaration() {
 StmtNode Parser::variable_declaration() {
     std::string message = "Expected variable name after 'var' keyword";
     if (previous().type == TokenType::VAL) {
-        message[32] = 'l';
+        message[32] = 'l'; // The index of 'r' in the word 'var' in the above string
     }
     TokenType keyword = previous().type;
     consume(message, previous(), TokenType::IDENTIFIER);
