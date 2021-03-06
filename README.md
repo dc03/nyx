@@ -1,7 +1,6 @@
 ## wis
 
-wis is a simple, strictly and statically typed, interpreted language aiming to
-provide deterministic object lifetimes.
+wis is a simple, interpreted language written in C++.
 
 ```c++
 fn main() -> int {
@@ -10,16 +9,20 @@ fn main() -> int {
 }
 ```
 
+A reference of the language grammar is available in the file `grammar.bnf`.
+
 ### Features
 
-- Strictly, statically typed type system
+- Strictly, statically-typed type system
 - Completely deterministic object lifetimes, enabling the use of destructors
   (like in C++)
 - No Garbage Collector
 - Pseudo - UFCS (Uniform Function Call Syntax), where methods are not bound to 
-  classes themselves, and are instead free functions scoped to the class itself
+  classes, and are instead free functions scoped to the name of the
+  class
 - Optional semicolons, where a newline can be used as a statement terminator
   instead of a semicolon
+- Copy, reference and (hopefully) move semantics
 
 ### Building
 
