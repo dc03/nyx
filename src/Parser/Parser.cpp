@@ -561,7 +561,7 @@ StmtNode Parser::declaration() {
             return import_statement();
         } else if (match(TokenType::TYPE)) {
             return type_declaration();
-        } else if (match(TokenType::VAR, TokenType::VAL)) {
+        } else if (match(TokenType::VAR, TokenType::VAL, TokenType::REF)) {
             return variable_declaration();
         } else {
             return statement();
@@ -606,7 +606,7 @@ StmtNode Parser::class_declaration() {
             }
         }();
 
-        if (match(TokenType::VAR, TokenType::VAL)) {
+        if (match(TokenType::VAR, TokenType::VAL, TokenType::REF)) {
             try {
                 std::unique_ptr<VarStmt> member{dynamic_cast<VarStmt *>(variable_declaration().release())};
                 members.emplace_back(std::move(member), visibility);
@@ -779,20 +779,24 @@ StmtNode Parser::type_declaration() {
 }
 
 StmtNode Parser::variable_declaration() {
-    std::string message = "Expected variable name after 'var' keyword";
-    if (previous().type == TokenType::VAL) {
-        message[32] = 'l'; // The index of 'r' in the word 'var' in the above string
+    std::string message = "Expected variable name after '";
+    switch (previous().type) {
+        case TokenType::VAR: message += "var"; break;
+        case TokenType::VAL: message += "val"; break;
+        case TokenType::REF: message += "ref"; break;
+        default: break;
     }
-    TokenType keyword = previous().type;
-    consume(message, previous(), TokenType::IDENTIFIER);
+    message += "' keyword";
+    Token keyword = previous();
+    consume(message, peek(), TokenType::IDENTIFIER);
     Token name = previous();
 
     TypeNode var_type = match(TokenType::COLON) ? type() : nullptr;
     ExprNode initializer = match(TokenType::EQUAL) ? expression() : nullptr;
     consume("Expected ';' or newline after variable initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
 
-    auto *variable = allocate_node(VarStmt, (keyword == TokenType::VAL), std::move(name), std::move(var_type),
-        std::move(initializer), NumericConversionType::NONE, false, false);
+    auto *variable = allocate_node(VarStmt, std::move(keyword), std::move(name), std::move(var_type),
+        std::move(initializer), NumericConversionType::NONE, false);
     return StmtNode{variable};
 }
 
@@ -823,7 +827,7 @@ StmtNode Parser::block_statement() {
     ScopedIntegerManager manager{scope_depth};
 
     while (!is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
-        if (match(TokenType::VAR, TokenType::VAL)) {
+        if (match(TokenType::VAR, TokenType::VAL, TokenType::REF)) {
             statements.emplace_back(variable_declaration());
         } else {
             statements.emplace_back(statement());
@@ -868,7 +872,7 @@ StmtNode Parser::for_statement() {
     ScopedIntegerManager manager{scope_depth};
 
     StmtNode initializer = nullptr;
-    if (match(TokenType::VAR, TokenType::VAL)) {
+    if (match(TokenType::VAR, TokenType::VAL, TokenType::REF)) {
         initializer = variable_declaration();
     } else if (!match(TokenType::SEMICOLON)) {
         initializer = expression_statement();

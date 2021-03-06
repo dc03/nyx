@@ -331,7 +331,7 @@ var f = F()
 
 var x = 0
 x = 5, 6, f.x = 7, y[1] = 4
-*/*/*/
+
 var x = 5 * 6
 print(x)
 for (var i = 0; i < 5; ++i) {
@@ -339,3 +339,9 @@ for (var i = 0; i < 5; ++i) {
         5 / 0
     }
 }
+*/*/*/
+var x: int
+ref y = x
+val z: typeof y = y
+y = 7
+print(string(x) + '\n')

@@ -1,7 +1,7 @@
 ### TODO
 
-- [ ] README.md
-- [ ] `ref` keyword, works like `var` and makes a reference to another variable
+- [x] README.md
+- [x] `ref` keyword, works like `var` and makes a reference to another variable
   (`ref x = y`)
 - [ ] Lists
 - [ ] `[1, foo(), bar(), ...]` (list expression)

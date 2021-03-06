@@ -351,11 +351,11 @@ if __name__ == '__main__':
         declare_stmt_type('name{std::move(name)}, type{std::move(type)}',
                           'Token name, TypeNode type')
 
-        declare_stmt_type('is_val{is_val}, name{std::move(name)}, type{std::move(type)}, '
+        declare_stmt_type('keyword{std::move(keyword)}, name{std::move(name)}, type{std::move(type)}, '
                           'initializer{std::move(initializer)}, conversion_type{conversion_type}, '
-                          'requires_copy{requires_copy}, init_is_ref{init_is_ref}',
-                          'bool is_val, Token name, TypeNode type, ExprNode initializer, NumericConversionType '
-                          'conversion_type, bool requires_copy, bool init_is_ref')
+                          'requires_copy{requires_copy}',
+                          'Token keyword, Token name, TypeNode type, ExprNode initializer, NumericConversionType '
+                          'conversion_type, bool requires_copy')
 
         declare_stmt_type(
             'keyword{std::move(keyword)}, condition{std::move(condition)}, body{std::move(body)}, '

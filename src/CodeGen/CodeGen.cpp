@@ -627,7 +627,8 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
             current_chunk->emit_instruction(Instruction::ALLOC_AT_LEAST, stmt.name.line);
         }
     } else if (stmt.initializer != nullptr) {
-        if (stmt.type->data.is_ref && !stmt.init_is_ref && stmt.initializer->type_tag() == NodeType::VariableExpr) {
+        if (stmt.type->data.is_ref && !stmt.initializer->resolved.info->data.is_ref &&
+            stmt.initializer->type_tag() == NodeType::VariableExpr) {
             current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, stmt.name.line);
             current_chunk->emit_bytes((stmt.initializer->resolved.stack_slot >> 16) & 0xff,
                 (stmt.initializer->resolved.stack_slot >> 8) & 0xff);

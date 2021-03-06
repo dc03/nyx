@@ -652,27 +652,25 @@ struct TypeStmt final : public Stmt {
 };
 
 struct VarStmt final : public Stmt {
-    bool is_val;
+    Token keyword;
     Token name;
     TypeNode type;
     ExprNode initializer;
     NumericConversionType conversion_type;
     bool requires_copy;
-    bool init_is_ref;
 
     std::string_view string_tag() override final { return "VarStmt"; }
 
     NodeType type_tag() override final { return NodeType::VarStmt; }
 
-    VarStmt(bool is_val, Token name, TypeNode type, ExprNode initializer, NumericConversionType conversion_type,
-        bool requires_copy, bool init_is_ref)
-        : is_val{is_val},
+    VarStmt(Token keyword, Token name, TypeNode type, ExprNode initializer, NumericConversionType conversion_type,
+        bool requires_copy)
+        : keyword{std::move(keyword)},
           name{std::move(name)},
           type{std::move(type)},
           initializer{std::move(initializer)},
           conversion_type{conversion_type},
-          requires_copy{requires_copy},
-          init_is_ref{init_is_ref} {}
+          requires_copy{requires_copy} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

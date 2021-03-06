@@ -894,14 +894,29 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         error("A variable with the same name has already been created in this scope", stmt.name);
     }
 
-    if (stmt.is_val && stmt.type != nullptr) {
-        stmt.type->data.is_const = true;
-    }
-
-    if (stmt.initializer != nullptr && stmt.type != nullptr) {
-        replace_if_typeof(stmt.type);
-        QualifiedTypeInfo type = resolve(stmt.type.get());
+    if (stmt.initializer != nullptr) {
         ExprVisitorType initializer = resolve(stmt.initializer.get());
+        QualifiedTypeInfo type = nullptr;
+        if (stmt.type == nullptr) {
+            stmt.type = TypeNode{copy_type(initializer.info)};
+            type = stmt.type.get();
+        } else {
+            replace_if_typeof(stmt.type);
+            type = resolve(stmt.type.get());
+        }
+        switch (stmt.keyword.type) {
+            case TokenType::VAR:
+                // If there is a var statement without a specified type that is not binding to a reference it is
+                // automatically non-const
+                stmt.type->data.is_const = false;
+                stmt.type->data.is_ref = false;
+                break;
+            case TokenType::VAL: stmt.type->data.is_const = true; break;
+            case TokenType::REF: stmt.type->data.is_ref = true; break;
+            default: break;
+        }
+        stmt.requires_copy = !type->data.is_ref && !is_builtin_type(stmt.type->data.type); // Copy semantics
+
         if (!convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name, true)) {
             error("Cannot convert from initializer type to type of variable", stmt.name);
             show_conversion_note(initializer.info, type);
@@ -910,28 +925,9 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         } else if (initializer.info->data.type == Type::INT && type->data.type == Type::FLOAT) {
             stmt.conversion_type = NumericConversionType::INT_TO_FLOAT;
         }
-        stmt.requires_copy =
-            !type->data.is_ref && !is_builtin_type(type->data.type); // Copy semantics for object creation
-        stmt.init_is_ref = initializer.info->data.is_ref;
+
         if (!in_class || in_function) {
             values.push_back({stmt.name.lexeme, type, scope_depth, initializer.class_,
-                (values.empty() ? 0 : values.back().stack_slot + 1)});
-        }
-    } else if (stmt.initializer != nullptr) {
-        ExprVisitorType initializer = resolve(stmt.initializer.get());
-        stmt.type = TypeNode{copy_type(initializer.info)};
-        stmt.type->data.is_ref = false; // If no type is specified, a copy is always done
-        if (stmt.is_val) {
-            stmt.type->data.is_const = true;
-        } else if (!initializer.info->data.is_ref) {
-            // If there is a var statement without a specified type that is not binding to a reference it is
-            // automatically non-const
-            stmt.type->data.is_const = false;
-        }
-        stmt.requires_copy = !stmt.type->data.is_ref && !is_builtin_type(stmt.type->data.type); // Copy semantics
-        stmt.init_is_ref = initializer.info->data.is_ref;
-        if (!in_class || in_function) {
-            values.push_back({stmt.name.lexeme, stmt.type.get(), scope_depth, initializer.class_,
                 (values.empty() ? 0 : values.back().stack_slot + 1)});
         }
     } else if (stmt.type != nullptr) {
