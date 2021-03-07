@@ -14,7 +14,7 @@ std::string stringify(BaseType *node) {
         result += "ref ";
     }
 
-    switch (node->data.type) {
+    switch (node->data.primitive) {
         case Type::INT: result += "int"; break;
         case Type::BOOL: result += "bool"; break;
         case Type::STRING: result += "string"; break;

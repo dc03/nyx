@@ -190,7 +190,7 @@ if __name__ == '__main__':
         declare_base(file, 'Stmt')
 
         file.write('struct SharedData {\n')
-        tab(file, 1).write('Type type;\n')
+        tab(file, 1).write('Type primitive;\n')
         tab(file, 1).write('bool is_const;\n')
         tab(file, 1).write('bool is_ref;\n\n')
         file.write('};\n\n')

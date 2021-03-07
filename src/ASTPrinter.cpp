@@ -130,8 +130,8 @@ BaseTypeVisitorType ASTPrinter::print(BaseType *type) {
     print_tabs(current_depth);
     std::cout << type->string_tag() << '\n';
     print_tabs(current_depth);
-    print_type(type->data.type) << std::boolalpha << "::Const:" << type->data.is_const << "::Ref:" << type->data.is_ref
-                                << '\n';
+    print_type(type->data.primitive) << std::boolalpha << "::Const:" << type->data.is_const
+                                     << "::Ref:" << type->data.is_ref << '\n';
     return type->accept(*this);
 }
 

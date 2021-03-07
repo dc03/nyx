@@ -160,7 +160,7 @@ struct Stmt {
 };
 
 struct SharedData {
-    Type type;
+    Type primitive;
     bool is_const;
     bool is_ref;
 };

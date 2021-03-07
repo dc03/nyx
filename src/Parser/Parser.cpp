@@ -216,7 +216,7 @@ bool Parser::match(Args... args) {
     if (std::any_of(arr.begin(), arr.end(), [this](auto &&arg) { return check(arg); })) {
         advance();
 
-        //        while (peek().type == TokenType::END_OF_LINE) {
+        //        while (peek().primitive == TokenType::END_OF_LINE) {
         //            advance();
         //        }
 
@@ -403,26 +403,26 @@ ExprNode Parser::literal(bool) {
         }
         case TokenType::FLOAT_VALUE: {
             node->value = LiteralValue{std::stod(previous().lexeme)};
-            node->type->data.type = Type::FLOAT;
+            node->type->data.primitive = Type::FLOAT;
             break;
         }
         case TokenType::STRING_VALUE: {
-            node->type->data.type = Type::STRING;
+            node->type->data.primitive = Type::STRING;
             node->value = LiteralValue{previous().lexeme};
             break;
         }
         case TokenType::FALSE: {
-            node->type->data.type = Type::BOOL;
+            node->type->data.primitive = Type::BOOL;
             node->value = LiteralValue{false};
             break;
         }
         case TokenType::TRUE: {
-            node->type->data.type = Type::BOOL;
+            node->type->data.primitive = Type::BOOL;
             node->value = LiteralValue{true};
             break;
         }
         case TokenType::NULL_: {
-            node->type->data.type = Type::NULL_;
+            node->type->data.primitive = Type::NULL_;
             node->value = LiteralValue{nullptr};
             break;
         }

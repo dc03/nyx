@@ -76,7 +76,7 @@ BaseTypeVisitorType Generator::compile(BaseType *type) {
 
 ExprVisitorType Generator::visit(AssignExpr &expr) {
     compile(expr.value.get());
-    if (expr.value->resolved.info->data.is_ref && expr.value->resolved.info->data.type != Type::LIST) {
+    if (expr.value->resolved.info->data.is_ref && expr.value->resolved.info->data.primitive != Type::LIST) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.target.line);
     } // As there is no difference between a list and a reference to a list, there is no need to add an explicit
       // Instruction::DEREF
@@ -148,7 +148,7 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
             break;
 
         case TokenType::PLUS:
-            switch (expr.resolved.info->data.type) {
+            switch (expr.resolved.info->data.primitive) {
                 case Type::INT:
                 case Type::FLOAT:
                     current_chunk->emit_instruction(Instruction::ADD, expr.resolved.token.line); break;
@@ -178,7 +178,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
         ExprNode &value = std::get<0>(arg);
         if (!expr.is_native_call) {
             if (auto &param = expr.function->resolved.func->params[i]; param.second->data.is_ref &&
-                                                                       param.second->data.type != Type::LIST &&
+                                                                       param.second->data.primitive != Type::LIST &&
                                                                        !value->resolved.info->data.is_ref) {
                 current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, value->resolved.token.line);
                 current_chunk->emit_bytes(
@@ -200,7 +200,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
 
         // This ALLOC_AT_LEAST is emitted after the COPY since the list that is copied needs to be resized and not the
         // list that is being copied.
-        if (!expr.is_native_call && expr.function->resolved.func->params[i].second->data.type == Type::LIST) {
+        if (!expr.is_native_call && expr.function->resolved.func->params[i].second->data.primitive == Type::LIST) {
             auto *list = dynamic_cast<ListType *>(expr.function->resolved.func->params[i].second.get());
             if (list->size != nullptr) {
                 compile(list->size.get());
@@ -505,7 +505,7 @@ StmtVisitorType Generator::visit(ReturnStmt &stmt) {
     if (stmt.value != nullptr) {
         compile(stmt.value.get());
         if (auto &return_type = stmt.function->return_type;
-            return_type->data.type == Type::LIST && !return_type->data.is_ref) {
+            return_type->data.primitive == Type::LIST && !return_type->data.is_ref) {
             current_chunk->emit_instruction(Instruction::COPY, stmt.keyword.line);
         }
     } else {
@@ -585,7 +585,7 @@ StmtVisitorType Generator::visit(SwitchStmt &stmt) {
 StmtVisitorType Generator::visit(TypeStmt &stmt) {}
 
 std::size_t Generator::recursively_compile_size(ListType *list) {
-    if (list->contained->data.type == Type::LIST) {
+    if (list->contained->data.primitive == Type::LIST) {
         std::size_t inner = recursively_compile_size(dynamic_cast<ListType *>(list->contained.get()));
         if (list->size != nullptr) {
             compile(list->size.get());
@@ -605,11 +605,11 @@ std::size_t Generator::recursively_compile_size(ListType *list) {
 }
 
 StmtVisitorType Generator::visit(VarStmt &stmt) {
-    if (stmt.type->data.type == Type::LIST && stmt.initializer == nullptr) {
+    if (stmt.type->data.primitive == Type::LIST && stmt.initializer == nullptr) {
         auto *list = dynamic_cast<ListType *>(stmt.type.get());
         compile(stmt.type.get());
         std::size_t num_lists = 1;
-        if (list->contained->data.type == Type::LIST) {
+        if (list->contained->data.primitive == Type::LIST) {
             num_lists += recursively_compile_size(dynamic_cast<ListType *>(list->contained.get()));
             if (list->size != nullptr) {
                 compile(list->size.get());
@@ -636,7 +636,7 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
         } else {
             compile(stmt.initializer.get());
             if (stmt.initializer->resolved.info->data.is_ref && !stmt.type->data.is_ref &&
-                stmt.initializer->resolved.info->data.type != Type::LIST) {
+                stmt.initializer->resolved.info->data.primitive != Type::LIST) {
                 current_chunk->emit_instruction(Instruction::DEREF, stmt.name.line);
             }
 
@@ -741,7 +741,7 @@ BaseTypeVisitorType Generator::visit(ListType &type) {
     if (type.contained->data.is_ref) {
         current_chunk->emit_integer(List::tag::REF_LIST);
     } else
-        switch (type.contained->data.type) {
+        switch (type.contained->data.primitive) {
             case Type::INT: current_chunk->emit_integer(List::tag::INT_LIST); break;
             case Type::FLOAT: current_chunk->emit_integer(List::tag::FLOAT_LIST); break;
             case Type::STRING: current_chunk->emit_integer(List::tag::STRING_LIST); break;

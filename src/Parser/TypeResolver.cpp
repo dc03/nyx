@@ -61,13 +61,14 @@ bool TypeResolver::convertible_to(
             return false;
         }
 
-        if (from->data.type == Type::LIST && to->data.type == Type::LIST) {
+        if (from->data.primitive == Type::LIST && to->data.primitive == Type::LIST) {
             auto *from_list = dynamic_cast<ListType *>(resolve(from));
             auto *to_list = dynamic_cast<ListType *>(resolve(to));
-            if (from_list->contained->data.type != Type::LIST && to_list->contained->data.type != Type::LIST) {
+            if (from_list->contained->data.primitive != Type::LIST &&
+                to_list->contained->data.primitive != Type::LIST) {
                 auto *from_contained = from_list->contained.get();
                 auto *to_contained = to_list->contained.get();
-                return from_contained->data.type == to_contained->data.type &&
+                return from_contained->data.primitive == to_contained->data.primitive &&
                        from_contained->data.is_const == to_contained->data.is_const &&
                        from_contained->data.is_ref == to_contained->data.is_ref;
                 // The types contained in two lists have to match *exactly*.
@@ -76,25 +77,25 @@ bool TypeResolver::convertible_to(
                 from_list->contained.get(), to_list->contained.get(), from_lvalue, where, in_initializer);
         }
 
-        return from->data.type == to->data.type && class_condition;
-    } else if ((from->data.type == Type::FLOAT && to->data.type == Type::INT) ||
-               (from->data.type == Type::INT && to->data.type == Type::FLOAT)) {
+        return from->data.primitive == to->data.primitive && class_condition;
+    } else if ((from->data.primitive == Type::FLOAT && to->data.primitive == Type::INT) ||
+               (from->data.primitive == Type::INT && to->data.primitive == Type::FLOAT)) {
         warning("Implicit conversion between float and int", where);
         return true;
-    } else if (from->data.type == Type::LIST && to->data.type == Type::LIST) {
+    } else if (from->data.primitive == Type::LIST && to->data.primitive == Type::LIST) {
         auto *from_list = dynamic_cast<ListType *>(resolve(from));
         auto *to_list = dynamic_cast<ListType *>(resolve(to));
-        if (from_list->contained->data.type != Type::LIST && to_list->contained->data.type != Type::LIST) {
+        if (from_list->contained->data.primitive != Type::LIST && to_list->contained->data.primitive != Type::LIST) {
             auto *from_contained = from_list->contained.get();
             auto *to_contained = to_list->contained.get();
-            return from_contained->data.type == to_contained->data.type &&
+            return from_contained->data.primitive == to_contained->data.primitive &&
                    from_contained->data.is_const == to_contained->data.is_const &&
                    from_contained->data.is_ref == to_contained->data.is_ref;
             // The types contained in two lists have to match *exactly*.
         }
         return convertible_to(from_list->contained.get(), to_list->contained.get(), from_lvalue, where, in_initializer);
     } else {
-        return from->data.type == to->data.type && class_condition;
+        return from->data.primitive == to->data.primitive && class_condition;
     }
 }
 
@@ -177,7 +178,7 @@ BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Arg
             allocate_node(T, SharedData{type, is_const, is_ref}, std::forward<Args>(args)...));
     } else {
         for (TypeNode &existing_type : type_scratch_space) {
-            if (existing_type->data.type == type && existing_type->data.is_const == is_const &&
+            if (existing_type->data.primitive == type && existing_type->data.is_const == is_const &&
                 existing_type->data.is_ref == is_ref) {
                 return existing_type.get();
             }
@@ -222,18 +223,18 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
         show_conversion_note(value.info, it->info);
     } else if (one_of(expr.resolved.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                    TokenType::SLASH_EQUAL) &&
-               !one_of(it->info->data.type, Type::INT, Type::FLOAT) &&
-               !one_of(value.info->data.type, Type::INT, Type::FLOAT)) {
+               !one_of(it->info->data.primitive, Type::INT, Type::FLOAT) &&
+               !one_of(value.info->data.primitive, Type::INT, Type::FLOAT)) {
         error("Expected integral types for compound assignment operator", expr.resolved.token);
         throw TypeException{"Expected integral types for compound assignment operator"};
-    } else if (value.info->data.type == Type::FLOAT && it->info->data.type == Type::INT) {
+    } else if (value.info->data.primitive == Type::FLOAT && it->info->data.primitive == Type::INT) {
         expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
-    } else if (value.info->data.type == Type::INT && it->info->data.type == Type::FLOAT) {
+    } else if (value.info->data.primitive == Type::INT && it->info->data.primitive == Type::FLOAT) {
         expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
     }
 
-    expr.requires_copy = !is_builtin_type(value.info->data.type);
-    // Assignment leads to copy when the type is not an inbuilt one as those are implicitly copied when the
+    expr.requires_copy = !is_builtin_type(value.info->data.primitive);
+    // Assignment leads to copy when the primitive is not an inbuilt one as those are implicitly copied when the
     // values are pushed onto the stack
     expr.resolved.info = it->info;
     expr.resolved.stack_slot = it->stack_slot;
@@ -250,7 +251,7 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
         case TokenType::BIT_OR:
         case TokenType::BIT_XOR:
         case TokenType::MODULO:
-            if (left_expr.info->data.type != Type::INT || right_expr.info->data.type != Type::INT) {
+            if (left_expr.info->data.primitive != Type::INT || right_expr.info->data.primitive != Type::INT) {
                 if (expr.resolved.token.type == TokenType::MODULO) {
                     error("Wrong types of arguments to modulo operator (expected integral arguments)",
                         expr.resolved.token);
@@ -262,15 +263,15 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             return expr.resolved = {left_expr.info, expr.resolved.token};
         case TokenType::NOT_EQUAL:
         case TokenType::EQUAL_EQUAL:
-            if (left_expr.info->data.type == Type::LIST && right_expr.info->data.type == Type::LIST) {
+            if (left_expr.info->data.primitive == Type::LIST && right_expr.info->data.primitive == Type::LIST) {
                 if (!convertible_to(left_expr.info, right_expr.info, false, expr.resolved.token, false) &&
                     !convertible_to(right_expr.info, left_expr.info, false, expr.resolved.token, false)) {
                     error("Cannot compare two lists that have incompatible contained types", expr.resolved.token);
                     show_equality_note(left_expr.info, right_expr.info);
                 }
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
-            } else if (one_of(left_expr.info->data.type, Type::BOOL, Type::STRING, Type::NULL_)) {
-                if (left_expr.info->data.type != right_expr.info->data.type) {
+            } else if (one_of(left_expr.info->data.primitive, Type::BOOL, Type::STRING, Type::NULL_)) {
+                if (left_expr.info->data.primitive != right_expr.info->data.primitive) {
                     error("Cannot compare equality of objects of different types", expr.resolved.token);
                 }
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
@@ -280,29 +281,29 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
         case TokenType::GREATER_EQUAL:
         case TokenType::LESS:
         case TokenType::LESS_EQUAL:
-            if (one_of(left_expr.info->data.type, Type::INT, Type::FLOAT) &&
-                one_of(right_expr.info->data.type, Type::INT, Type::FLOAT)) {
-                if (left_expr.info->data.type != right_expr.info->data.type) {
+            if (one_of(left_expr.info->data.primitive, Type::INT, Type::FLOAT) &&
+                one_of(right_expr.info->data.primitive, Type::INT, Type::FLOAT)) {
+                if (left_expr.info->data.primitive != right_expr.info->data.primitive) {
                     warning("Comparison between objects of types int and float", expr.resolved.token);
                 }
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
-            } else if (left_expr.info->data.type == Type::BOOL && right_expr.info->data.type == Type::BOOL) {
+            } else if (left_expr.info->data.primitive == Type::BOOL && right_expr.info->data.primitive == Type::BOOL) {
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             } else {
                 error("Cannot compare objects of incompatible types", expr.resolved.token);
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             }
         case TokenType::PLUS:
-            if (left_expr.info->data.type == Type::STRING && right_expr.info->data.type == Type::STRING) {
+            if (left_expr.info->data.primitive == Type::STRING && right_expr.info->data.primitive == Type::STRING) {
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::STRING, true, false), expr.resolved.token};
             }
             [[fallthrough]];
         case TokenType::MINUS:
         case TokenType::SLASH:
         case TokenType::STAR:
-            if (one_of(left_expr.info->data.type, Type::INT, Type::FLOAT) &&
-                one_of(right_expr.info->data.type, Type::INT, Type::FLOAT)) {
-                if (left_expr.info->data.type == Type::INT && right_expr.info->data.type == Type::INT) {
+            if (one_of(left_expr.info->data.primitive, Type::INT, Type::FLOAT) &&
+                one_of(right_expr.info->data.primitive, Type::INT, Type::FLOAT)) {
+                if (left_expr.info->data.primitive == Type::INT && right_expr.info->data.primitive == Type::INT) {
                     return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
                 }
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::FLOAT, true, false), expr.resolved.token};
@@ -341,7 +342,7 @@ ExprVisitorType TypeResolver::check_inbuilt(
     for (std::size_t i = 0; i < it->arity; i++) {
         ExprVisitorType arg = resolve(std::get<0>(args[i]).get());
         if (!std::any_of(it->arguments[i].begin(), it->arguments[i].end(),
-                [&arg](const Type &type) { return type == arg.info->data.type; })) {
+                [&arg](const Type &type) { return type == arg.info->data.primitive; })) {
             using namespace std::string_literals;
             std::string type_error = "Cannot pass argument of type '"s + stringify(arg.info) +
                                      "' as argument number "s + std::to_string(i + 1) + " to builtin function '"s +
@@ -390,9 +391,11 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         if (!convertible_to(called->params[i].second.get(), argument.info, argument.is_lvalue, argument.token, true)) {
             error("Type of argument is not convertible to type of parameter", argument.token);
             show_conversion_note(argument.info, called->params[i].second.get());
-        } else if (argument.info->data.type == Type::FLOAT && called->params[i].second->data.type == Type::INT) {
+        } else if (argument.info->data.primitive == Type::FLOAT &&
+                   called->params[i].second->data.primitive == Type::INT) {
             std::get<1>(expr.args[i]) = NumericConversionType::FLOAT_TO_INT;
-        } else if (argument.info->data.type == Type::INT && called->params[i].second->data.type == Type::FLOAT) {
+        } else if (argument.info->data.primitive == Type::INT &&
+                   called->params[i].second->data.primitive == Type::FLOAT) {
             std::get<1>(expr.args[i]) = NumericConversionType::INT_TO_FLOAT;
         }
 
@@ -413,7 +416,7 @@ ExprVisitorType TypeResolver::visit(CommaExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, const Token &name) {
-    if (object.info->data.type == Type::CLASS) {
+    if (object.info->data.primitive == Type::CLASS) {
         ClassStmt *accessed_type = object.class_;
 
         for (auto &member_decl : accessed_type->members) {
@@ -473,15 +476,15 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
 
     ExprVisitorType index = resolve(expr.index.get());
 
-    if (index.info->data.type != Type::INT) {
+    if (index.info->data.primitive != Type::INT) {
         error("Expected integral type for index", expr.resolved.token);
         throw TypeException{"Expected integral type for index"};
     }
 
-    if (list.info->data.type == Type::LIST) {
+    if (list.info->data.primitive == Type::LIST) {
         auto *contained_type = dynamic_cast<ListType *>(list.info)->contained.get();
         return expr.resolved = {contained_type, expr.resolved.token, true};
-    } else if (list.info->data.type == Type::STRING) {
+    } else if (list.info->data.primitive == Type::STRING) {
         return expr.resolved = {list.info, expr.resolved.token, false}; // For now, strings are immutable.
     } else {
         error("Expected list or string type for indexing", expr.resolved.token);
@@ -602,13 +605,13 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
         error("Cannot convert value of assigned expresion to type of target", expr.name);
         show_conversion_note(value_type.info, attribute_type.info);
         throw TypeException{"Cannot convert value of assigned expression to type of target"};
-    } else if (value_type.info->data.type == Type::FLOAT && attribute_type.info->data.type == Type::INT) {
+    } else if (value_type.info->data.primitive == Type::FLOAT && attribute_type.info->data.primitive == Type::INT) {
         expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
-    } else if (value_type.info->data.type == Type::INT && attribute_type.info->data.type == Type::FLOAT) {
+    } else if (value_type.info->data.primitive == Type::INT && attribute_type.info->data.primitive == Type::FLOAT) {
         expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
     }
 
-    expr.requires_copy = !is_builtin_type(value_type.info->data.type); // Similar case to AssignExpr
+    expr.requires_copy = !is_builtin_type(value_type.info->data.primitive); // Similar case to AssignExpr
     return expr.resolved = {attribute_type.info, expr.resolved.token};
 }
 
@@ -645,18 +648,18 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
     ExprVisitorType right = resolve(expr.right.get());
     switch (expr.oper.type) {
         case TokenType::BIT_NOT:
-            if (right.info->data.type != Type::INT) {
+            if (right.info->data.primitive != Type::INT) {
                 error("Wrong type of argument to bitwise unary operator (expected integral argument)", expr.oper);
             }
             return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
         case TokenType::NOT:
-            if (one_of(right.info->data.type, Type::CLASS, Type::LIST, Type::NULL_)) {
+            if (one_of(right.info->data.primitive, Type::CLASS, Type::LIST, Type::NULL_)) {
                 error("Wrong type of argument to logical not operator", expr.oper);
             }
             return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
         case TokenType::PLUS_PLUS:
         case TokenType::MINUS_MINUS:
-            if (!one_of(right.info->data.type, Type::INT, Type::FLOAT)) {
+            if (!one_of(right.info->data.primitive, Type::INT, Type::FLOAT)) {
                 error("Expected integral or floating type as argument to increment operator", expr.oper);
                 throw TypeException{"Expected integral or floating type as argument to increment operator"};
             } else if (right.info->data.is_const || !(right.is_lvalue || right.info->data.is_ref)) {
@@ -666,7 +669,7 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
             return expr.resolved = {right.info, expr.oper};
         case TokenType::MINUS:
         case TokenType::PLUS:
-            if (!one_of(right.info->data.type, Type::INT, Type::FLOAT)) {
+            if (!one_of(right.info->data.primitive, Type::INT, Type::FLOAT)) {
                 error("Expected integral or floating point argument to operator", expr.oper);
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
             }
@@ -846,7 +849,7 @@ StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
 
 StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
     if (stmt.value == nullptr) {
-        if (current_function->return_type->data.type != Type::NULL_) {
+        if (current_function->return_type->data.primitive != Type::NULL_) {
             error("Can only have empty return expressions in functions which return 'null'", stmt.keyword);
             throw TypeException{"Can only have empty return expressions in functions which return 'null'"};
         }
@@ -915,14 +918,14 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
             case TokenType::REF: stmt.type->data.is_ref = true; break;
             default: break;
         }
-        stmt.requires_copy = !type->data.is_ref && !is_builtin_type(stmt.type->data.type); // Copy semantics
+        stmt.requires_copy = !type->data.is_ref && !is_builtin_type(stmt.type->data.primitive); // Copy semantics
 
         if (!convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name, true)) {
             error("Cannot convert from initializer type to type of variable", stmt.name);
             show_conversion_note(initializer.info, type);
-        } else if (initializer.info->data.type == Type::FLOAT && type->data.type == Type::INT) {
+        } else if (initializer.info->data.primitive == Type::FLOAT && type->data.primitive == Type::INT) {
             stmt.conversion_type = NumericConversionType::FLOAT_TO_INT;
-        } else if (initializer.info->data.type == Type::INT && type->data.type == Type::FLOAT) {
+        } else if (initializer.info->data.primitive == Type::INT && type->data.primitive == Type::FLOAT) {
             stmt.conversion_type = NumericConversionType::INT_TO_FLOAT;
         }
 
@@ -958,7 +961,7 @@ StmtVisitorType TypeResolver::visit(WhileStmt &stmt) {
     ScopedBooleanManager loop_manager{in_loop};
 
     ExprVisitorType condition = resolve(stmt.condition.get());
-    if (one_of(condition.info->data.type, Type::CLASS, Type::LIST)) {
+    if (one_of(condition.info->data.primitive, Type::CLASS, Type::LIST)) {
         error("Class or list types are not implicitly convertible to bool", stmt.keyword);
     }
     if (stmt.increment != nullptr) {
