@@ -666,7 +666,7 @@ StmtNode Parser::function_declaration() {
     Token name = previous();
     consume("Expected '(' after function name", TokenType::LEFT_PAREN);
 
-    // ScopedIntegerManager manager{scope_depth};
+    ScopedIntegerManager manager{scope_depth};
 
     std::vector<std::pair<Token, TypeNode>> params{};
     if (peek().type != TokenType::RIGHT_PAREN) {
@@ -697,6 +697,11 @@ StmtNode Parser::function_declaration() {
 
     auto *function_definition =
         allocate_node(FunctionStmt, std::move(name), std::move(return_type), std::move(params), std::move(body), {}, 0);
+
+    ScopedIntegerManager{std::move(manager)}; // End the lifetime of the manager here by moving from it into a temporary
+    // It looks a bit weirder than curly braces but curly braces increase the indent level which does not look good
+    // Also, curly braces mean that its not really possible in a clean way to refer to the variables created above,
+    // below
 
     if (!in_class && scope_depth == 0) {
         current_module.functions[function_definition->name.lexeme] = function_definition;

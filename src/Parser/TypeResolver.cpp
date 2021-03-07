@@ -788,18 +788,18 @@ StmtVisitorType TypeResolver::visit(ExpressionStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
-    // ScopedScopeManager manager{*this};
+    ScopedScopeManager manager{*this};
     ScopedBooleanManager function_manager{in_function};
 
     ////////////////////////////////////////////////////////////////////////////
-    struct ScopedFunctionmanager {
+    struct ScopedFunctionManager {
         FunctionStmt *&managed_class;
         FunctionStmt *previous_value{nullptr};
-        ScopedFunctionmanager(FunctionStmt *(&current_class), FunctionStmt *stmt)
+        ScopedFunctionManager(FunctionStmt *(&current_class), FunctionStmt *stmt)
             : managed_class{current_class}, previous_value{current_class} {
             current_class = stmt;
         }
-        ~ScopedFunctionmanager() { managed_class = previous_value; }
+        ~ScopedFunctionManager() { managed_class = previous_value; }
     } pointer_manager{current_function, &stmt};
 
     bool throwaway{};
