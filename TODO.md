@@ -34,3 +34,6 @@
   wrong), it should rely on the instruction pointer
 - [x] Fix bug in parser where function defined inside class with same name as
   one outside causes an error
+- [ ] Fix bug with control flow flowing off the end of a function leading to
+  interpreter halting
+- [ ] Fix bug with Parser segfaulting when `infix` is `nullptr`, like in `i++`
