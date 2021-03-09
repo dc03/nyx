@@ -166,6 +166,7 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::DECR_GLOBAL: return four_byte_insn(chunk, "DECR_GLOBAL", byte, insn_ptr);
         case Instruction::MUL_GLOBAL: return four_byte_insn(chunk, "MUL_GLOBAL", byte, insn_ptr);
         case Instruction::DIV_GLOBAL: return four_byte_insn(chunk, "DIV_GLOBAL", byte, insn_ptr);
+        case Instruction::TRAP_RETURN: return single_byte_insn(chunk, "TRAP_RETURN", byte, insn_ptr);
     }
     unreachable();
 }

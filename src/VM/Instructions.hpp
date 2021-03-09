@@ -84,6 +84,7 @@ enum class Instruction : unsigned char {
     ASSIGN_LIST_AT,
 
     COPY,
+    TRAP_RETURN,
 };
 
 #endif

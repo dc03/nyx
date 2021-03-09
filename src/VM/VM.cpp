@@ -538,6 +538,11 @@ void VM::run(RuntimeModule &main_module) {
                 break;
             }
 
+            case is Instruction::TRAP_RETURN: {
+                runtime_error("Control flow cannot exit from non-null function without return", current_line());
+                return;
+            }
+
             case is Instruction::POP: pop(); break;
             case is Instruction::HALT: return;
         }

@@ -844,6 +844,14 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
         values.push_back({param.first.lexeme, param.second.get(), scope_depth + 1, param_class, i++});
     }
 
+    if (auto *body = dynamic_cast<BlockStmt *>(stmt.body.get());
+        (!body->stmts.empty() && body->stmts.back()->type_tag() != NodeType::ReturnStmt) || body->stmts.empty()) {
+        // TODO: also for constructors and destructors
+        if (stmt.return_type->data.primitive == Type::NULL_) {
+            body->stmts.emplace_back(allocate_node(ReturnStmt, stmt.name, nullptr, 0, nullptr));
+        }
+    }
+
     resolve(stmt.body.get());
 }
 

@@ -78,7 +78,7 @@ std::size_t Chunk::emit_integer(std::size_t integer) {
 std::size_t Chunk::get_line_number(std::size_t insn_ptr) {
     std::size_t i = 0;
     long long signed_insn_number = insn_ptr;
-    while (signed_insn_number > 0 && i < line_numbers.size()) {
+    while (signed_insn_number >= 0 && i < line_numbers.size()) {
         signed_insn_number -= static_cast<long long>(line_numbers[i].second);
         i++;
     }

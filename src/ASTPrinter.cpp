@@ -414,9 +414,11 @@ StmtVisitorType ASTPrinter::visit(IfStmt &stmt) {
 StmtVisitorType ASTPrinter::visit(ReturnStmt &stmt) {
     print_tabs(current_depth);
     print_token(stmt.keyword) << "::Popped:" << stmt.locals_popped << '\n';
-    current_depth++;
-    print(stmt.value.get());
-    current_depth--;
+    if (stmt.value != nullptr) {
+        current_depth++;
+        print(stmt.value.get());
+        current_depth--;
+    }
 }
 
 StmtVisitorType ASTPrinter::visit(SwitchStmt &stmt) {

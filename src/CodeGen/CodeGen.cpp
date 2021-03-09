@@ -492,6 +492,13 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
         current_chunk->emit_instruction(Instruction::POP, 0);
     }
 
+    if (stmt.return_type->data.primitive != Type::NULL_) {
+        if (auto *body = dynamic_cast<BlockStmt *>(stmt.body.get());
+            (!body->stmts.empty() && body->stmts.back()->type_tag() != NodeType::ReturnStmt) || body->stmts.empty()) {
+            current_chunk->emit_instruction(Instruction::TRAP_RETURN, stmt.name.line);
+        }
+    }
+
     current_compiled->functions[stmt.name.lexeme] = std::move(function);
     current_chunk = &current_compiled->top_level_code;
     end_scope();
