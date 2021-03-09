@@ -355,3 +355,4 @@ print(string(a) + '\n')
 fn f() -> int {}
 fn g() -> null {}
 f()
+g()

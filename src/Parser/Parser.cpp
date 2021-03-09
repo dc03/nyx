@@ -667,42 +667,40 @@ StmtNode Parser::function_declaration() {
     Token name = previous();
     consume("Expected '(' after function name", TokenType::LEFT_PAREN);
 
-    ScopedIntegerManager manager{scope_depth};
+    FunctionStmt *function_definition;
+    {
+        ScopedIntegerManager manager{scope_depth};
 
-    std::vector<std::pair<Token, TypeNode>> params{};
-    if (peek().type != TokenType::RIGHT_PAREN) {
-        do {
+        std::vector<std::pair<Token, TypeNode>> params{};
+        if (peek().type != TokenType::RIGHT_PAREN) {
+            do {
+                advance();
+                Token parameter_name = previous();
+                consume("Expected ':' after function parameter name", TokenType::COLON);
+                TypeNode parameter_type = type();
+                params.emplace_back(std::move(parameter_name), std::move(parameter_type));
+            } while (match(TokenType::COMMA));
+        }
+        consume("Expected ')' after function parameters", TokenType::RIGHT_PAREN);
+
+        // Since the scanner can possibly emit end of lines here, they have to be consumed before continuing
+        //
+        // The reason I haven't put the logic to stop this in the scanner is that dealing with the state would
+        // not be that easy and just having to do this a few times in the parser is fine
+        while (peek().type == TokenType::END_OF_LINE) {
             advance();
-            Token parameter_name = previous();
-            consume("Expected ':' after function parameter name", TokenType::COLON);
-            TypeNode parameter_type = type();
-            params.emplace_back(std::move(parameter_name), std::move(parameter_type));
-        } while (match(TokenType::COMMA));
+        }
+
+        consume("Expected '->' after ')' to specify type", TokenType::ARROW);
+        TypeNode return_type = type();
+        consume("Expected '{' after function return type", TokenType::LEFT_BRACE);
+
+        ScopedBooleanManager function_manager{in_function};
+        StmtNode body = block_statement();
+
+        function_definition = allocate_node(
+            FunctionStmt, std::move(name), std::move(return_type), std::move(params), std::move(body), {}, 0);
     }
-    consume("Expected ')' after function parameters", TokenType::RIGHT_PAREN);
-
-    // Since the scanner can possibly emit end of lines here, they have to be consumed before continuing
-    //
-    // The reason I haven't put the logic to stop this in the scanner is that dealing with the state would
-    // not be that easy and just having to do this a few times in the parser is fine
-    while (peek().type == TokenType::END_OF_LINE) {
-        advance();
-    }
-
-    consume("Expected '->' after ')' to specify type", TokenType::ARROW);
-    TypeNode return_type = type();
-    consume("Expected '{' after function return type", TokenType::LEFT_BRACE);
-
-    ScopedBooleanManager function_manager{in_function};
-    StmtNode body = block_statement();
-
-    auto *function_definition =
-        allocate_node(FunctionStmt, std::move(name), std::move(return_type), std::move(params), std::move(body), {}, 0);
-
-    ScopedIntegerManager{std::move(manager)}; // End the lifetime of the manager here by moving from it into a temporary
-    // It looks a bit weirder than curly braces but curly braces increase the indent level which does not look good
-    // Also, curly braces mean that its not really possible in a clean way to refer to the variables created above,
-    // below
 
     if (!in_class && scope_depth == 0) {
         current_module.functions[function_definition->name.lexeme] = function_definition;
