@@ -356,3 +356,5 @@ fn f() -> int {}
 fn g() -> null {}
 f()
 g()
+var i = 0
+i++

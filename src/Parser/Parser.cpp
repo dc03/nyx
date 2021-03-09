@@ -281,6 +281,11 @@ ExprNode Parser::parse_precedence(ParsePrecedence::of precedence) {
 
     while (precedence <= get_rule(peek().type).precedence) {
         ExprInfixParseFn infix = get_rule(advance().type).infix;
+        if (infix == nullptr) {
+            std::string message = "'" + previous().lexeme + "' cannot occur in infix/postfix expression";
+            error(message, previous());
+            throw ParseException{previous(), message};
+        }
         left = std::invoke(infix, this, can_assign, std::move(left));
     }
 
