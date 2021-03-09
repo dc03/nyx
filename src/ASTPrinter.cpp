@@ -12,8 +12,10 @@ void print_tabs(std::size_t num) {
 }
 
 std::ostream &print_ident_type(IdentifierType type) {
-    if (type == IdentifierType::VARIABLE) {
-        std::cout << "variable";
+    if (type == IdentifierType::LOCAL) {
+        std::cout << "local";
+    } else if (type == IdentifierType::GLOBAL) {
+        std::cout << "global";
     } else if (type == IdentifierType::FUNCTION) {
         std::cout << "function";
     } else if (type == IdentifierType::CLASS) {

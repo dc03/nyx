@@ -345,3 +345,10 @@ ref y = x
 val z: typeof y = y
 y = 7
 print(string(x) + '\n')
+fn f() -> int {
+    x = 8
+    return 0
+}
+f()
+var a = x
+print(string(a) + '\n')

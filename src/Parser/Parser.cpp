@@ -485,7 +485,8 @@ ExprNode Parser::variable(bool can_assign) {
                           TokenType::SLASH_EQUAL)) {
         Token oper = previous();
         ExprNode value = assignment();
-        auto *node = allocate_node(AssignExpr, std::move(name), std::move(value), NumericConversionType::NONE, false);
+        auto *node = allocate_node(
+            AssignExpr, std::move(name), std::move(value), NumericConversionType::NONE, false, IdentifierType::LOCAL);
         node->resolved.token = std::move(oper);
         return ExprNode{node};
     } else if (peek().type == TokenType::DOUBLE_COLON) {
@@ -493,7 +494,7 @@ ExprNode Parser::variable(bool can_assign) {
         node->resolved.token = std::move(name);
         return ExprNode{node};
     } else {
-        auto *node = allocate_node(VariableExpr, name, IdentifierType::VARIABLE);
+        auto *node = allocate_node(VariableExpr, name, IdentifierType::LOCAL);
         node->resolved.token = std::move(name);
         return ExprNode{node};
     }

@@ -90,19 +90,29 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
 
     switch (expr.resolved.token.type) {
         case TokenType::EQUAL:
-            current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, expr.resolved.token.line);
+            current_chunk->emit_instruction(
+                expr.target_type == IdentifierType::LOCAL ? Instruction::ASSIGN_LOCAL : Instruction::ASSIGN_GLOBAL,
+                expr.resolved.token.line);
             break;
         case TokenType::PLUS_EQUAL:
-            current_chunk->emit_instruction(Instruction::INCR_LOCAL, expr.resolved.token.line);
+            current_chunk->emit_instruction(
+                expr.target_type == IdentifierType::LOCAL ? Instruction::INCR_LOCAL : Instruction::INCR_GLOBAL,
+                expr.resolved.token.line);
             break;
         case TokenType::MINUS_EQUAL:
-            current_chunk->emit_instruction(Instruction::DECR_LOCAL, expr.resolved.token.line);
+            current_chunk->emit_instruction(
+                expr.target_type == IdentifierType::LOCAL ? Instruction::DECR_LOCAL : Instruction::DECR_GLOBAL,
+                expr.resolved.token.line);
             break;
         case TokenType::STAR_EQUAL:
-            current_chunk->emit_instruction(Instruction::MUL_LOCAL, expr.resolved.token.line);
+            current_chunk->emit_instruction(
+                expr.target_type == IdentifierType::LOCAL ? Instruction::MUL_LOCAL : Instruction::MUL_GLOBAL,
+                expr.resolved.token.line);
             break;
         case TokenType::SLASH_EQUAL:
-            current_chunk->emit_instruction(Instruction::DIV_LOCAL, expr.resolved.token.line);
+            current_chunk->emit_instruction(
+                expr.target_type == IdentifierType::LOCAL ? Instruction::DIV_LOCAL : Instruction::DIV_GLOBAL,
+                expr.resolved.token.line);
             break;
         default: break;
     }
@@ -180,7 +190,16 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
             if (auto &param = expr.function->resolved.func->params[i]; param.second->data.is_ref &&
                                                                        param.second->data.primitive != Type::LIST &&
                                                                        !value->resolved.info->data.is_ref) {
-                current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, value->resolved.token.line);
+                if (value->type_tag() == NodeType::VariableExpr) {
+                    if (dynamic_cast<VariableExpr *>(value.get())->type == IdentifierType::LOCAL) {
+                        current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, value->resolved.token.line);
+                    } else {
+                        current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, value->resolved.token.line);
+                    }
+                } else {
+                    current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, value->resolved.token.line);
+                    // This is a fallback, but I don't think it would ever be triggered
+                }
                 current_chunk->emit_bytes(
                     (value->resolved.stack_slot >> 16) & 0xff, (value->resolved.stack_slot >> 8) & 0xff);
                 current_chunk->emit_byte(value->resolved.stack_slot & 0xff);
@@ -381,9 +400,15 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
         case TokenType::MINUS_MINUS:
             if (expr.right->type_tag() == NodeType::VariableExpr) {
                 current_chunk->emit_constant(Value{1}, expr.oper.line);
-                current_chunk->emit_instruction(
-                    expr.oper.type == TokenType::PLUS_PLUS ? Instruction::INCR_LOCAL : Instruction::DECR_LOCAL,
-                    expr.oper.line);
+                if (dynamic_cast<VariableExpr *>(expr.right.get())->type == IdentifierType::LOCAL) {
+                    current_chunk->emit_instruction(
+                        expr.oper.type == TokenType::PLUS_PLUS ? Instruction::INCR_LOCAL : Instruction::DECR_LOCAL,
+                        expr.oper.line);
+                } else {
+                    current_chunk->emit_instruction(
+                        expr.oper.type == TokenType::PLUS_PLUS ? Instruction::INCR_GLOBAL : Instruction::DECR_GLOBAL,
+                        expr.oper.line);
+                }
                 current_chunk->emit_bytes(
                     (expr.right->resolved.stack_slot >> 16) & 0xff, (expr.right->resolved.stack_slot >> 8) & 0xff);
                 current_chunk->emit_byte(expr.right->resolved.stack_slot & 0xff);
@@ -396,12 +421,21 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
 
 ExprVisitorType Generator::visit(VariableExpr &expr) {
     switch (expr.type) {
-        case IdentifierType::VARIABLE:
+        case IdentifierType::LOCAL:
+        case IdentifierType::GLOBAL:
             if (expr.resolved.stack_slot < Chunk::const_short_max) {
-                current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_SHORT, expr.name.line);
+                if (expr.type == IdentifierType::LOCAL) {
+                    current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_SHORT, expr.name.line);
+                } else {
+                    current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL_SHORT, expr.name.line);
+                }
                 current_chunk->emit_integer(expr.resolved.stack_slot);
             } else if (expr.resolved.stack_slot < Chunk::const_long_max) {
-                current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LONG, expr.name.line);
+                if (expr.type == IdentifierType::LOCAL) {
+                    current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LONG, expr.name.line);
+                } else {
+                    current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL_LONG, expr.name.line);
+                }
                 current_chunk->emit_integer(expr.resolved.stack_slot);
             } else {
                 compile_error("Too many variables in current scope");
@@ -629,7 +663,11 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
     } else if (stmt.initializer != nullptr) {
         if (stmt.type->data.is_ref && !stmt.initializer->resolved.info->data.is_ref &&
             stmt.initializer->type_tag() == NodeType::VariableExpr) {
-            current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, stmt.name.line);
+            if (dynamic_cast<VariableExpr *>(stmt.initializer.get())->type == IdentifierType::LOCAL) {
+                current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, stmt.name.line);
+            } else {
+                current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, stmt.name.line);
+            }
             current_chunk->emit_bytes((stmt.initializer->resolved.stack_slot >> 16) & 0xff,
                 (stmt.initializer->resolved.stack_slot >> 8) & 0xff);
             current_chunk->emit_byte(stmt.initializer->resolved.stack_slot & 0xff);

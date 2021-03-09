@@ -42,6 +42,9 @@ enum class Instruction : unsigned char {
     ACCESS_LOCAL_SHORT, // Get local from stack
     ACCESS_LOCAL_LONG,
 
+    ACCESS_GLOBAL_SHORT, // Get global from stack
+    ACCESS_GLOBAL_LONG,
+
     JUMP_FORWARD, // For Turing completeness (I think)
     JUMP_BACKWARD,
     JUMP_IF_FALSE,
@@ -54,10 +57,18 @@ enum class Instruction : unsigned char {
     MAKE_REF_TO_LOCAL,
     DEREF,
 
+    ASSIGN_GLOBAL, // To assign to a global on the stack
+    MAKE_REF_TO_GLOBAL,
+
     INCR_LOCAL,
     DECR_LOCAL,
     MUL_LOCAL,
     DIV_LOCAL,
+
+    INCR_GLOBAL,
+    DECR_GLOBAL,
+    MUL_GLOBAL,
+    DIV_GLOBAL,
 
     LOAD_FUNCTION,
     CALL_FUNCTION,

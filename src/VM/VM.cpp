@@ -164,9 +164,9 @@ void VM::run(RuntimeModule &main_module) {
         pop_twice_push(result);                                                                                        \
     }
 
-#define binary_compound_assignment(oper)                                                                               \
+#define binary_compound_assignment(oper, what)                                                                         \
     {                                                                                                                  \
-        Value *incremented = &frame_top->stack_slots[read_three_bytes()];                                              \
+        Value *incremented = &what[read_three_bytes()];                                                                \
         if (incremented->is_ref()) {                                                                                   \
             incremented = incremented->to_referred();                                                                  \
         }                                                                                                              \
@@ -295,6 +295,8 @@ void VM::run(RuntimeModule &main_module) {
 
             case is Instruction::ACCESS_LOCAL_SHORT: push(frame_top->stack_slots[read_byte()]); break;
             case is Instruction::ACCESS_LOCAL_LONG: push(frame_top->stack_slots[read_three_bytes()]); break;
+            case is Instruction::ACCESS_GLOBAL_SHORT: push(stack[read_byte()]); break;
+            case is Instruction::ACCESS_GLOBAL_LONG: push(stack[read_three_bytes()]); break;
 
             case is Instruction::JUMP_FORWARD: {
                 ip += read_three_bytes();
@@ -379,15 +381,45 @@ void VM::run(RuntimeModule &main_module) {
                 break;
             }
 
-            case is Instruction::INCR_LOCAL: binary_compound_assignment(+=); break;
-            case is Instruction::DECR_LOCAL: binary_compound_assignment(-=); break;
-            case is Instruction::MUL_LOCAL: binary_compound_assignment(*=); break;
+            case is Instruction::INCR_LOCAL: binary_compound_assignment(+=, frame_top->stack_slots); break;
+            case is Instruction::DECR_LOCAL: binary_compound_assignment(-=, frame_top->stack_slots); break;
+            case is Instruction::MUL_LOCAL: binary_compound_assignment(*=, frame_top->stack_slots); break;
             case is Instruction::DIV_LOCAL: {
                 if (top_from(1).to_numeric() == 0) {
                     runtime_error("Division by zero", chunk->get_line_number(ip - &chunk->bytes[0] - 1));
                     return;
                 }
-                binary_compound_assignment(/=);
+                binary_compound_assignment(/=, frame_top->stack_slots);
+                break;
+            }
+
+            case is Instruction::ASSIGN_GLOBAL: {
+                std::size_t slot = read_three_bytes();
+                Value *assigned = &stack[slot];
+                if (assigned->is_ref()) {
+                    assigned = assigned->to_referred();
+                }
+                *assigned = top_from(1);
+                pop();
+                push(*assigned);
+                break;
+            }
+
+            case is Instruction::MAKE_REF_TO_GLOBAL: {
+                std::size_t slot = read_three_bytes();
+                push(Value{&stack[slot]});
+                break;
+            }
+
+            case is Instruction::INCR_GLOBAL: binary_compound_assignment(+=, stack); break;
+            case is Instruction::DECR_GLOBAL: binary_compound_assignment(-=, stack); break;
+            case is Instruction::MUL_GLOBAL: binary_compound_assignment(*=, stack); break;
+            case is Instruction::DIV_GLOBAL: {
+                if (top_from(1).to_numeric() == 0) {
+                    runtime_error("Division by zero", chunk->get_line_number(ip - &chunk->bytes[0] - 1));
+                    return;
+                }
+                binary_compound_assignment(/=, stack);
                 break;
             }
 

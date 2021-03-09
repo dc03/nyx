@@ -232,21 +232,26 @@ struct TypeofType final : public BaseType {
 
 enum class NumericConversionType { FLOAT_TO_INT, INT_TO_FLOAT, NONE };
 
+enum class IdentifierType { LOCAL, GLOBAL, FUNCTION, CLASS };
+
 struct AssignExpr final : public Expr {
     Token target;
     ExprNode value;
     NumericConversionType conversion_type;
     bool requires_copy;
+    IdentifierType target_type;
 
     std::string_view string_tag() override final { return "AssignExpr"; }
 
     NodeType type_tag() override final { return NodeType::AssignExpr; }
 
-    AssignExpr(Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy)
+    AssignExpr(Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy,
+        IdentifierType target_type)
         : target{std::move(target)},
           value{std::move(value)},
           conversion_type{conversion_type},
-          requires_copy{requires_copy} {}
+          requires_copy{requires_copy},
+          target_type{target_type} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -473,8 +478,6 @@ struct UnaryExpr final : public Expr {
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
-
-enum class IdentifierType { VARIABLE, FUNCTION, CLASS };
 
 struct VariableExpr final : public Expr {
     Token name;

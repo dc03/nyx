@@ -80,10 +80,15 @@ std::size_t four_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte
     } else if (name == "JUMP_BACKWARD" || name == "POP_JUMP_BACK_IF_TRUE") {
         std::cout << "\t| offset = -" << next_bytes << ", jump to = " << byte + 4 - next_bytes << '\n';
     } else if (name == "ASSIGN_LOCAL") {
-        std::cout << "\t| assign to " << next_bytes << '\n';
+        std::cout << "\t| assign to local " << next_bytes << '\n';
+    } else if (name == "ASSIGN_GLOBAL") {
+        std::cout << "\t| assign to global " << next_bytes << '\n';
     } else if (name == "MAKE_REF_TO_LOCAL") {
-        std::cout << "\t| make ref to " << next_bytes << '\n';
-    } else if (name == "INCR_LOCAL" || name == "DECR_LOCAL" || name == "MUL_LOCAL" || name == "DIV_LOCAL") {
+        std::cout << "\t| make ref to local " << next_bytes << '\n';
+    } else if (name == "MAKE_REF_TO_GLOBAL") {
+        std::cout << "\t| make ref to global " << next_bytes << '\n';
+    } else if (name == "INCR_LOCAL" || name == "DECR_LOCAL" || name == "MUL_LOCAL" || name == "DIV_LOCAL" ||
+               name == "INCR_GLOBAL" || name == "DECR_GLOBAL" || name == "MUL_GLOBAL" || name == "DIV_GLOBAL") {
         print_tab(1) << "| modify " << next_bytes << '\n';
     } else if (name == "RETURN") {
         std::cout << "\t| pop " << next_bytes << " local(s)\n";
@@ -153,6 +158,14 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::CHECK_INDEX: return single_byte_insn(chunk, "CHECK_INDEX", byte, insn_ptr);
         case Instruction::ASSIGN_LIST_AT: return single_byte_insn(chunk, "ASSIGN_LIST_AT", byte, insn_ptr);
         case Instruction::COPY: return single_byte_insn(chunk, "COPY", byte, insn_ptr);
+        case Instruction::ACCESS_GLOBAL_SHORT: return two_byte_insn(chunk, "ACCESS_GLOBAL_SHORT", byte, insn_ptr);
+        case Instruction::ACCESS_GLOBAL_LONG: return four_byte_insn(chunk, "ACCESS_GLOBAL_LONG", byte, insn_ptr);
+        case Instruction::ASSIGN_GLOBAL: return four_byte_insn(chunk, "ASSIGN_GLOBAL", byte, insn_ptr);
+        case Instruction::MAKE_REF_TO_GLOBAL: return four_byte_insn(chunk, "MAKE_REF_TO_GLOBAL", byte, insn_ptr);
+        case Instruction::INCR_GLOBAL: return four_byte_insn(chunk, "INCR_GLOBAL", byte, insn_ptr);
+        case Instruction::DECR_GLOBAL: return four_byte_insn(chunk, "DECR_GLOBAL", byte, insn_ptr);
+        case Instruction::MUL_GLOBAL: return four_byte_insn(chunk, "MUL_GLOBAL", byte, insn_ptr);
+        case Instruction::DIV_GLOBAL: return four_byte_insn(chunk, "DIV_GLOBAL", byte, insn_ptr);
     }
     unreachable();
 }

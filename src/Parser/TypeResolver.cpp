@@ -208,6 +208,11 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
         if (it->lexeme == expr.target.lexeme) {
             break;
         }
+        if (it->scope_depth == 0) {
+            expr.target_type = IdentifierType::GLOBAL;
+        } else {
+            expr.target_type = IdentifierType::LOCAL;
+        }
     }
 
     if (it < values.begin()) {
@@ -689,7 +694,11 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
 
     for (auto it = values.end() - 1; !values.empty() && it >= values.begin(); it--) {
         if (it->lexeme == expr.name.lexeme) {
-            expr.type = IdentifierType::VARIABLE;
+            if (it->scope_depth == 0) {
+                expr.type = IdentifierType::GLOBAL;
+            } else {
+                expr.type = IdentifierType::LOCAL;
+            }
             expr.resolved = {it->info, it->class_, expr.resolved.token, true};
             expr.resolved.stack_slot = it->stack_slot;
             return expr.resolved;

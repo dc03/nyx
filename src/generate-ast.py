@@ -235,9 +235,17 @@ if __name__ == '__main__':
         tab(file, 1).write('NONE\n')
         file.write('};\n\n')
 
+        file.write('enum class IdentifierType {\n')
+        tab(file, 1).write('LOCAL,\n')
+        tab(file, 1).write('GLOBAL,\n')
+        tab(file, 1).write('FUNCTION,\n')
+        tab(file, 1).write('CLASS\n')
+        file.write('};\n\n')
+
         declare_expr_type('target{std::move(target)}, value{std::move(value)}, conversion_type{conversion_type},'
-                          'requires_copy{requires_copy}',
-                          'Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy')
+                          'requires_copy{requires_copy}, target_type{target_type}',
+                          'Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy, '
+                          'IdentifierType target_type')
 
         declare_expr_type('left{std::move(left)}, right{std::move(right)}',
                           'ExprNode left, ExprNode right')
@@ -291,12 +299,6 @@ if __name__ == '__main__':
 
         declare_expr_type('oper{std::move(oper)}, right{std::move(right)}',
                           'Token oper, ExprNode right')
-
-        file.write('enum class IdentifierType {\n')
-        tab(file, 1).write('VARIABLE,\n')
-        tab(file, 1).write('FUNCTION,\n')
-        tab(file, 1).write('CLASS\n')
-        file.write('};\n\n')
 
         declare_expr_type('name{std::move(name)}, type{type}',
                           'Token name, IdentifierType type')

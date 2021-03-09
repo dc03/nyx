@@ -27,7 +27,7 @@
 
 - [ ] Refactor `visit(UserDefinedType &)` in TypeResolver to return pointer to
   ClassStmt
-- [ ] Fix bug in accessing variables from outer scope (by implementing
+- [x] Fix bug in accessing variables from outer scope (by implementing
   `Instruction::ACCESS_OUTER_SHORT`, `Instruction::ACCESS_OUTER_LONG`,
   `Instruction::MAKE_REF_TO_OUTER`)
 - [x] Fix `Chunk::get_line_number` relying on instruction number (which is
