@@ -351,10 +351,22 @@ fn f() -> null {
 f()
 var a = x
 print(string(a) + '\n')
-*/*/*/
+
 fn f() -> int {}
 fn g() -> null {}
 f()
 g()
 var i = 0
 i++
+*/*/*/
+print('This '
+      'is '
+      'a '
+      'multiline '
+      'string\n')
+print('This
+ is
+ a
+ multiline
+ string
+ too\n')

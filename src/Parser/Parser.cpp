@@ -414,6 +414,9 @@ ExprNode Parser::literal(bool) {
         case TokenType::STRING_VALUE: {
             node->type->data.primitive = Type::STRING;
             node->value = LiteralValue{previous().lexeme};
+            while (match(TokenType::STRING_VALUE)) {
+                node->value.to_string() += previous().lexeme;
+            }
             break;
         }
         case TokenType::FALSE: {
