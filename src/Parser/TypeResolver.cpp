@@ -497,6 +497,10 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
     }
 }
 
+ExprVisitorType TypeResolver::visit(ListExpr &expr) {
+    return {};
+}
+
 ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
     ExprVisitorType contained = resolve(&expr.list);
     ExprVisitorType value = resolve(expr.value.get());

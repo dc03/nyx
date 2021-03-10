@@ -32,6 +32,7 @@ struct CommaExpr;
 struct GetExpr;
 struct GroupingExpr;
 struct IndexExpr;
+struct ListExpr;
 struct ListAssignExpr;
 struct LiteralExpr;
 struct LogicalExpr;
@@ -74,6 +75,7 @@ struct Visitor {
     virtual ExprVisitorType visit(GetExpr &expr) = 0;
     virtual ExprVisitorType visit(GroupingExpr &expr) = 0;
     virtual ExprVisitorType visit(IndexExpr &expr) = 0;
+    virtual ExprVisitorType visit(ListExpr &expr) = 0;
     virtual ExprVisitorType visit(ListAssignExpr &expr) = 0;
     virtual ExprVisitorType visit(LiteralExpr &expr) = 0;
     virtual ExprVisitorType visit(LogicalExpr &expr) = 0;
@@ -113,6 +115,7 @@ enum class NodeType {
     GetExpr,
     GroupingExpr,
     IndexExpr,
+    ListExpr,
     ListAssignExpr,
     LiteralExpr,
     LogicalExpr,
@@ -331,6 +334,21 @@ struct IndexExpr final : public Expr {
     NodeType type_tag() override final { return NodeType::IndexExpr; }
 
     IndexExpr(ExprNode object, ExprNode index) : object{std::move(object)}, index{std::move(index)} {}
+
+    ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct ListExpr final : public Expr {
+    Token bracket;
+    std::vector<ExprNode> elements;
+    TypeNode type;
+
+    std::string_view string_tag() override final { return "ListExpr"; }
+
+    NodeType type_tag() override final { return NodeType::ListExpr; }
+
+    ListExpr(Token bracket, std::vector<ExprNode> elements, TypeNode type)
+        : bracket{std::move(bracket)}, elements{std::move(elements)}, type{std::move(type)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

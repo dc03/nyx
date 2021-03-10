@@ -134,7 +134,7 @@ Parser::Parser(const std::vector<Token> &tokens, Module &module, std::size_t cur
     add_rule(TokenType::DOT,           {nullptr, &Parser::dot, ParsePrecedence::of::CALL});
     add_rule(TokenType::LEFT_PAREN,    {&Parser::grouping, &Parser::call, ParsePrecedence::of::CALL});
     add_rule(TokenType::RIGHT_PAREN,   {nullptr, nullptr, ParsePrecedence::of::NONE});
-    add_rule(TokenType::LEFT_INDEX,    {nullptr, &Parser::index, ParsePrecedence::of::CALL});
+    add_rule(TokenType::LEFT_INDEX,    {&Parser::list, &Parser::index, ParsePrecedence::of::CALL});
     add_rule(TokenType::RIGHT_INDEX,   {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::LEFT_BRACE,    {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::RIGHT_BRACE,   {nullptr, nullptr, ParsePrecedence::of::NONE});
@@ -395,6 +395,19 @@ ExprNode Parser::grouping(bool) {
     ExprNode expr = expression();
     consume("Expected ')' after parenthesized expression", TokenType::RIGHT_PAREN);
     return ExprNode{allocate_node(GroupingExpr, std::move(expr))};
+}
+
+ExprNode Parser::list(bool) {
+    Token bracket = previous();
+    std::vector<ExprNode> elements{};
+    if (!match(TokenType::RIGHT_INDEX)) {
+        do {
+            elements.emplace_back(assignment());
+        } while (match(TokenType::COMMA) && peek().type != TokenType::RIGHT_INDEX);
+    }
+    match(TokenType::COMMA); // Match trailing comma
+    consume("Expected ']' after list expression", peek(), TokenType::RIGHT_INDEX);
+    return ExprNode{allocate_node(ListExpr, std::move(bracket), std::move(elements), nullptr)};
 }
 
 ExprNode Parser::literal(bool) {

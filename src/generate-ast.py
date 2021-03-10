@@ -162,9 +162,9 @@ if __name__ == '__main__':
         declare_alias(file, 'TypeNode', 'BaseType')
         # Base class and alias declarations complete
 
-        Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'ListAssign', 'Literal',
-                            'Logical', 'ScopeAccess', 'ScopeName', 'Set', 'Super', 'Ternary', 'This', 'Unary',
-                            'Variable']
+        Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'List', 'ListAssign',
+                            'Literal', 'Logical', 'ScopeAccess', 'ScopeName', 'Set', 'Super', 'Ternary', 'This',
+                            'Unary', 'Variable']
         Stmts: List[str] = ['Block', 'Break', 'Class', 'Continue', 'Expression', 'Function',
                             'If', 'Return', 'Switch', 'Type', 'Var', 'While']
         Types: List[str] = ['Primitive', 'UserDefined', 'List', 'Typeof']
@@ -265,6 +265,9 @@ if __name__ == '__main__':
 
         declare_expr_type('object{std::move(object)}, index{std::move(index)}',
                           'ExprNode object, ExprNode index')
+
+        declare_expr_type('bracket{std::move(bracket)}, elements{std::move(elements)}, type{std::move(type)}',
+                          'Token bracket, std::vector<ExprNode> elements, TypeNode type')
 
         declare_expr_type('list{std::move(list)}, value{std::move(value)}, conversion_type{conversion_type}, '
                           'requires_copy{requires_copy}',

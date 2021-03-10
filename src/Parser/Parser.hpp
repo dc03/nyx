@@ -99,6 +99,7 @@ class Parser {
     ExprNode dot(bool can_assign, ExprNode left);
     ExprNode grouping(bool);
     ExprNode index(bool, ExprNode object);
+    ExprNode list(bool);
     ExprNode literal(bool);
     ExprNode or_(bool, ExprNode left);
     ExprNode scope_access(bool, ExprNode left);

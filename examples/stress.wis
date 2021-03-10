@@ -358,7 +358,7 @@ f()
 g()
 var i = 0
 i++
-*/*/*/
+
 print('This '
       'is '
       'a '
@@ -370,3 +370,5 @@ print('This
  multiline
  string
  too\n')
+*/*/*/
+[1, 2, 3, "stirng", 5 + 4]

@@ -38,7 +38,9 @@ unary          ::= ("!"|"-"|"~"|"++"|"--") unary
                  | call
 
 arguments      ::= assignment     ("," assignment)*
-call           ::= get            ("(" arguments? ")")*
+call           ::= list           ("(" arguments? ")")*
+list           ::= "[" assignment ("," assignment)* ","? "]"
+                 | get
 
 get            ::= expression "." IDENTIFIER
                  | primary

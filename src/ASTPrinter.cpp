@@ -221,6 +221,17 @@ ExprVisitorType ASTPrinter::visit(IndexExpr &expr) {
     return {};
 }
 
+ExprVisitorType ASTPrinter::visit(ListExpr &expr) {
+    print_tabs(current_depth);
+    print_token(expr.bracket) << '\n';
+    current_depth++;
+    for (auto &element : expr.elements) {
+        print(element.get());
+    }
+    current_depth--;
+    return {};
+}
+
 ExprVisitorType ASTPrinter::visit(ListAssignExpr &expr) {
     print_tabs(current_depth);
     print_token(expr.resolved.token) << std::boolalpha << "::Copy:" << expr.requires_copy << std::noboolalpha

@@ -46,6 +46,7 @@ class Generator : Visitor {
     ExprVisitorType visit(GetExpr &expr) override final;
     ExprVisitorType visit(GroupingExpr &expr) override final;
     ExprVisitorType visit(IndexExpr &expr) override final;
+    ExprVisitorType visit(ListExpr &expr) override final;
     ExprVisitorType visit(ListAssignExpr &expr) override final;
     ExprVisitorType visit(LiteralExpr &expr) override final;
     ExprVisitorType visit(LogicalExpr &expr) override final;

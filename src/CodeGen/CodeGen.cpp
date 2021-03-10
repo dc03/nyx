@@ -271,6 +271,10 @@ ExprVisitorType Generator::visit(IndexExpr &expr) {
     return {};
 }
 
+ExprVisitorType Generator::visit(ListExpr &expr) {
+    return {};
+}
+
 ExprVisitorType Generator::visit(ListAssignExpr &expr) {
     compile(expr.list.object.get());
     compile(expr.list.index.get());
