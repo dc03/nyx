@@ -799,10 +799,10 @@ BaseTypeVisitorType Generator::visit(UserDefinedType &type) {
 }
 
 BaseTypeVisitorType Generator::visit(ListType &type) {
-    current_chunk->emit_instruction(Instruction::MAKE_LIST, 0);
+    current_chunk->emit_instruction(Instruction::MAKE_LIST, type.size->resolved.token.line);
     if (type.contained->data.is_ref) {
         current_chunk->emit_integer(List::tag::REF_LIST);
-    } else
+    } else {
         switch (type.contained->data.primitive) {
             case Type::INT: current_chunk->emit_integer(List::tag::INT_LIST); break;
             case Type::FLOAT: current_chunk->emit_integer(List::tag::FLOAT_LIST); break;
@@ -811,6 +811,7 @@ BaseTypeVisitorType Generator::visit(ListType &type) {
             case Type::LIST: current_chunk->emit_integer(List::tag::LIST_LIST); break;
             default: break;
         }
+    }
     return {};
 }
 

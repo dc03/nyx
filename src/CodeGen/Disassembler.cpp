@@ -61,11 +61,9 @@ std::size_t two_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte,
         std::cout << "\t-> " << next_byte << '\n';
     }
 
-    for (int i = 1; i < 2; i++) {
-        std::size_t offset_bit = chunk.bytes[byte + i];
-        print_preamble(chunk, "", byte + i, insn_ptr) << "| " << std::hex << std::setw(8) << offset_bit;
-        print_tab(1, 2) << std::resetiosflags(std::ios_base::hex) << std::setw(8) << offset_bit << '\n';
-    }
+    std::size_t offset_bit = chunk.bytes[byte + 1];
+    print_preamble(chunk, "", byte + 1, insn_ptr) << "| " << std::hex << std::setw(8) << offset_bit;
+    print_tab(1, 2) << std::resetiosflags(std::ios_base::hex) << std::setw(8) << offset_bit << '\n';
 
     return 2;
 }
