@@ -196,6 +196,10 @@ void TypeResolver::replace_if_typeof(TypeNode &type) {
     }
 }
 
+void TypeResolver::infer_list_type(ListExpr *of, ListType *from) {
+
+}
+
 template <typename T, typename... Args>
 bool one_of(T type, Args... args) {
     const std::array arr{args...};
@@ -959,6 +963,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
             return value.scope_depth == scope_depth && value.lexeme == stmt.name.lexeme;
         })) {
         error("A variable with the same name has already been created in this scope", stmt.name);
+        throw TypeException{"A variable with the same name has already been created in this scope"};
     }
 
     if (stmt.initializer != nullptr) {
@@ -986,10 +991,18 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         if (!convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name, true)) {
             error("Cannot convert from initializer type to type of variable", stmt.name);
             show_conversion_note(initializer.info, type);
+            throw TypeException{"Cannot convert from initializer type to type of variable"};
         } else if (initializer.info->data.primitive == Type::FLOAT && type->data.primitive == Type::INT) {
             stmt.conversion_type = NumericConversionType::FLOAT_TO_INT;
         } else if (initializer.info->data.primitive == Type::INT && type->data.primitive == Type::FLOAT) {
             stmt.conversion_type = NumericConversionType::INT_TO_FLOAT;
+        }
+
+        // Infer some more information about the type of the list expression from the type of the variable if needed
+        //  If a variable is defined as `var x: [ref int] = [a, b, c]`, then the list needs to be inferred as a list of
+        //  [ref int], not as [int]
+        if (stmt.initializer->type_tag() == NodeType::ListExpr && stmt.type->data.primitive == Type::LIST) {
+            infer_list_type(dynamic_cast<ListExpr*>(stmt.initializer.get()), dynamic_cast<ListType*>(stmt.type.get()));
         }
 
         if (!is_builtin_type(stmt.type->data.primitive)) {

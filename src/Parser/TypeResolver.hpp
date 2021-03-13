@@ -50,6 +50,7 @@ class TypeResolver final : Visitor {
         QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lvalue, const Token &where, bool in_initializer);
 
     void replace_if_typeof(TypeNode &type);
+    void infer_list_type(ListExpr *of, ListType *from);
 
   public:
     TypeResolver(Module &module);

@@ -22,6 +22,7 @@
 - [ ] More integral types
 - [ ] More floating types
 - [ ] LLVM backend
+- [ ] Type statements, `type x = y`
 
 ### Bugs and issues
 
@@ -37,3 +38,8 @@
 - [x] Fix bug with control flow flowing off the end of a function leading to
   interpreter halting
 - [x] Fix bug with Parser segfaulting when `infix` is `nullptr`, like in `i++`
+- [ ] Refactor `TypeResolver::show_conversion_note`, `TypeResolver::show_equality_note`
+- [ ] Refactor `Parser` interface
+- [ ] Refactor `VM` interface
+- [ ] Fix `TypeResolver::visit(GroupingExpr&)` to not return the *exact* type of the expression
+  it contains, because that doesn't make sense for something like `(x)`
