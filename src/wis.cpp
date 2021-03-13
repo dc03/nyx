@@ -33,7 +33,7 @@ int main(const int, const char *const argv[]) {
     main.statements = parser.program();
     resolver.check(main.statements);
 
-    ASTPrinter{}.print_stmts(main.statements);
+    // ASTPrinter{}.print_stmts(main.statements);
 
     if (!logger.had_error) {
         std::sort(Parser::parsed_modules.begin(), Parser::parsed_modules.end(),

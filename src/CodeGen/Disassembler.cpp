@@ -54,6 +54,9 @@ std::size_t two_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte,
     if (name == "CONST_SHORT") {
         std::cout << '\t';
         print_tab(1) << "-> " << next_byte << " | value = " << chunk.constants[next_byte].repr() << '\n';
+    } else if (name == "MAKE_LIST_OF") {
+        std::cout << '\t';
+        print_tab(1) << "| count: " << next_byte << '\n';
     } else {
         std::cout << "\t-> " << next_byte << '\n';
     }
@@ -167,6 +170,7 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::MUL_GLOBAL: return four_byte_insn(chunk, "MUL_GLOBAL", byte, insn_ptr);
         case Instruction::DIV_GLOBAL: return four_byte_insn(chunk, "DIV_GLOBAL", byte, insn_ptr);
         case Instruction::TRAP_RETURN: return single_byte_insn(chunk, "TRAP_RETURN", byte, insn_ptr);
+        case Instruction::MAKE_LIST_OF: return two_byte_insn(chunk, "MAKE_LIST_OF", byte, insn_ptr);
     }
     unreachable();
 }

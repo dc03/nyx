@@ -131,9 +131,9 @@ expr_count: int = 0
 stmt_count: int = 0
 
 
-def declare_expr_type(ctor_args: str, members: str) -> None:
+def declare_expr_type(ctor_args: str, members: str, typedefs: List[str] = None) -> None:
     global expr_count
-    declare_derived_type(file, 'Expr', Exprs[expr_count], ctor_args, members, members)
+    declare_derived_type(file, 'Expr', Exprs[expr_count], ctor_args, members, members, typedefs)
     expr_count += 1
     return None
 
@@ -267,7 +267,8 @@ if __name__ == '__main__':
                           'ExprNode object, ExprNode index')
 
         declare_expr_type('bracket{std::move(bracket)}, elements{std::move(elements)}, type{std::move(type)}',
-                          'Token bracket, std::vector<ExprNode> elements, TypeNode type')
+                          'Token bracket, std::vector<ElementType> elements, std::unique_ptr<ListType> type',
+                          ['using ElementType = std::tuple<ExprNode, NumericConversionType, bool>'])
 
         declare_expr_type('list{std::move(list)}, value{std::move(value)}, conversion_type{conversion_type}, '
                           'requires_copy{requires_copy}',

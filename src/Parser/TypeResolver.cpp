@@ -238,7 +238,11 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
         expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
     }
 
-    expr.requires_copy = !is_builtin_type(value.info->data.primitive);
+    if (!is_builtin_type(value.info->data.primitive)) {
+        if (expr.value->resolved.is_lvalue || expr.value->resolved.info->data.is_ref) {
+            expr.requires_copy = true;
+        }
+    }
     // Assignment leads to copy when the primitive is not an inbuilt one as those are implicitly copied when the
     // values are pushed onto the stack
     expr.resolved.info = it->info;
@@ -404,8 +408,14 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
             std::get<1>(expr.args[i]) = NumericConversionType::INT_TO_FLOAT;
         }
 
-        std::get<2>(expr.args[i]) = !called->params[i].second->data.is_ref;
-        // Arguments are copied when they do not bind to references
+        auto &param = called->params[i];
+        if (!is_builtin_type(param.second->data.primitive)) {
+            if (param.second->data.is_ref) {
+                std::get<2>(expr.args[i]) = false; // A reference binding to anything does not need a copy
+            } else if (argument.is_lvalue) {
+                std::get<2>(expr.args[i]) = true; // A copy is made when initializing from an lvalue without a reference
+            }
+        }
     }
 
     return expr.resolved = {called->return_type.get(), called, callee.class_, expr.resolved.token};
@@ -498,7 +508,40 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(ListExpr &expr) {
-    return {};
+    if (expr.elements.empty()) {
+        error("Cannot have empty list expression", expr.bracket);
+        throw TypeException{"Cannot have empty list expression"};
+    } else if (expr.elements.size() > 255) {
+        error("Cannot have more than 255 elements in list expression", expr.bracket);
+        throw TypeException{"Cannot have more than 255 elements in list expression"};
+    }
+
+    auto *list_size = allocate_node(LiteralExpr, LiteralValue{static_cast<int>(expr.elements.size())},
+        TypeNode{allocate_node(PrimitiveType, {Type::INT, true, false})});
+
+    expr.type.reset(allocate_node(ListType, {Type::LIST, false, false},
+        TypeNode{copy_type(resolve(std::get<0>(*expr.elements.begin()).get()).info)}, ExprNode{list_size}));
+
+    for (std::size_t i = 1; i < expr.elements.size(); i++) {
+        resolve(std::get<0>(expr.elements[i]).get()); // Will store the type info in the 'resolved' class member
+    }
+
+    if (std::none_of(expr.elements.begin(), expr.elements.end(),
+            [](const ListExpr::ElementType &x) { return std::get<0>(x)->resolved.info->data.is_ref; })) {
+        // If there are no references in the list, the individual elements can safely be made non-const
+        expr.type->contained->data.is_const = false;
+    }
+
+    for (ListExpr::ElementType &element : expr.elements) {
+        if (std::get<0>(element)->resolved.info->data.primitive == Type::INT &&
+            expr.type->contained->data.primitive == Type::FLOAT) {
+            std::get<1>(element) = NumericConversionType::INT_TO_FLOAT;
+        } else if (std::get<0>(element)->resolved.info->data.primitive == Type::FLOAT &&
+                   expr.type->contained->data.primitive == Type::INT) {
+            std::get<1>(element) = NumericConversionType::FLOAT_TO_INT;
+        }
+    }
+    return expr.resolved = {expr.type.get(), expr.bracket, false};
 }
 
 ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
@@ -939,7 +982,6 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
             case TokenType::REF: stmt.type->data.is_ref = true; break;
             default: break;
         }
-        stmt.requires_copy = !type->data.is_ref && !is_builtin_type(stmt.type->data.primitive); // Copy semantics
 
         if (!convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name, true)) {
             error("Cannot convert from initializer type to type of variable", stmt.name);
@@ -948,6 +990,14 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
             stmt.conversion_type = NumericConversionType::FLOAT_TO_INT;
         } else if (initializer.info->data.primitive == Type::INT && type->data.primitive == Type::FLOAT) {
             stmt.conversion_type = NumericConversionType::INT_TO_FLOAT;
+        }
+
+        if (!is_builtin_type(stmt.type->data.primitive)) {
+            if (type->data.is_ref) {
+                stmt.requires_copy = false; // A reference binding to anything does not need a copy
+            } else if (initializer.is_lvalue) {
+                stmt.requires_copy = true; // A copy is made when initializing from an lvalue without a reference
+            }
         }
 
         if (!in_class || in_function) {

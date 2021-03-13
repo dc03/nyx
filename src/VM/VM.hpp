@@ -35,6 +35,7 @@ struct VM {
     void pop();
     void define_native(const std::string &name, NativeFn code);
     [[nodiscard]] Value &top_from(std::size_t distance) const;
+    [[nodiscard]] Value move_top_from(std::size_t distance);
     void recursively_size_list(List &list, Value *size, std::size_t depth);
     static List make_list(List::tag type);
     std::size_t current_line() const noexcept;

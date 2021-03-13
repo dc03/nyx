@@ -339,15 +339,17 @@ struct IndexExpr final : public Expr {
 };
 
 struct ListExpr final : public Expr {
+    using ElementType = std::tuple<ExprNode, NumericConversionType, bool>;
+
     Token bracket;
-    std::vector<ExprNode> elements;
-    TypeNode type;
+    std::vector<ElementType> elements;
+    std::unique_ptr<ListType> type;
 
     std::string_view string_tag() override final { return "ListExpr"; }
 
     NodeType type_tag() override final { return NodeType::ListExpr; }
 
-    ListExpr(Token bracket, std::vector<ExprNode> elements, TypeNode type)
+    ListExpr(Token bracket, std::vector<ElementType> elements, std::unique_ptr<ListType> type)
         : bracket{std::move(bracket)}, elements{std::move(elements)}, type{std::move(type)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }

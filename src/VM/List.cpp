@@ -103,3 +103,40 @@ Value List::assign_at(std::size_t index, Value &value) noexcept {
     unreachable();
 #undef DO_COPY
 }
+
+Value List::assign_at(std::size_t index, Value &&value) noexcept {
+    if (is_int_list()) {
+        return Value{to_int_list()[index] = std::move(value).to_int()};
+    } else if (is_float_list()) {
+        return Value{to_float_list()[index] = std::move(value).to_double()};
+    } else if (is_string_list()) {
+        return Value{to_string_list()[index] = std::move(value.to_string())};
+    } else if (is_bool_list()) {
+        return Value{static_cast<bool>((to_bool_list()[index] = std::move(value).to_bool()))};
+    } else if (is_ref_list()) {
+        return Value{to_ref_list()[index] = std::move(value).to_referred()};
+    } else if (is_list_list()) {
+        return Value{SharedUniquePtr<List>{[this, &index, &value]() -> std::unique_ptr<List> & {
+            List &list = value.to_list();
+            List &assigned = *to_list_list()[index];
+            assigned.resize(list.size());
+#define DO_MOVE(cond, method)                                                                                          \
+    if (list.cond) {                                                                                                   \
+        std::move(list.method.begin(), list.method.end(), assigned.method.begin());                                    \
+    }
+            DO_MOVE(is_int_list(), to_int_list())
+            DO_MOVE(is_float_list(), to_float_list())
+            DO_MOVE(is_string_list(), to_string_list())
+            DO_MOVE(is_ref_list(), to_ref_list())
+            DO_MOVE(is_bool_list(), to_bool_list())
+            if (is_list_list()) {
+                for (std::size_t i = 0; i < list.size(); i++) {
+                    list.assign_at(i, assigned.at(i));
+                }
+            }
+            return to_list_list()[index];
+        }()}};
+    }
+    unreachable();
+#undef DO_MOVE
+}

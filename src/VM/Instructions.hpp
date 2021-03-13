@@ -77,6 +77,7 @@ enum class Instruction : unsigned char {
     CALL_NATIVE,
 
     MAKE_LIST,
+    MAKE_LIST_OF,
     ALLOC_NESTED_LISTS,
     ALLOC_AT_LEAST,
     INDEX_LIST,

@@ -49,6 +49,7 @@ class List {
     void resize(std::size_t size) noexcept;
     Value at(std::size_t index) noexcept;
     Value assign_at(std::size_t index, Value &value) noexcept;
+    Value assign_at(std::size_t index, Value &&value) noexcept;
     [[nodiscard]] List::tag type() const noexcept { return static_cast<List::tag>(as.index()); }
 };
 

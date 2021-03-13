@@ -58,6 +58,10 @@ Value &VM::top_from(std::size_t distance) const {
     return *(stack_top - distance);
 }
 
+Value VM::move_top_from(std::size_t distance) {
+    return std::move(*(stack_top - distance));
+}
+
 Chunk::byte VM::read_byte() {
     return *(ip++);
 }
@@ -363,7 +367,7 @@ void VM::run(RuntimeModule &main_module) {
                 if (assigned->is_ref()) {
                     assigned = assigned->to_referred();
                 }
-                *assigned = top_from(1);
+                *assigned = std::move(top_from(1));
                 pop();
                 push(*assigned);
                 break;
@@ -400,7 +404,7 @@ void VM::run(RuntimeModule &main_module) {
                 if (assigned->is_ref()) {
                     assigned = assigned->to_referred();
                 }
-                *assigned = top_from(1);
+                *assigned = std::move(top_from(1));
                 pop();
                 push(*assigned);
                 break;
@@ -468,6 +472,16 @@ void VM::run(RuntimeModule &main_module) {
             case is Instruction::MAKE_LIST: {
                 Chunk::byte type = read_byte();
                 push(Value{make_list(static_cast<List::tag>(type))});
+                break;
+            }
+
+            case is Instruction::MAKE_LIST_OF: {
+                Chunk::byte count = read_byte();
+                List &list = (stack_top - count - 1)->to_list();
+                while (count-- > 0) {
+                    list.assign_at(count, move_top_from(1));
+                    pop();
+                }
                 break;
             }
 

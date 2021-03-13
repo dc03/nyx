@@ -371,4 +371,20 @@ print('This
  string
  too\n')
 */*/*/
-[1, 2, 3, "stirng", 5 + 4]
+fn f(x: const ref [int]) -> null {
+    print(x)
+    print('\n')
+}
+
+fn g(x: const ref [string]) -> null {
+    print(x)
+    print('\n')
+}
+
+var x = [1, 5.0, 2, 3,]
+val y : ref typeof x = x
+var z = ['string1', 'string2', 'string3']
+x = [2, 3, 4, 5]
+f(x)
+f(y)
+g(z)

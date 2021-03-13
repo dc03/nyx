@@ -272,6 +272,19 @@ ExprVisitorType Generator::visit(IndexExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(ListExpr &expr) {
+    compile(expr.type.get());
+    current_chunk->emit_constant(
+        Value{dynamic_cast<LiteralExpr *>(expr.type->size.get())->value.to_int()}, expr.bracket.line);
+    current_chunk->emit_instruction(Instruction::ALLOC_AT_LEAST, expr.type->size->resolved.token.line);
+    for (ListExpr::ElementType &element : expr.elements) {
+        compile(std::get<0>(element).get());
+        emit_conversion(std::get<1>(element), std::get<0>(element)->resolved.token.line);
+        if (std::get<2>(element)) { // requires copy
+            current_chunk->emit_instruction(Instruction::COPY, std::get<0>(element)->resolved.token.line);
+        }
+    }
+    current_chunk->emit_instruction(Instruction::MAKE_LIST_OF, expr.bracket.line);
+    current_chunk->emit_integer(expr.elements.size());
     return {};
 }
 

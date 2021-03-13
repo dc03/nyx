@@ -225,8 +225,14 @@ ExprVisitorType ASTPrinter::visit(ListExpr &expr) {
     print_tabs(current_depth);
     print_token(expr.bracket) << '\n';
     current_depth++;
-    for (auto &element : expr.elements) {
-        print(element.get());
+    for (std::size_t i = 0; i < expr.elements.size(); i++) {
+        current_depth++;
+        print_tabs(current_depth);
+        std::cout << "Arg:(" << i + 1 << ")::Conv:";
+        print_conversion_type(std::get<1>(expr.elements[i]))
+            << "::Copy:" << std::boolalpha << std::get<2>(expr.elements[i]) << std::noboolalpha << '\n';
+        print(std::get<0>(expr.elements[i]).get());
+        current_depth--;
     }
     current_depth--;
     return {};

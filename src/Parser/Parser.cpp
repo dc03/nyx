@@ -399,10 +399,10 @@ ExprNode Parser::grouping(bool) {
 
 ExprNode Parser::list(bool) {
     Token bracket = previous();
-    std::vector<ExprNode> elements{};
-    if (!match(TokenType::RIGHT_INDEX)) {
+    std::vector<ListExpr::ElementType> elements{};
+    if (peek().type != TokenType::RIGHT_INDEX) {
         do {
-            elements.emplace_back(assignment());
+            elements.emplace_back(assignment(), NumericConversionType::NONE, false);
         } while (match(TokenType::COMMA) && peek().type != TokenType::RIGHT_INDEX);
     }
     match(TokenType::COMMA); // Match trailing comma
