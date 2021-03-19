@@ -53,4 +53,6 @@ class List {
     [[nodiscard]] List::tag type() const noexcept { return static_cast<List::tag>(as.index()); }
 };
 
+List make_list(List::tag type);
+
 #endif

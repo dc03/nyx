@@ -109,19 +109,6 @@ void VM::recursively_size_list(List &list, Value *size, std::size_t depth) {
     }
 }
 
-List VM::make_list(List::tag type) {
-    switch (type) {
-        case List::tag::INT_LIST: return List{std::vector<int>{}};
-        case List::tag::FLOAT_LIST: return List{std::vector<double>{}};
-        case List::tag::STRING_LIST: return List{std::vector<std::string>{}};
-        case List::tag::BOOL_LIST: return List{std::vector<char>{}};
-        case List::tag::REF_LIST: return List{std::vector<Value *>{}};
-        case List::tag::LIST_LIST: return List{std::vector<std::unique_ptr<List>>{}};
-        default: break;
-    }
-    unreachable();
-}
-
 std::size_t VM::current_line() const noexcept {
     return chunk->get_line_number(ip - &chunk->bytes[0] - 1);
 }

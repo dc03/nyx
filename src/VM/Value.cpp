@@ -137,10 +137,14 @@ std::string Value::repr() noexcept {
             auto begin = list.to_list_list().begin();
             for (; begin != list.to_list_list().end() - 1; begin++) {
                 Value as_value{SharedUniquePtr<List>{*begin}};
-                result += as_value.repr() + ", ";
+                if (*begin != nullptr) {
+                    result += as_value.repr() + ", ";
+                }
             }
             Value as_value{SharedUniquePtr<List>{*begin}};
-            result += as_value.repr();
+            if (*begin != nullptr) {
+                result += as_value.repr();
+            }
         }
         result += "]";
         return result;
