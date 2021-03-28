@@ -62,19 +62,8 @@ bool TypeResolver::convertible_to(
         }
 
         if (from->data.primitive == Type::LIST && to->data.primitive == Type::LIST) {
-            auto *from_list = dynamic_cast<ListType *>(resolve(from));
-            auto *to_list = dynamic_cast<ListType *>(resolve(to));
-            if (from_list->contained->data.primitive != Type::LIST &&
-                to_list->contained->data.primitive != Type::LIST) {
-                auto *from_contained = from_list->contained.get();
-                auto *to_contained = to_list->contained.get();
-                return from_contained->data.primitive == to_contained->data.primitive &&
-                       from_contained->data.is_const == to_contained->data.is_const &&
-                       from_contained->data.is_ref == to_contained->data.is_ref;
-                // The types contained in two lists have to match *exactly*.
-            }
-            return convertible_to(
-                from_list->contained.get(), to_list->contained.get(), from_lvalue, where, in_initializer);
+            return are_equivalent_types(
+                dynamic_cast<ListType *>(from)->contained.get(), dynamic_cast<ListType *>(to)->contained.get());
         }
 
         return from->data.primitive == to->data.primitive && class_condition;
@@ -83,17 +72,8 @@ bool TypeResolver::convertible_to(
         warning("Implicit conversion between float and int", where);
         return true;
     } else if (from->data.primitive == Type::LIST && to->data.primitive == Type::LIST) {
-        auto *from_list = dynamic_cast<ListType *>(resolve(from));
-        auto *to_list = dynamic_cast<ListType *>(resolve(to));
-        if (from_list->contained->data.primitive != Type::LIST && to_list->contained->data.primitive != Type::LIST) {
-            auto *from_contained = from_list->contained.get();
-            auto *to_contained = to_list->contained.get();
-            return from_contained->data.primitive == to_contained->data.primitive &&
-                   from_contained->data.is_const == to_contained->data.is_const &&
-                   from_contained->data.is_ref == to_contained->data.is_ref;
-            // The types contained in two lists have to match *exactly*.
-        }
-        return convertible_to(from_list->contained.get(), to_list->contained.get(), from_lvalue, where, in_initializer);
+        return are_equivalent_types(
+            dynamic_cast<ListType *>(from)->contained.get(), dynamic_cast<ListType *>(to)->contained.get());
     } else {
         return from->data.primitive == to->data.primitive && class_condition;
     }
@@ -197,7 +177,57 @@ void TypeResolver::replace_if_typeof(TypeNode &type) {
 }
 
 void TypeResolver::infer_list_type(ListExpr *of, ListType *from) {
+    if (!are_equivalent_primitives(of->type.get(), from)) {
+        return; // Need to have exact same primitives, i.e. same dimension lists storing the same type of elements
+    }
+    if (from->data.is_ref) {
+        return; // Cannot make reference to a ListExpr
+    }
+    if (from->contained->data.is_ref &&
+        std::all_of(of->elements.begin(), of->elements.end(), [](const ListExpr::ElementType &elem) {
+            return std::get<0>(elem)->resolved.is_lvalue || std::get<0>(elem)->resolved.info->data.is_ref;
+        })) {
+        // If there is a ListExpr consisting solely of references or lvalues, it can be safely inferred as a list of
+        // references if it is being stored in a name with a reference type
+        of->type->contained->data.is_ref = true;
+        if (std::any_of(of->elements.cbegin(), of->elements.cend(),
+                [](const ListExpr::ElementType &elem) { return std::get<0>(elem)->resolved.info->data.is_const; })) {
+            of->type->contained->data.is_const = true;
+            // A list of references has all its elements become const if any one of them are const
+        }
+    }
 
+    of->type->contained->data.is_const = of->type->contained->data.is_const || from->contained->data.is_const;
+    of->type->data.is_const = of->type->data.is_const || from->data.is_const;
+    // Infer const-ness
+}
+
+bool TypeResolver::are_equivalent_primitives(QualifiedTypeInfo first, QualifiedTypeInfo second) {
+    if (first->data.primitive == second->data.primitive) {
+        if (first->data.primitive == Type::LIST && second->data.primitive == Type::LIST) {
+            auto *first_contained = dynamic_cast<ListType *>(first)->contained.get();
+            auto *second_contained = dynamic_cast<ListType *>(second)->contained.get();
+            if (first_contained->data.primitive == Type::LIST && second_contained->data.primitive == Type::LIST) {
+                return are_equivalent_primitives(first_contained, second_contained);
+            } else {
+                return first_contained->data.primitive == second_contained->data.primitive;
+            }
+        } else {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool TypeResolver::are_equivalent_types(QualifiedTypeInfo first, QualifiedTypeInfo second) {
+    if (first->data.primitive == Type::LIST && second->data.primitive == Type::LIST) {
+        return are_equivalent_types(dynamic_cast<ListType *>(first)->contained.get(),
+                   dynamic_cast<ListType *>(second)->contained.get()) &&
+               (first->data.is_const == second->data.is_const) && (first->data.is_ref == second->data.is_ref);
+    } else {
+        return are_equivalent_primitives(first, second) && (first->data.is_const == second->data.is_const) &&
+               (first->data.is_ref == second->data.is_ref);
+    }
 }
 
 template <typename T, typename... Args>
@@ -969,6 +999,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
     if (stmt.initializer != nullptr) {
         ExprVisitorType initializer = resolve(stmt.initializer.get());
         QualifiedTypeInfo type = nullptr;
+        bool originally_typeless = stmt.type == nullptr;
         if (stmt.type == nullptr) {
             stmt.type = TypeNode{copy_type(initializer.info)};
             type = stmt.type.get();
@@ -980,12 +1011,22 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
             case TokenType::VAR:
                 // If there is a var statement without a specified type that is not binding to a reference it is
                 // automatically non-const
-                stmt.type->data.is_const = false;
-                stmt.type->data.is_ref = false;
+                if (originally_typeless) {
+                    stmt.type->data.is_const = false;
+                    stmt.type->data.is_ref = false;
+                }
                 break;
             case TokenType::VAL: stmt.type->data.is_const = true; break;
             case TokenType::REF: stmt.type->data.is_ref = true; break;
             default: break;
+        }
+
+        // Infer some more information about the type of the list expression from the type of the variable if needed
+        //  If a variable is defined as `var x: [ref int] = [a, b, c]`, then the list needs to be inferred as a list of
+        //  [ref int], not as [int]
+        if (stmt.initializer->type_tag() == NodeType::ListExpr && stmt.type->data.primitive == Type::LIST) {
+            infer_list_type(
+                dynamic_cast<ListExpr *>(stmt.initializer.get()), dynamic_cast<ListType *>(stmt.type.get()));
         }
 
         if (!convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name, true)) {
@@ -996,13 +1037,6 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
             stmt.conversion_type = NumericConversionType::FLOAT_TO_INT;
         } else if (initializer.info->data.primitive == Type::INT && type->data.primitive == Type::FLOAT) {
             stmt.conversion_type = NumericConversionType::INT_TO_FLOAT;
-        }
-
-        // Infer some more information about the type of the list expression from the type of the variable if needed
-        //  If a variable is defined as `var x: [ref int] = [a, b, c]`, then the list needs to be inferred as a list of
-        //  [ref int], not as [int]
-        if (stmt.initializer->type_tag() == NodeType::ListExpr && stmt.type->data.primitive == Type::LIST) {
-            infer_list_type(dynamic_cast<ListExpr*>(stmt.initializer.get()), dynamic_cast<ListType*>(stmt.type.get()));
         }
 
         if (!is_builtin_type(stmt.type->data.primitive)) {

@@ -51,6 +51,8 @@ class TypeResolver final : Visitor {
 
     void replace_if_typeof(TypeNode &type);
     void infer_list_type(ListExpr *of, ListType *from);
+    bool are_equivalent_primitives(QualifiedTypeInfo first, QualifiedTypeInfo second);
+    bool are_equivalent_types(QualifiedTypeInfo first, QualifiedTypeInfo second);
 
   public:
     TypeResolver(Module &module);

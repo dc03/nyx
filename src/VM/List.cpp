@@ -93,10 +93,10 @@ Value List::assign_at(std::size_t index, Value &value) noexcept {
     } else if (is_list_list()) {
         return Value{SharedUniquePtr<List>{[this, &index, &value]() -> std::unique_ptr<List> & {
             List &list = value.to_list();
-          if (std::unique_ptr<List> &assigned = to_list_list()[index]; assigned == nullptr) {
-              std::unique_ptr<List> temp = std::make_unique<List>(make_list(list.type()));
-              assigned.swap(temp);
-          }
+            if (std::unique_ptr<List> &assigned = to_list_list()[index]; assigned == nullptr) {
+                std::unique_ptr<List> temp = std::make_unique<List>(make_list(list.type()));
+                assigned.swap(temp);
+            }
             List &assigned = *to_list_list()[index];
             assigned.resize(list.size());
 #define DO_COPY(cond, method)                                                                                          \
