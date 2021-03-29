@@ -47,3 +47,5 @@
 - [ ] Fix references not being dereferenced in CodeGen when they should be
 - [ ] Move utility functions of Parser into `ParserUtils.cpp` and those of TypeResolver into
   `TypeResolverUtils.cpp`
+- [ ] Make `RequiresCopy` as alias to `bool` in AST and update `std::get` to use it instead of
+numeric `2`

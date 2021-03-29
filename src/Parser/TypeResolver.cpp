@@ -200,6 +200,15 @@ void TypeResolver::infer_list_type(ListExpr *of, ListType *from) {
     of->type->contained->data.is_const = of->type->contained->data.is_const || from->contained->data.is_const;
     of->type->data.is_const = of->type->data.is_const || from->data.is_const;
     // Infer const-ness
+
+    // Decide if copy is needed after inferring type
+    for (ListExpr::ElementType &element : of->elements) {
+        if (!is_builtin_type(of->type->contained->data.primitive)) {
+            if (!of->type->contained->data.is_ref && std::get<0>(element)->resolved.is_lvalue) {
+                std::get<2>(element) = true;
+            }
+        }
+    }
 }
 
 bool TypeResolver::are_equivalent_primitives(QualifiedTypeInfo first, QualifiedTypeInfo second) {

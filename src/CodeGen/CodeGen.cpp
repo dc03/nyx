@@ -203,6 +203,9 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
                 current_chunk->emit_bytes(
                     (value->resolved.stack_slot >> 16) & 0xff, (value->resolved.stack_slot >> 8) & 0xff);
                 current_chunk->emit_byte(value->resolved.stack_slot & 0xff);
+            } else if (!param.second->data.is_ref && value->resolved.info->data.is_ref) {
+                compile(value.get());
+                current_chunk->emit_instruction(Instruction::DEREF, value->resolved.token.line);
             } else {
                 compile(value.get());
             }
@@ -277,10 +280,39 @@ ExprVisitorType Generator::visit(ListExpr &expr) {
         Value{dynamic_cast<LiteralExpr *>(expr.type->size.get())->value.to_int()}, expr.bracket.line);
     current_chunk->emit_instruction(Instruction::ALLOC_AT_LEAST, expr.type->size->resolved.token.line);
     for (ListExpr::ElementType &element : expr.elements) {
-        compile(std::get<0>(element).get());
-        emit_conversion(std::get<1>(element), std::get<0>(element)->resolved.token.line);
+        auto &element_expr = std::get<0>(element);
+
+        if (!expr.type->contained->data.is_ref) {
+            // References have to be conditionally compiled when not binding to a name
+            compile(element_expr.get());
+            emit_conversion(std::get<1>(element), element_expr->resolved.token.line);
+        }
+
+        if (!expr.type->contained->data.is_ref) {
+            // Type is not a reference type
+            if (element_expr->resolved.info->data.is_ref) {
+                current_chunk->emit_instruction(Instruction::DEREF, element_expr->resolved.token.line);
+            }
+        } else if (element_expr->resolved.is_lvalue) {
+            // Type is a reference type
+            if (element_expr->type_tag() == NodeType::VariableExpr) {
+                auto *bound_var = dynamic_cast<VariableExpr *>(element_expr.get());
+                if (bound_var->type == IdentifierType::LOCAL) {
+                    current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, bound_var->name.line);
+                } else if (bound_var->type == IdentifierType::GLOBAL) {
+                    current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, bound_var->name.line);
+                }
+                current_chunk->emit_bytes(
+                    (bound_var->resolved.stack_slot >> 16) & 0xff, (bound_var->resolved.stack_slot >> 8) & 0xff);
+                current_chunk->emit_byte(bound_var->resolved.stack_slot & 0xff);
+            }
+        } else {
+            compile(element_expr.get()); // A reference not binding to an lvalue
+            emit_conversion(std::get<1>(element), element_expr->resolved.token.line);
+        }
+
         if (std::get<2>(element)) { // requires copy
-            current_chunk->emit_instruction(Instruction::COPY, std::get<0>(element)->resolved.token.line);
+            current_chunk->emit_instruction(Instruction::COPY, element_expr->resolved.token.line);
         }
     }
     current_chunk->emit_instruction(Instruction::MAKE_LIST_OF, expr.bracket.line);
