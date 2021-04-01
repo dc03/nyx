@@ -91,7 +91,12 @@ Value native_string(Value *args) {
 }
 
 Value native_readline(Value *args) {
-    std::cout << args[0].to_string();
+    Value &prompt = args[0];
+    if (prompt.is_ref()) {
+        std::cout << prompt.to_referred()->to_string();
+    } else {
+        std::cout << prompt.to_string();
+    }
     std::string result{};
     std::getline(std::cin, result);
     return Value{result};
@@ -103,6 +108,8 @@ Value native_size(Value *args) {
         return Value{static_cast<int>(arg.to_list().size())};
     } else if (arg.is_string()) {
         return Value{static_cast<int>(arg.to_string().size())};
+    } else if (arg.is_ref()) {
+        return native_size(arg.to_referred());
     }
     unreachable();
 }

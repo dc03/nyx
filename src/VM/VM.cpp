@@ -2,6 +2,7 @@
 /* See LICENSE at project root for license details */
 #include "VM.hpp"
 
+#include "../CodeGen/Disassembler.hpp"
 #include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
 
@@ -184,6 +185,8 @@ void VM::run(RuntimeModule &main_module) {
         }
         // std::cout << ' ' << ip - &chunk->bytes[0] << '\n';
         std::cout << '\n';
+        disassemble_instruction(
+            *chunk, static_cast<Instruction>(*ip), (ip - &chunk->bytes[0]), (ip - &chunk->bytes[0]));
 #endif
         switch (read_byte()) {
             case is Instruction::CONST_SHORT: push(chunk->constants[read_byte()]); break;
@@ -496,17 +499,25 @@ void VM::run(RuntimeModule &main_module) {
             }
 
             case is Instruction::INDEX_LIST: {
-                List &list = top_from(2).to_list();
+                Value *list = &top_from(2);
+                if (list->is_ref()) {
+                    list = list->to_referred();
+                }
+                List &indexed = list->to_list();
                 std::size_t index = top_from(1).to_int();
-                Value result = list.at(index);
+                Value result = indexed.at(index);
                 pop_twice_push(result);
                 break;
             }
 
             case is Instruction::CHECK_INDEX: {
-                List &list = top_from(2).to_list();
+                Value *list = &top_from(2);
+                if (list->is_ref()) {
+                    list = list->to_referred();
+                }
+                List &indexed = list->to_list();
                 std::size_t index = top_from(1).to_int();
-                if (index >= list.size()) {
+                if (index >= indexed.size()) {
                     runtime_error("List index out of range", current_line());
                     return;
                 }
@@ -514,10 +525,14 @@ void VM::run(RuntimeModule &main_module) {
             }
 
             case is Instruction::ASSIGN_LIST_AT: {
-                List &list = top_from(3).to_list();
+                Value *list = &top_from(3);
+                if (list->is_ref()) {
+                    list = list->to_referred();
+                }
+                List &indexed = list->to_list();
                 std::size_t index = top_from(2).to_int();
                 Value &value = top_from(1);
-                Value result = list.assign_at(index, value);
+                Value result = indexed.assign_at(index, value);
                 pop();
                 pop_twice_push(result);
                 break;

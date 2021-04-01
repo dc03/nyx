@@ -388,7 +388,7 @@ f(x)
 f(y)
 g(z)
 */*/*/
-fn printarr(y: [[int]]) -> null {
+fn printarr(y: ref [[int]]) -> null {
     for (var i = 0; i < size(y); ++i) {
         for (var j = 0; j < size(y[i]); ++j) {
             print(string(y[i][j]) + ' ')
@@ -401,5 +401,5 @@ x[0] = [-x[0][0], -x[0][1], -x[0][2]]
 printarr(x)
 x = [[10, 11, 12], [13, 14, 15], [16, 17, 18]]
 printarr(x)
-var y: [ref[[int]]] = [x]
+var y: [ref [[int]]] = [x]
 printarr(y[0])

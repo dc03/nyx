@@ -365,6 +365,9 @@ ExprVisitorType Generator::visit(LiteralExpr &expr) {
 
 ExprVisitorType Generator::visit(LogicalExpr &expr) {
     compile(expr.left.get());
+    if (expr.left->resolved.info->data.is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, expr.left->resolved.token.line);
+    }
     std::size_t jump_idx{};
     if (expr.resolved.token.type == TokenType::OR) {
         jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_TRUE, expr.resolved.token.line);
@@ -411,6 +414,9 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
      * HALT
      */
     compile(expr.left.get());
+    if (expr.left->resolved.info->data.is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, expr.left->resolved.token.line);
+    }
 
     std::size_t condition_jump_idx =
         current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, expr.resolved.token.line);
@@ -555,6 +561,9 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
 
 StmtVisitorType Generator::visit(IfStmt &stmt) {
     compile(stmt.condition.get());
+    if (stmt.condition->resolved.info->data.is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, stmt.condition->resolved.token.line);
+    }
     std::size_t jump_idx = current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, stmt.keyword.line);
     current_chunk->emit_bytes(0, 0);
     current_chunk->emit_byte(0);
@@ -636,6 +645,9 @@ StmtVisitorType Generator::visit(SwitchStmt &stmt) {
      */
     break_stmts.emplace();
     compile(stmt.condition.get());
+    if (stmt.condition->resolved.info->data.is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, stmt.condition->resolved.token.line);
+    }
     std::vector<std::size_t> jumps{};
     std::size_t default_jump{};
     for (auto &case_ : stmt.cases) {
@@ -675,21 +687,24 @@ StmtVisitorType Generator::visit(SwitchStmt &stmt) {
 StmtVisitorType Generator::visit(TypeStmt &stmt) {}
 
 std::size_t Generator::recursively_compile_size(ListType *list) {
-    if (list->contained->data.primitive == Type::LIST) {
-        std::size_t inner = recursively_compile_size(dynamic_cast<ListType *>(list->contained.get()));
+    auto compile_size = [this, &list] {
         if (list->size != nullptr) {
             compile(list->size.get());
+            if (list->size->resolved.info->data.is_ref) {
+                current_chunk->emit_instruction(Instruction::DEREF, list->size->resolved.token.line);
+            }
         } else {
             current_chunk->emit_constant(Value{1}, 0);
         }
+    };
+
+    if (list->contained->data.primitive == Type::LIST) {
+        std::size_t inner = recursively_compile_size(dynamic_cast<ListType *>(list->contained.get()));
+        compile_size();
         return inner + 1;
     } else {
         compile(list);
-        if (list->size != nullptr) {
-            compile(list->size.get());
-        } else {
-            current_chunk->emit_constant(Value{1}, 0);
-        }
+        compile_size();
         return 1;
     }
 }
@@ -711,6 +726,9 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
         } else {
             if (list->size != nullptr) {
                 compile(list->size.get());
+                if (list->size->resolved.info->data.is_ref) {
+                    current_chunk->emit_instruction(Instruction::DEREF, list->size->resolved.token.line);
+                }
             } else {
                 current_chunk->emit_constant(Value{1}, stmt.name.line);
             }
@@ -800,6 +818,9 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
 
     std::size_t condition_idx = current_chunk->bytes.size();
     compile(stmt.condition.get());
+    if (stmt.condition->resolved.info->data.is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, stmt.condition->resolved.token.line);
+    }
 
     std::size_t jump_back_idx = current_chunk->emit_instruction(Instruction::POP_JUMP_BACK_IF_TRUE, stmt.keyword.line);
     current_chunk->emit_bytes(0, 0);

@@ -44,8 +44,9 @@
 - [ ] Fix `TypeResolver::visit(GroupingExpr&)` to not return the *exact* type of the expression
   it contains, because that doesn't make sense for something like `(x)`
 - [ ] Move `enum class Type` from `VisitorTypes.hpp` to `AST.hpp` where it truly belongs
-- [ ] Fix references not being dereferenced in CodeGen when they should be
+- [x] Fix references not being dereferenced in CodeGen when they should be
 - [ ] Move utility functions of Parser into `ParserUtils.cpp` and those of TypeResolver into
   `TypeResolverUtils.cpp`
 - [ ] Make `RequiresCopy` as alias to `bool` in AST and update `std::get` to use it instead of
 numeric `2`
+- [ ] Update `std::get` to use `NumericConversionType` instead of numeric `1`, same thing for `0`
