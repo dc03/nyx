@@ -23,6 +23,8 @@ using ExprNode = std::unique_ptr<Expr>;
 using StmtNode = std::unique_ptr<Stmt>;
 using TypeNode = std::unique_ptr<BaseType>;
 
+using RequiresCopy = bool;
+
 // Expression nodes
 
 struct AssignExpr;
@@ -241,14 +243,14 @@ struct AssignExpr final : public Expr {
     Token target;
     ExprNode value;
     NumericConversionType conversion_type;
-    bool requires_copy;
+    RequiresCopy requires_copy;
     IdentifierType target_type;
 
     std::string_view string_tag() override final { return "AssignExpr"; }
 
     NodeType type_tag() override final { return NodeType::AssignExpr; }
 
-    AssignExpr(Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy,
+    AssignExpr(Token target, ExprNode value, NumericConversionType conversion_type, RequiresCopy requires_copy,
         IdentifierType target_type)
         : target{std::move(target)},
           value{std::move(value)},
@@ -274,15 +276,15 @@ struct BinaryExpr final : public Expr {
 
 struct CallExpr final : public Expr {
     ExprNode function;
-    std::vector<std::tuple<ExprNode, NumericConversionType, bool>> args;
+    std::vector<std::tuple<ExprNode, NumericConversionType, RequiresCopy>> args;
     bool is_native_call;
 
     std::string_view string_tag() override final { return "CallExpr"; }
 
     NodeType type_tag() override final { return NodeType::CallExpr; }
 
-    CallExpr(
-        ExprNode function, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> args, bool is_native_call)
+    CallExpr(ExprNode function, std::vector<std::tuple<ExprNode, NumericConversionType, RequiresCopy>> args,
+        bool is_native_call)
         : function{std::move(function)}, args{std::move(args)}, is_native_call{is_native_call} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
@@ -339,7 +341,7 @@ struct IndexExpr final : public Expr {
 };
 
 struct ListExpr final : public Expr {
-    using ElementType = std::tuple<ExprNode, NumericConversionType, bool>;
+    using ElementType = std::tuple<ExprNode, NumericConversionType, RequiresCopy>;
 
     Token bracket;
     std::vector<ElementType> elements;
@@ -359,13 +361,13 @@ struct ListAssignExpr final : public Expr {
     IndexExpr list;
     ExprNode value;
     NumericConversionType conversion_type;
-    bool requires_copy;
+    RequiresCopy requires_copy;
 
     std::string_view string_tag() override final { return "ListAssignExpr"; }
 
     NodeType type_tag() override final { return NodeType::ListAssignExpr; }
 
-    ListAssignExpr(IndexExpr list, ExprNode value, NumericConversionType conversion_type, bool requires_copy)
+    ListAssignExpr(IndexExpr list, ExprNode value, NumericConversionType conversion_type, RequiresCopy requires_copy)
         : list{std::move(list)},
           value{std::move(value)},
           conversion_type{conversion_type},
@@ -430,13 +432,14 @@ struct SetExpr final : public Expr {
     Token name;
     ExprNode value;
     NumericConversionType conversion_type;
-    bool requires_copy;
+    RequiresCopy requires_copy;
 
     std::string_view string_tag() override final { return "SetExpr"; }
 
     NodeType type_tag() override final { return NodeType::SetExpr; }
 
-    SetExpr(ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type, bool requires_copy)
+    SetExpr(
+        ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type, RequiresCopy requires_copy)
         : object{std::move(object)},
           name{std::move(name)},
           value{std::move(value)},
@@ -680,14 +683,14 @@ struct VarStmt final : public Stmt {
     TypeNode type;
     ExprNode initializer;
     NumericConversionType conversion_type;
-    bool requires_copy;
+    RequiresCopy requires_copy;
 
     std::string_view string_tag() override final { return "VarStmt"; }
 
     NodeType type_tag() override final { return NodeType::VarStmt; }
 
     VarStmt(Token keyword, Token name, TypeNode type, ExprNode initializer, NumericConversionType conversion_type,
-        bool requires_copy)
+        RequiresCopy requires_copy)
         : keyword{std::move(keyword)},
           name{std::move(name)},
           type{std::move(type)},

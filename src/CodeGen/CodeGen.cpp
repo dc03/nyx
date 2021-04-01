@@ -185,7 +185,7 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
 ExprVisitorType Generator::visit(CallExpr &expr) {
     std::size_t i = 0;
     for (auto &arg : expr.args) {
-        ExprNode &value = std::get<0>(arg);
+        auto &value = std::get<ExprNode>(arg);
         if (!expr.is_native_call) {
             if (auto &param = expr.function->resolved.func->params[i]; param.second->data.is_ref &&
                                                                        param.second->data.primitive != Type::LIST &&
@@ -213,10 +213,10 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
             compile(value.get());
         }
 
-        if (std::get<1>(arg) != NumericConversionType::NONE) {
-            emit_conversion(std::get<1>(arg), value->resolved.token.line);
+        if (std::get<NumericConversionType>(arg) != NumericConversionType::NONE) {
+            emit_conversion(std::get<NumericConversionType>(arg), value->resolved.token.line);
         }
-        if (std::get<2>(arg)) { // bool requires_copy
+        if (std::get<RequiresCopy>(arg)) {
             current_chunk->emit_instruction(Instruction::COPY, value->resolved.token.line);
         }
 
@@ -280,12 +280,12 @@ ExprVisitorType Generator::visit(ListExpr &expr) {
         Value{dynamic_cast<LiteralExpr *>(expr.type->size.get())->value.to_int()}, expr.bracket.line);
     current_chunk->emit_instruction(Instruction::ALLOC_AT_LEAST, expr.type->size->resolved.token.line);
     for (ListExpr::ElementType &element : expr.elements) {
-        auto &element_expr = std::get<0>(element);
+        auto &element_expr = std::get<ExprNode>(element);
 
         if (!expr.type->contained->data.is_ref) {
             // References have to be conditionally compiled when not binding to a name
             compile(element_expr.get());
-            emit_conversion(std::get<1>(element), element_expr->resolved.token.line);
+            emit_conversion(std::get<NumericConversionType>(element), element_expr->resolved.token.line);
         }
 
         if (!expr.type->contained->data.is_ref) {
@@ -308,10 +308,10 @@ ExprVisitorType Generator::visit(ListExpr &expr) {
             }
         } else {
             compile(element_expr.get()); // A reference not binding to an lvalue
-            emit_conversion(std::get<1>(element), element_expr->resolved.token.line);
+            emit_conversion(std::get<NumericConversionType>(element), element_expr->resolved.token.line);
         }
 
-        if (std::get<2>(element)) { // requires copy
+        if (std::get<RequiresCopy>(element)) {
             current_chunk->emit_instruction(Instruction::COPY, element_expr->resolved.token.line);
         }
     }

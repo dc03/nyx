@@ -185,13 +185,14 @@ void TypeResolver::infer_list_type(ListExpr *of, ListType *from) {
     }
     if (from->contained->data.is_ref &&
         std::all_of(of->elements.begin(), of->elements.end(), [](const ListExpr::ElementType &elem) {
-            return std::get<0>(elem)->resolved.is_lvalue || std::get<0>(elem)->resolved.info->data.is_ref;
+            return std::get<ExprNode>(elem)->resolved.is_lvalue || std::get<ExprNode>(elem)->resolved.info->data.is_ref;
         })) {
         // If there is a ListExpr consisting solely of references or lvalues, it can be safely inferred as a list of
         // references if it is being stored in a name with a reference type
         of->type->contained->data.is_ref = true;
-        if (std::any_of(of->elements.cbegin(), of->elements.cend(),
-                [](const ListExpr::ElementType &elem) { return std::get<0>(elem)->resolved.info->data.is_const; })) {
+        if (std::any_of(of->elements.cbegin(), of->elements.cend(), [](const ListExpr::ElementType &elem) {
+                return std::get<ExprNode>(elem)->resolved.info->data.is_const;
+            })) {
             of->type->contained->data.is_const = true;
             // A list of references has all its elements become const if any one of them are const
         }
@@ -204,8 +205,8 @@ void TypeResolver::infer_list_type(ListExpr *of, ListType *from) {
     // Decide if copy is needed after inferring type
     for (ListExpr::ElementType &element : of->elements) {
         if (!is_builtin_type(of->type->contained->data.primitive)) {
-            if (!of->type->contained->data.is_ref && std::get<0>(element)->resolved.is_lvalue) {
-                std::get<2>(element) = true;
+            if (!of->type->contained->data.is_ref && std::get<ExprNode>(element)->resolved.is_lvalue) {
+                std::get<RequiresCopy>(element) = true;
             }
         }
     }
@@ -392,7 +393,7 @@ ExprVisitorType TypeResolver::check_inbuilt(
     }
 
     for (std::size_t i = 0; i < it->arity; i++) {
-        ExprVisitorType arg = resolve(std::get<0>(args[i]).get());
+        ExprVisitorType arg = resolve(std::get<ExprNode>(args[i]).get());
         if (!std::any_of(it->arguments[i].begin(), it->arguments[i].end(),
                 [&arg](const Type &type) { return type == arg.info->data.primitive; })) {
             using namespace std::string_literals;
@@ -439,24 +440,25 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     }
 
     for (std::size_t i{0}; i < expr.args.size(); i++) {
-        ExprVisitorType argument = resolve(std::get<0>(expr.args[i]).get());
+        ExprVisitorType argument = resolve(std::get<ExprNode>(expr.args[i]).get());
         if (!convertible_to(called->params[i].second.get(), argument.info, argument.is_lvalue, argument.token, true)) {
             error("Type of argument is not convertible to type of parameter", argument.token);
             show_conversion_note(argument.info, called->params[i].second.get());
         } else if (argument.info->data.primitive == Type::FLOAT &&
                    called->params[i].second->data.primitive == Type::INT) {
-            std::get<1>(expr.args[i]) = NumericConversionType::FLOAT_TO_INT;
+            std::get<NumericConversionType>(expr.args[i]) = NumericConversionType::FLOAT_TO_INT;
         } else if (argument.info->data.primitive == Type::INT &&
                    called->params[i].second->data.primitive == Type::FLOAT) {
-            std::get<1>(expr.args[i]) = NumericConversionType::INT_TO_FLOAT;
+            std::get<NumericConversionType>(expr.args[i]) = NumericConversionType::INT_TO_FLOAT;
         }
 
         auto &param = called->params[i];
         if (!is_builtin_type(param.second->data.primitive)) {
             if (param.second->data.is_ref) {
-                std::get<2>(expr.args[i]) = false; // A reference binding to anything does not need a copy
+                std::get<RequiresCopy>(expr.args[i]) = false; // A reference binding to anything does not need a copy
             } else if (argument.is_lvalue) {
-                std::get<2>(expr.args[i]) = true; // A copy is made when initializing from an lvalue without a reference
+                std::get<RequiresCopy>(expr.args[i]) =
+                    true; // A copy is made when initializing from an lvalue without a reference
             }
         }
     }
@@ -563,25 +565,25 @@ ExprVisitorType TypeResolver::visit(ListExpr &expr) {
         TypeNode{allocate_node(PrimitiveType, {Type::INT, true, false})});
 
     expr.type.reset(allocate_node(ListType, {Type::LIST, false, false},
-        TypeNode{copy_type(resolve(std::get<0>(*expr.elements.begin()).get()).info)}, ExprNode{list_size}));
+        TypeNode{copy_type(resolve(std::get<ExprNode>(*expr.elements.begin()).get()).info)}, ExprNode{list_size}));
 
     for (std::size_t i = 1; i < expr.elements.size(); i++) {
-        resolve(std::get<0>(expr.elements[i]).get()); // Will store the type info in the 'resolved' class member
+        resolve(std::get<ExprNode>(expr.elements[i]).get()); // Will store the type info in the 'resolved' class member
     }
 
     if (std::none_of(expr.elements.begin(), expr.elements.end(),
-            [](const ListExpr::ElementType &x) { return std::get<0>(x)->resolved.info->data.is_ref; })) {
+            [](const ListExpr::ElementType &x) { return std::get<ExprNode>(x)->resolved.info->data.is_ref; })) {
         // If there are no references in the list, the individual elements can safely be made non-const
         expr.type->contained->data.is_const = false;
     }
 
     for (ListExpr::ElementType &element : expr.elements) {
-        if (std::get<0>(element)->resolved.info->data.primitive == Type::INT &&
+        if (std::get<ExprNode>(element)->resolved.info->data.primitive == Type::INT &&
             expr.type->contained->data.primitive == Type::FLOAT) {
-            std::get<1>(element) = NumericConversionType::INT_TO_FLOAT;
-        } else if (std::get<0>(element)->resolved.info->data.primitive == Type::FLOAT &&
+            std::get<NumericConversionType>(element) = NumericConversionType::INT_TO_FLOAT;
+        } else if (std::get<ExprNode>(element)->resolved.info->data.primitive == Type::FLOAT &&
                    expr.type->contained->data.primitive == Type::INT) {
-            std::get<1>(element) = NumericConversionType::FLOAT_TO_INT;
+            std::get<NumericConversionType>(element) = NumericConversionType::FLOAT_TO_INT;
         }
     }
     return expr.resolved = {expr.type.get(), expr.bracket, false};

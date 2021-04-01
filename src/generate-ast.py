@@ -23,7 +23,7 @@ def forward_declare(file, names: List[str]) -> None:
 
 
 def declare_alias(file, alias: str, name: str) -> None:
-    file.write('using ' + alias + ' = std::unique_ptr<' + name + '>;\n')
+    file.write('using ' + alias + ' = ' + name + ';\n')
     return None
 
 
@@ -157,9 +157,11 @@ if __name__ == '__main__':
         file.write('#include <vector>\n\n')
         forward_declare(file, ['Expr', 'Stmt', 'BaseType'])
         file.write('\n')
-        declare_alias(file, 'ExprNode', 'Expr')
-        declare_alias(file, 'StmtNode', 'Stmt')
-        declare_alias(file, 'TypeNode', 'BaseType')
+        declare_alias(file, 'ExprNode', 'std::unique_ptr<Expr>')
+        declare_alias(file, 'StmtNode', 'std::unique_ptr<Stmt>')
+        declare_alias(file, 'TypeNode', 'std::unique_ptr<BaseType>')
+        file.write('\n')
+        declare_alias(file, 'RequiresCopy', 'bool')
         # Base class and alias declarations complete
 
         Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'List', 'ListAssign',
@@ -244,7 +246,7 @@ if __name__ == '__main__':
 
         declare_expr_type('target{std::move(target)}, value{std::move(value)}, conversion_type{conversion_type},'
                           'requires_copy{requires_copy}, target_type{target_type}',
-                          'Token target, ExprNode value, NumericConversionType conversion_type, bool requires_copy, '
+                          'Token target, ExprNode value, NumericConversionType conversion_type, RequiresCopy requires_copy, '
                           'IdentifierType target_type')
 
         declare_expr_type('left{std::move(left)}, right{std::move(right)}',
@@ -252,7 +254,7 @@ if __name__ == '__main__':
 
         declare_expr_type(
             'function{std::move(function)}, args{std::move(args)}, is_native_call{is_native_call}',
-            'ExprNode function, std::vector<std::tuple<ExprNode,NumericConversionType,bool>> args, bool is_native_call')
+            'ExprNode function, std::vector<std::tuple<ExprNode,NumericConversionType,RequiresCopy>> args, bool is_native_call')
 
         declare_expr_type('exprs{std::move(exprs)}',
                           'std::vector<ExprNode> exprs')
@@ -268,11 +270,11 @@ if __name__ == '__main__':
 
         declare_expr_type('bracket{std::move(bracket)}, elements{std::move(elements)}, type{std::move(type)}',
                           'Token bracket, std::vector<ElementType> elements, std::unique_ptr<ListType> type',
-                          ['using ElementType = std::tuple<ExprNode, NumericConversionType, bool>'])
+                          ['using ElementType = std::tuple<ExprNode, NumericConversionType, RequiresCopy>'])
 
         declare_expr_type('list{std::move(list)}, value{std::move(value)}, conversion_type{conversion_type}, '
                           'requires_copy{requires_copy}',
-                          'IndexExpr list, ExprNode value, NumericConversionType conversion_type, bool requires_copy')
+                          'IndexExpr list, ExprNode value, NumericConversionType conversion_type, RequiresCopy requires_copy')
 
         declare_expr_type('value{std::move(value)}, type{std::move(type)}',
                           'LiteralValue value, TypeNode type')
@@ -289,7 +291,7 @@ if __name__ == '__main__':
         declare_expr_type(
             'object{std::move(object)}, name{std::move(name)}, value{std::move(value)}, '
             'conversion_type{conversion_type}, requires_copy{requires_copy}',
-            'ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type, bool requires_copy')
+            'ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type, RequiresCopy requires_copy')
 
         declare_expr_type('keyword{std::move(keyword)}, name{std::move(name)}',
                           'Token keyword, Token name')
@@ -361,7 +363,7 @@ if __name__ == '__main__':
                           'initializer{std::move(initializer)}, conversion_type{conversion_type}, '
                           'requires_copy{requires_copy}',
                           'Token keyword, Token name, TypeNode type, ExprNode initializer, NumericConversionType '
-                          'conversion_type, bool requires_copy')
+                          'conversion_type, RequiresCopy requires_copy')
 
         declare_stmt_type(
             'keyword{std::move(keyword)}, condition{std::move(condition)}, body{std::move(body)}, '
