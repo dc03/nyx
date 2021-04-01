@@ -6,8 +6,8 @@
 #ifndef AST_HPP
 #define AST_HPP
 
-#include "Parser/VisitorTypes.hpp"
 #include "Token.hpp"
+#include "VisitorTypes.hpp"
 
 #include <memory>
 #include <string>

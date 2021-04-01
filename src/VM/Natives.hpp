@@ -6,7 +6,7 @@
 #ifndef NATIVES_HPP
 #define NATIVES_HPP
 
-#include "../Parser/VisitorTypes.hpp"
+#include "../VisitorTypes.hpp"
 #include "Value.hpp"
 
 #include <string>

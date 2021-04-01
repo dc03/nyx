@@ -148,7 +148,7 @@ def declare_stmt_type(ctor_args: str, members: str, typedefs: List[str] = None) 
 if __name__ == '__main__':
     with open('AST.hpp', 'wt') as file:
         make_header(file, 'AST_HPP')
-        file.write('#include "Parser/VisitorTypes.hpp"\n')
+        file.write('#include "VisitorTypes.hpp"\n')
         file.write('#include "Token.hpp"\n\n')
         file.write('#include <memory>\n')
         file.write('#include <string>\n')

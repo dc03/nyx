@@ -1,7 +1,7 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "../AST.hpp"
-#include "../Common.hpp"
+#include "AST.hpp"
+#include "Common.hpp"
 
 LiteralValue::LiteralValue(int value) : value{value} {}
 LiteralValue::LiteralValue(bool value) : value{value} {}

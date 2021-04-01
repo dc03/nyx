@@ -6,7 +6,7 @@
 #ifndef AST_TYPES_HPP
 #define AST_TYPES_HPP
 
-#include "../Token.hpp"
+#include "Token.hpp"
 
 #include <memory>
 #include <string>

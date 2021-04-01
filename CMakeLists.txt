@@ -7,7 +7,7 @@ project(wis VERSION 0.0.7)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_executable(wis src/wis.cpp src/ErrorLogger/ErrorLogger.cpp src/Parser/TypeResolver.cpp src/Parser/VisitorTypes.cpp
+add_executable(wis src/wis.cpp src/ErrorLogger/ErrorLogger.cpp src/Parser/TypeResolver.cpp src/VisitorTypes.cpp
                    src/Parser/Parser.cpp src/Scanner/Scanner.cpp src/Scanner/Trie.cpp src/AST.cpp src/VM/Chunk.cpp
                    src/CodeGen/CodeGen.cpp src/VM/VM.cpp src/VM/Value.cpp src/CodeGen/Disassembler.cpp src/VM/Natives.cpp
                    src/VM/List.cpp src/ASTPrinter.cpp)
