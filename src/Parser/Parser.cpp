@@ -215,11 +215,6 @@ bool Parser::match(Args... args) {
 
     if (std::any_of(arr.begin(), arr.end(), [this](auto &&arg) { return check(arg); })) {
         advance();
-
-        //        while (peek().primitive == TokenType::END_OF_LINE) {
-        //            advance();
-        //        }
-
         return true;
     } else {
         return false;
@@ -920,11 +915,6 @@ StmtNode Parser::for_statement() {
     }
 
     ScopedBooleanManager loop_manager{in_loop};
-    //    auto *modified_body = allocate_node(BlockStmt, {});
-
-    //    ScopedIntegerManager manager2{scope_depth};
-    //    modified_body->stmts.emplace_back(statement()); // The actual body
-    //    modified_body->stmts.emplace_back(std::move(increment));
 
     StmtNode desugared_loop =
         StmtNode{allocate_node(WhileStmt, std::move(keyword), std::move(condition), statement(), std::move(increment))};
@@ -1002,8 +992,6 @@ StmtNode Parser::switch_statement() {
 
 StmtNode Parser::while_statement() {
     Token keyword = previous();
-    // ScopedIntegerManager manager{scope_depth};
-
     ExprNode condition = expression();
 
     while (peek().type == TokenType::END_OF_LINE) {

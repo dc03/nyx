@@ -63,20 +63,15 @@ class Parser {
     [[nodiscard]] constexpr const ParseRule &get_rule(TokenType type) const noexcept;
     void synchronize();
 
-    template <typename Allocated>
-    StmtNode single_token_statement(std::string_view token, bool condition, std::string_view error_message);
     void throw_parse_error(const std::string_view message) const;
     void throw_parse_error(const std::string_view message, const Token &where) const;
 
-  public:
-    static std::vector<std::pair<Module, std::size_t>> parsed_modules;
-
-    explicit Parser(const std::vector<Token> &tokens, Module &module, std::size_t current_depth);
-
     [[nodiscard]] bool is_at_end() const noexcept;
+
     [[nodiscard]] const Token &previous() const noexcept;
     const Token &advance();
     [[nodiscard]] const Token &peek() const noexcept;
+
     [[nodiscard]] bool check(TokenType type) const noexcept;
     template <typename... Args>
     bool match(Args... args);
@@ -84,6 +79,14 @@ class Parser {
     void consume(std::string_view message, Args... args);
     template <typename... Args>
     void consume(std::string_view message, const Token &where, Args... args);
+
+    template <typename Allocated>
+    StmtNode single_token_statement(std::string_view token, bool condition, std::string_view error_message);
+
+  public:
+    static std::vector<std::pair<Module, std::size_t>> parsed_modules;
+
+    explicit Parser(const std::vector<Token> &tokens, Module &module, std::size_t current_depth);
 
     std::vector<StmtNode> program();
 

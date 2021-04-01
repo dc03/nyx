@@ -12,7 +12,7 @@
 
 #include <stack>
 
-class Generator : Visitor {
+class Generator final : Visitor {
     Chunk *current_chunk{nullptr};
     Module *current_module{nullptr};
     RuntimeModule *current_compiled{nullptr};
@@ -29,15 +29,15 @@ class Generator : Visitor {
     void emit_conversion(NumericConversionType conversion_type, std::size_t line_number);
     std::size_t recursively_compile_size(ListType *list);
 
+    ExprVisitorType compile(Expr *expr);
+    StmtVisitorType compile(Stmt *stmt);
+    BaseTypeVisitorType compile(BaseType *type);
+
   public:
     static std::vector<RuntimeModule> compiled_modules;
 
     Generator() = default;
     RuntimeModule compile(Module &module);
-
-    ExprVisitorType compile(Expr *expr);
-    StmtVisitorType compile(Stmt *stmt);
-    BaseTypeVisitorType compile(BaseType *type);
 
     ExprVisitorType visit(AssignExpr &expr) override final;
     ExprVisitorType visit(BinaryExpr &expr) override final;

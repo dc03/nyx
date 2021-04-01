@@ -32,7 +32,6 @@ int main(const int, const char *const argv[]) {
     TypeResolver resolver{main};
     main.statements = parser.program();
     resolver.check(main.statements);
-
     // ASTPrinter{}.print_stmts(main.statements);
 
     if (!logger.had_error) {
@@ -55,9 +54,7 @@ int main(const int, const char *const argv[]) {
             disassemble(function.code, function_name);
         }
         VM vm{};
-        vm.frames[0] = CallFrame{vm.stack, {}};
         vm.run(main_compiled);
-        // std::cout << vm.stack[0].to_int();
     }
 
     return 0;

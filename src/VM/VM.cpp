@@ -23,6 +23,7 @@ VM::VM() {
     for (const auto &native : native_functions) {
         define_native(native.name, native);
     }
+    frames[0] = CallFrame{stack, {}};
 }
 
 VM::~VM() {

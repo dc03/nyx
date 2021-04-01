@@ -39,8 +39,8 @@
   interpreter halting
 - [x] Fix bug with Parser segfaulting when `infix` is `nullptr`, like in `i++`
 - [ ] Refactor `TypeResolver::show_conversion_note`, `TypeResolver::show_equality_note`
-- [ ] Refactor `Parser` interface
-- [ ] Refactor `VM` interface
+- [x] Refactor `Parser` interface
+- [x] Refactor `VM` interface
 - [ ] Fix `TypeResolver::visit(GroupingExpr&)` to not return the *exact* type of the expression
   it contains, because that doesn't make sense for something like `(x)`
 - [ ] Move `enum class Type` from `VisitorTypes.hpp` to `AST.hpp` where it truly belongs

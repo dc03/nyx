@@ -54,16 +54,18 @@ class TypeResolver final : Visitor {
     bool are_equivalent_primitives(QualifiedTypeInfo first, QualifiedTypeInfo second);
     bool are_equivalent_types(QualifiedTypeInfo first, QualifiedTypeInfo second);
 
-  public:
-    TypeResolver(Module &module);
-
-    void check(std::vector<StmtNode> &program);
     void begin_scope();
     void end_scope();
+    friend class ScopedScopeManager;
 
     ExprVisitorType resolve(Expr *expr);
     StmtVisitorType resolve(Stmt *stmt);
     BaseTypeVisitorType resolve(BaseType *type);
+
+  public:
+    explicit TypeResolver(Module &module);
+
+    void check(std::vector<StmtNode> &program);
 
     ExprVisitorType visit(AssignExpr &expr) override final;
     ExprVisitorType visit(BinaryExpr &expr) override final;

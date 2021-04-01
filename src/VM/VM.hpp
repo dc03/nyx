@@ -19,7 +19,7 @@ struct CallFrame {
     Chunk::byte *return_ip{};
 };
 
-struct VM {
+class VM {
     Chunk::byte *ip{};
     Value *stack{};
     Value *stack_top{};
@@ -29,7 +29,6 @@ struct VM {
     std::unordered_map<std::string_view, NativeFn> natives{};
     RuntimeModule *current_module{};
 
-    void run(RuntimeModule &main_module);
     void push(const Value &value);
     void push(Value &&value);
     void pop();
@@ -42,8 +41,11 @@ struct VM {
     Chunk::byte read_byte();
     std::size_t read_three_bytes();
 
+  public:
     VM();
     ~VM();
+
+    void run(RuntimeModule &main_module);
 };
 
 #endif

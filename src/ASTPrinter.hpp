@@ -13,11 +13,11 @@
 class ASTPrinter final : Visitor {
     std::size_t current_depth{};
 
-  public:
     ExprVisitorType print(Expr *expr);
     StmtVisitorType print(Stmt *stmt);
     BaseTypeVisitorType print(BaseType *type);
 
+  public:
     void print_stmt(StmtNode &stmt);
     void print_stmts(std::vector<StmtNode> &stmts);
 

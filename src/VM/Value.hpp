@@ -15,10 +15,11 @@
 
 struct RuntimeFunction;
 
-struct Value {
+class Value {
     enum tag { INT, DOUBLE, STRING, BOOL, NULL_, PRIMITIVE_REF, FUNCTION, LIST };
     std::variant<int, double, std::string, bool, std::nullptr_t, Value *, RuntimeFunction *, SharedUniquePtr<List>> as;
 
+  public:
     Value() = default;
 
     explicit Value(int value);
