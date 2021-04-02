@@ -13,8 +13,9 @@ fn fibonacci(x: int) -> int {
 }
 
 fn main() -> int {
-    var x: int
-    print("Enter a number: ")
-    read(x)
-    print("The fibonacci literal at " + string(x) + " is: " + string(fibonacci(x)))
+    var x = int(readline("Enter a number: "))
+    print("The fibonacci number at " + string(x) + " is: " + string(fibonacci(x)))
+    return 0
 }
+
+main()

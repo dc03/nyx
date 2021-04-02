@@ -1,12 +1,12 @@
 class Foo {
     public var x: int
 
-    public fn Foo(y: int) {
+    public fn Foo(y: int) -> Foo {
         x = y
         print("Constructor called with value " + str(y) + ".")
     }
 
-    public fn ~Foo() {
+    public fn ~Foo() -> null {
         print("Destructor called.")
     }
 }

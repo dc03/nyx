@@ -51,3 +51,7 @@
 - [x] Make `RequiresCopy` as alias to `bool` in AST and update `std::get` to use it instead of
 numeric `2`
 - [x] Update `std::get` to use `NumericConversionType` instead of numeric `1`, same thing for `0`
+- [ ] Create stable C API to use the interpreter in other projects
+- [ ] Make tests (many many of them)
+- [x] Clean up examples
+- [ ] Make a command line interface

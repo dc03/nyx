@@ -1,3 +1,0 @@
-fn foo() -> null {
-    print("Hello world")
-}
