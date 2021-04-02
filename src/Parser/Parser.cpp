@@ -109,7 +109,7 @@ Parser::Parser(const std::vector<Token> &tokens, Module &module, std::size_t cur
     add_rule(TokenType::MINUS_EQUAL,   {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::STAR_EQUAL,    {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::SLASH_EQUAL,   {nullptr, nullptr, ParsePrecedence::of::NONE});
-    add_rule(TokenType::QUESTION,      {nullptr, &Parser::ternary, ParsePrecedence::of::ASSIGNMENT});
+    add_rule(TokenType::QUESTION,      {nullptr, &Parser::ternary, ParsePrecedence::of::TERNARY});
     add_rule(TokenType::COLON,         {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::BIT_OR,        {nullptr, &Parser::binary, ParsePrecedence::of::BIT_OR});
     add_rule(TokenType::BIT_XOR,       {nullptr, &Parser::binary, ParsePrecedence::of::BIT_XOR});
@@ -473,7 +473,7 @@ ExprNode Parser::ternary(bool, ExprNode left) {
     Token question = previous();
     ExprNode middle = parse_precedence(ParsePrecedence::of::LOGIC_OR);
     consume("Expected colon in ternary expression", TokenType::COLON);
-    ExprNode right = parse_precedence(ParsePrecedence::of::LOGIC_OR);
+    ExprNode right = parse_precedence(ParsePrecedence::of::TERNARY);
     auto *node = allocate_node(TernaryExpr, std::move(left), std::move(middle), std::move(right));
     node->resolved.token = std::move(question);
     return ExprNode{node};

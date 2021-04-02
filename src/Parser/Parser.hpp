@@ -18,6 +18,7 @@ struct ParsePrecedence {
         NONE,
         COMMA,      // ,
         ASSIGNMENT, // = += -= *= /= ?:
+        TERNARY,    // ?:
         LOGIC_OR,   // ||
         LOGIC_AND,  // &&
         BIT_OR,     // |
