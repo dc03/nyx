@@ -11,11 +11,7 @@
 #include <iostream>
 #include <utility>
 
-#ifndef NDEBUG
-#define PRINT_STACK
-#endif
-
-VM::VM() {
+VM::VM(bool trace_stack, bool trace_insn) : trace_stack{trace_stack}, trace_insn{trace_insn} {
     frames = new CallFrame[max_stack_frames];
     frame_top = frames;
     stack = new Value[max_stack_frames * max_locals_per_frame];
@@ -178,17 +174,19 @@ void VM::run(RuntimeModule &main_module) {
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     for (;;) {
-#ifdef PRINT_STACK
-        for (Value *begin{stack}; begin < stack_top; begin++) {
-            std::cout << "[ ";
-            std::cout << begin->repr();
-            std::cout << " ] ";
+        if (trace_stack) {
+            for (Value *begin{stack}; begin < stack_top; begin++) {
+                std::cout << "[ ";
+                std::cout << begin->repr();
+                std::cout << " ] ";
+            }
+            // std::cout << ' ' << ip - &chunk->bytes[0] << '\n';
+            std::cout << '\n';
         }
-        // std::cout << ' ' << ip - &chunk->bytes[0] << '\n';
-        std::cout << '\n';
-        disassemble_instruction(
-            *chunk, static_cast<Instruction>(*ip), (ip - &chunk->bytes[0]), (ip - &chunk->bytes[0]));
-#endif
+        if (trace_insn) {
+            disassemble_instruction(
+                *chunk, static_cast<Instruction>(*ip), (ip - &chunk->bytes[0]), (ip - &chunk->bytes[0]));
+        }
         switch (read_byte()) {
             case is Instruction::CONST_SHORT: push(chunk->constants[read_byte()]); break;
             case is Instruction::CONST_LONG: {

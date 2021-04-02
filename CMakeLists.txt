@@ -35,3 +35,15 @@ else(${CMAKE_BUILD_TYPE} MATCHES "Release")
         target_compile_options(wis PUBLIC -O2 -flto)
     endif()
 endif()
+
+include(FetchContent)
+
+FetchContent_Declare(
+        CXXOPTS
+        GIT_REPOSITORY https://github.com/jarro2783/cxxopts.git
+        GIT_TAG        v2.2.1
+)
+FetchContent_MakeAvailable(CXXOPTS)
+FetchContent_GetProperties(CXXOPTS)
+
+target_link_libraries(wis PUBLIC cxxopts)

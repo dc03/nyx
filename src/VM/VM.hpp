@@ -29,6 +29,9 @@ class VM {
     std::unordered_map<std::string_view, NativeFn> natives{};
     RuntimeModule *current_module{};
 
+    bool trace_stack{false};
+    bool trace_insn{false};
+
     void push(const Value &value);
     void push(Value &&value);
     void pop();
@@ -42,7 +45,7 @@ class VM {
     std::size_t read_three_bytes();
 
   public:
-    VM();
+    VM(bool trace_stack, bool trace_insn);
     ~VM();
 
     void run(RuntimeModule &main_module);

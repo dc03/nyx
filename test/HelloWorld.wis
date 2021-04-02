@@ -1,0 +1,6 @@
+fn main() -> int {
+    print("Hello world!\n")
+    return 0
+}
+
+main()
