@@ -1,0 +1,64 @@
+
+fn
+f(x: int)
+->
+
+null
+{
+    if
+    x == 5
+
+    {
+
+    }
+}
+
+for
+(var
+
+i = 0; // No newline emitted here because its within parentheses
+
+i < 5;
+
+++i
+)
+{
+    while
+
+    (
+
+    i == 2
+    )
+
+    {
+        i = i +
+
+        1
+    }
+}
+
+var
+
+x =
+5
+
+f(
+x)
+
+switch
+x
+{
+    case
+    1: 1
+    case 2: 2; case
+    3: x;
+    case 5:
+    break
+}
+
+fn
+g() -> int
+{
+    return
+    5
+}

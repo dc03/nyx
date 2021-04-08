@@ -273,13 +273,9 @@ void Scanner::scan_token() {
         case '\b': break;
         case '\n': {
             auto is_allowed = [this](const Token &token) {
-                if (std::all_of(token.lexeme.begin(), token.lexeme.end(), static_cast<int (*)(int)>(std::isalpha))) {
-                    if (keywords.search(token.lexeme) != TokenType::NONE) {
-                        return true;
-                    }
-                }
-
                 switch (token.type) {
+                    case TokenType::BREAK:
+                    case TokenType::CONTINUE:
                     case TokenType::FLOAT_VALUE:
                     case TokenType::INT_VALUE:
                     case TokenType::STRING_VALUE:

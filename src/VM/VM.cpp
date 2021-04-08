@@ -201,7 +201,7 @@ void VM::run(RuntimeModule &main_module) {
                 if (top_from(1).is_int() && top_from(1).to_int() == 0) {
                     runtime_error("Division by zero", current_line());
                     return;
-                } else if (top_from(1).to_double() == 0.0f) {
+                } else if (top_from(1).is_double() && top_from(1).to_double() == 0.0f) {
                     runtime_error("Division by zero", current_line());
                     return;
                 }

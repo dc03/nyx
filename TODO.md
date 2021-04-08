@@ -8,6 +8,7 @@
 - [ ] `0..foo(), 0..=foo()` (range expression)
 - [ ] Tuples (`{int, string, float}`, `{0, "string", 5.0}`)
 - [ ] Tuple unpacking (`tup..`)
+- [ ] Export AST as JSON
 - [ ] Classes
 - [ ] Modules
 - [ ] Documentation
@@ -55,3 +56,4 @@ numeric `2`
 - [ ] Make tests (many many of them)
 - [x] Clean up examples
 - [ ] Make a command line interface
+- [ ] Merge `SharedData` into `BaseType`

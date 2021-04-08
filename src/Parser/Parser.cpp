@@ -266,8 +266,11 @@ ExprNode Parser::parse_precedence(ParsePrecedence::of precedence) {
                 return previous().lexeme + "'";
             }
         }();
+        bool had_error_before = logger.had_error;
         error(message, previous());
-        note("This may occur because of previous errors leading to the parser being confused");
+        if (had_error_before) {
+            note("This may occur because of previous errors leading to the parser being confused");
+        }
         throw ParseException{previous(), message};
     }
 
@@ -930,6 +933,11 @@ StmtNode Parser::for_statement() {
 StmtNode Parser::if_statement() {
     Token keyword = previous();
     ExprNode condition = expression();
+
+    while (peek().type == TokenType::END_OF_LINE) {
+        advance();
+    }
+
     StmtNode then_branch = statement();
     if (match(TokenType::ELSE)) {
         StmtNode else_branch = statement();
@@ -962,6 +970,11 @@ StmtNode Parser::return_statement() {
 
 StmtNode Parser::switch_statement() {
     ExprNode condition = expression();
+
+    while (peek().type == TokenType::END_OF_LINE) {
+        advance();
+    }
+
     std::vector<std::pair<ExprNode, StmtNode>> cases{};
     StmtNode default_case = nullptr;
     consume("Expected '{' after switch statement condition", TokenType::LEFT_BRACE);

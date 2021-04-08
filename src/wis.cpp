@@ -37,7 +37,7 @@ void run_module(const char *const main_module, cxxopts::ParseResult &result) {
         ASTPrinter{}.print_stmts(main.statements);
     }
 
-    if (!logger.had_error) {
+    if (!result.count("check") && !logger.had_error) {
         std::sort(Parser::parsed_modules.begin(), Parser::parsed_modules.end(),
             [](const auto &x1, const auto &x2) { return x1.second > x2.second; });
 
@@ -68,13 +68,16 @@ void run_module(const char *const main_module, cxxopts::ParseResult &result) {
 int main(int argc, char *argv[]) {
     cxxopts::Options options{"wis", "A small and simple interpreted language"};
 
-    options.add_options()("dump-ast", "Dump the contents of the AST after parsing and typechecking",
-        cxxopts::value<bool>()->default_value("false"))("disassemble-code",
-        "Disassemble the byte code produced for the VM", cxxopts::value<bool>()->default_value("false"))(
-        "trace-exec-stack", "Print the contents of the stack as the VM executes code",
-        cxxopts::value<bool>()->default_value("false"))("trace-exec-insn",
-        "Print the instructions as they are executed by the VM", cxxopts::value<bool>()->default_value("false"))(
-        "main", "The module from which to start execution", cxxopts::value<std::string>())("h,help", "Print usage");
+    // clang-format off
+    options.add_options()
+        ("check", "Do not run the code, only parse and type check it")
+        ("dump-ast", "Dump the contents of the AST after parsing and typechecking", cxxopts::value<bool>()->default_value("false"))
+        ("disassemble-code", "Disassemble the byte code produced for the VM", cxxopts::value<bool>()->default_value("false"))
+        ("main", "The module from which to start execution", cxxopts::value<std::string>())
+        ("trace-exec-stack", "Print the contents of the stack as the VM executes code", cxxopts::value<bool>()->default_value("false"))
+        ("trace-exec-insn", "Print the instructions as they are executed by the VM", cxxopts::value<bool>()->default_value("false"))
+        ("h,help", "Print usage");
+    // clang-format on
 
     try {
         cxxopts::ParseResult result = options.parse(argc, argv);

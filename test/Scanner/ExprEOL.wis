@@ -1,0 +1,90 @@
+
+5
+
+5,
+6,
+7, 8
+
+var x = 0
+var y = 0
+var z = 0
+
+x = 5,
+
+y = 6, z = 7 ? 8 :
+9
+
+5 ?
+6 :
+7 ?
+8 :
+9
+
+false
+|| true
+and false or
+ 1 &&
+2
+
+
+x | y | x &
+
+x ^ y ^ z & y &x&y^z
+int(int(x!=y)!=z)==
+x
+
+var a = false;
+var b = true;
+var c = false;
+var d = true;
+
+a>=b<=c>
+d<
+a
+
+x>>y<<z>>
+y<<z>>y>>
+z<<y<<x
+
+x + y-
+z-z-z-z-z+
+x+
+y+z+x+ ++
+x%65
+
+(x/y)*z*y*
+z/(y/x)
+
+++x
+--
+x
+!!
+!!
+!!
+!!
+
+x
+- ~ - ~ - ~
+ - ~ - ~ - ~
+- ~ - ~ - ~ x
+
+fn f(x: int,
+     y: int,
+     z: string)
+     -> int
+     {
+     return x + int(y) + int(z);     }
+f(
+x = 1, y= 2,
+"5")
+
+var w = [f(x = 3, y=-5,
+" 6 "
+),
+1, 23 ,
+
+5,]
+
+w[1]
+w[
+f(1, 2 ,"34")]
