@@ -90,7 +90,7 @@ void Parser::synchronize() {
             case TokenType::PUBLIC:
             case TokenType::RETURN:
             case TokenType::TYPE:
-            case TokenType::VAL:
+            case TokenType::CONST:
             case TokenType::VAR:
             case TokenType::WHILE: return;
             default:;
@@ -174,7 +174,6 @@ Parser::Parser(const std::vector<Token> &tokens, Module &module, std::size_t cur
     add_rule(TokenType::TRUE,          {&Parser::literal, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::TYPE,          {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::TYPEOF,        {nullptr, nullptr, ParsePrecedence::of::NONE});
-    add_rule(TokenType::VAL,           {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::VAR,           {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::WHILE,         {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::NONE,          {nullptr, nullptr, ParsePrecedence::of::NONE});
@@ -581,7 +580,7 @@ StmtNode Parser::declaration() {
             return import_statement();
         } else if (match(TokenType::TYPE)) {
             return type_declaration();
-        } else if (match(TokenType::VAR, TokenType::VAL, TokenType::REF)) {
+        } else if (match(TokenType::VAR, TokenType::CONST, TokenType::REF)) {
             return variable_declaration();
         } else {
             return statement();
@@ -626,7 +625,7 @@ StmtNode Parser::class_declaration() {
             }
         }();
 
-        if (match(TokenType::VAR, TokenType::VAL, TokenType::REF)) {
+        if (match(TokenType::VAR, TokenType::CONST, TokenType::REF)) {
             try {
                 std::unique_ptr<VarStmt> member{dynamic_cast<VarStmt *>(variable_declaration().release())};
                 members.emplace_back(std::move(member), visibility);
@@ -805,7 +804,7 @@ StmtNode Parser::variable_declaration() {
     std::string message = "Expected variable name after '";
     switch (previous().type) {
         case TokenType::VAR: message += "var"; break;
-        case TokenType::VAL: message += "val"; break;
+        case TokenType::CONST: message += "const"; break;
         case TokenType::REF: message += "ref"; break;
         default: break;
     }
@@ -850,7 +849,7 @@ StmtNode Parser::block_statement() {
     ScopedIntegerManager manager{scope_depth};
 
     while (!is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
-        if (match(TokenType::VAR, TokenType::VAL, TokenType::REF)) {
+        if (match(TokenType::VAR, TokenType::CONST, TokenType::REF)) {
             statements.emplace_back(variable_declaration());
         } else {
             statements.emplace_back(statement());
@@ -895,7 +894,7 @@ StmtNode Parser::for_statement() {
     ScopedIntegerManager manager{scope_depth};
 
     StmtNode initializer = nullptr;
-    if (match(TokenType::VAR, TokenType::VAL, TokenType::REF)) {
+    if (match(TokenType::VAR, TokenType::CONST, TokenType::REF)) {
         initializer = variable_declaration();
     } else if (!match(TokenType::SEMICOLON)) {
         initializer = expression_statement();

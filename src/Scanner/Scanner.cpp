@@ -12,14 +12,14 @@
 Scanner::Scanner() {
     const char *words[]{"and", "bool", "break", "case", "class", "const", "continue", "default", "else", "false",
         "float", "fn", "for", "if", "import", "int", "null", "or", "protected", "private", "public", "ref", "return",
-        "string", "super", "switch", "this", "true", "type", "typeof", "val", "var", "while"};
+        "string", "super", "switch", "this", "true", "type", "typeof", "var", "while"};
 
     TokenType types[]{TokenType::AND, TokenType::BOOL, TokenType::BREAK, TokenType::CASE, TokenType::CLASS,
         TokenType::CONST, TokenType::CONTINUE, TokenType::DEFAULT, TokenType::ELSE, TokenType::FALSE, TokenType::FLOAT,
         TokenType::FN, TokenType::FOR, TokenType::IF, TokenType::IMPORT, TokenType::INT, TokenType::NULL_,
         TokenType::OR, TokenType::PROTECTED, TokenType::PRIVATE, TokenType::PUBLIC, TokenType::REF, TokenType::RETURN,
         TokenType::STRING, TokenType::SUPER, TokenType::SWITCH, TokenType::THIS, TokenType::TRUE, TokenType::TYPE,
-        TokenType::TYPEOF, TokenType::VAL, TokenType::VAR, TokenType::WHILE};
+        TokenType::TYPEOF, TokenType::VAR, TokenType::WHILE};
 
     static_assert(std::size(words) == std::size(types), "Size of array of keywords and their types have to be same.");
 

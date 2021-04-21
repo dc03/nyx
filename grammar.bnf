@@ -60,7 +60,7 @@ declaration    ::= statement
                  | class
 
 import         ::= "import" STRING EOL
-var            ::= ("var"|"val") IDENTIFIER ((":" TYPE)? "=" expression)? EOL
+var            ::= ("var"|"const"|"ref") IDENTIFIER (":" TYPE)? ("=" expression)? EOL
 
 params         ::= (IDENTIFIER ":" TYPE)*
 fn             ::= "fn" "~"? IDENTIFIER "(" params ")" "->" TYPE block

@@ -1027,7 +1027,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
                     stmt.type->data.is_ref = false;
                 }
                 break;
-            case TokenType::VAL: stmt.type->data.is_const = true; break;
+            case TokenType::CONST: stmt.type->data.is_const = true; break;
             case TokenType::REF: stmt.type->data.is_ref = true; break;
             default: break;
         }

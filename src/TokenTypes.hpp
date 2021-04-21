@@ -101,7 +101,6 @@ enum class TokenType {
     TRUE,
     TYPE,
     TYPEOF,
-    VAL,
     VAR,
     WHILE,
 
