@@ -919,8 +919,9 @@ StmtNode Parser::for_statement() {
 
     ScopedBooleanManager loop_manager{in_loop};
 
-    StmtNode desugared_loop =
-        StmtNode{allocate_node(WhileStmt, std::move(keyword), std::move(condition), statement(), std::move(increment))};
+    consume("Expected '{' after for-loop header", TokenType::LEFT_BRACE);
+    StmtNode desugared_loop = StmtNode{
+        allocate_node(WhileStmt, std::move(keyword), std::move(condition), block_statement(), std::move(increment))};
     // The increment is only created for for-loops, so that the `continue` statement works properly.
 
     auto *loop = allocate_node(BlockStmt, {});
@@ -938,9 +939,17 @@ StmtNode Parser::if_statement() {
         advance();
     }
 
-    StmtNode then_branch = statement();
+    consume("Expected '{' after if statement condition", TokenType::LEFT_BRACE);
+    StmtNode then_branch = block_statement();
     if (match(TokenType::ELSE)) {
-        StmtNode else_branch = statement();
+        StmtNode else_branch = [this] {
+            if (match(TokenType::IF)) {
+                return if_statement();
+            } else {
+                consume("Expected '{' after else keyword", TokenType::LEFT_BRACE);
+                return block_statement();
+            }
+        }();
         return StmtNode{allocate_node(
             IfStmt, std::move(keyword), std::move(condition), std::move(then_branch), std::move(else_branch))};
     } else {
@@ -1012,7 +1021,8 @@ StmtNode Parser::while_statement() {
     }
 
     ScopedBooleanManager loop_manager{in_loop};
-    StmtNode body = statement();
+    consume("Expected '{' after while-loop header", TokenType::LEFT_BRACE);
+    StmtNode body = block_statement();
 
     return StmtNode{allocate_node(WhileStmt, std::move(keyword), std::move(condition), std::move(body), nullptr)};
 }

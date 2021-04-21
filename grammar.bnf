@@ -79,9 +79,9 @@ statement      ::= expr_stmt
                  | block
 
 expr_stmt      ::= expression EOL
-for            ::= "for" "(" (var|expr_stmt|";") expression? ";" expression? ")" statement
-if             ::= "if" expression statement ("else" statement)?
-while          ::= "while" expression statement
+for            ::= "for" "(" (var|expr_stmt|";") expression? ";" expression? ")" block
+if             ::= "if" expression block ("else" if|block)?
+while          ::= "while" expression block
 switch         ::= "switch" expression "{" ("case" expression ":" statement)* ("default" ":" statement)? "}"
 break          ::= "break" EOL
 continue       ::= "continue" EOL

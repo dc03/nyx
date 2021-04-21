@@ -57,3 +57,7 @@ numeric `2`
 - [x] Clean up examples
 - [ ] Make a command line interface
 - [ ] Merge `SharedData` into `BaseType`
+- [x] Enforce curly braces after `if`, `for`, `while`, `switch` etc.
+- [ ] Replace `val` keyword by `const`
+- [ ] Remove switch case fallthrough (later enabled using something like annotations)
+- [ ] Make error handling prettier (eg. printing a line above and below for context)
