@@ -40,6 +40,9 @@ enum class TokenType {
     RIGHT_SHIFT,
     LEFT_SHIFT,
     //
+    DOT_DOT,
+    DOT_DOT_EQUAL,
+    //
     MINUS,
     PLUS,
     //

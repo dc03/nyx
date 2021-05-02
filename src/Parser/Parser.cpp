@@ -122,6 +122,8 @@ Parser::Parser(const std::vector<Token> &tokens, Module &module, std::size_t cur
     add_rule(TokenType::LESS_EQUAL,    {nullptr, &Parser::binary, ParsePrecedence::of::ORDERING});
     add_rule(TokenType::RIGHT_SHIFT,   {nullptr, &Parser::binary, ParsePrecedence::of::SHIFT});
     add_rule(TokenType::LEFT_SHIFT,    {nullptr, &Parser::binary, ParsePrecedence::of::SHIFT});
+    add_rule(TokenType::DOT_DOT,       {nullptr, &Parser::binary, ParsePrecedence::of::RANGE});
+    add_rule(TokenType::DOT_DOT_EQUAL, {nullptr, &Parser::binary, ParsePrecedence::of::RANGE});
     add_rule(TokenType::MINUS,         {&Parser::unary, &Parser::binary, ParsePrecedence::of::SUM});
     add_rule(TokenType::PLUS,          {&Parser::unary, &Parser::binary, ParsePrecedence::of::SUM});
     add_rule(TokenType::MODULO,        {nullptr, &Parser::binary, ParsePrecedence::of::PRODUCT});

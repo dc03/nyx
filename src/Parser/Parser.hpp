@@ -26,6 +26,7 @@ struct ParsePrecedence {
         BIT_AND,    // &
         EQUALITY,   // == !=
         ORDERING,   // > >= < <=
+        RANGE,      // .. ..=
         SHIFT,      // >> <<
         SUM,        // + -
         PRODUCT,    // % / *

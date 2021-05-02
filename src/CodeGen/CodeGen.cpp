@@ -173,6 +173,10 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
         case TokenType::SLASH: current_chunk->emit_instruction(Instruction::DIV, expr.resolved.token.line); break;
         case TokenType::STAR:  current_chunk->emit_instruction(Instruction::MUL, expr.resolved.token.line); break;
 
+        case TokenType::DOT_DOT:
+        case TokenType::DOT_DOT_EQUAL:
+            break;
+
         default:
             error("Bug in parser with illegal token type of expression's operator", expr.resolved.token);
             break;

@@ -6,6 +6,7 @@
 - [ ] Lists
 - [ ] `[1, foo(), bar(), ...]` (list expression)
 - [ ] `0..foo(), 0..=foo()` (range expression)
+- [ ] Rewrite of the Virtual Machine
 - [ ] Tuples (`{int, string, float}`, `{0, "string", 5.0}`)
 - [ ] Tuple unpacking (`tup..`)
 - [ ] Export AST as JSON
@@ -62,3 +63,11 @@ numeric `2`
 - [ ] Remove switch case fallthrough (later enabled using something like annotations)
 - [ ] Make error handling prettier (eg. printing a line above and below for context)
 - [ ] Remove list size in list type
+- [ ] Remove comma operator
+- [ ] Fix clang warnings
+- [ ] Support only 32/64 bit machines, i.e. changing integer types to fixed width
+- [ ] Make enum to replace `true`/`false` by enumerators to have better code, like when
+calling `make_new_type` with the values for `is_const` and `is_ref`
+- [ ] Make `error()` accept a `std::vector` of `std::string(_view)?`s to reduce jankiness
+in the code
+- [ ] Add `not` keyword as alternative to `!`

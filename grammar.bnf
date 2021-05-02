@@ -30,7 +30,8 @@ bit_or         ::= bit_xor        ("|" bit_xor)*
 bit_xor        ::= bit_and        ("^" bit_and)*
 bit_and        ::= equality       ("&" equality)*
 equality       ::= comparison     (("!="|"==") comparison)*
-comparison     ::= bitshift       ((">"|">="|"<"|"<=") bitshift)*
+comparison     ::= range          ((">"|">="|"<"|"<=") range)*
+range          ::= bitshift       ((".."|"..=") bitshift)*
 bitshift       ::= addition       (("<<"|">>") addition)*
 addition       ::= multiplication (("-"|"+"|"%") multiplication)*
 multiplication ::= unary          (("/"|"*") unary)*

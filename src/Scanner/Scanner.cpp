@@ -193,7 +193,10 @@ void Scanner::scan_token() {
     };
 
     switch (char ch = advance(); ch) {
-        case '.': add_token(TokenType::DOT); break;
+        case '.':
+            match('.') ? (match('=') ? add_token(TokenType::DOT_DOT_EQUAL) : add_token(TokenType::DOT_DOT))
+                       : add_token(TokenType::DOT);
+            break;
         case ',': add_token(TokenType::COMMA); break;
         case '?': add_token(TokenType::QUESTION); break;
         case ':': add_token(match(':') ? TokenType::DOUBLE_COLON : TokenType::COLON); break;

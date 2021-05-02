@@ -365,6 +365,17 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
                 error("Cannot use arithmetic operators on objects of incompatible types", expr.resolved.token);
                 throw TypeException{"Cannot use arithmetic operators on objects of incompatible types"};
             }
+        case TokenType::DOT_DOT:
+        case TokenType::DOT_DOT_EQUAL:
+            if (left_expr.info->data.primitive == Type::INT && right_expr.info->data.primitive == Type::INT) {
+                BaseType *list = make_new_type<ListType>(
+                    Type::LIST, true, false, TypeNode{make_new_type<PrimitiveType>(Type::INT, true, false)}, nullptr);
+                return expr.resolved = {list, expr.resolved.token};
+            } else {
+                error("Ranges can only be created for integral types", expr.resolved.token);
+                throw TypeException{"Ranges can only be created for integral types"};
+            }
+            break;
 
         default:
             error("Bug in parser with illegal token type of expression's operator", expr.resolved.token);
