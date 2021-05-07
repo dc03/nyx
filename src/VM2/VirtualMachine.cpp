@@ -1,0 +1,198 @@
+/* Copyright (C) 2021  Dhruv Chawla */
+/* See LICENSE at project root for license details */
+#include "VirtualMachine.hpp"
+
+#include "../ErrorLogger/ErrorLogger.hpp"
+#include "Disassembler.hpp"
+#include "Instructions.hpp"
+
+#include <cmath>
+#include <iostream>
+
+#define is (Chunk::byte)
+
+VirtualMachine::VirtualMachine(bool trace_stack, bool trace_insn)
+    : stack{std::make_unique<Value[]>(VirtualMachine::stack_size)},
+      frames{std::make_unique<CallFrame[]>(VirtualMachine::frame_size)},
+      trace_stack{trace_stack},
+      trace_insn{trace_insn} {}
+
+Chunk::byte VirtualMachine::read_byte() {
+    return *(ip++);
+}
+
+std::size_t VirtualMachine::read_three_bytes() {
+    std::size_t bytes = read_byte();
+    bytes = (bytes << 8) | read_byte();
+    bytes = (bytes << 8) | read_byte();
+    return bytes;
+}
+
+void VirtualMachine::push(Value value) noexcept {
+    stack[stack_top++] = value;
+}
+
+void VirtualMachine::pop() noexcept {
+    stack_top--;
+}
+
+std::size_t VirtualMachine::get_current_line() const noexcept {
+    return current_chunk->get_line_number(ip - &current_chunk->bytes[0] - 1);
+}
+
+void VirtualMachine::run(RuntimeModule &module) {
+    current_module = &module;
+    current_chunk = &module.top_level_code;
+    ip = &current_chunk->bytes[0];
+    while (true) {
+        if (step() == ExecutionState::FINISHED) {
+            break;
+        } else {
+            step();
+        }
+    }
+}
+
+#define arith_binary_op(op, type, member)                                                                              \
+    {                                                                                                                  \
+        Value::type val2 = stack[--stack_top].member;                                                                  \
+        Value::type val1 = stack[stack_top - 1].member;                                                                \
+        stack[stack_top - 1].member = val1 op val2;                                                                    \
+    }                                                                                                                  \
+    break
+
+ExecutionState VirtualMachine::step() {
+    if (trace_stack) {
+        for (Value *begin{&stack[0]}; begin < &stack[stack_top]; begin++) {
+            std::cout << "[ " << begin->repr() << " ] ";
+        }
+        std::cout << '\n';
+    }
+    if (trace_insn) {
+        disassemble_instruction(*current_chunk, static_cast<Instruction>(*ip), (ip - &current_chunk->bytes[0]));
+    }
+    switch (read_byte()) {
+        case is Instruction::HALT: return ExecutionState::FINISHED;
+        case is Instruction::POP: pop(); break;
+        /* Push constants onto stack */
+        case is Instruction::CONST_SHORT: push(current_chunk->constants[read_byte()]); break;
+        case is Instruction::CONST_LONG: push(current_chunk->constants[read_three_bytes()]); break;
+        /* Integer operations */
+        case is Instruction::IADD: arith_binary_op(+, w_int_t, w_int);
+        case is Instruction::ISUB: arith_binary_op(-, w_int_t, w_int);
+        case is Instruction::IMUL: arith_binary_op(*, w_int_t, w_int);
+        case is Instruction::IMOD: {
+            if (stack[stack_top - 1].w_int == 0) {
+                runtime_error("Cannot modulo by zero", get_current_line());
+                return ExecutionState::FINISHED;
+            }
+            arith_binary_op(%, w_int_t, w_int);
+        }
+        case is Instruction::IDIV: {
+            if (stack[stack_top - 1].w_int == 0) {
+                runtime_error("Cannot divide by zero", get_current_line());
+                return ExecutionState::FINISHED;
+            }
+            arith_binary_op(/, w_int_t, w_int);
+        }
+        case is Instruction::INEG: {
+            stack[stack_top - 1].w_int = -stack[stack_top - 1].w_int;
+            break;
+        }
+        /* Floating point operations */
+        case is Instruction::FADD: arith_binary_op(+, w_float_t, w_float);
+        case is Instruction::FSUB: arith_binary_op(-, w_float_t, w_float);
+        case is Instruction::FMUL: arith_binary_op(*, w_float_t, w_float);
+        case is Instruction::FMOD: {
+            if (stack[stack_top - 1].w_float == 0.0) {
+                runtime_error("Cannot modulo by zero", get_current_line());
+                return ExecutionState::FINISHED;
+            }
+            Value::w_float_t val2 = stack[--stack_top].w_float;
+            Value::w_float_t val1 = stack[stack_top - 1].w_float;
+            stack[stack_top - 1].w_float = std::fmod(val1, val2);
+        }
+        case is Instruction::FDIV: {
+            if (stack[stack_top - 1].w_float == 0.0) {
+                runtime_error("Cannot divide by zero", get_current_line());
+                return ExecutionState::FINISHED;
+            }
+            arith_binary_op(/, w_float_t, w_float);
+        }
+        case is Instruction::FNEG: {
+            stack[stack_top - 1].w_float = -stack[stack_top - 1].w_float;
+            break;
+        }
+        /* Floating <-> integral conversions */
+        case is Instruction::FLOAT_TO_INT: {
+            stack[stack_top - 1].w_int = static_cast<Value::w_int_t>(stack[stack_top - 1].w_float);
+            stack[stack_top - 1].tag = Value::Tag::INT;
+        }
+        case is Instruction::INT_TO_FLOAT: {
+            stack[stack_top - 1].w_float = static_cast<Value::w_float_t>(stack[stack_top - 1].w_int);
+            stack[stack_top - 1].tag = Value::Tag::FLOAT;
+        }
+        /* Bitwise operations */
+        case is Instruction::SHIFT_LEFT: {
+            if (stack[stack_top - 1].w_int < 0) {
+                runtime_error("Cannot bitshift with value less than zero", get_current_line());
+            }
+            arith_binary_op(<<, w_int_t, w_int);
+        }
+        case is Instruction::SHIFT_RIGHT: {
+            if (stack[stack_top - 1].w_int < 0) {
+                runtime_error("Cannot bitshift with value less than zero", get_current_line());
+            }
+            arith_binary_op(>>, w_int_t, w_int);
+        }
+        case is Instruction::BIT_AND: arith_binary_op(&, w_int_t, w_int);
+        case is Instruction::BIT_OR: arith_binary_op(|, w_int_t, w_int);
+        case is Instruction::BIT_NOT: stack[stack_top - 1].w_int = ~stack[stack_top - 1].w_int;
+        case is Instruction::BIT_XOR: arith_binary_op(^, w_int_t, w_int);
+        /* Logical operations */
+        case is Instruction::NOT: {
+            stack[stack_top - 1].w_bool = !stack[stack_top - 1];
+            stack[stack_top - 1].tag = Value::Tag::BOOL;
+        }
+        case is Instruction::EQUAL: {
+            Value val2 = stack[--stack_top];
+            Value val1 = stack[stack_top - 1];
+            stack[stack_top - 1].w_bool = (val1 == val2);
+            stack[stack_top - 1].tag = Value::Tag::BOOL;
+            break;
+        }
+        case is Instruction::GREATER: {
+            Value val2 = stack[--stack_top];
+            Value val1 = stack[stack_top - 1];
+            stack[stack_top - 1].w_bool = (val1 > val2);
+            stack[stack_top - 1].tag = Value::Tag::BOOL;
+            break;
+        }
+        case is Instruction::LESSER: {
+            Value val2 = stack[--stack_top];
+            Value val1 = stack[stack_top - 1];
+            stack[stack_top - 1].w_bool = (val1 < val2);
+            stack[stack_top - 1].tag = Value::Tag::BOOL;
+            break;
+        }
+        /* Constant operations */
+        case is Instruction::PUSH_TRUE: {
+            stack[stack_top].w_bool = true;
+            stack[stack_top++].tag = Value::Tag::BOOL;
+            break;
+        }
+        case is Instruction::PUSH_FALSE: {
+            stack[stack_top].w_bool = false;
+            stack[stack_top++].tag = Value::Tag::BOOL;
+            break;
+        }
+        case is Instruction::PUSH_NULL: {
+            stack[stack_top].w_null = nullptr;
+            stack[stack_top++].tag = Value::Tag::NULL_;
+            break;
+        }
+    }
+    return ExecutionState::RUNNING;
+}
+
+#undef arith_binary_op

@@ -12,6 +12,9 @@ add_executable(wis src/wis.cpp src/ErrorLogger/ErrorLogger.cpp src/Parser/TypeRe
                    src/CodeGen/CodeGen.cpp src/VM/VM.cpp src/VM/Value.cpp src/CodeGen/Disassembler.cpp src/VM/Natives.cpp
                    src/VM/List.cpp src/ASTPrinter.cpp)
 
+add_executable(wisVM src/VM2/Chunk.cpp src/VM2/Value.cpp src/VM2/VirtualMachine.cpp src/VM2/VMMain.cpp
+                     src/ErrorLogger/ErrorLogger.cpp src/VM2/Disassembler.cpp)
+
 if (MSVC)
     # warning level 4 and all warnings as errors
     target_compile_options(wis PUBLIC /W4)
@@ -47,3 +50,4 @@ FetchContent_MakeAvailable(CXXOPTS)
 FetchContent_GetProperties(CXXOPTS)
 
 target_link_libraries(wis PUBLIC cxxopts)
+target_link_libraries(wisVM PUBLIC m cxxopts)
