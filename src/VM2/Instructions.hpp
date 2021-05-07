@@ -45,6 +45,11 @@ enum class Instruction {
     PUSH_TRUE,
     PUSH_FALSE,
     PUSH_NULL,
+    /* Jump operations */
+    JUMP_FORWARD,
+    JUMP_BACKWARD,
+    JUMP_IF_TRUE,
+    JUMP_IF_FALSE,
 };
 
 #endif

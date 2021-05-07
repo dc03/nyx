@@ -61,6 +61,15 @@ void VirtualMachine::run(RuntimeModule &module) {
     }                                                                                                                  \
     break
 
+#define comp_binary_op(op)                                                                                             \
+    {                                                                                                                  \
+        Value val2 = stack[--stack_top];                                                                               \
+        Value val1 = stack[stack_top - 1];                                                                             \
+        stack[stack_top - 1].w_bool = (val1 op val2);                                                                  \
+        stack[stack_top - 1].tag = Value::Tag::BOOL;                                                                   \
+    }                                                                                                                  \
+    break
+
 ExecutionState VirtualMachine::step() {
     if (trace_stack) {
         for (Value *begin{&stack[0]}; begin < &stack[stack_top]; begin++) {
@@ -73,10 +82,19 @@ ExecutionState VirtualMachine::step() {
     }
     switch (read_byte()) {
         case is Instruction::HALT: return ExecutionState::FINISHED;
-        case is Instruction::POP: pop(); break;
+        case is Instruction::POP: {
+            pop();
+            break;
+        }
         /* Push constants onto stack */
-        case is Instruction::CONST_SHORT: push(current_chunk->constants[read_byte()]); break;
-        case is Instruction::CONST_LONG: push(current_chunk->constants[read_three_bytes()]); break;
+        case is Instruction::CONST_SHORT: {
+            push(current_chunk->constants[read_byte()]);
+            break;
+        }
+        case is Instruction::CONST_LONG: {
+            push(current_chunk->constants[read_three_bytes()]);
+            break;
+        }
         /* Integer operations */
         case is Instruction::IADD: arith_binary_op(+, w_int_t, w_int);
         case is Instruction::ISUB: arith_binary_op(-, w_int_t, w_int);
@@ -154,27 +172,9 @@ ExecutionState VirtualMachine::step() {
             stack[stack_top - 1].w_bool = !stack[stack_top - 1];
             stack[stack_top - 1].tag = Value::Tag::BOOL;
         }
-        case is Instruction::EQUAL: {
-            Value val2 = stack[--stack_top];
-            Value val1 = stack[stack_top - 1];
-            stack[stack_top - 1].w_bool = (val1 == val2);
-            stack[stack_top - 1].tag = Value::Tag::BOOL;
-            break;
-        }
-        case is Instruction::GREATER: {
-            Value val2 = stack[--stack_top];
-            Value val1 = stack[stack_top - 1];
-            stack[stack_top - 1].w_bool = (val1 > val2);
-            stack[stack_top - 1].tag = Value::Tag::BOOL;
-            break;
-        }
-        case is Instruction::LESSER: {
-            Value val2 = stack[--stack_top];
-            Value val1 = stack[stack_top - 1];
-            stack[stack_top - 1].w_bool = (val1 < val2);
-            stack[stack_top - 1].tag = Value::Tag::BOOL;
-            break;
-        }
+        case is Instruction::EQUAL: comp_binary_op(==);
+        case is Instruction::GREATER: comp_binary_op(>);
+        case is Instruction::LESSER: comp_binary_op(<);
         /* Constant operations */
         case is Instruction::PUSH_TRUE: {
             stack[stack_top].w_bool = true;
@@ -191,8 +191,26 @@ ExecutionState VirtualMachine::step() {
             stack[stack_top++].tag = Value::Tag::NULL_;
             break;
         }
+        /* Jump operations */
+        case is Instruction::JUMP_FORWARD: {
+            ip += read_three_bytes();
+            break;
+        }
+        case is Instruction::JUMP_BACKWARD: {
+            ip -= read_three_bytes();
+            break;
+        }
+        case is Instruction::JUMP_IF_TRUE: {
+            ip += stack[stack_top - 1] ? read_three_bytes() : 3;
+            break;
+        }
+        case is Instruction::JUMP_IF_FALSE: {
+            ip += stack[stack_top - 1] ? 3 : read_three_bytes();
+            break;
+        }
     }
     return ExecutionState::RUNNING;
 }
 
 #undef arith_binary_op
+#undef comp_binary_op

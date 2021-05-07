@@ -17,10 +17,7 @@ struct CallFrame {
     Chunk::byte *return_ip{};
 };
 
-enum class ExecutionState {
-    RUNNING = 0,
-    FINISHED = 1
-};
+enum class ExecutionState { RUNNING = 0, FINISHED = 1 };
 
 class VirtualMachine {
     constexpr static std::size_t stack_size = 32768;
@@ -52,8 +49,8 @@ class VirtualMachine {
     VirtualMachine(bool trace_stack, bool trace_insn);
     ~VirtualMachine() = default;
 
-    VirtualMachine(const VirtualMachine&) = delete;
-    VirtualMachine &operator=(const VirtualMachine&) = delete;
+    VirtualMachine(const VirtualMachine &) = delete;
+    VirtualMachine &operator=(const VirtualMachine &) = delete;
 
     void run(RuntimeModule &module);
     ExecutionState step();

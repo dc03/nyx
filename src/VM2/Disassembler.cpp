@@ -136,6 +136,13 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::EQUAL: return single_byte_insn(chunk, "EQUAL", byte);
         case Instruction::GREATER: return single_byte_insn(chunk, "GREATER", byte);
         case Instruction::LESSER: return single_byte_insn(chunk, "LESSER", byte);
+        case Instruction::PUSH_TRUE: return single_byte_insn(chunk, "PUSH_TRUE", byte);
+        case Instruction::PUSH_FALSE: return single_byte_insn(chunk, "PUSH_FALSE", byte);
+        case Instruction::PUSH_NULL: return single_byte_insn(chunk, "PUSH_NULL", byte);
+        case Instruction::JUMP_FORWARD: return four_byte_insn(chunk, "JUMP_FORWARD", byte);
+        case Instruction::JUMP_BACKWARD: return four_byte_insn(chunk, "JUMP_BACKWARD", byte);
+        case Instruction::JUMP_IF_TRUE: return four_byte_insn(chunk, "JUMP_IF_TRUE", byte);
+        case Instruction::JUMP_IF_FALSE: return four_byte_insn(chunk, "JUMP_IF_FALSE", byte);
     }
     unreachable();
 }

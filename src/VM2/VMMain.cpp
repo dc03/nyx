@@ -1,7 +1,5 @@
-#include <cxxopts.hpp>
-
 #include "VirtualMachine.hpp"
 
-int main() {
+#include <cxxopts.hpp>
 
-}
+int main() {}

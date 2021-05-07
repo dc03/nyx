@@ -2,18 +2,18 @@
 /* See LICENSE at project root for license details */
 #include "Value.hpp"
 
+#include "../Common.hpp"
+
 #include <algorithm>
 #include <cstring>
 
-#include "../Common.hpp"
-
-Value::Value() noexcept: w_invalid{}, tag{Tag::INVALID} {}
-Value::Value(w_int_t value) noexcept: w_int{value}, tag{Tag::INT} {}
-Value::Value(w_float_t value) noexcept: w_float{value}, tag{Tag::FLOAT} {}
-Value::Value(w_str_t value) noexcept: w_str{value}, tag{Tag::STRING} {}
-Value::Value(w_bool_t value) noexcept: w_bool{value}, tag{Tag::BOOL} {}
-Value::Value(w_null_t value) noexcept: w_null{value}, tag{Tag::NULL_} {}
-Value::Value(w_ref_t value) noexcept: w_ref{value}, tag{Tag::REF} {}
+Value::Value() noexcept : w_invalid{}, tag{Tag::INVALID} {}
+Value::Value(w_int_t value) noexcept : w_int{value}, tag{Tag::INT} {}
+Value::Value(w_float_t value) noexcept : w_float{value}, tag{Tag::FLOAT} {}
+Value::Value(w_str_t value) noexcept : w_str{value}, tag{Tag::STRING} {}
+Value::Value(w_bool_t value) noexcept : w_bool{value}, tag{Tag::BOOL} {}
+Value::Value(w_null_t value) noexcept : w_null{value}, tag{Tag::NULL_} {}
+Value::Value(w_ref_t value) noexcept : w_ref{value}, tag{Tag::REF} {}
 
 std::string Value::repr() const noexcept {
     if (tag == Tag::INT) {
@@ -25,28 +25,28 @@ std::string Value::repr() const noexcept {
         std::string string_value{w_str};
         std::string result{};
         auto is_escape = [](char ch) {
-          switch (ch) {
-              case '\b':
-              case '\n':
-              case '\r':
-              case '\t':
-              case '\'':
-              case '\"':
-              case '\\': return true;
-              default: return false;
-          }
+            switch (ch) {
+                case '\b':
+                case '\n':
+                case '\r':
+                case '\t':
+                case '\'':
+                case '\"':
+                case '\\': return true;
+                default: return false;
+            }
         };
         auto repr_escape = [](char ch) {
-          switch (ch) {
-              case '\b': return "\\b";
-              case '\n': return "\\n";
-              case '\r': return "\\r";
-              case '\t': return "\\t";
-              case '\'': return "\\\'";
-              case '\"': return "\\\"";
-              case '\\': return "\\\\";
-              default: return "";
-          }
+            switch (ch) {
+                case '\b': return "\\b";
+                case '\n': return "\\n";
+                case '\r': return "\\r";
+                case '\t': return "\\t";
+                case '\'': return "\\\'";
+                case '\"': return "\\\"";
+                case '\\': return "\\\\";
+                default: return "";
+            }
         };
         result.reserve(string_value.size() + std::count_if(string_value.begin(), string_value.end(), is_escape));
         for (char ch : string_value) {
@@ -63,7 +63,7 @@ std::string Value::repr() const noexcept {
         return "null";
     } else if (tag == Tag::REF) {
         char name[35];
-        std::sprintf(name, "ref to %p", reinterpret_cast<void*>(w_ref));
+        std::sprintf(name, "ref to %p", reinterpret_cast<void *>(w_ref));
         return {name};
     } else if (tag == Tag::INVALID) {
         return {"<invalid!>"};
