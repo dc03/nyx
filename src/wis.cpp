@@ -7,7 +7,7 @@
 #include "Parser/Parser.hpp"
 #include "Parser/TypeResolver.hpp"
 #include "Scanner/Scanner.hpp"
-#include "VM/VM.hpp"
+#include "VM2/VirtualMachine.hpp"
 
 #include <algorithm>
 #include <cxxopts.hpp>
@@ -60,7 +60,7 @@ void run_module(const char *const main_module, cxxopts::ParseResult &result) {
             }
         }
 
-        VM vm{!!result.count("trace-exec-stack"), !!result.count("trace-exec-insn")};
+        VirtualMachine vm{!!result.count("trace-exec-stack"), !!result.count("trace-exec-insn")};
         vm.run(main_compiled);
     }
 }
