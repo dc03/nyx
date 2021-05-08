@@ -10,8 +10,7 @@ enum class Instruction {
     HALT,
     POP,
     /* Push constants on stack */
-    CONST_SHORT,
-    CONST_LONG,
+    CONSTANT,
     /* Integer operations */
     IADD,
     ISUB,
@@ -55,14 +54,12 @@ enum class Instruction {
     POP_JUMP_BACK_IF_TRUE,
     /* Local variable operations */
     ASSIGN_LOCAL,
-    ACCESS_LOCAL_SHORT,
-    ACCESS_LOCAL_LONG,
+    ACCESS_LOCAL,
     MAKE_REF_TO_LOCAL,
     DEREF,
     /* Global variable operations */
     ASSIGN_GLOBAL,
-    ACCESS_GLOBAL_SHORT,
-    ACCESS_GLOBAL_LONG,
+    ACCESS_GLOBAL,
     MAKE_REF_TO_GLOBAL,
     /* Function calls */
     LOAD_FUNCTION,
