@@ -508,20 +508,14 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
     switch (expr.type) {
         case IdentifierType::LOCAL:
         case IdentifierType::GLOBAL:
-            if (expr.resolved.stack_slot < Chunk::const_short_max) {
+            if (expr.resolved.stack_slot < Chunk::const_long_max) {
                 if (expr.type == IdentifierType::LOCAL) {
-                    current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_SHORT, expr.name.line);
+                    current_chunk->emit_instruction(Instruction::ACCESS_LOCAL, expr.name.line);
                 } else {
-                    current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL_SHORT, expr.name.line);
+                    current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL, expr.name.line);
                 }
-                current_chunk->emit_integer(expr.resolved.stack_slot);
-            } else if (expr.resolved.stack_slot < Chunk::const_long_max) {
-                if (expr.type == IdentifierType::LOCAL) {
-                    current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LONG, expr.name.line);
-                } else {
-                    current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL_LONG, expr.name.line);
-                }
-                current_chunk->emit_integer(expr.resolved.stack_slot);
+                current_chunk->emit_bytes((expr.resolved.stack_slot >> 16) & 0xff, (expr.resolved.stack_slot >> 8) & 0xff);
+                current_chunk->emit_byte(expr.resolved.stack_slot & 0xff);
             } else {
                 compile_error("Too many variables in current scope");
             }

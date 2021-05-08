@@ -51,10 +51,7 @@ std::size_t single_byte_insn(Chunk &chunk, std::string_view name, std::size_t by
 std::size_t two_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte) {
     print_preamble(chunk, name, byte, byte + 1);
     std::size_t next_byte = chunk.bytes[byte + 1];
-    if (name == "CONST_SHORT") {
-        std::cout << '\t';
-        print_tab(1) << "-> " << next_byte << " | value = " << chunk.constants[next_byte].repr() << '\n';
-    } else if (name == "MAKE_LIST_OF") {
+    if (name == "MAKE_LIST_OF") {
         std::cout << '\t';
         print_tab(1) << "| count: " << next_byte << '\n';
     } else {
@@ -73,7 +70,7 @@ std::size_t four_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte
     std::size_t next_bytes = chunk.bytes[byte + 1];
     next_bytes = (next_bytes << 8) | chunk.bytes[byte + 2];
     next_bytes = (next_bytes << 8) | chunk.bytes[byte + 3];
-    if (name == "CONST_LONG") {
+    if (name == "CONSTANT") {
         print_tab(1) << "| " << chunk.constants[next_bytes].repr() << '\n';
     } else if (name == "JUMP_FORWARD" || name == "POP_JUMP_IF_FALSE" || name == "JUMP_IF_FALSE" ||
                name == "JUMP_IF_TRUE" || name == "POP_JUMP_IF_EQUAL") {
@@ -110,8 +107,7 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
     switch (instruction) {
         case Instruction::HALT: return single_byte_insn(chunk, "HALT", byte);
         case Instruction::POP: return single_byte_insn(chunk, "POP", byte);
-        case Instruction::CONST_SHORT: return two_byte_insn(chunk, "CONST_SHORT", byte);
-        case Instruction::CONST_LONG: return four_byte_insn(chunk, "CONST_LONG", byte);
+        case Instruction::CONSTANT: return four_byte_insn(chunk, "CONSTANT", byte);
         case Instruction::IADD: return single_byte_insn(chunk, "IADD", byte);
         case Instruction::ISUB: return single_byte_insn(chunk, "ISUB", byte);
         case Instruction::IMUL: return single_byte_insn(chunk, "IMUL", byte);
@@ -147,13 +143,11 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::POP_JUMP_IF_FALSE: return four_byte_insn(chunk, "POP_JUMP_IF_FALSE", byte);
         case Instruction::POP_JUMP_BACK_IF_TRUE: return four_byte_insn(chunk, "POP_JUMP_BACK_IF_TRUE", byte);
         case Instruction::ASSIGN_LOCAL: return four_byte_insn(chunk, "ASSIGN_LOCAL", byte);
-        case Instruction::ACCESS_LOCAL_SHORT: return two_byte_insn(chunk, "ACCESS_LOCAL_SHORT", byte);
-        case Instruction::ACCESS_LOCAL_LONG: return four_byte_insn(chunk, "ACCESS_LOCAL_LONG", byte);
+        case Instruction::ACCESS_LOCAL: return four_byte_insn(chunk, "ACCESS_LOCAL", byte);
         case Instruction::MAKE_REF_TO_LOCAL: return four_byte_insn(chunk, "MAKE_REF_TO_LOCAL", byte);
         case Instruction::DEREF: return single_byte_insn(chunk, "DEREF", byte);
         case Instruction::ASSIGN_GLOBAL: return four_byte_insn(chunk, "ASSIGN_GLOBAL", byte);
-        case Instruction::ACCESS_GLOBAL_SHORT: return two_byte_insn(chunk, "ACCESS_GLOBAL_SHORT", byte);
-        case Instruction::ACCESS_GLOBAL_LONG: return four_byte_insn(chunk, "ACCESS_GLOBAL_LONG", byte);
+        case Instruction::ACCESS_GLOBAL: return four_byte_insn(chunk, "ACCESS_GLOBAL", byte);
         case Instruction::MAKE_REF_TO_GLOBAL: return four_byte_insn(chunk, "MAKE_REF_TO_GLOBAL", byte);
         case Instruction::LOAD_FUNCTION: return single_byte_insn(chunk, "LOAD_FUNCTION", byte);
         case Instruction::CALL_FUNCTION: return single_byte_insn(chunk, "CALL_FUNCTION", byte);

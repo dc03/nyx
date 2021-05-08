@@ -92,11 +92,7 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         /* Push constants onto stack */
-        case is Instruction::CONST_SHORT: {
-            push(current_chunk->constants[read_byte()]);
-            break;
-        }
-        case is Instruction::CONST_LONG: {
+        case is Instruction::CONSTANT: {
             push(current_chunk->constants[read_three_bytes()]);
             break;
         }
@@ -247,11 +243,7 @@ ExecutionState VirtualMachine::step() {
             }
             break;
         }
-        case is Instruction::ACCESS_LOCAL_SHORT: {
-            push(frames[frame_top].stack[read_byte()]);
-            break;
-        }
-        case is Instruction::ACCESS_LOCAL_LONG: {
+        case is Instruction::ACCESS_LOCAL: {
             push(frames[frame_top].stack[read_three_bytes()]);
             break;
         }
@@ -273,11 +265,7 @@ ExecutionState VirtualMachine::step() {
             }
             break;
         }
-        case is Instruction::ACCESS_GLOBAL_SHORT: {
-            push(Value{stack[read_byte()]});
-            break;
-        }
-        case is Instruction::ACCESS_GLOBAL_LONG: {
+        case is Instruction::ACCESS_GLOBAL: {
             push(Value{stack[read_three_bytes()]});
             break;
         }
