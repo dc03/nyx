@@ -2,7 +2,7 @@
 /* See LICENSE at project root for license details */
 #include "ASTPrinter.hpp"
 #include "CodeGen/CodeGen.hpp"
-#include "CodeGen/Disassembler.hpp"
+#include "VM2/Disassembler.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
 #include "Parser/Parser.hpp"
 #include "Parser/TypeResolver.hpp"
