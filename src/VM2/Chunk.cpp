@@ -13,6 +13,12 @@ std::size_t Chunk::add_constant(Value value) {
     return constants.size() - 1;
 }
 
+std::size_t Chunk::add_string(std::string value) {
+    strings.emplace_back(std::move(value));
+    constants.emplace_back(Value{&strings.back()[0]});
+    return constants.size() - 1;
+}
+
 std::size_t Chunk::emit_byte(Chunk::byte value) {
     bytes.push_back(value);
     if (line_numbers.empty()) {
@@ -37,10 +43,27 @@ std::size_t Chunk::emit_bytes(Chunk::byte value_1, Chunk::byte value_2) {
 std::size_t Chunk::emit_constant(Value value, std::size_t line_number) {
     if (constants.size() < const_short_max) {
         emit_instruction(Instruction::CONST_SHORT, line_number);
-        emit_byte(add_constant(std::move(value)));
+        emit_byte(add_constant(value));
         return bytes.size() - 2;
     } else if (constants.size() < const_long_max) {
         std::size_t constant = add_constant(value);
+        emit_instruction(Instruction::CONST_LONG, line_number);
+        emit_bytes((constant >> 16) & 0xff, (constant >> 8) & 0xff);
+        emit_byte(constant & 0xff);
+        return bytes.size() - 4;
+    } else {
+        compile_error("Too many constants in chunk");
+        return 0;
+    }
+}
+
+std::size_t Chunk::emit_string(std::string value, std::size_t line_number) {
+    if (constants.size() < const_short_max) {
+        emit_instruction(Instruction::CONST_SHORT, line_number);
+        emit_byte(add_string(value));
+        return bytes.size() - 2;
+    } else if (constants.size() < const_long_max) {
+        std::size_t constant = add_string(value);
         emit_instruction(Instruction::CONST_LONG, line_number);
         emit_bytes((constant >> 16) & 0xff, (constant >> 8) & 0xff);
         emit_byte(constant & 0xff);
