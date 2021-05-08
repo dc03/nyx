@@ -7,12 +7,14 @@
 #define VM2_VIRTUAL_MACHINE_HPP
 
 #include "Module.hpp"
+#include "Natives.hpp"
 #include "Value.hpp"
 
 #include <memory>
+#include <unordered_map>
 
 struct CallFrame {
-    Value *return_stack{};
+    Value *stack{};
     Chunk *return_chunk{};
     Chunk::byte *return_ip{};
 };
@@ -30,6 +32,8 @@ class VirtualMachine {
 
     std::unique_ptr<CallFrame[]> frames{};
     std::size_t frame_top{};
+
+    std::unordered_map<std::string_view, NativeFn> natives{};
 
     Chunk *current_chunk{};
     RuntimeModule *current_module{};
