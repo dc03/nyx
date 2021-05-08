@@ -72,7 +72,8 @@ std::size_t four_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte
     next_bytes = (next_bytes << 8) | chunk.bytes[byte + 2];
     next_bytes = (next_bytes << 8) | chunk.bytes[byte + 3];
     if (name == "CONSTANT") {
-        print_tab(1) << "| " << chunk.constants[next_bytes].repr() << '\n';
+        std::cout << '\t';
+        print_tab(1) << "-> " << next_bytes << " | value = " << chunk.constants[next_bytes].repr() << '\n';
     } else if (name == "JUMP_FORWARD" || name == "POP_JUMP_IF_FALSE" || name == "JUMP_IF_FALSE" ||
                name == "JUMP_IF_TRUE" || name == "POP_JUMP_IF_EQUAL") {
         std::cout << "\t| offset = +" << next_bytes << ", jump to = " << byte + next_bytes + 4 << '\n';
