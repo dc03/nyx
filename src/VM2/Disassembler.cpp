@@ -143,6 +143,24 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::JUMP_BACKWARD: return four_byte_insn(chunk, "JUMP_BACKWARD", byte);
         case Instruction::JUMP_IF_TRUE: return four_byte_insn(chunk, "JUMP_IF_TRUE", byte);
         case Instruction::JUMP_IF_FALSE: return four_byte_insn(chunk, "JUMP_IF_FALSE", byte);
+        case Instruction::POP_JUMP_IF_EQUAL: return four_byte_insn(chunk, "POP_JUMP_IF_EQUAL", byte);
+        case Instruction::POP_JUMP_IF_FALSE: return four_byte_insn(chunk, "POP_JUMP_IF_FALSE", byte);
+        case Instruction::POP_JUMP_BACK_IF_TRUE: return four_byte_insn(chunk, "POP_JUMP_BACK_IF_TRUE", byte);
+        case Instruction::ASSIGN_LOCAL: return four_byte_insn(chunk, "ASSIGN_LOCAL", byte);
+        case Instruction::ACCESS_LOCAL_SHORT: return two_byte_insn(chunk, "ACCESS_LOCAL_SHORT", byte);
+        case Instruction::ACCESS_LOCAL_LONG: return four_byte_insn(chunk, "ACCESS_LOCAL_LONG", byte);
+        case Instruction::MAKE_REF_TO_LOCAL: return four_byte_insn(chunk, "MAKE_REF_TO_LOCAL", byte);
+        case Instruction::DEREF: return single_byte_insn(chunk, "DEREF", byte);
+        case Instruction::ASSIGN_GLOBAL: return four_byte_insn(chunk, "ASSIGN_GLOBAL", byte);
+        case Instruction::ACCESS_GLOBAL_SHORT: return two_byte_insn(chunk, "ACCESS_GLOBAL_SHORT", byte);
+        case Instruction::ACCESS_GLOBAL_LONG: return four_byte_insn(chunk, "ACCESS_GLOBAL_LONG", byte);
+        case Instruction::MAKE_REF_TO_GLOBAL: return four_byte_insn(chunk, "MAKE_REF_TO_GLOBAL", byte);
+        case Instruction::LOAD_FUNCTION: return single_byte_insn(chunk, "LOAD_FUNCTION", byte);
+        case Instruction::CALL_FUNCTION: return single_byte_insn(chunk, "CALL_FUNCTION", byte);
+        case Instruction::CALL_NATIVE: return single_byte_insn(chunk, "CALL_NATIVE", byte);
+        case Instruction::RETURN: return four_byte_insn(chunk, "RETURN_LONG", byte);
+        case Instruction::TRAP_RETURN: return single_byte_insn(chunk, "TRAP_RETURN", byte);
+        case Instruction::COPY: return single_byte_insn(chunk, "COPY", byte);
     }
     unreachable();
 }
