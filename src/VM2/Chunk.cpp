@@ -4,6 +4,7 @@
 
 #include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
+#include "Value.hpp"
 
 #include <limits>
 #include <utility>

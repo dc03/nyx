@@ -3,6 +3,7 @@
 #include "Disassembler.hpp"
 
 #include "../Common.hpp"
+#include "Value.hpp"
 
 #include <iomanip>
 #include <iostream>

@@ -7,12 +7,13 @@
 #define VM2_CHUNK_HPP
 
 #include "Instructions.hpp"
-#include "Value.hpp"
 
 #include <deque>
 #include <string>
 #include <utility>
 #include <vector>
+
+struct Value;
 
 struct Chunk {
     static constexpr std::size_t const_short_max = (1 << 8) - 1;

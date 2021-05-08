@@ -5,7 +5,7 @@
 #include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
 #include "../Scanner/Scanner.hpp"
-#include "../VM2/Module.hpp"
+#include "../VM2/Value.hpp"
 #include "TypeResolver.hpp"
 
 #include <algorithm>

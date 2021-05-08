@@ -4,6 +4,7 @@
 
 #include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
+#include "../VM2/Value.hpp"
 
 std::vector<RuntimeModule> Generator::compiled_modules{};
 
