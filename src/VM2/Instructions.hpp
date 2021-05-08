@@ -50,6 +50,28 @@ enum class Instruction {
     JUMP_BACKWARD,
     JUMP_IF_TRUE,
     JUMP_IF_FALSE,
+    POP_JUMP_IF_EQUAL,
+    POP_JUMP_IF_FALSE,
+    POP_JUMP_BACK_IF_TRUE,
+    /* Local variable operations */
+    ASSIGN_LOCAL,
+    ACCESS_LOCAL_SHORT,
+    ACCESS_LOCAL_LONG,
+    MAKE_REF_TO_LOCAL,
+    DEREF,
+    /* Global variable operations */
+    ASSIGN_GLOBAL,
+    ACCESS_GLOBAL_SHORT,
+    ACCESS_GLOBAL_LONG,
+    MAKE_REF_TO_GLOBAL,
+    /* Function calls */
+    LOAD_FUNCTION,
+    CALL_FUNCTION,
+    CALL_NATIVE,
+    RETURN,
+    TRAP_RETURN,
+    /* Copying */
+    COPY,
 };
 
 #endif
