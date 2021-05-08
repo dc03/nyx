@@ -7,8 +7,8 @@
 #define CODE_GEN_HPP
 
 #include "../AST.hpp"
-#include "../Module.hpp"
-#include "../VM/Chunk.hpp"
+#include "../VM2/Chunk.hpp"
+#include "../VM2/Module.hpp"
 
 #include <stack>
 
