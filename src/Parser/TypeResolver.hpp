@@ -7,7 +7,7 @@
 #define TYPE_RESOLVER_HPP
 
 #include "../AST.hpp"
-#include "../Module.hpp"
+#include "../VM2/Module.hpp"
 
 #include <string_view>
 #include <tuple>

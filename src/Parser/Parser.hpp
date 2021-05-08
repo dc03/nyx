@@ -7,8 +7,8 @@
 #define PARSER_HPP
 
 #include "../AST.hpp"
-#include "../Module.hpp"
 #include "../Token.hpp"
+#include "../VM2/Module.hpp"
 
 #include <string_view>
 #include <vector>
