@@ -224,13 +224,11 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::POP_JUMP_IF_FALSE: {
-            ip += !stack[stack_top - 1] ? read_three_bytes() : 3;
-            stack_top--;
+            ip += !stack[--stack_top] ? read_three_bytes() : 3;
             break;
         }
         case is Instruction::POP_JUMP_BACK_IF_TRUE: {
-            ip -= stack[stack_top - 1] ? read_three_bytes() : -3;
-            stack_top--;
+            ip -= stack[--stack_top] ? read_three_bytes() : -3;
             break;
         }
         /* Local variable operations */
@@ -274,8 +272,19 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         /* Function calls */
-        case is Instruction::LOAD_FUNCTION: break;
-        case is Instruction::CALL_FUNCTION: break;
+        case is Instruction::LOAD_FUNCTION: {
+            RuntimeFunction *function = &current_module->functions[stack[stack_top - 1].w_str];
+            stack[stack_top - 1].w_fun = function;
+            stack[stack_top - 1].tag = Value::Tag::FUNCTION;
+            break;
+        }
+        case is Instruction::CALL_FUNCTION: {
+            RuntimeFunction *called = stack[--stack_top].w_fun;
+            frames[++frame_top] = CallFrame{&stack[stack_top - called->arity], current_chunk, ip};
+            current_chunk = &called->code;
+            ip = &called->code.bytes[0];
+            break;
+        }
         case is Instruction::CALL_NATIVE: {
             NativeFn called = natives[stack[--stack_top].w_str];
             Value result = called.code(&stack[stack_top] - called.arity);
@@ -283,7 +292,14 @@ ExecutionState VirtualMachine::step() {
             stack[stack_top++] = result;
             break;
         }
-        case is Instruction::RETURN: break;
+        case is Instruction::RETURN: {
+            Value result = stack[--stack_top];
+            stack_top -= read_three_bytes();
+            ip = frames[frame_top].return_ip;
+            current_chunk = frames[frame_top--].return_chunk;
+            stack[stack_top++] = result;
+            break;
+        }
         case is Instruction::TRAP_RETURN: {
             runtime_error("Reached end of non-null function", get_current_line());
             return ExecutionState::FINISHED;

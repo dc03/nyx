@@ -6,6 +6,8 @@
 #ifndef VM2_VALUE_HPP
 #define VM2_VALUE_HPP
 
+#include "Module.hpp"
+
 #include <cstdint>
 #include <string>
 
@@ -18,6 +20,7 @@ struct Value {
     using w_bool_t = bool;
     using w_null_t = std::nullptr_t;
     using w_ref_t = Value *;
+    using w_fun_t = RuntimeFunction *;
 
     union {
         PlaceHolder w_invalid;
@@ -28,9 +31,10 @@ struct Value {
         w_bool_t w_bool;
         w_null_t w_null;
         w_ref_t w_ref;
+        w_fun_t w_fun;
     };
 
-    enum class Tag { INVALID, INT, FLOAT, STRING, BOOL, NULL_, REF } tag;
+    enum class Tag { INVALID, INT, FLOAT, STRING, BOOL, NULL_, REF, FUNCTION } tag;
 
     Value() noexcept;
     explicit Value(w_int_t value) noexcept;
@@ -39,9 +43,10 @@ struct Value {
     explicit Value(w_bool_t value) noexcept;
     explicit Value(w_null_t value) noexcept;
     explicit Value(w_ref_t value) noexcept;
+    explicit Value(w_fun_t value) noexcept;
 
     [[nodiscard]] std::string repr() const noexcept;
-    [[nodiscard]] operator bool() const noexcept;
+    [[nodiscard]] explicit operator bool() const noexcept;
     [[nodiscard]] bool operator==(const Value &other) const noexcept;
     [[nodiscard]] bool operator<(const Value &other) const noexcept;
     [[nodiscard]] bool operator>(const Value &other) const noexcept;

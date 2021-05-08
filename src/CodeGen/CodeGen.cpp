@@ -522,8 +522,8 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
             }
             return {};
         case IdentifierType::FUNCTION:
-            //            current_chunk->emit_string(expr.name.lexeme, expr.name.line);
-            //            current_chunk->emit_instruction(Instruction::LOAD_FUNCTION, expr.name.line);
+            current_chunk->emit_string(expr.name.lexeme, expr.name.line);
+            current_chunk->emit_instruction(Instruction::LOAD_FUNCTION, expr.name.line);
             return {};
         case IdentifierType::CLASS: break;
     }

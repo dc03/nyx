@@ -14,6 +14,7 @@ Value::Value(w_str_t value) noexcept : w_str{value}, tag{Tag::STRING} {}
 Value::Value(w_bool_t value) noexcept : w_bool{value}, tag{Tag::BOOL} {}
 Value::Value(w_null_t value) noexcept : w_null{value}, tag{Tag::NULL_} {}
 Value::Value(w_ref_t value) noexcept : w_ref{value}, tag{Tag::REF} {}
+Value::Value(w_fun_t value) noexcept : w_fun{value}, tag{Tag::FUNCTION} {}
 
 std::string Value::repr() const noexcept {
     if (tag == Tag::INT) {
@@ -65,6 +66,10 @@ std::string Value::repr() const noexcept {
         char name[35];
         std::sprintf(name, "ref to %p", reinterpret_cast<void *>(w_ref));
         return {name};
+    } else if (tag == Tag::FUNCTION) {
+        char name[50];
+        std::sprintf(name, "<function %s at %p>", w_fun->name.c_str(), reinterpret_cast<void *>(w_fun));
+        return {name};
     } else if (tag == Tag::INVALID) {
         return {"<invalid!>"};
     }
@@ -85,6 +90,8 @@ Value::operator bool() const noexcept {
         return false;
     } else if (tag == Tag::REF) {
         return (bool)(*w_ref);
+    } else if (tag == Tag::FUNCTION) {
+        return true;
     } else if (tag == Tag::INVALID) {
         return false;
     }
@@ -111,6 +118,8 @@ bool Value::operator==(const Value &other) const noexcept {
         } else {
             return *w_ref == other;
         }
+    } else if (tag == Tag::FUNCTION) {
+        return w_fun == other.w_fun;
     } else if (tag == Tag::INVALID) {
         return true;
     }
