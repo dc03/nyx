@@ -7,6 +7,7 @@
 #define VM2_CHUNK_HPP
 
 #include "Instructions.hpp"
+#include "StringCacher.hpp"
 
 #include <deque>
 #include <string>
@@ -23,7 +24,7 @@ struct Chunk {
 
     std::vector<byte> bytes{};
     std::vector<Value> constants{};
-    std::deque<std::string> strings{};
+    std::deque<HashedString> strings{};
     std::vector<std::pair<std::size_t, std::size_t>> line_numbers{};
     // Store line numbers of instructions using Run Length Encoding, first line number then instruction count for that
     // line

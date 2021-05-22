@@ -16,7 +16,7 @@ std::size_t Chunk::add_constant(Value value) {
 
 std::size_t Chunk::add_string(std::string value) {
     strings.emplace_back(std::move(value));
-    constants.emplace_back(Value{&strings.back()[0]});
+    constants.emplace_back(Value{&strings.back()});
     return constants.size() - 1;
 }
 
