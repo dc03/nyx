@@ -10,10 +10,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_executable(wis src/wis.cpp src/ErrorLogger/ErrorLogger.cpp src/Parser/TypeResolver.cpp src/VisitorTypes.cpp
                    src/Parser/Parser.cpp src/Scanner/Scanner.cpp src/Scanner/Trie.cpp src/AST.cpp src/VM2/Chunk.cpp
                    src/CodeGen/CodeGen.cpp src/VM2/VirtualMachine.cpp src/VM2/Disassembler.cpp src/VM2/Natives.cpp
-                   src/ASTPrinter.cpp src/VM2/Value.cpp)
+                   src/ASTPrinter.cpp src/VM2/Value.cpp src/VM2/StringCacher.cpp)
 
 add_executable(wisVM src/VM2/Chunk.cpp src/VM2/Value.cpp src/VM2/VirtualMachine.cpp src/VM2/VMMain.cpp
-                     src/ErrorLogger/ErrorLogger.cpp src/VM2/Disassembler.cpp src/VM2/Natives.cpp)
+                     src/ErrorLogger/ErrorLogger.cpp src/VM2/Disassembler.cpp src/VM2/Natives.cpp
+                     src/VM2/StringCacher.cpp)
 
 if (MSVC)
     # warning level 4 and all warnings as errors
