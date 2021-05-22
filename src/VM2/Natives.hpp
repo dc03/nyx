@@ -12,8 +12,10 @@
 #include <string>
 #include <vector>
 
+class VirtualMachine;
+
 struct NativeFn {
-    Value (*code)(Value *);
+    Value (*code)(VirtualMachine &, Value *);
     std::string name{};
     Type return_type{};
     std::vector<std::vector<Type>> arguments{};
@@ -22,11 +24,11 @@ struct NativeFn {
 
 extern std::vector<NativeFn> native_functions;
 
-Value native_print(Value *args);
-Value native_int(Value *args);
-Value native_float(Value *args);
-Value native_string(Value *args);
-Value native_readline(Value *args);
-Value native_size(Value *args);
+Value native_print(VirtualMachine &vm, Value *args);
+Value native_int(VirtualMachine &vm, Value *args);
+Value native_float(VirtualMachine &vm, Value *args);
+Value native_string(VirtualMachine &vm, Value *args);
+Value native_readline(VirtualMachine &vm, Value *args);
+Value native_size(VirtualMachine &vm, Value *args);
 
 #endif

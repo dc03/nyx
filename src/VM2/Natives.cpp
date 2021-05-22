@@ -4,6 +4,7 @@
 
 #include "../Common.hpp"
 #include "Module.hpp"
+#include "VirtualMachine.hpp"
 
 #include <iostream>
 #include <string>
@@ -19,7 +20,7 @@ std::vector<NativeFn> native_functions{
 };
 // clang-format on
 
-Value native_print(Value *args) {
+Value native_print(VirtualMachine &vm, Value *args) {
     Value &arg = args[0];
     if (arg.tag == Value::Tag::INT) {
         std::cout << arg.w_int;
@@ -28,83 +29,87 @@ Value native_print(Value *args) {
     } else if (arg.tag == Value::Tag::BOOL) {
         std::cout << (arg.w_bool ? "true" : "false");
     } else if (arg.tag == Value::Tag::STRING) {
-        std::cout << arg.w_str;
+        std::cout << arg.w_str->str;
     } else if (arg.tag == Value::Tag::REF) {
-        native_print(arg.w_ref);
+        native_print(vm, arg.w_ref);
     } else if (arg.tag == Value::Tag::INVALID) {
         std::cout << "<invalid!>";
     }
     return Value{nullptr};
 }
 
-Value native_int(Value *args) {
+Value native_int(VirtualMachine &vm, Value *args) {
     Value &arg = args[0];
     if (arg.tag == Value::Tag::INT) {
         return arg;
     } else if (arg.tag == Value::Tag::FLOAT) {
         return Value{static_cast<int>(arg.w_float)};
     } else if (arg.tag == Value::Tag::STRING) {
-        return Value{std::stoi(arg.w_str)};
+        return Value{std::stoi(arg.w_str->str)};
     } else if (arg.tag == Value::Tag::BOOL) {
         return Value{static_cast<int>(arg.w_bool)};
     } else if (arg.tag == Value::Tag::REF) {
-        return native_int(arg.w_ref);
+        return native_int(vm, arg.w_ref);
     } else if (arg.tag == Value::Tag::INVALID) {
         return Value{0};
     }
     unreachable();
 }
 
-Value native_float(Value *args) {
+Value native_float(VirtualMachine &vm, Value *args) {
     Value &arg = args[0];
     if (arg.tag == Value::Tag::INT) {
         return Value{static_cast<float>(arg.w_int)};
     } else if (arg.tag == Value::Tag::FLOAT) {
         return arg;
     } else if (arg.tag == Value::Tag::STRING) {
-        return Value{std::stod(arg.w_str)};
+        return Value{std::stod(arg.w_str->str)};
     } else if (arg.tag == Value::Tag::BOOL) {
         return Value{static_cast<float>(arg.w_bool)};
     } else if (arg.tag == Value::Tag::REF) {
-        return native_int(arg.w_ref);
+        return native_int(vm, arg.w_ref);
     }
     unreachable();
 }
 
-Value native_string(Value *args) {
+Value native_string(VirtualMachine &vm, Value *args) {
     Value &arg = args[0];
-    //    if (arg.is_int()) {
-    //        return Value{std::to_string(arg.to_int())};
-    //    } else if (arg.is_double()) {
-    //        return Value{std::to_string(arg.to_double())};
-    //    } else if (arg.is_string()) {
-    //        return Value{arg.to_string()};
-    //    } else if (arg.is_bool()) {
-    //        using namespace std::string_literals;
-    //        return Value{arg.to_bool() ? "true"s : "false"s};
-    //    } else if (arg.is_ref()) {
-    //        return native_string(arg.to_referred());
-    //    } else if (arg.is_list()) {
-    //        return Value{arg.repr()};
-    //    }
+    if (arg.tag == Value::Tag::INT) {
+        return Value{&vm.store_string(std::to_string(arg.w_int))};
+    } else if (arg.tag == Value::Tag::FLOAT) {
+        return Value{&vm.store_string(std::to_string(arg.w_float))};
+    } else if (arg.tag == Value::Tag::STRING) {
+        return arg;
+    } else if (arg.tag == Value::Tag::BOOL) {
+        return Value{&vm.store_string(arg.w_bool ? "true" : "false")};
+    } else if (arg.tag == Value::Tag::REF) {
+        return native_string(vm, arg.w_ref);
+    } else if (arg.tag == Value::Tag::INVALID) {
+        return Value{&vm.store_string("invalid")};
+    }
     unreachable();
 }
 
-Value native_readline(Value *args) {
+Value native_readline(VirtualMachine &vm, Value *args) {
     Value &prompt = args[0];
     if (prompt.tag == Value::Tag::STRING) {
-        std::cout << prompt.w_ref->w_str;
+        std::cout << prompt.w_ref->w_str->str;
     } else {
-        std::cout << prompt.w_str;
+        std::cout << prompt.w_str->str;
     }
     std::string result{};
     std::getline(std::cin, result);
-    // return Value{result};
+    return Value{&vm.store_string(std::move(result))};
     unreachable();
 }
 
-Value native_size(Value *args) {
+Value native_size(VirtualMachine &vm, Value *args) {
     Value &arg = args[0];
+    if (arg.tag == Value::Tag::STRING) {
+        return Value{static_cast<int>(arg.w_str->str.length())};
+    } else if (arg.tag == Value::Tag::REF) {
+        return native_string(vm, arg.w_ref);
+    }
     //    if (arg.is_list()) {
     //        return Value{static_cast<int>(arg.to_list().size())};
     //    } else if (arg.is_string()) {
