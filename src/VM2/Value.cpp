@@ -23,7 +23,7 @@ std::string Value::repr() const noexcept {
         return std::to_string(w_float);
     } else if (tag == Tag::STRING) {
         using namespace std::string_literals;
-        std::string string_value{w_str};
+        std::string string_value{w_str->str};
         std::string result{};
         auto is_escape = [](char ch) {
             switch (ch) {
@@ -83,7 +83,7 @@ Value::operator bool() const noexcept {
     } else if (tag == Tag::FLOAT) {
         return w_float != 0;
     } else if (tag == Tag::STRING) {
-        return w_str != nullptr && *w_str != '\0';
+        return w_str != nullptr && w_str->str[0] != '\0';
     } else if (tag == Tag::BOOL) {
         return w_bool;
     } else if (tag == Tag::NULL_) {
@@ -107,7 +107,7 @@ bool Value::operator==(const Value &other) const noexcept {
     } else if (tag == Tag::FLOAT) {
         return w_float == other.w_float;
     } else if (tag == Tag::STRING) {
-        return std::strcmp(w_str, other.w_str) == 0;
+        return *w_str == *other.w_str;
     } else if (tag == Tag::BOOL) {
         return w_bool == other.w_bool;
     } else if (tag == Tag::NULL_) {
@@ -135,7 +135,7 @@ bool Value::operator<(const Value &other) const noexcept {
     } else if (tag == Tag::FLOAT) {
         return w_float < other.w_float;
     } else if (tag == Tag::STRING) {
-        return w_str != other.w_str && std::strcmp(w_str, other.w_str) < 0;
+        return w_str != other.w_str && *w_str < *other.w_str;
     } else if (tag == Tag::BOOL) {
         return w_bool == other.w_bool;
     } else if (tag == Tag::NULL_) {
@@ -161,7 +161,7 @@ bool Value::operator>(const Value &other) const noexcept {
     } else if (tag == Tag::FLOAT) {
         return w_float < other.w_float;
     } else if (tag == Tag::STRING) {
-        return w_str != other.w_str && std::strcmp(w_str, other.w_str) > 0;
+        return w_str != other.w_str && *w_str > *other.w_str;
     } else if (tag == Tag::BOOL) {
         return w_bool == other.w_bool;
     } else if (tag == Tag::NULL_) {

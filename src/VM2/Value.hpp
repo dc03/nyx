@@ -7,6 +7,7 @@
 #define VM2_VALUE_HPP
 
 #include "Module.hpp"
+#include "StringCacher.hpp"
 
 #include <cstdint>
 #include <string>
@@ -16,7 +17,7 @@ struct Value {
 
     using w_int_t = std::int32_t;
     using w_float_t = double;
-    using w_str_t = char *;
+    using w_str_t = const HashedString *;
     using w_bool_t = bool;
     using w_null_t = std::nullptr_t;
     using w_ref_t = Value *;
