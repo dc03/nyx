@@ -5,6 +5,7 @@
 #include "../ErrorLogger/ErrorLogger.hpp"
 #include "Disassembler.hpp"
 #include "Instructions.hpp"
+#include "StringCacher.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -49,13 +50,7 @@ void VirtualMachine::run(RuntimeModule &module) {
     current_module = &module;
     current_chunk = &module.top_level_code;
     ip = &current_chunk->bytes[0];
-    while (true) {
-        if (step() == ExecutionState::FINISHED) {
-            break;
-        } else {
-            step();
-        }
-    }
+    while (step() != ExecutionState::FINISHED);
 }
 
 #define arith_binary_op(op, type, member)                                                                              \
@@ -273,7 +268,7 @@ ExecutionState VirtualMachine::step() {
         }
         /* Function calls */
         case is Instruction::LOAD_FUNCTION: {
-            RuntimeFunction *function = &current_module->functions[stack[stack_top - 1].w_str];
+            RuntimeFunction *function = &current_module->functions[stack[stack_top - 1].w_str->str];
             stack[stack_top - 1].w_fun = function;
             stack[stack_top - 1].tag = Value::Tag::FUNCTION;
             break;
@@ -286,8 +281,8 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::CALL_NATIVE: {
-            NativeFn called = natives[stack[--stack_top].w_str];
-            Value result = called.code(&stack[stack_top] - called.arity);
+            NativeFn called = natives[stack[--stack_top].w_str->str];
+            Value result = called.code(*this, &stack[stack_top] - called.arity);
             stack_top -= called.arity;
             stack[stack_top++] = result;
             break;
@@ -306,8 +301,19 @@ ExecutionState VirtualMachine::step() {
         }
         /* Copying */
         case is Instruction::COPY: break;
+        /* String concatenation */
+        case is Instruction::CONCAT: {
+            Value::w_str_t val2 = stack[--stack_top].w_str;
+            Value::w_str_t val1 = stack[stack_top - 1].w_str;
+            stack[stack_top - 1].w_str = &cache.concat(*val1, *val2);
+            break;
+        }
     }
     return ExecutionState::RUNNING;
+}
+
+const HashedString &VirtualMachine::store_string(std::string str) {
+    return cache.insert(std::move(str));
 }
 
 #undef arith_binary_op

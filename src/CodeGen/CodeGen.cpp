@@ -180,7 +180,7 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
             switch (expr.resolved.info->data.primitive) {
                 case Type::INT: current_chunk->emit_instruction(Instruction::IADD, expr.resolved.token.line); break;
                 case Type::FLOAT: current_chunk->emit_instruction(Instruction::FADD, expr.resolved.token.line); break;
-                case Type::STRING: error("Strings not implemented yet", expr.resolved.token); break;
+                case Type::STRING: current_chunk->emit_instruction(Instruction::CONCAT, expr.resolved.token.line); break;
                 default: unreachable();
             }
             break;

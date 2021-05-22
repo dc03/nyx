@@ -33,6 +33,7 @@ class VirtualMachine {
     std::unique_ptr<CallFrame[]> frames{};
     std::size_t frame_top{};
 
+    StringCacher cache{};
     std::unordered_map<std::string_view, NativeFn> natives{};
 
     Chunk *current_chunk{};
@@ -58,6 +59,7 @@ class VirtualMachine {
 
     void run(RuntimeModule &module);
     ExecutionState step();
+    [[nodiscard]] const HashedString &store_string(std::string str);
 };
 
 #endif
