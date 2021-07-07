@@ -57,7 +57,7 @@ std::size_t Chunk::emit_constant(Value value, std::size_t line_number) {
 std::size_t Chunk::emit_string(std::string value, std::size_t line_number) {
     if (constants.size() < const_long_max) {
         std::size_t constant = add_string(std::move(value));
-        emit_instruction(Instruction::CONSTANT, line_number);
+        emit_instruction(Instruction::CONSTANT_STRING, line_number);
         emit_bytes((constant >> 16) & 0xff, (constant >> 8) & 0xff);
         emit_byte(constant & 0xff);
         return bytes.size() - 4;
