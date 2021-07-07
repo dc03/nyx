@@ -93,38 +93,38 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         /* Integer operations */
-        case is Instruction::IADD: arith_binary_op(+, w_int_t, w_int);
-        case is Instruction::ISUB: arith_binary_op(-, w_int_t, w_int);
-        case is Instruction::IMUL: arith_binary_op(*, w_int_t, w_int);
+        case is Instruction::IADD: arith_binary_op(+, IntType, w_int);
+        case is Instruction::ISUB: arith_binary_op(-, IntType, w_int);
+        case is Instruction::IMUL: arith_binary_op(*, IntType, w_int);
         case is Instruction::IMOD: {
             if (stack[stack_top - 1].w_int == 0) {
                 runtime_error("Cannot modulo by zero", get_current_line());
                 return ExecutionState::FINISHED;
             }
-            arith_binary_op(%, w_int_t, w_int);
+            arith_binary_op(%, IntType, w_int);
         }
         case is Instruction::IDIV: {
             if (stack[stack_top - 1].w_int == 0) {
                 runtime_error("Cannot divide by zero", get_current_line());
                 return ExecutionState::FINISHED;
             }
-            arith_binary_op(/, w_int_t, w_int);
+            arith_binary_op(/, IntType, w_int);
         }
         case is Instruction::INEG: {
             stack[stack_top - 1].w_int = -stack[stack_top - 1].w_int;
             break;
         }
         /* Floating point operations */
-        case is Instruction::FADD: arith_binary_op(+, w_float_t, w_float);
-        case is Instruction::FSUB: arith_binary_op(-, w_float_t, w_float);
-        case is Instruction::FMUL: arith_binary_op(*, w_float_t, w_float);
+        case is Instruction::FADD: arith_binary_op(+, FloatType, w_float);
+        case is Instruction::FSUB: arith_binary_op(-, FloatType, w_float);
+        case is Instruction::FMUL: arith_binary_op(*, FloatType, w_float);
         case is Instruction::FMOD: {
             if (stack[stack_top - 1].w_float == 0.0) {
                 runtime_error("Cannot modulo by zero", get_current_line());
                 return ExecutionState::FINISHED;
             }
-            Value::w_float_t val2 = stack[--stack_top].w_float;
-            Value::w_float_t val1 = stack[stack_top - 1].w_float;
+            Value::FloatType val2 = stack[--stack_top].w_float;
+            Value::FloatType val1 = stack[stack_top - 1].w_float;
             stack[stack_top - 1].w_float = std::fmod(val1, val2);
             break;
         }
@@ -133,7 +133,7 @@ ExecutionState VirtualMachine::step() {
                 runtime_error("Cannot divide by zero", get_current_line());
                 return ExecutionState::FINISHED;
             }
-            arith_binary_op(/, w_float_t, w_float);
+            arith_binary_op(/, FloatType, w_float);
         }
         case is Instruction::FNEG: {
             stack[stack_top - 1].w_float = -stack[stack_top - 1].w_float;
@@ -141,12 +141,12 @@ ExecutionState VirtualMachine::step() {
         }
         /* Floating <-> integral conversions */
         case is Instruction::FLOAT_TO_INT: {
-            stack[stack_top - 1].w_int = static_cast<Value::w_int_t>(stack[stack_top - 1].w_float);
+            stack[stack_top - 1].w_int = static_cast<Value::IntType>(stack[stack_top - 1].w_float);
             stack[stack_top - 1].tag = Value::Tag::INT;
             break;
         }
         case is Instruction::INT_TO_FLOAT: {
-            stack[stack_top - 1].w_float = static_cast<Value::w_float_t>(stack[stack_top - 1].w_int);
+            stack[stack_top - 1].w_float = static_cast<Value::FloatType>(stack[stack_top - 1].w_int);
             stack[stack_top - 1].tag = Value::Tag::FLOAT;
             break;
         }
@@ -155,18 +155,18 @@ ExecutionState VirtualMachine::step() {
             if (stack[stack_top - 1].w_int < 0) {
                 runtime_error("Cannot bitshift with value less than zero", get_current_line());
             }
-            arith_binary_op(<<, w_int_t, w_int);
+            arith_binary_op(<<, IntType, w_int);
         }
         case is Instruction::SHIFT_RIGHT: {
             if (stack[stack_top - 1].w_int < 0) {
                 runtime_error("Cannot bitshift with value less than zero", get_current_line());
             }
-            arith_binary_op(>>, w_int_t, w_int);
+            arith_binary_op(>>, IntType, w_int);
         }
-        case is Instruction::BIT_AND: arith_binary_op(&, w_int_t, w_int);
-        case is Instruction::BIT_OR: arith_binary_op(|, w_int_t, w_int);
+        case is Instruction::BIT_AND: arith_binary_op(&, IntType, w_int);
+        case is Instruction::BIT_OR: arith_binary_op(|, IntType, w_int);
         case is Instruction::BIT_NOT: stack[stack_top - 1].w_int = ~stack[stack_top - 1].w_int; break;
-        case is Instruction::BIT_XOR: arith_binary_op(^, w_int_t, w_int);
+        case is Instruction::BIT_XOR: arith_binary_op(^, IntType, w_int);
         /* Logical operations */
         case is Instruction::NOT: {
             stack[stack_top - 1].w_bool = !stack[stack_top - 1];
@@ -305,7 +305,7 @@ ExecutionState VirtualMachine::step() {
         case is Instruction::COPY: break;
         /* String instructions */
         case is Instruction::CONSTANT_STRING: {
-            Value::w_str_t string = current_chunk->constants[read_three_bytes()].w_str;
+            Value::StringType string = current_chunk->constants[read_three_bytes()].w_str;
             push(Value{&cache.insert(*string)});
             break;
         }
@@ -324,8 +324,8 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::CONCATENATE: {
-            Value::w_str_t val2 = stack[--stack_top].w_str;
-            Value::w_str_t val1 = stack[stack_top - 1].w_str;
+            Value::StringType val2 = stack[--stack_top].w_str;
+            Value::StringType val1 = stack[stack_top - 1].w_str;
             stack[stack_top - 1].w_str = &cache.concat(*val1, *val2);
             cache.remove(*val1);
             cache.remove(*val2);

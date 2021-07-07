@@ -15,36 +15,36 @@
 struct Value {
     struct PlaceHolder {};
 
-    using w_int_t = std::int32_t;
-    using w_float_t = double;
-    using w_str_t = const HashedString *;
-    using w_bool_t = bool;
-    using w_null_t = std::nullptr_t;
-    using w_ref_t = Value *;
-    using w_fun_t = RuntimeFunction *;
+    using IntType = std::int32_t;
+    using FloatType = double;
+    using StringType = const HashedString *;
+    using BoolType = bool;
+    using NullType = std::nullptr_t;
+    using ReferenceType = Value *;
+    using FunctionType = RuntimeFunction *;
 
     union {
         PlaceHolder w_invalid;
 
-        w_int_t w_int;
-        w_float_t w_float;
-        w_str_t w_str;
-        w_bool_t w_bool;
-        w_null_t w_null;
-        w_ref_t w_ref;
-        w_fun_t w_fun;
+        IntType w_int;
+        FloatType w_float;
+        StringType w_str;
+        BoolType w_bool;
+        NullType w_null;
+        ReferenceType w_ref;
+        FunctionType w_fun;
     };
 
     enum class Tag { INVALID, INT, FLOAT, STRING, BOOL, NULL_, REF, FUNCTION } tag;
 
     Value() noexcept;
-    explicit Value(w_int_t value) noexcept;
-    explicit Value(w_float_t value) noexcept;
-    explicit Value(w_str_t value) noexcept;
-    explicit Value(w_bool_t value) noexcept;
-    explicit Value(w_null_t value) noexcept;
-    explicit Value(w_ref_t value) noexcept;
-    explicit Value(w_fun_t value) noexcept;
+    explicit Value(IntType value) noexcept;
+    explicit Value(FloatType value) noexcept;
+    explicit Value(StringType value) noexcept;
+    explicit Value(BoolType value) noexcept;
+    explicit Value(NullType value) noexcept;
+    explicit Value(ReferenceType value) noexcept;
+    explicit Value(FunctionType value) noexcept;
 
     [[nodiscard]] std::string repr() const noexcept;
     [[nodiscard]] explicit operator bool() const noexcept;

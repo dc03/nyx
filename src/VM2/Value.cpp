@@ -8,13 +8,13 @@
 #include <cstring>
 
 Value::Value() noexcept : w_invalid{}, tag{Tag::INVALID} {}
-Value::Value(w_int_t value) noexcept : w_int{value}, tag{Tag::INT} {}
-Value::Value(w_float_t value) noexcept : w_float{value}, tag{Tag::FLOAT} {}
-Value::Value(w_str_t value) noexcept : w_str{value}, tag{Tag::STRING} {}
-Value::Value(w_bool_t value) noexcept : w_bool{value}, tag{Tag::BOOL} {}
-Value::Value(w_null_t value) noexcept : w_null{value}, tag{Tag::NULL_} {}
-Value::Value(w_ref_t value) noexcept : w_ref{value}, tag{Tag::REF} {}
-Value::Value(w_fun_t value) noexcept : w_fun{value}, tag{Tag::FUNCTION} {}
+Value::Value(IntType value) noexcept : w_int{value}, tag{Tag::INT} {}
+Value::Value(FloatType value) noexcept : w_float{value}, tag{Tag::FLOAT} {}
+Value::Value(StringType value) noexcept : w_str{value}, tag{Tag::STRING} {}
+Value::Value(BoolType value) noexcept : w_bool{value}, tag{Tag::BOOL} {}
+Value::Value(NullType value) noexcept : w_null{value}, tag{Tag::NULL_} {}
+Value::Value(ReferenceType value) noexcept : w_ref{value}, tag{Tag::REF} {}
+Value::Value(FunctionType value) noexcept : w_fun{value}, tag{Tag::FUNCTION} {}
 
 std::string Value::repr() const noexcept {
     if (tag == Tag::INT) {
