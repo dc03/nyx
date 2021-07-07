@@ -50,7 +50,8 @@ void VirtualMachine::run(RuntimeModule &module) {
     current_module = &module;
     current_chunk = &module.top_level_code;
     ip = &current_chunk->bytes[0];
-    while (step() != ExecutionState::FINISHED);
+    while (step() != ExecutionState::FINISHED)
+        ;
 }
 
 #define arith_binary_op(op, type, member)                                                                              \
@@ -282,6 +283,7 @@ ExecutionState VirtualMachine::step() {
         }
         case is Instruction::CALL_NATIVE: {
             NativeFn called = natives[stack[--stack_top].w_str->str];
+            cache.remove(*stack[stack_top].w_str);
             Value result = called.code(*this, &stack[stack_top] - called.arity);
             stack_top -= called.arity;
             stack[stack_top++] = result;
@@ -301,11 +303,32 @@ ExecutionState VirtualMachine::step() {
         }
         /* Copying */
         case is Instruction::COPY: break;
-        /* String concatenation */
-        case is Instruction::CONCAT: {
+        /* String instructions */
+        case is Instruction::CONSTANT_STRING: {
+            Value::w_str_t string = current_chunk->constants[read_three_bytes()].w_str;
+            push(Value{&cache.insert(*string)});
+            break;
+        }
+        case is Instruction::ACCESS_LOCAL_STRING: {
+            Value &local = frames[frame_top].stack[read_three_bytes()];
+            push(Value{&cache.insert(*local.w_str)});
+            break;
+        }
+        case is Instruction::ACCESS_GLOBAL_STRING: {
+            Value &global = stack[read_three_bytes()];
+            push(Value{&cache.insert(*global.w_str)});
+            break;
+        }
+        case is Instruction::POP_STRING: {
+            cache.remove(*stack[--stack_top].w_str);
+            break;
+        }
+        case is Instruction::CONCATENATE: {
             Value::w_str_t val2 = stack[--stack_top].w_str;
             Value::w_str_t val1 = stack[stack_top - 1].w_str;
             stack[stack_top - 1].w_str = &cache.concat(*val1, *val2);
+            cache.remove(*val1);
+            cache.remove(*val2);
             break;
         }
     }
