@@ -9,12 +9,16 @@
 std::vector<RuntimeModule> Generator::compiled_modules{};
 
 void Generator::begin_scope() {
-    scopes.push(0);
+    scopes.push({});
 }
 
 void Generator::end_scope() {
-    for (std::size_t begin = scopes.top(); begin > 0; begin--) {
-        current_chunk->emit_instruction(Instruction::POP, 0);
+    for (auto begin = scopes.top().crbegin(); begin != scopes.top().crend(); begin++) {
+        if (*begin == Type::STRING) {
+            current_chunk->emit_instruction(Instruction::POP_STRING, 0);
+        } else {
+            current_chunk->emit_instruction(Instruction::POP, 0);
+        }
     }
     scopes.pop();
 }
@@ -180,7 +184,9 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
             switch (expr.resolved.info->data.primitive) {
                 case Type::INT: current_chunk->emit_instruction(Instruction::IADD, expr.resolved.token.line); break;
                 case Type::FLOAT: current_chunk->emit_instruction(Instruction::FADD, expr.resolved.token.line); break;
-                case Type::STRING: current_chunk->emit_instruction(Instruction::CONCAT, expr.resolved.token.line); break;
+                case Type::STRING:
+                    current_chunk->emit_instruction(Instruction::CONCATENATE, expr.resolved.token.line);
+                    break;
                 default: unreachable();
             }
             break;
@@ -511,11 +517,20 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
         case IdentifierType::GLOBAL:
             if (expr.resolved.stack_slot < Chunk::const_long_max) {
                 if (expr.type == IdentifierType::LOCAL) {
-                    current_chunk->emit_instruction(Instruction::ACCESS_LOCAL, expr.name.line);
+                    if (expr.resolved.info->data.primitive == Type::STRING) {
+                        current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_STRING, expr.name.line);
+                    } else {
+                        current_chunk->emit_instruction(Instruction::ACCESS_LOCAL, expr.name.line);
+                    }
                 } else {
-                    current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL, expr.name.line);
+                    if (expr.resolved.info->data.primitive == Type::STRING) {
+                        current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL_STRING, expr.name.line);
+                    } else {
+                        current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL, expr.name.line);
+                    }
                 }
-                current_chunk->emit_bytes((expr.resolved.stack_slot >> 16) & 0xff, (expr.resolved.stack_slot >> 8) & 0xff);
+                current_chunk->emit_bytes(
+                    (expr.resolved.stack_slot >> 16) & 0xff, (expr.resolved.stack_slot >> 8) & 0xff);
                 current_chunk->emit_byte(expr.resolved.stack_slot & 0xff);
             } else {
                 compile_error("Too many variables in current scope");
@@ -556,7 +571,11 @@ StmtVisitorType Generator::visit(ContinueStmt &stmt) {
 
 StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
     compile(stmt.expr.get());
-    current_chunk->emit_instruction(Instruction::POP, current_chunk->line_numbers.back().first);
+    if (stmt.expr->resolved.info->data.primitive == Type::STRING) {
+        current_chunk->emit_instruction(Instruction::POP_STRING, current_chunk->line_numbers.back().first);
+    } else {
+        current_chunk->emit_instruction(Instruction::POP, current_chunk->line_numbers.back().first);
+    }
 }
 
 StmtVisitorType Generator::visit(FunctionStmt &stmt) {
@@ -568,8 +587,16 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
     current_chunk = &function.code;
     compile(stmt.body.get());
 
-    for (std::size_t i = 0; i < scopes.top() + stmt.params.size(); i++) {
-        current_chunk->emit_instruction(Instruction::POP, 0);
+    //    for (std::size_t i = 0; i < scopes.top() + stmt.params.size(); i++) {
+    //        current_chunk->emit_instruction(Instruction::POP, 0);
+    //    }
+    end_scope();
+    for (auto begin = stmt.params.crbegin(); begin != stmt.params.crend(); begin++) {
+        if (begin->second->data.primitive == Type::STRING) {
+            current_chunk->emit_instruction(Instruction::POP_STRING, 0);
+        } else {
+            current_chunk->emit_instruction(Instruction::POP, 0);
+        }
     }
 
     if (stmt.return_type->data.primitive != Type::NULL_) {
@@ -789,7 +816,7 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
     } else {
         current_chunk->emit_instruction(Instruction::PUSH_NULL, stmt.name.line);
     }
-    scopes.top() += 1;
+    scopes.top().push_back(stmt.type->data.primitive);
 }
 
 StmtVisitorType Generator::visit(WhileStmt &stmt) {

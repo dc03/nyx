@@ -71,7 +71,7 @@ std::size_t four_byte_insn(Chunk &chunk, std::string_view name, std::size_t byte
     std::size_t next_bytes = chunk.bytes[byte + 1];
     next_bytes = (next_bytes << 8) | chunk.bytes[byte + 2];
     next_bytes = (next_bytes << 8) | chunk.bytes[byte + 3];
-    if (name == "CONSTANT") {
+    if (name == "CONSTANT" || name == "CONSTANT_STRING") {
         std::cout << '\t';
         print_tab(1) << "-> " << next_bytes << " | value = " << chunk.constants[next_bytes].repr() << '\n';
     } else if (name == "JUMP_FORWARD" || name == "POP_JUMP_IF_FALSE" || name == "JUMP_IF_FALSE" ||
@@ -157,7 +157,11 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::RETURN: return four_byte_insn(chunk, "RETURN", byte);
         case Instruction::TRAP_RETURN: return single_byte_insn(chunk, "TRAP_RETURN", byte);
         case Instruction::COPY: return single_byte_insn(chunk, "COPY", byte);
-        case Instruction::CONCAT: return single_byte_insn(chunk, "CONCAT", byte);
+        case Instruction::CONSTANT_STRING: return four_byte_insn(chunk, "CONSTANT_STRING", byte);
+        case Instruction::ACCESS_LOCAL_STRING: return four_byte_insn(chunk, "ACCESS_LOCAL_STRING", byte);
+        case Instruction::ACCESS_GLOBAL_STRING: return four_byte_insn(chunk, "ACCESS_GLOBAL_STRING", byte);
+        case Instruction::POP_STRING: return single_byte_insn(chunk, "POP_STRING", byte);
+        case Instruction::CONCATENATE: return single_byte_insn(chunk, "CONCATENATE", byte);
     }
     unreachable();
 }

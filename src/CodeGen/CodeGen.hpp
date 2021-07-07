@@ -16,7 +16,7 @@ class Generator final : Visitor {
     Chunk *current_chunk{nullptr};
     Module *current_module{nullptr};
     RuntimeModule *current_compiled{nullptr};
-    std::stack<std::size_t> scopes{};
+    std::stack<std::vector<Type>> scopes{};
     std::stack<std::vector<std::size_t>> break_stmts{};
     // Push a new vector for every loop or switch statement encountered within a loop or switch statement, with the
     // vector tracking the indexes of the breaks
