@@ -69,8 +69,12 @@ enum class Instruction {
     TRAP_RETURN,
     /* Copying */
     COPY,
-    /* String concatenation */
-    CONCAT,
+    /* String instructions */
+    CONSTANT_STRING,
+    ACCESS_LOCAL_STRING,
+    ACCESS_GLOBAL_STRING,
+    POP_STRING,
+    CONCATENATE,
 };
 
 #endif
