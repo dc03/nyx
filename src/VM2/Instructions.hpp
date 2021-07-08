@@ -75,6 +75,16 @@ enum class Instruction {
     ACCESS_GLOBAL_STRING,
     POP_STRING,
     CONCATENATE,
+    /* List instructions */
+    MAKE_LIST,
+    APPEND_LIST,
+    ASSIGN_LIST,
+    INDEX_LIST,
+    CHECK_INDEX,
+    ASSIGN_LOCAL_LIST,
+    ASSIGN_GLOBAL_LIST,
+    /* Destroying */
+    DESTROY,
 };
 
 #endif
