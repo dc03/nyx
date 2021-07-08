@@ -162,6 +162,14 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::ACCESS_GLOBAL_STRING: return four_byte_insn(chunk, "ACCESS_GLOBAL_STRING", byte);
         case Instruction::POP_STRING: return single_byte_insn(chunk, "POP_STRING", byte);
         case Instruction::CONCATENATE: return single_byte_insn(chunk, "CONCATENATE", byte);
+        case Instruction::MAKE_LIST: return single_byte_insn(chunk, "MAKE_LIST", byte);
+        case Instruction::APPEND_LIST: return single_byte_insn(chunk, "APPEND_LIST", byte);
+        case Instruction::ASSIGN_LIST: return single_byte_insn(chunk, "ASSIGN_LIST", byte);
+        case Instruction::INDEX_LIST: return single_byte_insn(chunk, "INDEX_LIST", byte);
+        case Instruction::CHECK_INDEX: return single_byte_insn(chunk, "CHECK_INDEX", byte);
+        case Instruction::ASSIGN_LOCAL_LIST: return four_byte_insn(chunk, "ASSIGN_LOCAL_LIST", byte);
+        case Instruction::ASSIGN_GLOBAL_LIST: return four_byte_insn(chunk, "ASSIGN_GLOBAL_LIST", byte);
+        case Instruction::DESTROY: return single_byte_insn(chunk, "DESTROY", byte);
     }
     unreachable();
 }
