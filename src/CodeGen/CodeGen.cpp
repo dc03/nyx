@@ -8,14 +8,22 @@
 
 std::vector<RuntimeModule> Generator::compiled_modules{};
 
+Generator::Generator() {
+    for (auto &native : native_functions) {
+        natives[native.name] = native;
+    }
+}
+
 void Generator::begin_scope() {
     scopes.push({});
 }
 
 void Generator::end_scope() {
     for (auto begin = scopes.top().crbegin(); begin != scopes.top().crend(); begin++) {
-        if (*begin == Type::STRING) {
+        if ((*begin)->data.primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, 0);
+        } else if ((*begin)->data.primitive == Type::LIST && !(*begin)->data.is_ref) {
+            current_chunk->emit_instruction(Instruction::DESTROY, 0);
         } else {
             current_chunk->emit_instruction(Instruction::POP, 0);
         }
@@ -64,6 +72,12 @@ void Generator::emit_conversion(NumericConversionType conversion_type, std::size
     }
 }
 
+void Generator::emit_three_bytes_of(std::size_t value) {
+    current_chunk->emit_byte((value >> 16) & 0xff);
+    current_chunk->emit_byte((value >> 8) & 0xff);
+    current_chunk->emit_byte(value & 0xff);
+}
+
 ExprVisitorType Generator::compile(Expr *expr) {
     return expr->accept(*this);
 }
@@ -80,8 +94,8 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
     compile(expr.value.get());
     if (expr.value->resolved.info->data.is_ref && expr.value->resolved.info->data.primitive != Type::LIST) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.target.line);
-    } // As there is no difference between a list and a reference to a list, there is no need to add an explicit
-      // Instruction::DEREF
+    } // As there is no difference between a list and a reference to a list (aside from the tag), there is no need to
+      // add an explicit Instruction::DEREF
     if (expr.requires_copy) {
         current_chunk->emit_instruction(Instruction::COPY, expr.target.line);
     }
@@ -92,9 +106,19 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
 
     switch (expr.resolved.token.type) {
         case TokenType::EQUAL:
-            current_chunk->emit_instruction(
-                expr.target_type == IdentifierType::LOCAL ? Instruction::ASSIGN_LOCAL : Instruction::ASSIGN_GLOBAL,
-                expr.resolved.token.line);
+            // Assigning to lists needs to be handled separately, as it can involve destroying the list that was
+            // previously there in the variable. This code is moved off of the hot path into ASSIGN_LOCAL_LIST and
+            // ASSIGN_GLOBAL_LIST
+            if (expr.resolved.info->data.primitive == Type::LIST) {
+                current_chunk->emit_instruction(expr.target_type == IdentifierType::LOCAL
+                                                    ? Instruction::ASSIGN_LOCAL_LIST
+                                                    : Instruction::ASSIGN_GLOBAL_LIST,
+                    expr.resolved.token.line);
+            } else {
+                current_chunk->emit_instruction(
+                    expr.target_type == IdentifierType::LOCAL ? Instruction::ASSIGN_LOCAL : Instruction::ASSIGN_GLOBAL,
+                    expr.resolved.token.line);
+            }
             break;
             //            case TokenType::PLUS_EQUAL:
             //                current_chunk->emit_instruction(
@@ -118,8 +142,8 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
             //                break;
         default: break;
     }
-    current_chunk->emit_bytes((expr.resolved.stack_slot >> 16) & 0xff, (expr.resolved.stack_slot >> 8) & 0xff);
-    current_chunk->emit_byte(expr.resolved.stack_slot & 0xff);
+
+    emit_three_bytes_of(expr.resolved.stack_slot);
     return {};
 }
 
@@ -214,13 +238,15 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(CallExpr &expr) {
+    // Emit a null value on the stack just before the parameters of the function which is being called. This will serve
+    // as the stack slot in which to save the return value of the function before destroying any arguments or locals.
+    current_chunk->emit_instruction(Instruction::PUSH_NULL, expr.resolved.token.line);
     std::size_t i = 0;
     for (auto &arg : expr.args) {
         auto &value = std::get<ExprNode>(arg);
         if (!expr.is_native_call) {
-            if (auto &param = expr.function->resolved.func->params[i]; param.second->data.is_ref &&
-                                                                       param.second->data.primitive != Type::LIST &&
-                                                                       !value->resolved.info->data.is_ref) {
+            if (auto &param = expr.function->resolved.func->params[i];
+                param.second->data.is_ref && !value->resolved.info->data.is_ref) {
                 if (value->type_tag() == NodeType::VariableExpr) {
                     if (dynamic_cast<VariableExpr *>(value.get())->type == IdentifierType::LOCAL) {
                         current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, value->resolved.token.line);
@@ -231,9 +257,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
                     current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, value->resolved.token.line);
                     // This is a fallback, but I don't think it would ever be triggered
                 }
-                current_chunk->emit_bytes(
-                    (value->resolved.stack_slot >> 16) & 0xff, (value->resolved.stack_slot >> 8) & 0xff);
-                current_chunk->emit_byte(value->resolved.stack_slot & 0xff);
+                emit_three_bytes_of(value->resolved.stack_slot);
             } else if (!param.second->data.is_ref && value->resolved.info->data.is_ref) {
                 compile(value.get());
                 current_chunk->emit_instruction(Instruction::DEREF, value->resolved.token.line);
@@ -251,23 +275,33 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
             current_chunk->emit_instruction(Instruction::COPY, value->resolved.token.line);
         }
 
-        //        // This ALLOC_AT_LEAST is emitted after the COPY since the list that is copied needs to be resized and
-        //        notthe
-        //        // list that is being copied.
-        //        if (!expr.is_native_call && expr.function->resolved.func->params[i].second->data.primitive ==
-        //        Type::LIST) {
-        //            auto *list = dynamic_cast<ListType *>(expr.function->resolved.func->params[i].second.get());
-        //            if (list->size != nullptr) {
-        //                compile(list->size.get());
-        //                current_chunk->emit_instruction(Instruction::ALLOC_AT_LEAST, list->size->resolved.token.line);
-        //            }
-        //        }
+        // This ALLOC_AT_LEAST is emitted after the COPY since the list that is copied needs to be resized and not the
+        // list that is being copied.
+        if (!expr.is_native_call && expr.function->resolved.func->params[i].second->data.primitive == Type::LIST) {
+            auto *list = dynamic_cast<ListType *>(expr.function->resolved.func->params[i].second.get());
+            if (list->size != nullptr) {
+                compile(list->size.get());
+                current_chunk->emit_instruction(Instruction::MAKE_LIST, list->size->resolved.token.line);
+            }
+        }
         i++;
     }
     if (expr.is_native_call) {
         auto *called = dynamic_cast<VariableExpr *>(expr.function.get());
         current_chunk->emit_string(called->name.lexeme, called->name.line);
         current_chunk->emit_instruction(Instruction::CALL_NATIVE, expr.resolved.token.line);
+        auto begin = expr.args.crbegin();
+        for (; begin != expr.args.crend(); begin++) {
+            auto &arg = std::get<ExprNode>(*begin);
+            if (arg->resolved.info->data.primitive == Type::LIST && !arg->resolved.is_lvalue &&
+                !arg->resolved.info->data.is_ref) {
+                current_chunk->emit_instruction(Instruction::DESTROY, arg->resolved.token.line);
+            } else if (arg->resolved.info->data.primitive == Type::STRING) {
+                current_chunk->emit_instruction(Instruction::POP_STRING, arg->resolved.token.line);
+            } else {
+                current_chunk->emit_instruction(Instruction::POP, arg->resolved.token.line);
+            }
+        }
     } else {
         compile(expr.function.get());
         current_chunk->emit_instruction(Instruction::CALL_FUNCTION, expr.resolved.token.line);
@@ -297,77 +331,84 @@ ExprVisitorType Generator::visit(GroupingExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(IndexExpr &expr) {
-    //    compile(expr.object.get());
-    //    compile(expr.index.get());
-    //    if (expr.index->resolved.info->data.is_ref) {
-    //        current_chunk->emit_instruction(Instruction::DEREF, expr.index->resolved.token.line);
-    //    }
-    //    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.token.line);
-    //    current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.resolved.token.line);
+    compile(expr.object.get());
+    compile(expr.index.get());
+    if (expr.index->resolved.info->data.is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, expr.index->resolved.token.line);
+    }
+    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.token.line);
+    current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.resolved.token.line);
     return {};
 }
 
 ExprVisitorType Generator::visit(ListExpr &expr) {
-    //    compile(expr.type.get());
-    //    current_chunk->emit_constant(
-    //        Value{dynamic_cast<LiteralExpr *>(expr.type->size.get())->value.to_int()}, expr.bracket.line);
-    //    current_chunk->emit_instruction(Instruction::ALLOC_AT_LEAST, expr.type->size->resolved.token.line);
-    //    for (ListExpr::ElementType &element : expr.elements) {
-    //        auto &element_expr = std::get<ExprNode>(element);
-    //
-    //        if (!expr.type->contained->data.is_ref) {
-    //            // References have to be conditionally compiled when not binding to a name
-    //            compile(element_expr.get());
-    //            emit_conversion(std::get<NumericConversionType>(element), element_expr->resolved.token.line);
-    //        }
-    //
-    //        if (!expr.type->contained->data.is_ref) {
-    //            // Type is not a reference type
-    //            if (element_expr->resolved.info->data.is_ref) {
-    //                current_chunk->emit_instruction(Instruction::DEREF, element_expr->resolved.token.line);
-    //            }
-    //        } else if (element_expr->resolved.is_lvalue) {
-    //            // Type is a reference type
-    //            if (element_expr->type_tag() == NodeType::VariableExpr) {
-    //                auto *bound_var = dynamic_cast<VariableExpr *>(element_expr.get());
-    //                if (bound_var->type == IdentifierType::LOCAL) {
-    //                    current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, bound_var->name.line);
-    //                } else if (bound_var->type == IdentifierType::GLOBAL) {
-    //                    current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, bound_var->name.line);
-    //                }
-    //                current_chunk->emit_bytes(
-    //                    (bound_var->resolved.stack_slot >> 16) & 0xff, (bound_var->resolved.stack_slot >> 8) & 0xff);
-    //                current_chunk->emit_byte(bound_var->resolved.stack_slot & 0xff);
-    //            }
-    //        } else {
-    //            compile(element_expr.get()); // A reference not binding to an lvalue
-    //            emit_conversion(std::get<NumericConversionType>(element), element_expr->resolved.token.line);
-    //        }
-    //
-    //        if (std::get<RequiresCopy>(element)) {
-    //            current_chunk->emit_instruction(Instruction::COPY, element_expr->resolved.token.line);
-    //        }
-    //    }
-    //    current_chunk->emit_instruction(Instruction::MAKE_LIST_OF, expr.bracket.line);
-    //    current_chunk->emit_integer(expr.elements.size());
+    current_chunk->emit_constant(
+        Value{dynamic_cast<LiteralExpr *>(expr.type->size.get())->value.to_int()}, expr.bracket.line);
+    current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.bracket.line);
+    std::size_t stack_slot = 0;
+    if (!scopes.empty()) {
+        stack_slot = scopes.top().size();
+    }
+    std::size_t i = 0;
+    for (ListExpr::ElementType &element : expr.elements) {
+        auto &element_expr = std::get<ExprNode>(element);
+        current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
+        emit_three_bytes_of(1);
+        current_chunk->emit_constant(Value{static_cast<int>(i)}, element_expr->resolved.token.line);
+
+        if (!expr.type->contained->data.is_ref) {
+            // References have to be conditionally compiled when not binding to a name
+            compile(element_expr.get());
+            emit_conversion(std::get<NumericConversionType>(element), element_expr->resolved.token.line);
+        }
+
+        if (!expr.type->contained->data.is_ref) {
+            // Type is not a reference type
+            if (element_expr->resolved.info->data.is_ref) {
+                current_chunk->emit_instruction(Instruction::DEREF, element_expr->resolved.token.line);
+            }
+        } else if (element_expr->resolved.is_lvalue) {
+            // Type is a reference type
+            if (element_expr->type_tag() == NodeType::VariableExpr) {
+                auto *bound_var = dynamic_cast<VariableExpr *>(element_expr.get());
+                if (bound_var->type == IdentifierType::LOCAL) {
+                    current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, bound_var->name.line);
+                } else if (bound_var->type == IdentifierType::GLOBAL) {
+                    current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, bound_var->name.line);
+                }
+                emit_three_bytes_of(bound_var->resolved.stack_slot);
+            }
+        } else {
+            compile(element_expr.get()); // A reference not binding to an lvalue
+            emit_conversion(std::get<NumericConversionType>(element), element_expr->resolved.token.line);
+        }
+
+        if (std::get<RequiresCopy>(element)) {
+            current_chunk->emit_instruction(Instruction::COPY, element_expr->resolved.token.line);
+        }
+
+        current_chunk->emit_instruction(Instruction::ASSIGN_LIST, element_expr->resolved.token.line);
+        current_chunk->emit_instruction(Instruction::POP, element_expr->resolved.token.line);
+        i++;
+    }
     return {};
 }
 
 ExprVisitorType Generator::visit(ListAssignExpr &expr) {
-    //    compile(expr.list.object.get());
-    //    compile(expr.list.index.get());
-    //    if (expr.list.index->resolved.info->data.is_ref) {
-    //        current_chunk->emit_instruction(Instruction::DEREF, expr.list.index->resolved.token.line);
-    //    }
-    //    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.token.line);
-    //    compile(expr.value.get());
-    //    if (expr.value->resolved.info->data.is_ref) {
-    //        current_chunk->emit_instruction(Instruction::DEREF, expr.value->resolved.token.line);
-    //    }
-    //    if (expr.requires_copy) {
-    //        current_chunk->emit_instruction(Instruction::COPY, expr.resolved.token.line);
-    //    }
-    //    current_chunk->emit_instruction(Instruction::ASSIGN_LIST_AT, expr.resolved.token.line);
+    compile(expr.list.object.get());
+    compile(expr.list.index.get());
+    if (expr.list.index->resolved.info->data.is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, expr.list.index->resolved.token.line);
+    }
+    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.token.line);
+    compile(expr.value.get());
+    if (expr.value->resolved.info->data.is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, expr.value->resolved.token.line);
+    }
+    if (expr.requires_copy) {
+        current_chunk->emit_instruction(Instruction::COPY, expr.resolved.token.line);
+    }
+    current_chunk->emit_instruction(Instruction::ASSIGN_LIST, expr.resolved.token.line);
     return {};
 }
 
@@ -529,9 +570,7 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
                         current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL, expr.name.line);
                     }
                 }
-                current_chunk->emit_bytes(
-                    (expr.resolved.stack_slot >> 16) & 0xff, (expr.resolved.stack_slot >> 8) & 0xff);
-                current_chunk->emit_byte(expr.resolved.stack_slot & 0xff);
+                emit_three_bytes_of(expr.resolved.stack_slot);
             } else {
                 compile_error("Too many variables in current scope");
             }
@@ -573,6 +612,8 @@ StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
     compile(stmt.expr.get());
     if (stmt.expr->resolved.info->data.primitive == Type::STRING) {
         current_chunk->emit_instruction(Instruction::POP_STRING, current_chunk->line_numbers.back().first);
+    } else if (stmt.expr->resolved.info->data.primitive == Type::LIST) {
+        current_chunk->emit_instruction(Instruction::DESTROY, current_chunk->line_numbers.back().first);
     } else {
         current_chunk->emit_instruction(Instruction::POP, current_chunk->line_numbers.back().first);
     }
@@ -587,13 +628,12 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
     current_chunk = &function.code;
     compile(stmt.body.get());
 
-    //    for (std::size_t i = 0; i < scopes.top() + stmt.params.size(); i++) {
-    //        current_chunk->emit_instruction(Instruction::POP, 0);
-    //    }
     end_scope();
     for (auto begin = stmt.params.crbegin(); begin != stmt.params.crend(); begin++) {
         if (begin->second->data.primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, 0);
+        } else if (begin->second->data.primitive == Type::LIST && !begin->second->data.is_ref) {
+            current_chunk->emit_instruction(Instruction::DESTROY, 0);
         } else {
             current_chunk->emit_instruction(Instruction::POP, 0);
         }
@@ -608,7 +648,6 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
 
     current_compiled->functions[stmt.name.lexeme] = std::move(function);
     current_chunk = &current_compiled->top_level_code;
-    end_scope();
 }
 
 StmtVisitorType Generator::visit(IfStmt &stmt) {
@@ -664,8 +703,7 @@ StmtVisitorType Generator::visit(ReturnStmt &stmt) {
     }
 
     current_chunk->emit_instruction(Instruction::RETURN, stmt.keyword.line);
-    current_chunk->emit_bytes((stmt.locals_popped >> 16 & 0xff), (stmt.locals_popped >> 8) & 0xff);
-    current_chunk->emit_byte(stmt.locals_popped & 0xff);
+    emit_three_bytes_of(stmt.locals_popped);
 }
 
 StmtVisitorType Generator::visit(SwitchStmt &stmt) {
@@ -763,32 +801,18 @@ std::size_t Generator::recursively_compile_size(ListType *list) {
 }
 
 StmtVisitorType Generator::visit(VarStmt &stmt) {
-    //    if (stmt.type->data.primitive == Type::LIST && stmt.initializer == nullptr) {
-    //        auto *list = dynamic_cast<ListType *>(stmt.type.get());
-    //        compile(stmt.type.get());
-    //        std::size_t num_lists = 1;
-    //        if (list->contained->data.primitive == Type::LIST) {
-    //            num_lists += recursively_compile_size(dynamic_cast<ListType *>(list->contained.get()));
-    //            if (list->size != nullptr) {
-    //                compile(list->size.get());
-    //            } else {
-    //                current_chunk->emit_constant(Value{1}, stmt.name.line);
-    //            }
-    //            current_chunk->emit_instruction(Instruction::ALLOC_NESTED_LISTS, stmt.name.line);
-    //            current_chunk->emit_byte(num_lists & 0xff); // Upto 255 nested lists, I don't want to allow more.
-    //        } else {
-    //            if (list->size != nullptr) {
-    //                compile(list->size.get());
-    //                if (list->size->resolved.info->data.is_ref) {
-    //                    current_chunk->emit_instruction(Instruction::DEREF, list->size->resolved.token.line);
-    //                }
-    //            } else {
-    //                current_chunk->emit_constant(Value{1}, stmt.name.line);
-    //            }
-    //            current_chunk->emit_instruction(Instruction::ALLOC_AT_LEAST, stmt.name.line);
-    //        }
-    //    } else
-    if (stmt.initializer != nullptr) {
+    if (stmt.type->data.primitive == Type::LIST && stmt.initializer == nullptr) {
+        auto *list = dynamic_cast<ListType *>(stmt.type.get());
+        if (list->size != nullptr) {
+            compile(list->size.get());
+            if (list->size->resolved.info->data.is_ref) {
+                current_chunk->emit_instruction(Instruction::DEREF, list->size->resolved.token.line);
+            }
+        } else {
+            current_chunk->emit_constant(Value{0}, stmt.name.line);
+        }
+        current_chunk->emit_instruction(Instruction::MAKE_LIST, stmt.name.line);
+    } else if (stmt.initializer != nullptr) {
         if (stmt.type->data.is_ref && !stmt.initializer->resolved.info->data.is_ref &&
             stmt.initializer->type_tag() == NodeType::VariableExpr) {
             if (dynamic_cast<VariableExpr *>(stmt.initializer.get())->type == IdentifierType::LOCAL) {
@@ -796,9 +820,7 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
             } else {
                 current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, stmt.name.line);
             }
-            current_chunk->emit_bytes((stmt.initializer->resolved.stack_slot >> 16) & 0xff,
-                (stmt.initializer->resolved.stack_slot >> 8) & 0xff);
-            current_chunk->emit_byte(stmt.initializer->resolved.stack_slot & 0xff);
+            emit_three_bytes_of(stmt.initializer->resolved.stack_slot);
         } else {
             compile(stmt.initializer.get());
             if (stmt.initializer->resolved.info->data.is_ref && !stmt.type->data.is_ref &&
@@ -816,7 +838,7 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
     } else {
         current_chunk->emit_instruction(Instruction::PUSH_NULL, stmt.name.line);
     }
-    scopes.top().push_back(stmt.type->data.primitive);
+    scopes.top().push_back(stmt.type.get());
 }
 
 StmtVisitorType Generator::visit(WhileStmt &stmt) {
@@ -906,19 +928,12 @@ BaseTypeVisitorType Generator::visit(UserDefinedType &type) {
 }
 
 BaseTypeVisitorType Generator::visit(ListType &type) {
-    //    current_chunk->emit_instruction(Instruction::MAKE_LIST, type.size->resolved.token.line);
-    //    if (type.contained->data.is_ref) {
-    //        current_chunk->emit_integer(List::tag::REF_LIST);
-    //    } else {
-    //        switch (type.contained->data.primitive) {
-    //            case Type::INT: current_chunk->emit_integer(List::tag::INT_LIST); break;
-    //            case Type::FLOAT: current_chunk->emit_integer(List::tag::FLOAT_LIST); break;
-    //            case Type::STRING: current_chunk->emit_integer(List::tag::STRING_LIST); break;
-    //            case Type::BOOL: current_chunk->emit_integer(List::tag::BOOL_LIST); break;
-    //            case Type::LIST: current_chunk->emit_integer(List::tag::LIST_LIST); break;
-    //            default: break;
-    //        }
-    //    }
+    if (type.size != nullptr) {
+        compile(type.size.get());
+    } else {
+        current_chunk->emit_constant(Value{0}, type.size->resolved.token.line);
+    }
+    current_chunk->emit_instruction(Instruction::MAKE_LIST, type.size->resolved.token.line);
     return {};
 }
 

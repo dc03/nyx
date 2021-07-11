@@ -9,24 +9,29 @@
 #include "../AST.hpp"
 #include "../VM2/Chunk.hpp"
 #include "../VM2/Module.hpp"
+#include "../VM2/Natives.hpp"
 
 #include <stack>
+#include <string_view>
 
 class Generator final : Visitor {
     Chunk *current_chunk{nullptr};
     Module *current_module{nullptr};
     RuntimeModule *current_compiled{nullptr};
-    std::stack<std::vector<Type>> scopes{};
+    std::stack<std::vector<const BaseType *>> scopes{};
     std::stack<std::vector<std::size_t>> break_stmts{};
     // Push a new vector for every loop or switch statement encountered within a loop or switch statement, with the
     // vector tracking the indexes of the breaks
     std::stack<std::vector<std::size_t>> continue_stmts{};
     // Similar thing as for break statements
+    std::unordered_map<std::string_view, NativeFn> natives{};
 
     void begin_scope();
     void end_scope();
     void patch_jump(std::size_t jump_idx, std::size_t jump_amount);
     void emit_conversion(NumericConversionType conversion_type, std::size_t line_number);
+    void emit_three_bytes_of(std::size_t value);
+
     std::size_t recursively_compile_size(ListType *list);
 
     ExprVisitorType compile(Expr *expr);
@@ -36,7 +41,7 @@ class Generator final : Visitor {
   public:
     static std::vector<RuntimeModule> compiled_modules;
 
-    Generator() = default;
+    Generator();
     RuntimeModule compile(Module &module);
 
     ExprVisitorType visit(AssignExpr &expr) override final;
