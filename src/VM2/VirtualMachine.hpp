@@ -49,6 +49,10 @@ class VirtualMachine {
     void pop() noexcept;
 
     std::size_t get_current_line() const noexcept;
+    Value::ListType *make_new_list();
+    void destroy_list(Value::ListType *list);
+    Value copy(Value &value);
+    void copy_into(Value::ListType *list, Value::ListType *what);
 
   public:
     VirtualMachine(bool trace_stack, bool trace_insn);

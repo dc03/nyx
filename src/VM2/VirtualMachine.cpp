@@ -46,6 +46,44 @@ std::size_t VirtualMachine::get_current_line() const noexcept {
     return current_chunk->get_line_number(ip - &current_chunk->bytes[0] - 1);
 }
 
+void VirtualMachine::destroy_list(Value::ListType *list) {
+    for (auto &elem : *list) {
+        if (elem.tag == Value::Tag::STRING) {
+            cache.remove(*elem.w_str);
+        } else if (elem.tag == Value::Tag::LIST) {
+            destroy_list(elem.w_list);
+        }
+    }
+    delete list;
+}
+
+Value::ListType *VirtualMachine::make_new_list() {
+    return new Value::ListType;
+}
+
+Value VirtualMachine::copy(Value &value) {
+    if (value.tag == Value::Tag::LIST || value.tag == Value::Tag::LIST_REF) {
+        Value::ListType *new_list = make_new_list();
+        new_list->resize(value.w_list->size());
+        copy_into(new_list, value.w_list);
+        return Value{new_list};
+    } else {
+        return value;
+    }
+}
+
+void VirtualMachine::copy_into(Value::ListType *list, Value::ListType *what) {
+    for (std::size_t i = 0; i < what->size(); i++) {
+        if ((*what)[i].tag == Value::Tag::LIST) {
+            (*list)[i] = copy((*what)[i]);
+        } else if ((*what)[i].tag == Value::Tag::STRING) {
+            (*list)[i] = Value{&cache.insert(*(*what)[i].w_str)};
+        } else {
+            (*list)[i] = (*what)[i];
+        }
+    }
+}
+
 void VirtualMachine::run(RuntimeModule &module) {
     current_module = &module;
     current_chunk = &module.top_level_code;
@@ -242,7 +280,14 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::MAKE_REF_TO_LOCAL: {
-            push(Value{&frames[frame_top].stack[read_three_bytes()]});
+            Value &value = frames[frame_top].stack[read_three_bytes()];
+            if (value.tag == Value::Tag::LIST) {
+                push(Value{value.w_list});
+                stack[stack_top - 1].tag = Value::Tag::LIST_REF;
+            } else {
+                push(Value{&value});
+            }
+            //            push(Value{&frames[frame_top].stack[read_three_bytes()]});
             break;
         }
         case is Instruction::DEREF: {
@@ -264,7 +309,13 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::MAKE_REF_TO_GLOBAL: {
-            push(Value{&stack[read_three_bytes()]});
+            Value &value = stack[read_three_bytes()];
+            if (value.tag == Value::Tag::LIST) {
+                push(Value{value.w_list});
+                stack[stack_top - 1].tag = Value::Tag::LIST_REF;
+            } else {
+                push(Value{&value});
+            }
             break;
         }
         /* Function calls */
@@ -285,16 +336,23 @@ ExecutionState VirtualMachine::step() {
             NativeFn called = natives[stack[--stack_top].w_str->str];
             cache.remove(*stack[stack_top].w_str);
             Value result = called.code(*this, &stack[stack_top] - called.arity);
-            stack_top -= called.arity;
-            stack[stack_top++] = result;
+            stack[stack_top - called.arity - 1] = result;
             break;
         }
         case is Instruction::RETURN: {
             Value result = stack[--stack_top];
-            stack_top -= read_three_bytes();
+            std::size_t locals_popped = read_three_bytes();
+            stack[stack_top - locals_popped - 1] = result;
+            while (locals_popped-- > 0) {
+                stack_top--;
+                if (stack[stack_top].tag == Value::Tag::STRING) {
+                    cache.remove(*stack[stack_top].w_str);
+                } else if (stack[stack_top].tag == Value::Tag::LIST) {
+                    destroy_list(stack[stack_top].w_list);
+                }
+            }
             ip = frames[frame_top].return_ip;
             current_chunk = frames[frame_top--].return_chunk;
-            stack[stack_top++] = result;
             break;
         }
         case is Instruction::TRAP_RETURN: {
@@ -302,7 +360,11 @@ ExecutionState VirtualMachine::step() {
             return ExecutionState::FINISHED;
         }
         /* Copying */
-        case is Instruction::COPY: break;
+        case is Instruction::COPY: {
+            stack[stack_top - 1] = copy(stack[stack_top - 1]);
+            stack[stack_top - 1].tag = Value::Tag::LIST;
+            break;
+        }
         /* String instructions */
         case is Instruction::CONSTANT_STRING: {
             Value::StringType string = current_chunk->constants[read_three_bytes()].w_str;
@@ -329,6 +391,92 @@ ExecutionState VirtualMachine::step() {
             stack[stack_top - 1].w_str = &cache.concat(*val1, *val2);
             cache.remove(*val1);
             cache.remove(*val2);
+            break;
+        }
+        /* List instructions */
+        case is Instruction::MAKE_LIST: {
+            std::size_t size = stack[--stack_top].w_int;
+            push(Value{make_new_list()});
+            if (size != 0) {
+                stack[stack_top - 1].w_list->resize(size);
+            }
+            break;
+        }
+        case is Instruction::APPEND_LIST: {
+            Value &appended = stack[--stack_top];
+            Value *list = &stack[stack_top - 1];
+            if (list->tag == Value::Tag::REF) {
+                list = list->w_ref;
+            }
+            list->w_list->push_back(appended);
+            break;
+        }
+        case is Instruction::ASSIGN_LIST: {
+            Value &assigned = stack[--stack_top];
+            Value &index = stack[--stack_top];
+            Value *list = &stack[stack_top - 1];
+            if (list->tag == Value::Tag::REF) {
+                list = list->w_ref;
+            }
+            (*list->w_list)[index.w_int] = assigned;
+            stack[stack_top - 1] = (*list->w_list)[index.w_int];
+            break;
+        }
+        case is Instruction::INDEX_LIST: {
+            Value &index = stack[--stack_top];
+            Value *list = &stack[stack_top - 1];
+            if (list->tag == Value::Tag::REF) {
+                list = list->w_ref;
+            }
+            stack[stack_top - 1] = (*list->w_list)[index.w_int];
+            break;
+        }
+        case is Instruction::CHECK_INDEX: {
+            Value &index = stack[stack_top - 1];
+            Value *list = &stack[stack_top - 2];
+            if (list->tag == Value::Tag::REF) {
+                list = list->w_ref;
+            }
+            if (index.w_int > static_cast<int>(list->w_list->size())) {
+                runtime_error("List index out of range", get_current_line());
+                return ExecutionState::FINISHED;
+            }
+            break;
+        }
+        case is Instruction::ASSIGN_LOCAL_LIST: {
+            Value &assigned = frames[frame_top].stack[read_three_bytes()];
+            if (assigned.w_list != nullptr) {
+                destroy_list(assigned.w_list);
+            }
+            if (assigned.tag == Value::Tag::REF) {
+                *assigned.w_ref = stack[stack_top - 1];
+            } else {
+                assigned = stack[stack_top - 1];
+            }
+            break;
+        }
+        case is Instruction::ASSIGN_GLOBAL_LIST: {
+            Value &assigned = stack[read_three_bytes()];
+            if (assigned.w_list != nullptr) {
+                destroy_list(assigned.w_list);
+            }
+            if (assigned.tag == Value::Tag::REF) {
+                *assigned.w_ref = stack[stack_top - 1];
+            } else {
+                assigned = stack[stack_top - 1];
+            }
+            break;
+        }
+        /* Destroying */
+        case is Instruction::DESTROY: {
+            if (stack[stack_top - 1].tag == Value::Tag::LIST) {
+                destroy_list(stack[--stack_top].w_list);
+            }
+            break;
+        }
+        /* Miscellaneous */
+        case is Instruction::ACCESS_FROM_TOP: {
+            push(stack[stack_top - read_three_bytes()]);
             break;
         }
     }
