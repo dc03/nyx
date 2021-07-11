@@ -37,7 +37,7 @@ struct Value {
         ListType *w_list;
     };
 
-    enum class Tag { INVALID, INT, FLOAT, STRING, BOOL, NULL_, REF, FUNCTION, LIST } tag;
+    enum class Tag { INVALID, INT, FLOAT, STRING, BOOL, NULL_, REF, FUNCTION, LIST, LIST_REF } tag;
 
     Value() noexcept;
     explicit Value(IntType value) noexcept;

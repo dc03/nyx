@@ -71,11 +71,11 @@ std::string Value::repr() const noexcept {
         char name[50];
         std::sprintf(name, "<function %s at %p>", w_fun->name.c_str(), reinterpret_cast<void *>(w_fun));
         return {name};
-    } else if (tag == Tag::LIST) {
+    } else if (tag == Tag::LIST || tag == Tag::LIST_REF) {
         if (w_list->empty()) {
-            return "[]";
+            return tag == Tag::LIST ? "[]" : "ref to []";
         }
-        std::string result = "[";
+        std::string result = tag == Tag::LIST ? "[" : "ref to [";
         auto begin = w_list->begin();
         for (; begin != w_list->end() - 1; begin++) {
             result += begin->repr() + ", ";
@@ -104,7 +104,7 @@ Value::operator bool() const noexcept {
         return (bool)(*w_ref);
     } else if (tag == Tag::FUNCTION) {
         return true;
-    } else if (tag == Tag::LIST) {
+    } else if (tag == Tag::LIST || tag == Tag::LIST_REF) {
         return !w_list->empty();
     } else if (tag == Tag::INVALID) {
         return false;
@@ -134,7 +134,7 @@ bool Value::operator==(const Value &other) const noexcept {
         }
     } else if (tag == Tag::FUNCTION) {
         return w_fun == other.w_fun;
-    } else if (tag == Tag::LIST) {
+    } else if (tag == Tag::LIST || tag == Tag::LIST_REF) {
         if (w_list->size() != other.w_list->size()) {
             return false;
         }
@@ -144,6 +144,7 @@ bool Value::operator==(const Value &other) const noexcept {
                 return false;
             }
         }
+        return true;
     } else if (tag == Tag::INVALID) {
         return true;
     }
@@ -170,6 +171,17 @@ bool Value::operator<(const Value &other) const noexcept {
         } else {
             return *w_ref < other;
         }
+    } else if (tag == Tag::LIST || tag == Tag::LIST_REF) {
+        if (w_list->size() != other.w_list->size()) {
+            return w_list->size() < other.w_list->size();
+        }
+
+        for (std::size_t i = 0; i < w_list->size(); i++) {
+            if (!((*w_list)[i] < (*other.w_list)[i])) {
+                return false;
+            }
+        }
+        return true;
     } else if (tag == Tag::INVALID) {
         return false;
     }
@@ -196,6 +208,17 @@ bool Value::operator>(const Value &other) const noexcept {
         } else {
             return *w_ref > other;
         }
+    } else if (tag == Tag::LIST || tag == Tag::LIST_REF) {
+        if (w_list->size() != other.w_list->size()) {
+            return w_list->size() > other.w_list->size();
+        }
+
+        for (std::size_t i = 0; i < w_list->size(); i++) {
+            if (!((*w_list)[i] > (*other.w_list)[i])) {
+                return false;
+            }
+        }
+        return true;
     } else if (tag == Tag::INVALID) {
         return false;
     }

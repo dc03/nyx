@@ -32,6 +32,19 @@ Value native_print(VirtualMachine &vm, Value *args) {
         std::cout << arg.w_str->str;
     } else if (arg.tag == Value::Tag::REF) {
         native_print(vm, arg.w_ref);
+    } else if (arg.tag == Value::Tag::LIST || arg.tag == Value::Tag::LIST_REF) {
+        if (arg.w_list->empty()) {
+            std::cout << "[]";
+        } else {
+            std::cout << "[";
+            auto begin = arg.w_list->begin();
+            for (; begin != arg.w_list->end() - 1; begin++) {
+                native_print(vm, &*begin);
+                std::cout << ", ";
+            }
+            native_print(vm, &*begin);
+            std::cout << "]";
+        }
     } else if (arg.tag == Value::Tag::INVALID) {
         std::cout << "<invalid!>";
     }
@@ -84,6 +97,8 @@ Value native_string(VirtualMachine &vm, Value *args) {
         return Value{&vm.store_string(arg.w_bool ? "true" : "false")};
     } else if (arg.tag == Value::Tag::REF) {
         return native_string(vm, arg.w_ref);
+    } else if (arg.tag == Value::Tag::LIST || arg.tag == Value::Tag::LIST_REF) {
+        return Value{&vm.store_string(arg.repr())};
     } else if (arg.tag == Value::Tag::INVALID) {
         return Value{&vm.store_string("invalid")};
     }
@@ -106,16 +121,11 @@ Value native_readline(VirtualMachine &vm, Value *args) {
 Value native_size(VirtualMachine &vm, Value *args) {
     Value &arg = args[0];
     if (arg.tag == Value::Tag::STRING) {
-        return Value{static_cast<int>(arg.w_str->str.length())};
+        return Value{static_cast<Value::IntType>(arg.w_str->str.length())};
+    } else if (arg.tag == Value::Tag::LIST || arg.tag == Value::Tag::LIST_REF) {
+        return Value{static_cast<Value::IntType>(arg.w_list->size())};
     } else if (arg.tag == Value::Tag::REF) {
         return native_string(vm, arg.w_ref);
     }
-    //    if (arg.is_list()) {
-    //        return Value{static_cast<int>(arg.to_list().size())};
-    //    } else if (arg.is_string()) {
-    //        return Value{static_cast<int>(arg.to_string().size())};
-    //    } else if (arg.is_ref()) {
-    //        return native_size(arg.to_referred());
-    //    }
     unreachable();
 }
