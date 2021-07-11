@@ -156,20 +156,20 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::CALL_NATIVE: return single_byte_insn(chunk, "CALL_NATIVE", byte);
         case Instruction::RETURN: return four_byte_insn(chunk, "RETURN", byte);
         case Instruction::TRAP_RETURN: return single_byte_insn(chunk, "TRAP_RETURN", byte);
-        case Instruction::COPY: return single_byte_insn(chunk, "COPY", byte);
         case Instruction::CONSTANT_STRING: return four_byte_insn(chunk, "CONSTANT_STRING", byte);
         case Instruction::ACCESS_LOCAL_STRING: return four_byte_insn(chunk, "ACCESS_LOCAL_STRING", byte);
         case Instruction::ACCESS_GLOBAL_STRING: return four_byte_insn(chunk, "ACCESS_GLOBAL_STRING", byte);
         case Instruction::POP_STRING: return single_byte_insn(chunk, "POP_STRING", byte);
         case Instruction::CONCATENATE: return single_byte_insn(chunk, "CONCATENATE", byte);
         case Instruction::MAKE_LIST: return single_byte_insn(chunk, "MAKE_LIST", byte);
+        case Instruction::COPY_LIST: return single_byte_insn(chunk, "COPY_LIST", byte);
         case Instruction::APPEND_LIST: return single_byte_insn(chunk, "APPEND_LIST", byte);
         case Instruction::ASSIGN_LIST: return single_byte_insn(chunk, "ASSIGN_LIST", byte);
         case Instruction::INDEX_LIST: return single_byte_insn(chunk, "INDEX_LIST", byte);
         case Instruction::CHECK_INDEX: return single_byte_insn(chunk, "CHECK_INDEX", byte);
         case Instruction::ASSIGN_LOCAL_LIST: return four_byte_insn(chunk, "ASSIGN_LOCAL_LIST", byte);
         case Instruction::ASSIGN_GLOBAL_LIST: return four_byte_insn(chunk, "ASSIGN_GLOBAL_LIST", byte);
-        case Instruction::DESTROY: return single_byte_insn(chunk, "DESTROY", byte);
+        case Instruction::POP_LIST: return single_byte_insn(chunk, "POP_LIST", byte);
         case Instruction::ACCESS_FROM_TOP: return four_byte_insn(chunk, "ACCESS_FROM_TOP", byte);
     }
     unreachable();

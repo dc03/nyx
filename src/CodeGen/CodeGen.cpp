@@ -23,7 +23,7 @@ void Generator::end_scope() {
         if ((*begin)->data.primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, 0);
         } else if ((*begin)->data.primitive == Type::LIST && !(*begin)->data.is_ref) {
-            current_chunk->emit_instruction(Instruction::DESTROY, 0);
+            current_chunk->emit_instruction(Instruction::POP_LIST, 0);
         } else {
             current_chunk->emit_instruction(Instruction::POP, 0);
         }
@@ -97,7 +97,7 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
     } // As there is no difference between a list and a reference to a list (aside from the tag), there is no need to
       // add an explicit Instruction::DEREF
     if (expr.requires_copy) {
-        current_chunk->emit_instruction(Instruction::COPY, expr.target.line);
+        current_chunk->emit_instruction(Instruction::COPY_LIST, expr.target.line);
     }
 
     if (expr.conversion_type != NumericConversionType::NONE) {
@@ -272,7 +272,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
             emit_conversion(std::get<NumericConversionType>(arg), value->resolved.token.line);
         }
         if (std::get<RequiresCopy>(arg)) {
-            current_chunk->emit_instruction(Instruction::COPY, value->resolved.token.line);
+            current_chunk->emit_instruction(Instruction::COPY_LIST, value->resolved.token.line);
         }
 
         // This ALLOC_AT_LEAST is emitted after the COPY since the list that is copied needs to be resized and not the
@@ -295,7 +295,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
             auto &arg = std::get<ExprNode>(*begin);
             if (arg->resolved.info->data.primitive == Type::LIST && !arg->resolved.is_lvalue &&
                 !arg->resolved.info->data.is_ref) {
-                current_chunk->emit_instruction(Instruction::DESTROY, arg->resolved.token.line);
+                current_chunk->emit_instruction(Instruction::POP_LIST, arg->resolved.token.line);
             } else if (arg->resolved.info->data.primitive == Type::STRING) {
                 current_chunk->emit_instruction(Instruction::POP_STRING, arg->resolved.token.line);
             } else {
@@ -384,7 +384,7 @@ ExprVisitorType Generator::visit(ListExpr &expr) {
         }
 
         if (std::get<RequiresCopy>(element)) {
-            current_chunk->emit_instruction(Instruction::COPY, element_expr->resolved.token.line);
+            current_chunk->emit_instruction(Instruction::COPY_LIST, element_expr->resolved.token.line);
         }
 
         current_chunk->emit_instruction(Instruction::ASSIGN_LIST, element_expr->resolved.token.line);
@@ -406,7 +406,7 @@ ExprVisitorType Generator::visit(ListAssignExpr &expr) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.value->resolved.token.line);
     }
     if (expr.requires_copy) {
-        current_chunk->emit_instruction(Instruction::COPY, expr.resolved.token.line);
+        current_chunk->emit_instruction(Instruction::COPY_LIST, expr.resolved.token.line);
     }
     current_chunk->emit_instruction(Instruction::ASSIGN_LIST, expr.resolved.token.line);
     return {};
@@ -613,7 +613,7 @@ StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
     if (stmt.expr->resolved.info->data.primitive == Type::STRING) {
         current_chunk->emit_instruction(Instruction::POP_STRING, current_chunk->line_numbers.back().first);
     } else if (stmt.expr->resolved.info->data.primitive == Type::LIST) {
-        current_chunk->emit_instruction(Instruction::DESTROY, current_chunk->line_numbers.back().first);
+        current_chunk->emit_instruction(Instruction::POP_LIST, current_chunk->line_numbers.back().first);
     } else {
         current_chunk->emit_instruction(Instruction::POP, current_chunk->line_numbers.back().first);
     }
@@ -633,7 +633,7 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
         if (begin->second->data.primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, 0);
         } else if (begin->second->data.primitive == Type::LIST && !begin->second->data.is_ref) {
-            current_chunk->emit_instruction(Instruction::DESTROY, 0);
+            current_chunk->emit_instruction(Instruction::POP_LIST, 0);
         } else {
             current_chunk->emit_instruction(Instruction::POP, 0);
         }
@@ -696,7 +696,7 @@ StmtVisitorType Generator::visit(ReturnStmt &stmt) {
         compile(stmt.value.get());
         if (auto &return_type = stmt.function->return_type;
             return_type->data.primitive == Type::LIST && !return_type->data.is_ref) {
-            current_chunk->emit_instruction(Instruction::COPY, stmt.keyword.line);
+            current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.keyword.line);
         }
     } else {
         current_chunk->emit_instruction(Instruction::PUSH_NULL, stmt.keyword.line);
@@ -833,7 +833,7 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
             }
         }
         if (stmt.requires_copy) {
-            current_chunk->emit_instruction(Instruction::COPY, stmt.name.line);
+            current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.name.line);
         }
     } else {
         current_chunk->emit_instruction(Instruction::PUSH_NULL, stmt.name.line);

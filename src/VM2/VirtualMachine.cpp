@@ -359,12 +359,6 @@ ExecutionState VirtualMachine::step() {
             runtime_error("Reached end of non-null function", get_current_line());
             return ExecutionState::FINISHED;
         }
-        /* Copying */
-        case is Instruction::COPY: {
-            stack[stack_top - 1] = copy(stack[stack_top - 1]);
-            stack[stack_top - 1].tag = Value::Tag::LIST;
-            break;
-        }
         /* String instructions */
         case is Instruction::CONSTANT_STRING: {
             Value::StringType string = current_chunk->constants[read_three_bytes()].w_str;
@@ -400,6 +394,11 @@ ExecutionState VirtualMachine::step() {
             if (size != 0) {
                 stack[stack_top - 1].w_list->resize(size);
             }
+            break;
+        }
+        case is Instruction::COPY_LIST: {
+            stack[stack_top - 1] = copy(stack[stack_top - 1]);
+            stack[stack_top - 1].tag = Value::Tag::LIST;
             break;
         }
         case is Instruction::APPEND_LIST: {
@@ -467,8 +466,7 @@ ExecutionState VirtualMachine::step() {
             }
             break;
         }
-        /* Destroying */
-        case is Instruction::DESTROY: {
+        case is Instruction::POP_LIST: {
             if (stack[stack_top - 1].tag == Value::Tag::LIST) {
                 destroy_list(stack[--stack_top].w_list);
             }

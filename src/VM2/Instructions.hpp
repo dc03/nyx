@@ -67,8 +67,6 @@ enum class Instruction {
     CALL_NATIVE,
     RETURN,
     TRAP_RETURN,
-    /* Copying */
-    COPY,
     /* String instructions */
     CONSTANT_STRING,
     ACCESS_LOCAL_STRING,
@@ -77,14 +75,14 @@ enum class Instruction {
     CONCATENATE,
     /* List instructions */
     MAKE_LIST,
+    COPY_LIST,
     APPEND_LIST,
     ASSIGN_LIST,
     INDEX_LIST,
     CHECK_INDEX,
     ASSIGN_LOCAL_LIST,
     ASSIGN_GLOBAL_LIST,
-    /* Destroying */
-    DESTROY,
+    POP_LIST,
     /* Miscellaneous */
     ACCESS_FROM_TOP,
 };
