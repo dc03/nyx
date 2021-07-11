@@ -1064,8 +1064,9 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         if (!is_builtin_type(stmt.type->data.primitive)) {
             if (type->data.is_ref) {
                 stmt.requires_copy = false; // A reference binding to anything does not need a copy
-            } else if (initializer.is_lvalue) {
-                stmt.requires_copy = true; // A copy is made when initializing from an lvalue without a reference
+            } else if (initializer.is_lvalue || initializer.info->data.is_ref) {
+                stmt.requires_copy = true; // A copy is made when initializing from an lvalue without a reference or
+                                           // when converting a ref to non-ref
             }
         }
 
