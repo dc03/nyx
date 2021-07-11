@@ -170,6 +170,7 @@ std::size_t disassemble_instruction(Chunk &chunk, Instruction instruction, std::
         case Instruction::ASSIGN_LOCAL_LIST: return four_byte_insn(chunk, "ASSIGN_LOCAL_LIST", byte);
         case Instruction::ASSIGN_GLOBAL_LIST: return four_byte_insn(chunk, "ASSIGN_GLOBAL_LIST", byte);
         case Instruction::DESTROY: return single_byte_insn(chunk, "DESTROY", byte);
+        case Instruction::ACCESS_FROM_TOP: return four_byte_insn(chunk, "ACCESS_FROM_TOP", byte);
     }
     unreachable();
 }

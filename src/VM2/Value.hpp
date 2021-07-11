@@ -22,6 +22,7 @@ struct Value {
     using NullType = std::nullptr_t;
     using ReferenceType = Value *;
     using FunctionType = RuntimeFunction *;
+    using ListType = std::vector<Value>;
 
     union {
         PlaceHolder w_invalid;
@@ -33,9 +34,10 @@ struct Value {
         NullType w_null;
         ReferenceType w_ref;
         FunctionType w_fun;
+        ListType *w_list;
     };
 
-    enum class Tag { INVALID, INT, FLOAT, STRING, BOOL, NULL_, REF, FUNCTION } tag;
+    enum class Tag { INVALID, INT, FLOAT, STRING, BOOL, NULL_, REF, FUNCTION, LIST } tag;
 
     Value() noexcept;
     explicit Value(IntType value) noexcept;
@@ -45,6 +47,7 @@ struct Value {
     explicit Value(NullType value) noexcept;
     explicit Value(ReferenceType value) noexcept;
     explicit Value(FunctionType value) noexcept;
+    explicit Value(ListType *value) noexcept;
 
     [[nodiscard]] std::string repr() const noexcept;
     [[nodiscard]] explicit operator bool() const noexcept;

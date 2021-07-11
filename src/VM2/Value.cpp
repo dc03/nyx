@@ -15,6 +15,7 @@ Value::Value(BoolType value) noexcept : w_bool{value}, tag{Tag::BOOL} {}
 Value::Value(NullType value) noexcept : w_null{value}, tag{Tag::NULL_} {}
 Value::Value(ReferenceType value) noexcept : w_ref{value}, tag{Tag::REF} {}
 Value::Value(FunctionType value) noexcept : w_fun{value}, tag{Tag::FUNCTION} {}
+Value::Value(ListType *value) noexcept : w_list{value}, tag{Tag::LIST} {}
 
 std::string Value::repr() const noexcept {
     if (tag == Tag::INT) {
@@ -70,6 +71,17 @@ std::string Value::repr() const noexcept {
         char name[50];
         std::sprintf(name, "<function %s at %p>", w_fun->name.c_str(), reinterpret_cast<void *>(w_fun));
         return {name};
+    } else if (tag == Tag::LIST) {
+        if (w_list->empty()) {
+            return "[]";
+        }
+        std::string result = "[";
+        auto begin = w_list->begin();
+        for (; begin != w_list->end() - 1; begin++) {
+            result += begin->repr() + ", ";
+        }
+        result += begin->repr() + "]";
+        return result;
     } else if (tag == Tag::INVALID) {
         return {"<invalid!>"};
     }
@@ -92,6 +104,8 @@ Value::operator bool() const noexcept {
         return (bool)(*w_ref);
     } else if (tag == Tag::FUNCTION) {
         return true;
+    } else if (tag == Tag::LIST) {
+        return !w_list->empty();
     } else if (tag == Tag::INVALID) {
         return false;
     }
@@ -120,6 +134,16 @@ bool Value::operator==(const Value &other) const noexcept {
         }
     } else if (tag == Tag::FUNCTION) {
         return w_fun == other.w_fun;
+    } else if (tag == Tag::LIST) {
+        if (w_list->size() != other.w_list->size()) {
+            return false;
+        }
+
+        for (std::size_t i = 0; i < w_list->size(); i++) {
+            if (!((*w_list)[i] == (*other.w_list)[i])) {
+                return false;
+            }
+        }
     } else if (tag == Tag::INVALID) {
         return true;
     }

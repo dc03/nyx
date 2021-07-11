@@ -85,6 +85,8 @@ enum class Instruction {
     ASSIGN_GLOBAL_LIST,
     /* Destroying */
     DESTROY,
+    /* Miscellaneous */
+    ACCESS_FROM_TOP,
 };
 
 #endif
