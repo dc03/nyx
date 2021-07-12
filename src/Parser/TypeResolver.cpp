@@ -596,6 +596,12 @@ ExprVisitorType TypeResolver::visit(ListExpr &expr) {
                    expr.type->contained->data.primitive == Type::INT) {
             std::get<NumericConversionType>(element) = NumericConversionType::FLOAT_TO_INT;
         }
+
+        // Converting to non-ref from any non-trivial type (i.e. list) regardless of ref-ness requires a copy
+        if (!expr.type->contained->data.is_ref && !is_builtin_type(expr.type->contained->data.primitive) &&
+            std::get<ExprNode>(element)->resolved.is_lvalue) {
+            std::get<RequiresCopy>(element) = true;
+        }
     }
     return expr.resolved = {expr.type.get(), expr.bracket, false};
 }

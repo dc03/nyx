@@ -417,8 +417,15 @@ ExecutionState VirtualMachine::step() {
             if (list->tag == Value::Tag::REF) {
                 list = list->w_ref;
             }
+            if ((*list->w_list)[index.w_int].tag == Value::Tag::LIST) {
+                destroy_list((*list->w_list)[index.w_int].w_list);
+            }
+            Value::Tag tag = (*list->w_list)[index.w_int].tag;
             (*list->w_list)[index.w_int] = assigned;
             stack[stack_top - 1] = (*list->w_list)[index.w_int];
+            if (tag == Value::Tag::LIST) {
+                stack[stack_top - 1].tag = Value::Tag::LIST_REF;
+            }
             break;
         }
         case is Instruction::INDEX_LIST: {
@@ -452,6 +459,7 @@ ExecutionState VirtualMachine::step() {
             } else {
                 assigned = stack[stack_top - 1];
             }
+            stack[stack_top - 1].tag = Value::Tag::LIST_REF;
             break;
         }
         case is Instruction::ASSIGN_GLOBAL_LIST: {
@@ -464,11 +472,14 @@ ExecutionState VirtualMachine::step() {
             } else {
                 assigned = stack[stack_top - 1];
             }
+            stack[stack_top - 1].tag = Value::Tag::LIST_REF;
             break;
         }
         case is Instruction::POP_LIST: {
             if (stack[stack_top - 1].tag == Value::Tag::LIST) {
                 destroy_list(stack[--stack_top].w_list);
+            } else if (stack[stack_top - 1].tag == Value::Tag::LIST_REF) {
+                stack_top--;
             }
             break;
         }
