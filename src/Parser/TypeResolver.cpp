@@ -287,7 +287,7 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
             expr.requires_copy = true;
         }
     }
-    // Assignment leads to copy when the primitive is not an inbuilt one as those are implicitly copied when the
+    // Assignment leads to copy when the primitive is not an inbuilt one as inbuilt types are implicitly copied when the
     // values are pushed onto the stack
     expr.resolved.info = it->info;
     expr.resolved.stack_slot = it->stack_slot;
@@ -623,10 +623,20 @@ ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
         error("Cannot assign to constant list", expr.resolved.token);
         show_conversion_note(value.info, expr.list.object->resolved.info);
         throw TypeException{"Cannot assign to constant list"};
+    } else if (one_of(expr.resolved.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
+                      TokenType::SLASH_EQUAL) &&
+               !one_of(contained.info->data.primitive, Type::INT, Type::FLOAT) &&
+               !one_of(value.info->data.primitive, Type::INT, Type::FLOAT)) {
+        error("Expected integral types for compound assignment operator", expr.resolved.token);
+        throw TypeException{"Expected integral types for compound assignment operator"};
     } else if (!convertible_to(contained.info, value.info, value.is_lvalue, expr.resolved.token, false)) {
         error("Cannot convert from contained type of list to type being assigned", expr.resolved.token);
         show_conversion_note(contained.info, value.info);
         throw TypeException{"Cannot convert from contained type of list to type being assigned"};
+    } else if (value.info->data.primitive == Type::FLOAT && contained.info->data.primitive == Type::INT) {
+        expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
+    } else if (value.info->data.primitive == Type::INT && contained.info->data.primitive == Type::FLOAT) {
+        expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
     }
 
     return expr.resolved = {contained.info, expr.resolved.token, false};

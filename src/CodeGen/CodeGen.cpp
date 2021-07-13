@@ -91,21 +91,24 @@ BaseTypeVisitorType Generator::compile(BaseType *type) {
 }
 
 ExprVisitorType Generator::visit(AssignExpr &expr) {
-    compile(expr.value.get());
-    if (expr.value->resolved.info->data.is_ref && expr.value->resolved.info->data.primitive != Type::LIST) {
-        current_chunk->emit_instruction(Instruction::DEREF, expr.target.line);
-    } // As there is no difference between a list and a reference to a list (aside from the tag), there is no need to
-      // add an explicit Instruction::DEREF
-    if (expr.requires_copy) {
-        current_chunk->emit_instruction(Instruction::COPY_LIST, expr.target.line);
-    }
+    auto compile_right = [&expr, this] {
+        compile(expr.value.get());
+        if (expr.value->resolved.info->data.is_ref && expr.value->resolved.info->data.primitive != Type::LIST) {
+            current_chunk->emit_instruction(Instruction::DEREF, expr.target.line);
+        } // As there is no difference between a list and a reference to a list (aside from the tag), there is no need
+          // to add an explicit Instruction::DEREF
+        if (expr.requires_copy) {
+            current_chunk->emit_instruction(Instruction::COPY_LIST, expr.target.line);
+        }
 
-    if (expr.conversion_type != NumericConversionType::NONE) {
-        emit_conversion(expr.conversion_type, expr.resolved.token.line);
-    }
+        if (expr.conversion_type != NumericConversionType::NONE) {
+            emit_conversion(expr.conversion_type, expr.resolved.token.line);
+        }
+    };
 
     switch (expr.resolved.token.type) {
         case TokenType::EQUAL:
+            compile_right();
             // Assigning to lists needs to be handled separately, as it can involve destroying the list that was
             // previously there in the variable. This code is moved off of the hot path into ASSIGN_LOCAL_LIST and
             // ASSIGN_GLOBAL_LIST
@@ -120,27 +123,41 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
                     expr.resolved.token.line);
             }
             break;
-            //            case TokenType::PLUS_EQUAL:
-            //                current_chunk->emit_instruction(
-            //                    expr.target_type == IdentifierType::LOCAL ? Instruction::INCR_LOCAL :
-            //                    Instruction::INCR_GLOBAL, expr.resolved.token.line);
-            //                break;
-            //            case TokenType::MINUS_EQUAL:
-            //                current_chunk->emit_instruction(
-            //                    expr.target_type == IdentifierType::LOCAL ? Instruction::DECR_LOCAL :
-            //                    Instruction::DECR_GLOBAL, expr.resolved.token.line);
-            //                break;
-            //            case TokenType::STAR_EQUAL:
-            //                current_chunk->emit_instruction(
-            //                    expr.target_type == IdentifierType::LOCAL ? Instruction::MUL_LOCAL :
-            //                    Instruction::MUL_GLOBAL, expr.resolved.token.line);
-            //                break;
-            //            case TokenType::SLASH_EQUAL:
-            //                current_chunk->emit_instruction(
-            //                    expr.target_type == IdentifierType::LOCAL ? Instruction::DIV_LOCAL :
-            //                    Instruction::DIV_GLOBAL, expr.resolved.token.line);
-            //                break;
-        default: break;
+        default: {
+            current_chunk->emit_instruction(
+                expr.target_type == IdentifierType::LOCAL ? Instruction::ACCESS_LOCAL : Instruction::ACCESS_GLOBAL,
+                expr.resolved.token.line);
+            emit_three_bytes_of(expr.resolved.stack_slot);
+            if (expr.resolved.info->data.is_ref) {
+                current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.token.line);
+            }
+            compile_right();
+            switch (expr.resolved.token.type) {
+                case TokenType::PLUS_EQUAL:
+                    current_chunk->emit_instruction(
+                        expr.resolved.info->data.primitive == Type::FLOAT ? Instruction::FADD : Instruction::IADD,
+                        expr.resolved.token.line);
+                    break;
+                case TokenType::MINUS_EQUAL:
+                    current_chunk->emit_instruction(
+                        expr.resolved.info->data.primitive == Type::FLOAT ? Instruction::FSUB : Instruction::ISUB,
+                        expr.resolved.token.line);
+                    break;
+                case TokenType::STAR_EQUAL:
+                    current_chunk->emit_instruction(
+                        expr.resolved.info->data.primitive == Type::FLOAT ? Instruction::FMUL : Instruction::IMUL,
+                        expr.resolved.token.line);
+                    break;
+                case TokenType::SLASH_EQUAL:
+                    current_chunk->emit_instruction(
+                        expr.resolved.info->data.primitive == Type::FLOAT ? Instruction::FDIV : Instruction::IDIV,
+                        expr.resolved.token.line);
+                    break;
+                default: break;
+            }
+            current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, expr.resolved.token.line);
+            break;
+        }
     }
 
     emit_three_bytes_of(expr.resolved.stack_slot);
@@ -314,7 +331,13 @@ ExprVisitorType Generator::visit(CommaExpr &expr) {
 
     for (auto next = std::next(it); next != end(expr.exprs); it = next, ++next) {
         compile(it->get());
-        current_chunk->emit_instruction(Instruction::POP, (*it)->resolved.token.line);
+        if ((*it)->resolved.info->data.primitive == Type::STRING) {
+            current_chunk->emit_instruction(Instruction::POP_STRING, (*it)->resolved.token.line);
+        } else if ((*it)->resolved.info->data.primitive == Type::LIST && !(*it)->resolved.is_lvalue) {
+            current_chunk->emit_instruction(Instruction::POP_LIST, (*it)->resolved.token.line);
+        } else {
+            current_chunk->emit_instruction(Instruction::POP, (*it)->resolved.token.line);
+        }
     }
 
     compile(it->get());
@@ -401,14 +424,64 @@ ExprVisitorType Generator::visit(ListAssignExpr &expr) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.list.index->resolved.token.line);
     }
     current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.token.line);
-    compile(expr.value.get());
-    if (expr.value->resolved.info->data.is_ref) {
-        current_chunk->emit_instruction(Instruction::DEREF, expr.value->resolved.token.line);
+
+    switch (expr.resolved.token.type) {
+        case TokenType::EQUAL: {
+            compile(expr.value.get());
+            if (expr.value->resolved.info->data.is_ref) {
+                current_chunk->emit_instruction(Instruction::DEREF, expr.value->resolved.token.line);
+            }
+            if (expr.requires_copy) {
+                current_chunk->emit_instruction(Instruction::COPY_LIST, expr.resolved.token.line);
+            }
+            current_chunk->emit_instruction(Instruction::ASSIGN_LIST, expr.resolved.token.line);
+            break;
+        }
+
+        default: {
+            compile(expr.list.object.get());
+            compile(expr.list.index.get());
+            if (expr.list.index->resolved.info->data.is_ref) {
+                current_chunk->emit_instruction(Instruction::DEREF, expr.list.index->resolved.token.line);
+            }
+            // There is no need for a CHECK_INDEX here because that index has already been checked before
+            current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.resolved.token.line);
+
+            compile(expr.value.get());
+
+            if (expr.conversion_type != NumericConversionType::NONE) {
+                emit_conversion(expr.conversion_type, expr.resolved.token.line);
+            }
+
+            Type contained_type = dynamic_cast<ListType *>(expr.list.object->resolved.info)->contained->data.primitive;
+            switch (expr.resolved.token.type) {
+                case TokenType::PLUS_EQUAL:
+                    current_chunk->emit_instruction(
+                        contained_type == Type::FLOAT ? Instruction::FADD : Instruction::IADD,
+                        expr.resolved.token.line);
+                    break;
+                case TokenType::MINUS_EQUAL:
+                    current_chunk->emit_instruction(
+                        contained_type == Type::FLOAT ? Instruction::FSUB : Instruction::ISUB,
+                        expr.resolved.token.line);
+                    break;
+                case TokenType::STAR_EQUAL:
+                    current_chunk->emit_instruction(
+                        contained_type == Type::FLOAT ? Instruction::FMUL : Instruction::IMUL,
+                        expr.resolved.token.line);
+                    break;
+                case TokenType::SLASH_EQUAL:
+                    current_chunk->emit_instruction(
+                        contained_type == Type::FLOAT ? Instruction::FDIV : Instruction::IDIV,
+                        expr.resolved.token.line);
+                    break;
+                default: break;
+            }
+
+            current_chunk->emit_instruction(Instruction::ASSIGN_LIST, expr.resolved.token.line);
+            break;
+        }
     }
-    if (expr.requires_copy) {
-        current_chunk->emit_instruction(Instruction::COPY_LIST, expr.resolved.token.line);
-    }
-    current_chunk->emit_instruction(Instruction::ASSIGN_LIST, expr.resolved.token.line);
     return {};
 }
 
@@ -529,24 +602,31 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
             current_chunk->emit_instruction(requires_floating ? Instruction::FNEG : Instruction::INEG, expr.oper.line);
             break;
         case TokenType::PLUS_PLUS:
-        case TokenType::MINUS_MINUS:
-            //            if (expr.right->type_tag() == NodeType::VariableExpr) {
-            //                current_chunk->emit_constant(Value{1}, expr.oper.line);
-            //                if (dynamic_cast<VariableExpr *>(expr.right.get())->type == IdentifierType::LOCAL) {
-            //                    current_chunk->emit_instruction(
-            //                        expr.oper.type == TokenType::PLUS_PLUS ? Instruction::INCR_LOCAL :
-            //                        Instruction::DECR_LOCAL, expr.oper.line);
-            //                } else {
-            //                    current_chunk->emit_instruction(
-            //                        expr.oper.type == TokenType::PLUS_PLUS ? Instruction::INCR_GLOBAL :
-            //                        Instruction::DECR_GLOBAL, expr.oper.line);
-            //                }
-            //                current_chunk->emit_bytes(
-            //                    (expr.right->resolved.stack_slot >> 16) & 0xff, (expr.right->resolved.stack_slot >> 8)
-            //                    & 0xff);
-            //                current_chunk->emit_byte(expr.right->resolved.stack_slot & 0xff);
-            //            }
+        case TokenType::MINUS_MINUS: {
+            if (expr.right->type_tag() == NodeType::VariableExpr) {
+                auto *variable = dynamic_cast<VariableExpr *>(expr.right.get());
+
+                current_chunk->emit_instruction(
+                    variable->type == IdentifierType::LOCAL ? Instruction::ACCESS_LOCAL : Instruction::ACCESS_GLOBAL,
+                    variable->resolved.token.line);
+                emit_three_bytes_of(variable->resolved.stack_slot);
+
+                if (variable->resolved.info->data.primitive == Type::FLOAT) {
+                    current_chunk->emit_constant(Value{1.0}, expr.oper.line);
+                    current_chunk->emit_instruction(
+                        expr.oper.type == TokenType::PLUS_PLUS ? Instruction::FADD : Instruction::FSUB, expr.oper.line);
+                } else if (variable->resolved.info->data.primitive == Type::INT) {
+                    current_chunk->emit_constant(Value{1}, expr.oper.line);
+                    current_chunk->emit_instruction(
+                        expr.oper.type == TokenType::PLUS_PLUS ? Instruction::IADD : Instruction::ISUB, expr.oper.line);
+                }
+                current_chunk->emit_instruction(
+                    variable->type == IdentifierType::LOCAL ? Instruction::ASSIGN_LOCAL : Instruction::ASSIGN_GLOBAL,
+                    expr.oper.line);
+                emit_three_bytes_of(variable->resolved.stack_slot);
+            }
             break;
+        }
         default: error("Bug in parser with illegal type for unary expression", expr.oper); break;
     }
     return {};
