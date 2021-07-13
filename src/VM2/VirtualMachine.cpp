@@ -417,10 +417,13 @@ ExecutionState VirtualMachine::step() {
             if (list->tag == Value::Tag::REF) {
                 list = list->w_ref;
             }
-            if ((*list->w_list)[index.w_int].tag == Value::Tag::LIST) {
-                destroy_list((*list->w_list)[index.w_int].w_list);
-            }
             Value::Tag tag = (*list->w_list)[index.w_int].tag;
+            if (tag == Value::Tag::LIST) {
+                destroy_list((*list->w_list)[index.w_int].w_list);
+            } else if (tag == Value::Tag::STRING) {
+                cache.remove(*(*list->w_list)[index.w_int].w_str);
+                (void)cache.insert(*assigned.w_str);
+            }
             (*list->w_list)[index.w_int] = assigned;
             stack[stack_top - 1] = (*list->w_list)[index.w_int];
             if (tag == Value::Tag::LIST) {

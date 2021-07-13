@@ -554,7 +554,8 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
 
     if (list.info->data.primitive == Type::LIST) {
         auto *contained_type = dynamic_cast<ListType *>(list.info)->contained.get();
-        return expr.resolved = {contained_type, expr.resolved.token, true};
+        return expr.resolved = {contained_type, expr.resolved.token,
+                   expr.object->resolved.is_lvalue || expr.object->resolved.info->data.is_ref};
     } else if (list.info->data.primitive == Type::STRING) {
         return expr.resolved = {list.info, expr.resolved.token, false}; // For now, strings are immutable.
     } else {
@@ -609,6 +610,13 @@ ExprVisitorType TypeResolver::visit(ListExpr &expr) {
 ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
     ExprVisitorType contained = resolve(&expr.list);
     ExprVisitorType value = resolve(expr.value.get());
+
+    if (!(expr.list.resolved.is_lvalue || expr.list.resolved.info->data.is_ref)) {
+        error("Cannot assign to non-lvalue or non-ref list", expr.resolved.token);
+        note("Only variables or references can be assigned to");
+        throw TypeException{"Cannot assign to non-lvalue or non-ref list"};
+    }
+
     if (!contained.is_lvalue) {
         error("Cannot assign to non-lvalue element", expr.resolved.token);
         note("String elements are non-assignable");
@@ -624,7 +632,7 @@ ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
         show_conversion_note(value.info, expr.list.object->resolved.info);
         throw TypeException{"Cannot assign to constant list"};
     } else if (one_of(expr.resolved.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
-                      TokenType::SLASH_EQUAL) &&
+                   TokenType::SLASH_EQUAL) &&
                !one_of(contained.info->data.primitive, Type::INT, Type::FLOAT) &&
                !one_of(value.info->data.primitive, Type::INT, Type::FLOAT)) {
         error("Expected integral types for compound assignment operator", expr.resolved.token);
