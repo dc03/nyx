@@ -3,8 +3,8 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 
-#ifndef VM2_VIRTUAL_MACHINE_HPP
-#define VM2_VIRTUAL_MACHINE_HPP
+#ifndef VIRTUAL_MACHINE_HPP
+#define VIRTUAL_MACHINE_HPP
 
 #include "Module.hpp"
 #include "Natives.hpp"

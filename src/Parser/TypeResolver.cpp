@@ -4,7 +4,7 @@
 
 #include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
-#include "../VM2/Natives.hpp"
+#include "../VirtualMachine/Natives.hpp"
 #include "Parser.hpp"
 
 #include <algorithm>

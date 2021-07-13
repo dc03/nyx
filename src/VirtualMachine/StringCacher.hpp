@@ -3,8 +3,8 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 
-#ifndef VM2_STRING_CACHER_HPP
-#define VM2_STRING_CACHER_HPP
+#ifndef STRING_CACHER_HPP
+#define STRING_CACHER_HPP
 
 #include <string>
 #include <unordered_map>

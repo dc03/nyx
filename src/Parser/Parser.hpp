@@ -8,7 +8,7 @@
 
 #include "../AST.hpp"
 #include "../Token.hpp"
-#include "../VM2/Module.hpp"
+#include "../VirtualMachine/Module.hpp"
 
 #include <string_view>
 #include <vector>

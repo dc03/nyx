@@ -6,8 +6,8 @@
 #include "Parser/Parser.hpp"
 #include "Parser/TypeResolver.hpp"
 #include "Scanner/Scanner.hpp"
-#include "VM2/Disassembler.hpp"
-#include "VM2/VirtualMachine.hpp"
+#include "VirtualMachine/Disassembler.hpp"
+#include "VirtualMachine/VirtualMachine.hpp"
 
 #include <algorithm>
 #include <cxxopts.hpp>

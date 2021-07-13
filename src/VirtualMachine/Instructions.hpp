@@ -3,8 +3,8 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 
-#ifndef VM2_INSTRUCTIONS_HPP
-#define VM2_INSTRUCTIONS_HPP
+#ifndef INSTRUCTIONS_HPP
+#define INSTRUCTIONS_HPP
 
 enum class Instruction {
     HALT,

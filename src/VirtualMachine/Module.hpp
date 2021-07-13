@@ -3,8 +3,8 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 
-#ifndef VM2_MODULE_HPP
-#define VM2_MODULE_HPP
+#ifndef MODULE_HPP
+#define MODULE_HPP
 
 #include "../AST.hpp"
 #include "Chunk.hpp"

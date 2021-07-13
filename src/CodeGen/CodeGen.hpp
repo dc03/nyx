@@ -7,9 +7,9 @@
 #define CODE_GEN_HPP
 
 #include "../AST.hpp"
-#include "../VM2/Chunk.hpp"
-#include "../VM2/Module.hpp"
-#include "../VM2/Natives.hpp"
+#include "../VirtualMachine/Chunk.hpp"
+#include "../VirtualMachine/Module.hpp"
+#include "../VirtualMachine/Natives.hpp"
 
 #include <stack>
 #include <string_view>

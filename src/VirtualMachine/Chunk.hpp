@@ -3,8 +3,8 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 
-#ifndef VM2_CHUNK_HPP
-#define VM2_CHUNK_HPP
+#ifndef CHUNK_HPP
+#define CHUNK_HPP
 
 #include "Instructions.hpp"
 #include "StringCacher.hpp"

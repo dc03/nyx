@@ -3,8 +3,8 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 
-#ifndef VM2_VALUE_HPP
-#define VM2_VALUE_HPP
+#ifndef VALUE_HPP
+#define VALUE_HPP
 
 #include "Module.hpp"
 #include "StringCacher.hpp"
