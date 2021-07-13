@@ -4,7 +4,7 @@
 
 #include "../Common.hpp"
 #include "../ErrorLogger/ErrorLogger.hpp"
-#include "../VM/Natives.hpp"
+#include "../VM2/Natives.hpp"
 #include "Parser.hpp"
 
 #include <algorithm>
@@ -287,7 +287,7 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
             expr.requires_copy = true;
         }
     }
-    // Assignment leads to copy when the primitive is not an inbuilt one as those are implicitly copied when the
+    // Assignment leads to copy when the primitive is not an inbuilt one as inbuilt types are implicitly copied when the
     // values are pushed onto the stack
     expr.resolved.info = it->info;
     expr.resolved.stack_slot = it->stack_slot;
@@ -554,7 +554,8 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
 
     if (list.info->data.primitive == Type::LIST) {
         auto *contained_type = dynamic_cast<ListType *>(list.info)->contained.get();
-        return expr.resolved = {contained_type, expr.resolved.token, true};
+        return expr.resolved = {contained_type, expr.resolved.token,
+                   expr.object->resolved.is_lvalue || expr.object->resolved.info->data.is_ref};
     } else if (list.info->data.primitive == Type::STRING) {
         return expr.resolved = {list.info, expr.resolved.token, false}; // For now, strings are immutable.
     } else {
@@ -596,6 +597,12 @@ ExprVisitorType TypeResolver::visit(ListExpr &expr) {
                    expr.type->contained->data.primitive == Type::INT) {
             std::get<NumericConversionType>(element) = NumericConversionType::FLOAT_TO_INT;
         }
+
+        // Converting to non-ref from any non-trivial type (i.e. list) regardless of ref-ness requires a copy
+        if (!expr.type->contained->data.is_ref && !is_builtin_type(expr.type->contained->data.primitive) &&
+            std::get<ExprNode>(element)->resolved.is_lvalue) {
+            std::get<RequiresCopy>(element) = true;
+        }
     }
     return expr.resolved = {expr.type.get(), expr.bracket, false};
 }
@@ -603,6 +610,13 @@ ExprVisitorType TypeResolver::visit(ListExpr &expr) {
 ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
     ExprVisitorType contained = resolve(&expr.list);
     ExprVisitorType value = resolve(expr.value.get());
+
+    if (!(expr.list.resolved.is_lvalue || expr.list.resolved.info->data.is_ref)) {
+        error("Cannot assign to non-lvalue or non-ref list", expr.resolved.token);
+        note("Only variables or references can be assigned to");
+        throw TypeException{"Cannot assign to non-lvalue or non-ref list"};
+    }
+
     if (!contained.is_lvalue) {
         error("Cannot assign to non-lvalue element", expr.resolved.token);
         note("String elements are non-assignable");
@@ -617,10 +631,20 @@ ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
         error("Cannot assign to constant list", expr.resolved.token);
         show_conversion_note(value.info, expr.list.object->resolved.info);
         throw TypeException{"Cannot assign to constant list"};
+    } else if (one_of(expr.resolved.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
+                   TokenType::SLASH_EQUAL) &&
+               !one_of(contained.info->data.primitive, Type::INT, Type::FLOAT) &&
+               !one_of(value.info->data.primitive, Type::INT, Type::FLOAT)) {
+        error("Expected integral types for compound assignment operator", expr.resolved.token);
+        throw TypeException{"Expected integral types for compound assignment operator"};
     } else if (!convertible_to(contained.info, value.info, value.is_lvalue, expr.resolved.token, false)) {
         error("Cannot convert from contained type of list to type being assigned", expr.resolved.token);
         show_conversion_note(contained.info, value.info);
         throw TypeException{"Cannot convert from contained type of list to type being assigned"};
+    } else if (value.info->data.primitive == Type::FLOAT && contained.info->data.primitive == Type::INT) {
+        expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
+    } else if (value.info->data.primitive == Type::INT && contained.info->data.primitive == Type::FLOAT) {
+        expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
     }
 
     return expr.resolved = {contained.info, expr.resolved.token, false};
@@ -1064,8 +1088,9 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         if (!is_builtin_type(stmt.type->data.primitive)) {
             if (type->data.is_ref) {
                 stmt.requires_copy = false; // A reference binding to anything does not need a copy
-            } else if (initializer.is_lvalue) {
-                stmt.requires_copy = true; // A copy is made when initializing from an lvalue without a reference
+            } else if (initializer.is_lvalue || initializer.info->data.is_ref) {
+                stmt.requires_copy = true; // A copy is made when initializing from an lvalue without a reference or
+                                           // when converting a ref to non-ref
             }
         }
 
