@@ -193,9 +193,9 @@ bool Value::operator>(const Value &other) const noexcept {
     if (tag != Tag::REF && tag != other.tag) {
         return false;
     } else if (tag == Tag::INT) {
-        return w_int < other.w_int;
+        return w_int > other.w_int;
     } else if (tag == Tag::FLOAT) {
-        return w_float < other.w_float;
+        return w_float > other.w_float;
     } else if (tag == Tag::STRING) {
         return w_str != other.w_str && *w_str > *other.w_str;
     } else if (tag == Tag::BOOL) {
