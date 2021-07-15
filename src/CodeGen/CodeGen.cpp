@@ -547,12 +547,12 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
      *
      * This will compile to
      *
-     * FALSE
-     * POP_JUMP_IF_FALSE        | offset = +6   ----------------+
-     * CONST_SHORT              -> 0 | value = 1                |
-     * JUMP_FORWARD             | offset = +2, jump to = 13   --+--+
-     * CONST_SHORT              -> 1 | value = 2    <-----------+  |
-     * POP  <------------------------------------------------------+
+     * PUSH_FALSE
+     * POP_JUMP_IF_FALSE       | offset = +12 bytes, jump to = 16 ---+
+     * CONSTANT                -> 0 | value = 1                      |
+     * JUMP_FORWARD            | offset = +8 bytes, jump to = 20 ----+-+
+     * CONSTANT                -> 1 | value = 2 <--------------------+ |
+     * POP  <----------------------------------------------------------+
      * HALT
      */
     compile(expr.left.get());
@@ -740,11 +740,11 @@ StmtVisitorType Generator::visit(IfStmt &stmt) {
     std::size_t before_else = current_chunk->bytes.size();
     patch_jump(jump_idx, before_else - jump_idx - 1);
     /*
-     * The -4 because:
+     * The -1 because:
      *
      * POP_JUMP_IF_FALSE
      * BYTE1 -+
-     * BYTE2  |-> The three bytes for the offset from the POP_JUMP_IF_FALSE instruction to the else statement
+     * BYTE2  |-> The three byte offset from the POP_JUMP_IF_FALSE instruction to the else statement
      * BYTE3 -+
      * ... <- This is the body of the if statement (The ip will be here when the jump happens, but `jump_idx` will be
      *                                              considered for POP_JUMP_IF_FALSE)
@@ -753,7 +753,7 @@ StmtVisitorType Generator::visit(IfStmt &stmt) {
      * BYTE2
      * BYTE3 <- This will be where `before_else` is considered
      * ... (The else statement, if it exists)
-     * BYTE <- This is where the JUMP_FORWARD will jump to
+     * INSTRUCTION <- This is where the JUMP_FORWARD will jump to
      */
     if (stmt.elseBranch != nullptr) {
         compile(stmt.elseBranch.get());
@@ -790,19 +790,19 @@ StmtVisitorType Generator::visit(SwitchStmt &stmt) {
      *
      * This will compile to:
      *
-     * CONST_SHORT              -> 0 | value = 1
-     * CONST_SHORT              -> 1 | value = 1
-     * POP_JUMP_IF_EQUAL        | offset = +10    ---------------+       <- case 1:
-     * CONST_SHORT              -> 2 | value = 2                 |
-     * POP_JUMP_IF_EQUAL        | offset = +7, jump to = 21    --+-+     <- case 2:
-     * JUMP_FORWARD             | offset = +10, jump to = 28   --+-+-+   <- default:
-     * CONST_SHORT              -> 3 | value = 1 <---------------+ | |
-     * POP                                                         | |
-     * CONST_SHORT              -> 4 | value = 5 <-----------------+ |
-     * POP                                                           |
-     * JUMP_FORWARD             | offset = +3, jump to = 31   -------+-+ <- This is the break statement
-     * CONST_SHORT              -> 5 | value = 6 <-------------------+ |
-     * POP <-----------------------------------------------------------+
+     * CONSTANT          -> 0 | value = 1
+     * CONSTANT          -> 1 | value = 1
+     * POP_JUMP_IF_EQUAL | offset = +16 bytes, jump to = 24 ---+ <- case 1:
+     * CONSTANT          -> 2 | value = 2                      |
+     * POP_JUMP_IF_EQUAL | offset = +16 bytes, jump to = 32 ---+-+ <- case 2:
+     * JUMP_FORWARD      | offset = +24 bytes, jump to = 44 ---+-+-+ <- default:
+     * CONSTANT          -> 3 | value = 1 <--------------------+ | |
+     * POP                                                       | |
+     * CONSTANT          -> 4 | value = 5 <----------------------+ |
+     * POP                                                         |
+     * JUMP_FORWARD      | offset = +12 bytes, jump to = 52 -------+-+ <- The break statement
+     * CONSTANT          -> 5 | value = 6 <------------------------+ |
+     * POP <---------------------------------------------------------+
      * HALT
      *
      */
@@ -928,21 +928,21 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
      *
      * This will compile to
      *
-     *   CONST_SHORT               -> 0 | value = 0
-     *   JUMP_FORWARD              | offset = +15  ---+
-     *   ACCESS_LOCAL_SHORT        -> 0  <------------+---+  ) - These two instructions are the body of the loop
-     *   POP                                          |   |  )
-     *   ACCESS_LOCAL_SHORT        -> 0               |   |  } - These five instructions are the increment
-     *   CONST_SHORT               -> 1 | value = 1   |   |  }
-     *   ADD                                          |   |  }
-     *   ASSIGN_LOCAL              | assign to 0      |   |  }
-     *   POP                                          |   |  }
-     *   ACCESS_LOCAL_SHORT        -> 0   <-----------+   |  ] - These three instructions are the condition
-     *   CONST_SHORT               -> 2 | value = 5       |  ]
-     *   LESSER                                           |  ]
-     *   POP_JUMP_BACK_IF_TRUE     | offset = -24  -------+
-     *   POP
-     *   HALT
+     * CONSTANT              -> 0 | value = 0
+     * JUMP_FORWARD          | offset = +32 bytes, jump to = 36 -+
+     * ACCESS_LOCAL          | access local 0 <------------------+-+ ) - These two instructions are the body of the loop
+     * POP                                                       | | )
+     * ACCESS_LOCAL          | access local 0                    | | } - These five instructions are the increment
+     * CONSTANT              -> 1 | value = 1                    | | }
+     * IADD                                                      | | }
+     * ASSIGN_LOCAL          | assign to local 0                 | | }
+     * POP                                                       | | }
+     * ACCESS_LOCAL          | access local 0 <------------------+ | ] - These three instructions are the condition
+     * CONSTANT              -> 2 | value = 5                      | ]
+     * LESSER                                                      | ]
+     * POP_JUMP_BACK_IF_TRUE | offset = -40 bytes, jump to = 8 ----+
+     * POP
+     * HALT
      *
      *   From this, the control flow should be obvious. I have tried to mirror
      *   what gcc generates for a loop in C.
