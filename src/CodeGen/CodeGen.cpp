@@ -37,9 +37,7 @@ void Generator::patch_jump(std::size_t jump_idx, std::size_t jump_amount) {
         return;
     }
 
-    current_chunk->bytes[jump_idx + 1] = (jump_amount >> 16) & 0xff;
-    current_chunk->bytes[jump_idx + 2] = (jump_amount >> 8) & 0xff;
-    current_chunk->bytes[jump_idx + 3] = jump_amount & 0xff;
+    current_chunk->bytes[jump_idx] |= jump_amount & 0x00ff'ffff;
 }
 
 RuntimeModule Generator::compile(Module &module) {
@@ -73,9 +71,7 @@ void Generator::emit_conversion(NumericConversionType conversion_type, std::size
 }
 
 void Generator::emit_three_bytes_of(std::size_t value) {
-    current_chunk->emit_byte((value >> 16) & 0xff);
-    current_chunk->emit_byte((value >> 8) & 0xff);
-    current_chunk->emit_byte(value & 0xff);
+    current_chunk->bytes.back() |= value & 0x00ff'ffff;
 }
 
 ExprVisitorType Generator::compile(Expr *expr) {
@@ -521,12 +517,11 @@ ExprVisitorType Generator::visit(LogicalExpr &expr) {
     } else { // Since || / or short circuits on true, flip the boolean on top of the stack
         jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, expr.resolved.token.line);
     }
-    current_chunk->emit_bytes(0, 0);
-    current_chunk->emit_byte(0);
+    emit_three_bytes_of(0);
     current_chunk->emit_instruction(Instruction::POP, expr.resolved.token.line);
     compile(expr.right.get());
     std::size_t to_idx = current_chunk->bytes.size();
-    patch_jump(jump_idx, to_idx - jump_idx - 4);
+    patch_jump(jump_idx, to_idx - jump_idx - 1);
     return {};
 }
 
@@ -567,22 +562,20 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
 
     std::size_t condition_jump_idx =
         current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, expr.resolved.token.line);
-    current_chunk->emit_bytes(0, 0);
-    current_chunk->emit_byte(0);
+    emit_three_bytes_of(0);
 
     compile(expr.middle.get());
 
     std::size_t over_false_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, expr.resolved.token.line);
-    current_chunk->emit_bytes(0, 0);
-    current_chunk->emit_byte(0);
+    emit_three_bytes_of(0);
     std::size_t false_to_idx = current_chunk->bytes.size();
 
     compile(expr.right.get());
 
     std::size_t true_to_idx = current_chunk->bytes.size();
 
-    patch_jump(condition_jump_idx, false_to_idx - condition_jump_idx - 4);
-    patch_jump(over_false_idx, true_to_idx - over_false_idx - 4);
+    patch_jump(condition_jump_idx, false_to_idx - condition_jump_idx - 1);
+    patch_jump(over_false_idx, true_to_idx - over_false_idx - 1);
     return {};
 }
 
@@ -674,8 +667,7 @@ StmtVisitorType Generator::visit(BlockStmt &stmt) {
 
 StmtVisitorType Generator::visit(BreakStmt &stmt) {
     std::size_t break_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
-    current_chunk->emit_bytes(0, 0);
-    current_chunk->emit_byte(0);
+    emit_three_bytes_of(0);
     break_stmts.top().push_back(break_idx);
 }
 
@@ -683,8 +675,7 @@ StmtVisitorType Generator::visit(ClassStmt &stmt) {}
 
 StmtVisitorType Generator::visit(ContinueStmt &stmt) {
     std::size_t continue_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
-    current_chunk->emit_bytes(0, 0);
-    current_chunk->emit_byte(0);
+    emit_three_bytes_of(0);
     continue_stmts.top().push_back(continue_idx);
 }
 
@@ -736,17 +727,18 @@ StmtVisitorType Generator::visit(IfStmt &stmt) {
         current_chunk->emit_instruction(Instruction::DEREF, stmt.condition->resolved.token.line);
     }
     std::size_t jump_idx = current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, stmt.keyword.line);
-    current_chunk->emit_bytes(0, 0);
-    current_chunk->emit_byte(0);
+    emit_three_bytes_of(0);
     // Reserve three bytes for the offset
     compile(stmt.thenBranch.get());
 
-    std::size_t over_else = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
-    current_chunk->emit_bytes(0, 0);
-    current_chunk->emit_byte(0);
+    std::size_t over_else = 0;
+    if (stmt.elseBranch != nullptr) {
+        over_else = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
+        emit_three_bytes_of(0);
+    }
 
     std::size_t before_else = current_chunk->bytes.size();
-    patch_jump(jump_idx, before_else - jump_idx - 4);
+    patch_jump(jump_idx, before_else - jump_idx - 1);
     /*
      * The -4 because:
      *
@@ -765,10 +757,10 @@ StmtVisitorType Generator::visit(IfStmt &stmt) {
      */
     if (stmt.elseBranch != nullptr) {
         compile(stmt.elseBranch.get());
-    }
 
-    std::size_t after_else = current_chunk->bytes.size();
-    patch_jump(over_else, after_else - over_else - 4);
+        std::size_t after_else = current_chunk->bytes.size();
+        patch_jump(over_else, after_else - over_else - 1);
+    }
 }
 
 StmtVisitorType Generator::visit(ReturnStmt &stmt) {
@@ -825,31 +817,29 @@ StmtVisitorType Generator::visit(SwitchStmt &stmt) {
         compile(case_.first.get());
         jumps.push_back(
             current_chunk->emit_instruction(Instruction::POP_JUMP_IF_EQUAL, current_chunk->line_numbers.back().first));
-        current_chunk->emit_bytes(0, 0);
-        current_chunk->emit_byte(0);
+        emit_three_bytes_of(0);
     }
     if (stmt.default_case != nullptr) {
         default_jump = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, 0);
-        current_chunk->emit_bytes(0, 0);
-        current_chunk->emit_byte(0);
+        emit_three_bytes_of(0);
     }
 
     std::size_t i = 0;
     for (auto &case_ : stmt.cases) {
         std::size_t jump_to = current_chunk->bytes.size();
-        patch_jump(jumps[i], jump_to - jumps[i] - 4);
+        patch_jump(jumps[i], jump_to - jumps[i] - 1);
         compile(case_.second.get());
         i++;
     }
     if (stmt.default_case != nullptr) {
         std::size_t jump_to = current_chunk->bytes.size();
-        patch_jump(default_jump, jump_to - default_jump - 4);
+        patch_jump(default_jump, jump_to - default_jump - 1);
         compile(stmt.default_case.get());
     }
 
     for (std::size_t break_stmt : break_stmts.top()) {
         std::size_t jump_to = current_chunk->bytes.size();
-        patch_jump(break_stmt, jump_to - break_stmt - 4);
+        patch_jump(break_stmt, jump_to - break_stmt - 1);
     }
 
     break_stmts.pop();
@@ -961,8 +951,7 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
     continue_stmts.emplace();
 
     std::size_t jump_begin_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
-    current_chunk->emit_bytes(0, 0);
-    current_chunk->emit_byte(0);
+    emit_three_bytes_of(0);
 
     std::size_t loop_back_idx = current_chunk->bytes.size();
     compile(stmt.body.get());
@@ -979,20 +968,19 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
     }
 
     std::size_t jump_back_idx = current_chunk->emit_instruction(Instruction::POP_JUMP_BACK_IF_TRUE, stmt.keyword.line);
-    current_chunk->emit_bytes(0, 0);
-    current_chunk->emit_byte(0);
+    emit_three_bytes_of(0);
 
     std::size_t loop_end_idx = current_chunk->bytes.size();
 
-    patch_jump(jump_back_idx, jump_back_idx - loop_back_idx + 4);
-    patch_jump(jump_begin_idx, condition_idx - jump_begin_idx - 4);
+    patch_jump(jump_back_idx, jump_back_idx - loop_back_idx + 1);
+    patch_jump(jump_begin_idx, condition_idx - jump_begin_idx - 1);
 
     for (std::size_t continue_idx : continue_stmts.top()) {
-        patch_jump(continue_idx, increment_idx - continue_idx - 4);
+        patch_jump(continue_idx, increment_idx - continue_idx - 1);
     }
 
     for (std::size_t break_idx : break_stmts.top()) {
-        patch_jump(break_idx, loop_end_idx - break_idx - 3);
+        patch_jump(break_idx, loop_end_idx - break_idx - 1);
     }
 
     continue_stmts.pop();
