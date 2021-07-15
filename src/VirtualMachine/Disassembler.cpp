@@ -84,6 +84,12 @@ void instruction(Chunk &chunk, std::string_view name, std::size_t where) {
     } else if (name == "MAKE_REF_TO_GLOBAL") {
         std::cout << "\t\t| make ref to global " << next_bytes << '\n';
         print_trailing_bytes();
+    } else if (name == "ACCESS_LOCAL" || name == "ACCESS_LOCAL_STRING") {
+        std::cout << "\t\t| access local " << next_bytes << '\n';
+        print_trailing_bytes();
+    } else if (name == "ACCESS_GLOBAL" || name == "ACCESS_GLOBAL_STRING") {
+        std::cout << "\t\t| access global " << next_bytes << '\n';
+        print_trailing_bytes();
     } else if (name == "RETURN") {
         std::cout << "\t\t| pop " << next_bytes << " local(s)\n";
         print_trailing_bytes();
