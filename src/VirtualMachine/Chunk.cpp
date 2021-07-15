@@ -20,8 +20,8 @@ std::size_t Chunk::add_string(std::string value) {
     return constants.size() - 1;
 }
 
-std::size_t Chunk::emit_byte(Chunk::byte value) {
-    bytes.push_back(value);
+std::size_t Chunk::emit_byte(Chunk::InstructionSizeType value) {
+    bytes.back() |= value;
     if (line_numbers.empty()) {
         line_numbers.emplace_back(1, 1);
     } else {
@@ -30,9 +30,9 @@ std::size_t Chunk::emit_byte(Chunk::byte value) {
     return bytes.size() - 1;
 }
 
-std::size_t Chunk::emit_bytes(Chunk::byte value_1, Chunk::byte value_2) {
-    bytes.push_back(value_1);
-    bytes.push_back(value_2);
+std::size_t Chunk::emit_bytes(Chunk::InstructionSizeType value_1, Chunk::InstructionSizeType value_2) {
+    bytes.back() |= value_1 << 8;
+    bytes.back() |= value_2 << 16;
     if (line_numbers.empty()) {
         line_numbers.emplace_back(1, 2);
     } else {
@@ -68,27 +68,14 @@ std::size_t Chunk::emit_string(std::string value, std::size_t line_number) {
 }
 
 std::size_t Chunk::emit_instruction(Instruction instruction, std::size_t line_number) {
-    bytes.push_back(static_cast<unsigned char>(instruction));
+    bytes.push_back(static_cast<InstructionSizeType>(instruction) << 24);
+    bytes.back() &= 0xff00'0000;
     if (line_numbers.empty() || line_numbers.back().first != line_number) {
         line_numbers.emplace_back(line_number, 1);
     } else {
         line_numbers.back().second += 1;
     }
     return bytes.size() - 1;
-}
-
-std::size_t Chunk::emit_integer(std::size_t integer) {
-    if (integer < Chunk::const_short_max) {
-        emit_byte(integer & 0xff);
-        return bytes.size() - 1;
-    } else if (integer < Chunk::const_long_max) {
-        emit_bytes((integer >> 16) & 0xff, (integer >> 8) & 0xff);
-        emit_byte(integer & 0xff);
-        return bytes.size() - 3;
-    } else {
-        compile_error("Integer is too large to fit in upto 3 bytes");
-        return std::numeric_limits<std::size_t>::max();
-    }
 }
 
 std::size_t Chunk::get_line_number(std::size_t insn_ptr) {

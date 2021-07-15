@@ -16,7 +16,7 @@
 struct CallFrame {
     Value *stack{};
     Chunk *return_chunk{};
-    Chunk::byte *return_ip{};
+    Chunk::InstructionSizeType *return_ip{};
 };
 
 enum class ExecutionState { RUNNING = 0, FINISHED = 1 };
@@ -25,7 +25,7 @@ class VirtualMachine {
     constexpr static std::size_t stack_size = 32768;
     constexpr static std::size_t frame_size = 1024;
 
-    Chunk::byte *ip{};
+    Chunk::InstructionSizeType *ip{};
 
     std::unique_ptr<Value[]> stack{};
     std::size_t stack_top{};
@@ -39,7 +39,7 @@ class VirtualMachine {
     Chunk *current_chunk{};
     RuntimeModule *current_module{};
 
-    Chunk::byte read_byte();
+    Chunk::InstructionSizeType read_next();
     std::size_t read_three_bytes();
 
     bool trace_stack{false};

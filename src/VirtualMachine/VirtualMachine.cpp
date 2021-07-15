@@ -10,7 +10,7 @@
 #include <cmath>
 #include <iostream>
 
-#define is (Chunk::byte)
+#define is (Chunk::InstructionSizeType)
 
 VirtualMachine::VirtualMachine(bool trace_stack, bool trace_insn)
     : stack{std::make_unique<Value[]>(VirtualMachine::stack_size)},
@@ -23,14 +23,14 @@ VirtualMachine::VirtualMachine(bool trace_stack, bool trace_insn)
     frames[0] = CallFrame{&stack[0], {}};
 }
 
-Chunk::byte VirtualMachine::read_byte() {
+Chunk::InstructionSizeType VirtualMachine::read_next() {
     return *(ip++);
 }
 
 std::size_t VirtualMachine::read_three_bytes() {
-    std::size_t bytes = read_byte();
-    bytes = (bytes << 8) | read_byte();
-    bytes = (bytes << 8) | read_byte();
+    std::size_t bytes = read_next();
+    bytes = (bytes << 8) | read_next();
+    bytes = (bytes << 8) | read_next();
     return bytes;
 }
 
@@ -117,9 +117,12 @@ ExecutionState VirtualMachine::step() {
         std::cout << '\n';
     }
     if (trace_insn) {
-        disassemble_instruction(*current_chunk, static_cast<Instruction>(*ip), (ip - &current_chunk->bytes[0]));
+        disassemble_instruction(*current_chunk, static_cast<Instruction>(*ip >> 24), (ip - &current_chunk->bytes[0]));
     }
-    switch (read_byte()) {
+    Chunk::InstructionSizeType next = read_next();
+    Chunk::InstructionSizeType instruction = next & 0xff00'0000;
+    Chunk::InstructionSizeType operand = next & 0x00ff'ffff;
+    switch (instruction >> 24) {
         case is Instruction::HALT: return ExecutionState::FINISHED;
         case is Instruction::POP: {
             pop();
@@ -127,7 +130,7 @@ ExecutionState VirtualMachine::step() {
         }
         /* Push constants onto stack */
         case is Instruction::CONSTANT: {
-            push(current_chunk->constants[read_three_bytes()]);
+            push(current_chunk->constants[operand]);
             break;
         }
         /* Integer operations */
@@ -232,42 +235,48 @@ ExecutionState VirtualMachine::step() {
         }
         /* Jump operations */
         case is Instruction::JUMP_FORWARD: {
-            ip += read_three_bytes();
+            ip += operand;
             break;
         }
         case is Instruction::JUMP_BACKWARD: {
-            ip -= read_three_bytes();
+            ip -= operand;
             break;
         }
         case is Instruction::JUMP_IF_TRUE: {
-            ip += stack[stack_top - 1] ? read_three_bytes() : 3;
+            if (stack[stack_top - 1]) {
+                ip += operand;
+            }
             break;
         }
         case is Instruction::JUMP_IF_FALSE: {
-            ip += stack[stack_top - 1] ? 3 : read_three_bytes();
+            if (!stack[stack_top - 1]) {
+                ip += operand;
+            }
             break;
         }
         case is Instruction::POP_JUMP_IF_EQUAL: {
             if (stack[stack_top - 2] == stack[stack_top - 1]) {
-                ip += read_three_bytes();
+                ip += operand;
                 stack_top--;
-            } else {
-                ip += 3;
             }
             stack_top--;
             break;
         }
         case is Instruction::POP_JUMP_IF_FALSE: {
-            ip += !stack[--stack_top] ? read_three_bytes() : 3;
+            if (!stack[--stack_top]) {
+                ip += operand;
+            }
             break;
         }
         case is Instruction::POP_JUMP_BACK_IF_TRUE: {
-            ip -= stack[--stack_top] ? read_three_bytes() : -3;
+            if (stack[--stack_top]) {
+                ip -= operand;
+            }
             break;
         }
         /* Local variable operations */
         case is Instruction::ASSIGN_LOCAL: {
-            Value &assigned = frames[frame_top].stack[read_three_bytes()];
+            Value &assigned = frames[frame_top].stack[operand];
             if (assigned.tag == Value::Tag::REF) {
                 *assigned.w_ref = stack[stack_top - 1];
             } else {
@@ -276,18 +285,18 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::ACCESS_LOCAL: {
-            push(frames[frame_top].stack[read_three_bytes()]);
+            push(frames[frame_top].stack[operand]);
             break;
         }
         case is Instruction::MAKE_REF_TO_LOCAL: {
-            Value &value = frames[frame_top].stack[read_three_bytes()];
+            Value &value = frames[frame_top].stack[operand];
             if (value.tag == Value::Tag::LIST) {
                 push(Value{value.w_list});
                 stack[stack_top - 1].tag = Value::Tag::LIST_REF;
             } else {
                 push(Value{&value});
             }
-            //            push(Value{&frames[frame_top].stack[read_three_bytes()]});
+            //            push(Value{&frames[frame_top].stack[next_three]});
             break;
         }
         case is Instruction::DEREF: {
@@ -296,7 +305,7 @@ ExecutionState VirtualMachine::step() {
         }
         /* Global variable operations */
         case is Instruction::ASSIGN_GLOBAL: {
-            Value &assigned = stack[read_three_bytes()];
+            Value &assigned = stack[operand];
             if (assigned.tag == Value::Tag::REF) {
                 *assigned.w_ref = stack[stack_top - 1];
             } else {
@@ -305,11 +314,11 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::ACCESS_GLOBAL: {
-            push(Value{stack[read_three_bytes()]});
+            push(Value{stack[operand]});
             break;
         }
         case is Instruction::MAKE_REF_TO_GLOBAL: {
-            Value &value = stack[read_three_bytes()];
+            Value &value = stack[operand];
             if (value.tag == Value::Tag::LIST) {
                 push(Value{value.w_list});
                 stack[stack_top - 1].tag = Value::Tag::LIST_REF;
@@ -341,7 +350,7 @@ ExecutionState VirtualMachine::step() {
         }
         case is Instruction::RETURN: {
             Value result = stack[--stack_top];
-            std::size_t locals_popped = read_three_bytes();
+            std::size_t locals_popped = operand;
             stack[stack_top - locals_popped - 1] = result;
             while (locals_popped-- > 0) {
                 stack_top--;
@@ -361,17 +370,17 @@ ExecutionState VirtualMachine::step() {
         }
         /* String instructions */
         case is Instruction::CONSTANT_STRING: {
-            Value::StringType string = current_chunk->constants[read_three_bytes()].w_str;
+            Value::StringType string = current_chunk->constants[operand].w_str;
             push(Value{&cache.insert(*string)});
             break;
         }
         case is Instruction::ACCESS_LOCAL_STRING: {
-            Value &local = frames[frame_top].stack[read_three_bytes()];
+            Value &local = frames[frame_top].stack[operand];
             push(Value{&cache.insert(*local.w_str)});
             break;
         }
         case is Instruction::ACCESS_GLOBAL_STRING: {
-            Value &global = stack[read_three_bytes()];
+            Value &global = stack[operand];
             push(Value{&cache.insert(*global.w_str)});
             break;
         }
@@ -453,7 +462,7 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::ASSIGN_LOCAL_LIST: {
-            Value &assigned = frames[frame_top].stack[read_three_bytes()];
+            Value &assigned = frames[frame_top].stack[operand];
             if (assigned.w_list != nullptr) {
                 destroy_list(assigned.w_list);
             }
@@ -466,7 +475,7 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::ASSIGN_GLOBAL_LIST: {
-            Value &assigned = stack[read_three_bytes()];
+            Value &assigned = stack[operand];
             if (assigned.w_list != nullptr) {
                 destroy_list(assigned.w_list);
             }
@@ -488,7 +497,7 @@ ExecutionState VirtualMachine::step() {
         }
         /* Miscellaneous */
         case is Instruction::ACCESS_FROM_TOP: {
-            push(stack[stack_top - read_three_bytes()]);
+            push(stack[stack_top - operand]);
             break;
         }
     }
