@@ -69,8 +69,6 @@ enum class Instruction {
     TRAP_RETURN,
     /* String instructions */
     CONSTANT_STRING,
-    ACCESS_LOCAL_STRING,
-    ACCESS_GLOBAL_STRING,
     POP_STRING,
     CONCATENATE,
     /* List instructions */
@@ -80,11 +78,14 @@ enum class Instruction {
     ASSIGN_LIST,
     INDEX_LIST,
     CHECK_INDEX,
+    ACCESS_LOCAL_LIST,
+    ACCESS_GLOBAL_LIST,
     ASSIGN_LOCAL_LIST,
     ASSIGN_GLOBAL_LIST,
     POP_LIST,
     /* Miscellaneous */
     ACCESS_FROM_TOP,
+    EQUAL_SL, // Equality operation for lists and strings
 };
 
 #endif
