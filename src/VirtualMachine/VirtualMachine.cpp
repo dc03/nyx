@@ -203,7 +203,7 @@ ExecutionState VirtualMachine::step() {
         case is Instruction::BIT_XOR: arith_binary_op(^, IntType, w_int);
         /* Logical operations */
         case is Instruction::NOT: {
-            stack[stack_top - 1].w_bool = !stack[stack_top - 1];
+            stack[stack_top - 1].w_bool = not stack[stack_top - 1];
             stack[stack_top - 1].tag = Value::Tag::BOOL;
             break;
         }
@@ -242,7 +242,7 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::JUMP_IF_FALSE: {
-            if (!stack[stack_top - 1]) {
+            if (not stack[stack_top - 1]) {
                 ip += operand;
             }
             break;
@@ -256,7 +256,7 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::POP_JUMP_IF_FALSE: {
-            if (!stack[--stack_top]) {
+            if (not stack[--stack_top]) {
                 ip += operand;
             }
             break;

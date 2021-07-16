@@ -37,7 +37,7 @@ void run_module(const char *const main_module, cxxopts::ParseResult &result) {
         ASTPrinter{}.print_stmts(main.statements);
     }
 
-    if (!result.count("check") && !logger.had_error) {
+    if (not result.count("check") && not logger.had_error) {
         std::sort(Parser::parsed_modules.begin(), Parser::parsed_modules.end(),
             [](const auto &x1, const auto &x2) { return x1.second > x2.second; });
 

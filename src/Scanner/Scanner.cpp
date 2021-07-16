@@ -58,12 +58,12 @@ char Scanner::advance() {
 }
 
 [[nodiscard]] const Token &Scanner::previous() const noexcept {
-    assert(!tokens.empty() && "Bug in scanner.");
+    assert(not tokens.empty() && "Bug in scanner.");
     return tokens[tokens.size() - 1];
 }
 
 bool Scanner::match(const char ch) {
-    if (!is_at_end() && peek() == ch) {
+    if (not is_at_end() && peek() == ch) {
         advance();
         return true;
     }
@@ -77,14 +77,14 @@ void Scanner::add_token(const TokenType type) {
 
 void Scanner::number() {
     TokenType type = TokenType::INT_VALUE;
-    while (!is_at_end() && std::isdigit(peek())) {
+    while (not is_at_end() && std::isdigit(peek())) {
         advance();
     }
 
     if (peek() == '.' && std::isdigit(peek_next())) {
         type = TokenType::FLOAT_VALUE;
         advance();
-        while (!is_at_end() && std::isdigit(peek())) {
+        while (not is_at_end() && std::isdigit(peek())) {
             advance();
         }
     }
@@ -92,7 +92,7 @@ void Scanner::number() {
     if (peek() == 'e' && std::isdigit(peek_next())) {
         type = TokenType::FLOAT_VALUE;
         advance();
-        while (!is_at_end() && std::isdigit(peek())) {
+        while (not is_at_end() && std::isdigit(peek())) {
             advance();
         }
     }
@@ -101,7 +101,7 @@ void Scanner::number() {
 }
 
 void Scanner::identifier() {
-    while (!is_at_end() && (std::isalnum(peek()) || peek() == '_')) {
+    while (not is_at_end() && (std::isalnum(peek()) || peek() == '_')) {
         advance();
     }
 
@@ -115,7 +115,7 @@ void Scanner::identifier() {
 
 void Scanner::string(const char delimiter) {
     std::string lexeme{}; // I think this should be fine because of SSO leading to an allocation only after ~24 chars.
-    while (!is_at_end() && peek() != delimiter) {
+    while (not is_at_end() && peek() != delimiter) {
         if (peek() == '\n') {
             line++;
             advance();
@@ -157,12 +157,12 @@ void Scanner::string(const char delimiter) {
 }
 
 void Scanner::multiline_comment() {
-    while (!is_at_end() && !(peek() == '*' && peek_next() == '/')) {
+    while (not is_at_end() && not (peek() == '*' && peek_next() == '/')) {
         if (match('/')) {
             if (match('*')) {
                 multiline_comment();
             } else if (match('/')) {
-                while (!is_at_end() && peek() != '\n') {
+                while (not is_at_end() && peek() != '\n') {
                     advance();
                 }
             }
@@ -288,7 +288,7 @@ void Scanner::scan_token() {
                     default: return false;
                 }
             };
-            if (paren_count == 0 && !tokens.empty() && is_allowed(previous())) {
+            if (paren_count == 0 && not tokens.empty() && is_allowed(previous())) {
                 add_token(TokenType::END_OF_LINE);
             }
             line++;
@@ -304,7 +304,7 @@ void Scanner::scan_token() {
                 break;
             } else if (ch == '/') {
                 if (match('/')) {
-                    while (!is_at_end() && peek() != '\n') {
+                    while (not is_at_end() && peek() != '\n') {
                         advance();
                     }
                     break;
@@ -325,12 +325,12 @@ void Scanner::scan_token() {
 }
 
 const std::vector<Token> &Scanner::scan() {
-    while (!is_at_end()) {
+    while (not is_at_end()) {
         start = current;
         scan_token();
     }
 
-    if (!tokens.empty() && tokens.back().type != TokenType::END_OF_LINE) {
+    if (not tokens.empty() && tokens.back().type != TokenType::END_OF_LINE) {
         tokens.emplace_back(TokenType::END_OF_LINE, "\n", line, 0, 0);
     }
     tokens.emplace_back(TokenType::END_OF_FILE, "", line, 0, 0);

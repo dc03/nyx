@@ -105,7 +105,7 @@ Value::operator bool() const noexcept {
     } else if (tag == Tag::FUNCTION) {
         return true;
     } else if (tag == Tag::LIST || tag == Tag::LIST_REF) {
-        return !w_list->empty();
+        return not w_list->empty();
     } else if (tag == Tag::INVALID) {
         return false;
     }
@@ -140,7 +140,7 @@ bool Value::operator==(const Value &other) const noexcept {
         }
 
         for (std::size_t i = 0; i < w_list->size(); i++) {
-            if (!((*w_list)[i] == (*other.w_list)[i])) {
+            if (not ((*w_list)[i] == (*other.w_list)[i])) {
                 return false;
             }
         }
@@ -177,7 +177,7 @@ bool Value::operator<(const Value &other) const noexcept {
         }
 
         for (std::size_t i = 0; i < w_list->size(); i++) {
-            if (!((*w_list)[i] < (*other.w_list)[i])) {
+            if (not ((*w_list)[i] < (*other.w_list)[i])) {
                 return false;
             }
         }
@@ -214,7 +214,7 @@ bool Value::operator>(const Value &other) const noexcept {
         }
 
         for (std::size_t i = 0; i < w_list->size(); i++) {
-            if (!((*w_list)[i] > (*other.w_list)[i])) {
+            if (not ((*w_list)[i] > (*other.w_list)[i])) {
                 return false;
             }
         }

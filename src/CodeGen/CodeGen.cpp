@@ -22,7 +22,7 @@ void Generator::end_scope() {
     for (auto begin = scopes.top().crbegin(); begin != scopes.top().crend(); begin++) {
         if ((*begin)->data.primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, 0);
-        } else if ((*begin)->data.primitive == Type::LIST && !(*begin)->data.is_ref) {
+        } else if ((*begin)->data.primitive == Type::LIST && not (*begin)->data.is_ref) {
             current_chunk->emit_instruction(Instruction::POP_LIST, 0);
         } else {
             current_chunk->emit_instruction(Instruction::POP, 0);
@@ -267,9 +267,9 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
     std::size_t i = 0;
     for (auto &arg : expr.args) {
         auto &value = std::get<ExprNode>(arg);
-        if (!expr.is_native_call) {
+        if (not expr.is_native_call) {
             if (auto &param = expr.function->resolved.func->params[i];
-                param.second->data.is_ref && !value->resolved.info->data.is_ref) {
+                param.second->data.is_ref && not value->resolved.info->data.is_ref) {
                 if (value->type_tag() == NodeType::VariableExpr) {
                     if (dynamic_cast<VariableExpr *>(value.get())->type == IdentifierType::LOCAL) {
                         current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, value->resolved.token.line);
@@ -281,7 +281,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
                     // This is a fallback, but I don't think it would ever be triggered
                 }
                 emit_three_bytes_of(value->resolved.stack_slot);
-            } else if (!param.second->data.is_ref && value->resolved.info->data.is_ref) {
+            } else if (not param.second->data.is_ref && value->resolved.info->data.is_ref) {
                 compile(value.get());
                 current_chunk->emit_instruction(Instruction::DEREF, value->resolved.token.line);
             } else {
@@ -300,7 +300,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
 
         // This ALLOC_AT_LEAST is emitted after the COPY since the list that is copied needs to be resized and not the
         // list that is being copied.
-        if (!expr.is_native_call && expr.function->resolved.func->params[i].second->data.primitive == Type::LIST) {
+        if (not expr.is_native_call && expr.function->resolved.func->params[i].second->data.primitive == Type::LIST) {
             auto *list = dynamic_cast<ListType *>(expr.function->resolved.func->params[i].second.get());
             if (list->size != nullptr) {
                 compile(list->size.get());
@@ -316,8 +316,8 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
         auto begin = expr.args.crbegin();
         for (; begin != expr.args.crend(); begin++) {
             auto &arg = std::get<ExprNode>(*begin);
-            if (arg->resolved.info->data.primitive == Type::LIST && !arg->resolved.is_lvalue &&
-                !arg->resolved.info->data.is_ref) {
+            if (arg->resolved.info->data.primitive == Type::LIST && not arg->resolved.is_lvalue &&
+                not arg->resolved.info->data.is_ref) {
                 current_chunk->emit_instruction(Instruction::POP_LIST, arg->resolved.token.line);
             } else if (arg->resolved.info->data.primitive == Type::STRING) {
                 current_chunk->emit_instruction(Instruction::POP_STRING, arg->resolved.token.line);
@@ -339,7 +339,7 @@ ExprVisitorType Generator::visit(CommaExpr &expr) {
         compile(it->get());
         if ((*it)->resolved.info->data.primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, (*it)->resolved.token.line);
-        } else if ((*it)->resolved.info->data.primitive == Type::LIST && !(*it)->resolved.is_lvalue) {
+        } else if ((*it)->resolved.info->data.primitive == Type::LIST && not (*it)->resolved.is_lvalue) {
             current_chunk->emit_instruction(Instruction::POP_LIST, (*it)->resolved.token.line);
         } else {
             current_chunk->emit_instruction(Instruction::POP, (*it)->resolved.token.line);
@@ -375,7 +375,7 @@ ExprVisitorType Generator::visit(ListExpr &expr) {
         Value{dynamic_cast<LiteralExpr *>(expr.type->size.get())->value.to_int()}, expr.bracket.line);
     current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.bracket.line);
     std::size_t stack_slot = 0;
-    if (!scopes.empty()) {
+    if (not scopes.empty()) {
         stack_slot = scopes.top().size();
     }
     std::size_t i = 0;
@@ -385,13 +385,13 @@ ExprVisitorType Generator::visit(ListExpr &expr) {
         emit_three_bytes_of(1);
         current_chunk->emit_constant(Value{static_cast<int>(i)}, element_expr->resolved.token.line);
 
-        if (!expr.type->contained->data.is_ref) {
+        if (not expr.type->contained->data.is_ref) {
             // References have to be conditionally compiled when not binding to a name
             compile(element_expr.get());
             emit_conversion(std::get<NumericConversionType>(element), element_expr->resolved.token.line);
         }
 
-        if (!expr.type->contained->data.is_ref) {
+        if (not expr.type->contained->data.is_ref) {
             // Type is not a reference type
             if (element_expr->resolved.info->data.is_ref) {
                 current_chunk->emit_instruction(Instruction::DEREF, element_expr->resolved.token.line);
@@ -713,7 +713,7 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
     for (auto begin = stmt.params.crbegin(); begin != stmt.params.crend(); begin++) {
         if (begin->second->data.primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, 0);
-        } else if (begin->second->data.primitive == Type::LIST && !begin->second->data.is_ref) {
+        } else if (begin->second->data.primitive == Type::LIST && not begin->second->data.is_ref) {
             current_chunk->emit_instruction(Instruction::POP_LIST, 0);
         } else {
             current_chunk->emit_instruction(Instruction::POP, 0);
@@ -722,7 +722,7 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
 
     if (stmt.return_type->data.primitive != Type::NULL_) {
         if (auto *body = dynamic_cast<BlockStmt *>(stmt.body.get());
-            (!body->stmts.empty() && body->stmts.back()->type_tag() != NodeType::ReturnStmt) || body->stmts.empty()) {
+            (not body->stmts.empty() && body->stmts.back()->type_tag() != NodeType::ReturnStmt) || body->stmts.empty()) {
             current_chunk->emit_instruction(Instruction::TRAP_RETURN, stmt.name.line);
         }
     }
@@ -777,7 +777,7 @@ StmtVisitorType Generator::visit(ReturnStmt &stmt) {
     if (stmt.value != nullptr) {
         compile(stmt.value.get());
         if (auto &return_type = stmt.function->return_type;
-            return_type->data.primitive == Type::LIST && !return_type->data.is_ref) {
+            return_type->data.primitive == Type::LIST && not return_type->data.is_ref) {
             current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.keyword.line);
         }
     } else {
@@ -893,7 +893,7 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
         }
         current_chunk->emit_instruction(Instruction::MAKE_LIST, stmt.name.line);
     } else if (stmt.initializer != nullptr) {
-        if (stmt.type->data.is_ref && !stmt.initializer->resolved.info->data.is_ref &&
+        if (stmt.type->data.is_ref && not stmt.initializer->resolved.info->data.is_ref &&
             stmt.initializer->type_tag() == NodeType::VariableExpr) {
             if (dynamic_cast<VariableExpr *>(stmt.initializer.get())->type == IdentifierType::LOCAL) {
                 current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, stmt.name.line);
@@ -903,7 +903,7 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
             emit_three_bytes_of(stmt.initializer->resolved.stack_slot);
         } else {
             compile(stmt.initializer.get());
-            if (stmt.initializer->resolved.info->data.is_ref && !stmt.type->data.is_ref &&
+            if (stmt.initializer->resolved.info->data.is_ref && not stmt.type->data.is_ref &&
                 stmt.initializer->resolved.info->data.primitive != Type::LIST) {
                 current_chunk->emit_instruction(Instruction::DEREF, stmt.name.line);
             }

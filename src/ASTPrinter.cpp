@@ -168,7 +168,7 @@ ExprVisitorType ASTPrinter::visit(CallExpr &expr) {
     print_token(expr.resolved.token) << std::boolalpha << "::Native:" << expr.is_native_call << std::noboolalpha
                                      << '\n';
     current_depth++;
-    if (!expr.is_native_call) {
+    if (not expr.is_native_call) {
         print(expr.function.get());
     }
     for (std::size_t i = 0; i < expr.args.size(); i++) {

@@ -71,7 +71,7 @@ void Parser::throw_parse_error(const std::string_view message, const Token &wher
 void Parser::synchronize() {
     advance();
 
-    while (!is_at_end()) {
+    while (not is_at_end()) {
         if (previous().type == TokenType::SEMICOLON || previous().type == TokenType::END_OF_LINE ||
             previous().type == TokenType::RIGHT_BRACE) {
             return;
@@ -224,7 +224,7 @@ bool Parser::match(Args... args) {
 
 template <typename... Args>
 void Parser::consume(const std::string_view message, Args... args) {
-    if (!match(args...)) {
+    if (not match(args...)) {
         error(message, peek());
         throw ParseException{peek(), message};
     }
@@ -232,7 +232,7 @@ void Parser::consume(const std::string_view message, Args... args) {
 
 template <typename... Args>
 void Parser::consume(std::string_view message, const Token &where, Args... args) {
-    if (!match(args...)) {
+    if (not match(args...)) {
         error(message, where);
         throw ParseException{where, message};
     }
@@ -463,7 +463,7 @@ ExprNode Parser::scope_access(bool, ExprNode left) {
 }
 
 ExprNode Parser::super(bool) {
-    if (!(in_class && in_function)) {
+    if (not (in_class && in_function)) {
         throw_parse_error("Cannot use super expression outside a class");
     }
     Token super = previous();
@@ -484,7 +484,7 @@ ExprNode Parser::ternary(bool, ExprNode left) {
 }
 
 ExprNode Parser::this_expr(bool) {
-    if (!(in_class && in_function)) {
+    if (not (in_class && in_function)) {
         throw_parse_error("Cannot use 'this' keyword outside a class's constructor or destructor");
     }
     Token keyword = previous();
@@ -613,7 +613,7 @@ StmtNode Parser::class_declaration() {
 
     consume("Expected '{' after class name", TokenType::LEFT_BRACE);
     ScopedBooleanManager class_manager{in_class};
-    while (!is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
+    while (not is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
         consume("Expected 'public', 'private' or 'protected' modifier before member declaration", TokenType::PRIVATE,
             TokenType::PUBLIC, TokenType::PROTECTED);
 
@@ -675,7 +675,7 @@ StmtNode Parser::class_declaration() {
 StmtNode Parser::function_declaration() {
     consume("Expected function name after 'fn' keyword", TokenType::IDENTIFIER);
 
-    if (!in_class && current_module.functions.find(previous().lexeme) != current_module.functions.end()) {
+    if (not in_class && current_module.functions.find(previous().lexeme) != current_module.functions.end()) {
         throw_parse_error("Function already defined");
     } else if (in_class && std::find_if(current_methods->cbegin(), current_methods->cend(),
                                [previous = previous()](const ClassStmt::MethodType &arg) {
@@ -722,7 +722,7 @@ StmtNode Parser::function_declaration() {
             FunctionStmt, std::move(name), std::move(return_type), std::move(params), std::move(body), {}, 0);
     }
 
-    if (!in_class && scope_depth == 0) {
+    if (not in_class && scope_depth == 0) {
         current_module.functions[function_definition->name.lexeme] = function_definition;
     }
 
@@ -747,7 +747,7 @@ StmtNode Parser::import_statement() {
     std::ifstream module{imported_dir + imported.lexeme, std::ios::in};
     std::size_t name_index = imported.lexeme.find_last_of('/');
     std::string module_name = imported.lexeme.substr(name_index != std::string::npos ? name_index + 1 : 0);
-    if (!module.is_open()) {
+    if (not module.is_open()) {
         std::string message = "Unable to open module '";
         message += module_name;
         message += "'";
@@ -850,7 +850,7 @@ StmtNode Parser::block_statement() {
     std::vector<StmtNode> statements{};
     ScopedIntegerManager manager{scope_depth};
 
-    while (!is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
+    while (not is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
         if (match(TokenType::VAR, TokenType::CONST, TokenType::REF)) {
             statements.emplace_back(variable_declaration());
         } else {
@@ -865,7 +865,7 @@ StmtNode Parser::block_statement() {
 template <typename Allocated>
 StmtNode Parser::single_token_statement(
     const std::string_view token, const bool condition, const std::string_view error_message) {
-    if (!condition) {
+    if (not condition) {
         throw_parse_error(error_message);
     }
     Token keyword = previous();
@@ -898,7 +898,7 @@ StmtNode Parser::for_statement() {
     StmtNode initializer = nullptr;
     if (match(TokenType::VAR, TokenType::CONST, TokenType::REF)) {
         initializer = variable_declaration();
-    } else if (!match(TokenType::SEMICOLON)) {
+    } else if (not match(TokenType::SEMICOLON)) {
         initializer = expression_statement();
     }
 
@@ -960,7 +960,7 @@ StmtNode Parser::if_statement() {
 }
 
 StmtNode Parser::return_statement() {
-    if (!in_function) {
+    if (not in_function) {
         throw_parse_error("Cannot use 'return' keyword outside a function");
     }
 
@@ -991,7 +991,7 @@ StmtNode Parser::switch_statement() {
 
     ScopedBooleanManager switch_manager{in_switch};
 
-    while (!is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
+    while (not is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
         if (match(TokenType::CASE)) {
             ExprNode expr = expression();
             consume("Expected ':' after case expression", TokenType::COLON);
