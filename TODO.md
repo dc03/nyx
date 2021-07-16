@@ -46,5 +46,5 @@ in the code
 - [ ] Add `not` keyword as alternative to `!`
 - [ ] Change switch syntax from `case expr: stmt` to `expr -> stmt`
 - [ ] Disallow `ListExpr`s being used directly in `==` and `!=` expressions
-- [ ] Fix if statements allowing use of list expressions as conditions
+- [x] Fix if statements allowing use of list expressions as conditions
 - [ ] Replace all instances of `!` with `not`

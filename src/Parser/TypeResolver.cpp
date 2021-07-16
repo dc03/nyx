@@ -983,7 +983,11 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
-    resolve(stmt.condition.get());
+    ExprVisitorType condition = resolve(stmt.condition.get());
+    if (one_of(condition.info->data.primitive, Type::CLASS, Type::LIST)) {
+        error("Class or list types are not implicitly convertible to bool", stmt.keyword);
+    }
+
     resolve(stmt.thenBranch.get());
 
     if (stmt.elseBranch != nullptr) {
