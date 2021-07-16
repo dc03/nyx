@@ -199,13 +199,23 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
             break;
 
         case TokenType::EQUAL_EQUAL:
-            current_chunk->emit_instruction(Instruction::EQUAL, expr.resolved.token.line);
+            if (expr.left->resolved.info->data.primitive == Type::LIST ||
+                expr.left->resolved.info->data.primitive == Type::STRING) {
+                current_chunk->emit_instruction(Instruction::EQUAL_SL, expr.resolved.token.line);
+            } else {
+                current_chunk->emit_instruction(Instruction::EQUAL, expr.resolved.token.line);
+            }
             break;
         case TokenType::GREATER: current_chunk->emit_instruction(Instruction::GREATER, expr.resolved.token.line); break;
         case TokenType::LESS: current_chunk->emit_instruction(Instruction::LESSER, expr.resolved.token.line); break;
 
         case TokenType::NOT_EQUAL:
-            current_chunk->emit_instruction(Instruction::EQUAL, expr.resolved.token.line);
+            if (expr.left->resolved.info->data.primitive == Type::LIST ||
+                expr.left->resolved.info->data.primitive == Type::STRING) {
+                current_chunk->emit_instruction(Instruction::EQUAL_SL, expr.resolved.token.line);
+            } else {
+                current_chunk->emit_instruction(Instruction::EQUAL, expr.resolved.token.line);
+            }
             current_chunk->emit_instruction(Instruction::NOT, expr.resolved.token.line);
             break;
         case TokenType::GREATER_EQUAL:
@@ -631,14 +641,14 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
         case IdentifierType::GLOBAL:
             if (expr.resolved.stack_slot < Chunk::const_long_max) {
                 if (expr.type == IdentifierType::LOCAL) {
-                    if (expr.resolved.info->data.primitive == Type::STRING) {
-                        current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_STRING, expr.name.line);
+                    if (expr.resolved.info->data.primitive == Type::LIST) {
+                        current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LIST, expr.name.line);
                     } else {
                         current_chunk->emit_instruction(Instruction::ACCESS_LOCAL, expr.name.line);
                     }
                 } else {
-                    if (expr.resolved.info->data.primitive == Type::STRING) {
-                        current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL_STRING, expr.name.line);
+                    if (expr.resolved.info->data.primitive == Type::LIST) {
+                        current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL_LIST, expr.name.line);
                     } else {
                         current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL, expr.name.line);
                     }

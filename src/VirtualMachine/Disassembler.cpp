@@ -84,10 +84,10 @@ void instruction(Chunk &chunk, std::string_view name, std::size_t where) {
     } else if (name == "MAKE_REF_TO_GLOBAL") {
         std::cout << "\t\t| make ref to global " << next_bytes << '\n';
         print_trailing_bytes();
-    } else if (name == "ACCESS_LOCAL" || name == "ACCESS_LOCAL_STRING") {
+    } else if (name == "ACCESS_LOCAL" || name == "ACCESS_LOCAL_LIST") {
         std::cout << "\t\t| access local " << next_bytes << '\n';
         print_trailing_bytes();
-    } else if (name == "ACCESS_GLOBAL" || name == "ACCESS_GLOBAL_STRING") {
+    } else if (name == "ACCESS_GLOBAL" || name == "ACCESS_GLOBAL_LIST") {
         std::cout << "\t\t| access global " << next_bytes << '\n';
         print_trailing_bytes();
     } else if (name == "RETURN") {
@@ -150,8 +150,6 @@ void disassemble_instruction(Chunk &chunk, Instruction insn, std::size_t where) 
         case Instruction::RETURN: instruction(chunk, "RETURN", where); return;
         case Instruction::TRAP_RETURN: instruction(chunk, "TRAP_RETURN", where); return;
         case Instruction::CONSTANT_STRING: instruction(chunk, "CONSTANT_STRING", where); return;
-        case Instruction::ACCESS_LOCAL_STRING: instruction(chunk, "ACCESS_LOCAL_STRING", where); return;
-        case Instruction::ACCESS_GLOBAL_STRING: instruction(chunk, "ACCESS_GLOBAL_STRING", where); return;
         case Instruction::POP_STRING: instruction(chunk, "POP_STRING", where); return;
         case Instruction::CONCATENATE: instruction(chunk, "CONCATENATE", where); return;
         case Instruction::MAKE_LIST: instruction(chunk, "MAKE_LIST", where); return;
@@ -160,10 +158,13 @@ void disassemble_instruction(Chunk &chunk, Instruction insn, std::size_t where) 
         case Instruction::ASSIGN_LIST: instruction(chunk, "ASSIGN_LIST", where); return;
         case Instruction::INDEX_LIST: instruction(chunk, "INDEX_LIST", where); return;
         case Instruction::CHECK_INDEX: instruction(chunk, "CHECK_INDEX", where); return;
+        case Instruction::ACCESS_LOCAL_LIST: instruction(chunk, "ACCESS_LOCAL_LIST", where); return;
+        case Instruction::ACCESS_GLOBAL_LIST: instruction(chunk, "ACCESS_GLOBAL_LIST", where); return;
         case Instruction::ASSIGN_LOCAL_LIST: instruction(chunk, "ASSIGN_LOCAL_LIST", where); return;
         case Instruction::ASSIGN_GLOBAL_LIST: instruction(chunk, "ASSIGN_GLOBAL_LIST", where); return;
         case Instruction::POP_LIST: instruction(chunk, "POP_LIST", where); return;
         case Instruction::ACCESS_FROM_TOP: instruction(chunk, "ACCESS_FROM_TOP", where); return;
+        case Instruction::EQUAL_SL: instruction(chunk, "EQUAL_SL", where); return;
     }
     unreachable();
 }
