@@ -40,7 +40,6 @@ class VirtualMachine {
     RuntimeModule *current_module{};
 
     Chunk::InstructionSizeType read_next();
-    std::size_t read_three_bytes();
 
     bool trace_stack{false};
     bool trace_insn{false};

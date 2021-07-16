@@ -27,13 +27,6 @@ Chunk::InstructionSizeType VirtualMachine::read_next() {
     return *(ip++);
 }
 
-std::size_t VirtualMachine::read_three_bytes() {
-    std::size_t bytes = read_next();
-    bytes = (bytes << 8) | read_next();
-    bytes = (bytes << 8) | read_next();
-    return bytes;
-}
-
 void VirtualMachine::push(Value value) noexcept {
     stack[stack_top++] = value;
 }
