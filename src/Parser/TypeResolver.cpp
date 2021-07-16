@@ -51,31 +51,31 @@ bool TypeResolver::convertible_to(
     // The class condition is used to check if the names of the classes being converted between are same
     // This is only useful if both to and from are class types, hence it is only checked if so
 
-    if (to->data.is_ref &&
+    if (to->is_ref &&
         in_initializer) { // Only need to check conversion between references when we are in an initializer
-        if (not from_lvalue && not from->data.is_ref) {
+        if (not from_lvalue && not from->is_ref) {
             error("Cannot bind reference to non l-value type object", where);
             return false;
-        } else if (from->data.is_const && not to->data.is_const) {
+        } else if (from->is_const && not to->is_const) {
             error("Cannot bind non-const reference to constant object", where);
             return false;
         }
 
-        if (from->data.primitive == Type::LIST && to->data.primitive == Type::LIST) {
+        if (from->primitive == Type::LIST && to->primitive == Type::LIST) {
             return are_equivalent_types(
                 dynamic_cast<ListType *>(from)->contained.get(), dynamic_cast<ListType *>(to)->contained.get());
         }
 
-        return from->data.primitive == to->data.primitive && class_condition;
-    } else if ((from->data.primitive == Type::FLOAT && to->data.primitive == Type::INT) ||
-               (from->data.primitive == Type::INT && to->data.primitive == Type::FLOAT)) {
+        return from->primitive == to->primitive && class_condition;
+    } else if ((from->primitive == Type::FLOAT && to->primitive == Type::INT) ||
+               (from->primitive == Type::INT && to->primitive == Type::FLOAT)) {
         warning("Implicit conversion between float and int", where);
         return true;
-    } else if (from->data.primitive == Type::LIST && to->data.primitive == Type::LIST) {
+    } else if (from->primitive == Type::LIST && to->primitive == Type::LIST) {
         return are_equivalent_types(
             dynamic_cast<ListType *>(from)->contained.get(), dynamic_cast<ListType *>(to)->contained.get());
     } else {
-        return from->data.primitive == to->data.primitive && class_condition;
+        return from->primitive == to->primitive && class_condition;
     }
 }
 
@@ -154,16 +154,15 @@ BaseTypeVisitorType TypeResolver::resolve(BaseType *type) {
 template <typename T, typename... Args>
 BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Args &&...args) {
     if constexpr (sizeof...(args) > 0) {
-        type_scratch_space.emplace_back(
-            allocate_node(T, SharedData{type, is_const, is_ref}, std::forward<Args>(args)...));
+        type_scratch_space.emplace_back(allocate_node(T, type, is_const, is_ref, std::forward<Args>(args)...));
     } else {
         for (TypeNode &existing_type : type_scratch_space) {
-            if (existing_type->data.primitive == type && existing_type->data.is_const == is_const &&
-                existing_type->data.is_ref == is_ref) {
+            if (existing_type->primitive == type && existing_type->is_const == is_const &&
+                existing_type->is_ref == is_ref) {
                 return existing_type.get();
             }
         }
-        type_scratch_space.emplace_back(allocate_node(T, SharedData{type, is_const, is_ref}));
+        type_scratch_space.emplace_back(allocate_node(T, type, is_const, is_ref));
     }
     return type_scratch_space.back().get();
 }
@@ -180,32 +179,31 @@ void TypeResolver::infer_list_type(ListExpr *of, ListType *from) {
     if (not are_equivalent_primitives(of->type.get(), from)) {
         return; // Need to have exact same primitives, i.e. same dimension lists storing the same type of elements
     }
-    if (from->data.is_ref) {
+    if (from->is_ref) {
         return; // Cannot make reference to a ListExpr
     }
-    if (from->contained->data.is_ref &&
+    if (from->contained->is_ref &&
         std::all_of(of->elements.begin(), of->elements.end(), [](const ListExpr::ElementType &elem) {
-            return std::get<ExprNode>(elem)->resolved.is_lvalue || std::get<ExprNode>(elem)->resolved.info->data.is_ref;
+            return std::get<ExprNode>(elem)->resolved.is_lvalue || std::get<ExprNode>(elem)->resolved.info->is_ref;
         })) {
         // If there is a ListExpr consisting solely of references or lvalues, it can be safely inferred as a list of
         // references if it is being stored in a name with a reference type
-        of->type->contained->data.is_ref = true;
-        if (std::any_of(of->elements.cbegin(), of->elements.cend(), [](const ListExpr::ElementType &elem) {
-                return std::get<ExprNode>(elem)->resolved.info->data.is_const;
-            })) {
-            of->type->contained->data.is_const = true;
+        of->type->contained->is_ref = true;
+        if (std::any_of(of->elements.cbegin(), of->elements.cend(),
+                [](const ListExpr::ElementType &elem) { return std::get<ExprNode>(elem)->resolved.info->is_const; })) {
+            of->type->contained->is_const = true;
             // A list of references has all its elements become const if any one of them are const
         }
     }
 
-    of->type->contained->data.is_const = of->type->contained->data.is_const || from->contained->data.is_const;
-    of->type->data.is_const = of->type->data.is_const || from->data.is_const;
+    of->type->contained->is_const = of->type->contained->is_const || from->contained->is_const;
+    of->type->is_const = of->type->is_const || from->is_const;
     // Infer const-ness
 
     // Decide if copy is needed after inferring type
     for (ListExpr::ElementType &element : of->elements) {
-        if (not is_builtin_type(of->type->contained->data.primitive)) {
-            if (not of->type->contained->data.is_ref && std::get<ExprNode>(element)->resolved.is_lvalue) {
+        if (not is_builtin_type(of->type->contained->primitive)) {
+            if (not of->type->contained->is_ref && std::get<ExprNode>(element)->resolved.is_lvalue) {
                 std::get<RequiresCopy>(element) = true;
             }
         }
@@ -213,14 +211,14 @@ void TypeResolver::infer_list_type(ListExpr *of, ListType *from) {
 }
 
 bool TypeResolver::are_equivalent_primitives(QualifiedTypeInfo first, QualifiedTypeInfo second) {
-    if (first->data.primitive == second->data.primitive) {
-        if (first->data.primitive == Type::LIST && second->data.primitive == Type::LIST) {
+    if (first->primitive == second->primitive) {
+        if (first->primitive == Type::LIST && second->primitive == Type::LIST) {
             auto *first_contained = dynamic_cast<ListType *>(first)->contained.get();
             auto *second_contained = dynamic_cast<ListType *>(second)->contained.get();
-            if (first_contained->data.primitive == Type::LIST && second_contained->data.primitive == Type::LIST) {
+            if (first_contained->primitive == Type::LIST && second_contained->primitive == Type::LIST) {
                 return are_equivalent_primitives(first_contained, second_contained);
             } else {
-                return first_contained->data.primitive == second_contained->data.primitive;
+                return first_contained->primitive == second_contained->primitive;
             }
         } else {
             return true;
@@ -230,13 +228,13 @@ bool TypeResolver::are_equivalent_primitives(QualifiedTypeInfo first, QualifiedT
 }
 
 bool TypeResolver::are_equivalent_types(QualifiedTypeInfo first, QualifiedTypeInfo second) {
-    if (first->data.primitive == Type::LIST && second->data.primitive == Type::LIST) {
+    if (first->primitive == Type::LIST && second->primitive == Type::LIST) {
         return are_equivalent_types(dynamic_cast<ListType *>(first)->contained.get(),
                    dynamic_cast<ListType *>(second)->contained.get()) &&
-               (first->data.is_const == second->data.is_const) && (first->data.is_ref == second->data.is_ref);
+               (first->is_const == second->is_const) && (first->is_ref == second->is_ref);
     } else {
-        return are_equivalent_primitives(first, second) && (first->data.is_const == second->data.is_const) &&
-               (first->data.is_ref == second->data.is_ref);
+        return are_equivalent_primitives(first, second) && (first->is_const == second->is_const) &&
+               (first->is_ref == second->is_ref);
     }
 }
 
@@ -265,25 +263,25 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
     }
 
     ExprVisitorType value = resolve(expr.value.get());
-    if (it->info->data.is_const) {
+    if (it->info->is_const) {
         error("Cannot assign to a const variable", expr.resolved.token);
     } else if (not convertible_to(it->info, value.info, value.is_lvalue, expr.target, false)) {
         error("Cannot convert type of value to type of target", expr.resolved.token);
         show_conversion_note(value.info, it->info);
     } else if (one_of(expr.resolved.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                    TokenType::SLASH_EQUAL) &&
-               not one_of(it->info->data.primitive, Type::INT, Type::FLOAT) &&
-               not one_of(value.info->data.primitive, Type::INT, Type::FLOAT)) {
+               not one_of(it->info->primitive, Type::INT, Type::FLOAT) &&
+               not one_of(value.info->primitive, Type::INT, Type::FLOAT)) {
         error("Expected integral types for compound assignment operator", expr.resolved.token);
         throw TypeException{"Expected integral types for compound assignment operator"};
-    } else if (value.info->data.primitive == Type::FLOAT && it->info->data.primitive == Type::INT) {
+    } else if (value.info->primitive == Type::FLOAT && it->info->primitive == Type::INT) {
         expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
-    } else if (value.info->data.primitive == Type::INT && it->info->data.primitive == Type::FLOAT) {
+    } else if (value.info->primitive == Type::INT && it->info->primitive == Type::FLOAT) {
         expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
     }
 
-    if (not is_builtin_type(value.info->data.primitive)) {
-        if (expr.value->resolved.is_lvalue || expr.value->resolved.info->data.is_ref) {
+    if (not is_builtin_type(value.info->primitive)) {
+        if (expr.value->resolved.is_lvalue || expr.value->resolved.info->is_ref) {
             expr.requires_copy = true;
         }
     }
@@ -304,7 +302,7 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
         case TokenType::BIT_OR:
         case TokenType::BIT_XOR:
         case TokenType::MODULO:
-            if (left_expr.info->data.primitive != Type::INT || right_expr.info->data.primitive != Type::INT) {
+            if (left_expr.info->primitive != Type::INT || right_expr.info->primitive != Type::INT) {
                 if (expr.resolved.token.type == TokenType::MODULO) {
                     error("Wrong types of arguments to modulo operator (expected integral arguments)",
                         expr.resolved.token);
@@ -316,15 +314,15 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             return expr.resolved = {left_expr.info, expr.resolved.token};
         case TokenType::NOT_EQUAL:
         case TokenType::EQUAL_EQUAL:
-            if (left_expr.info->data.primitive == Type::LIST && right_expr.info->data.primitive == Type::LIST) {
+            if (left_expr.info->primitive == Type::LIST && right_expr.info->primitive == Type::LIST) {
                 if (not convertible_to(left_expr.info, right_expr.info, false, expr.resolved.token, false) &&
                     not convertible_to(right_expr.info, left_expr.info, false, expr.resolved.token, false)) {
                     error("Cannot compare two lists that have incompatible contained types", expr.resolved.token);
                     show_equality_note(left_expr.info, right_expr.info);
                 }
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
-            } else if (one_of(left_expr.info->data.primitive, Type::BOOL, Type::STRING, Type::NULL_)) {
-                if (left_expr.info->data.primitive != right_expr.info->data.primitive) {
+            } else if (one_of(left_expr.info->primitive, Type::BOOL, Type::STRING, Type::NULL_)) {
+                if (left_expr.info->primitive != right_expr.info->primitive) {
                     error("Cannot compare equality of objects of different types", expr.resolved.token);
                 }
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
@@ -334,29 +332,29 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
         case TokenType::GREATER_EQUAL:
         case TokenType::LESS:
         case TokenType::LESS_EQUAL:
-            if (one_of(left_expr.info->data.primitive, Type::INT, Type::FLOAT) &&
-                one_of(right_expr.info->data.primitive, Type::INT, Type::FLOAT)) {
-                if (left_expr.info->data.primitive != right_expr.info->data.primitive) {
+            if (one_of(left_expr.info->primitive, Type::INT, Type::FLOAT) &&
+                one_of(right_expr.info->primitive, Type::INT, Type::FLOAT)) {
+                if (left_expr.info->primitive != right_expr.info->primitive) {
                     warning("Comparison between objects of types int and float", expr.resolved.token);
                 }
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
-            } else if (left_expr.info->data.primitive == Type::BOOL && right_expr.info->data.primitive == Type::BOOL) {
+            } else if (left_expr.info->primitive == Type::BOOL && right_expr.info->primitive == Type::BOOL) {
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             } else {
                 error("Cannot compare objects of incompatible types", expr.resolved.token);
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             }
         case TokenType::PLUS:
-            if (left_expr.info->data.primitive == Type::STRING && right_expr.info->data.primitive == Type::STRING) {
+            if (left_expr.info->primitive == Type::STRING && right_expr.info->primitive == Type::STRING) {
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::STRING, true, false), expr.resolved.token};
             }
             [[fallthrough]];
         case TokenType::MINUS:
         case TokenType::SLASH:
         case TokenType::STAR:
-            if (one_of(left_expr.info->data.primitive, Type::INT, Type::FLOAT) &&
-                one_of(right_expr.info->data.primitive, Type::INT, Type::FLOAT)) {
-                if (left_expr.info->data.primitive == Type::INT && right_expr.info->data.primitive == Type::INT) {
+            if (one_of(left_expr.info->primitive, Type::INT, Type::FLOAT) &&
+                one_of(right_expr.info->primitive, Type::INT, Type::FLOAT)) {
+                if (left_expr.info->primitive == Type::INT && right_expr.info->primitive == Type::INT) {
                     return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
                 }
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::FLOAT, true, false), expr.resolved.token};
@@ -367,7 +365,7 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             }
         case TokenType::DOT_DOT:
         case TokenType::DOT_DOT_EQUAL:
-            if (left_expr.info->data.primitive == Type::INT && right_expr.info->data.primitive == Type::INT) {
+            if (left_expr.info->primitive == Type::INT && right_expr.info->primitive == Type::INT) {
                 BaseType *list = make_new_type<ListType>(
                     Type::LIST, true, false, TypeNode{make_new_type<PrimitiveType>(Type::INT, true, false)}, nullptr);
                 return expr.resolved = {list, expr.resolved.token};
@@ -406,7 +404,7 @@ ExprVisitorType TypeResolver::check_inbuilt(
     for (std::size_t i = 0; i < it->arity; i++) {
         ExprVisitorType arg = resolve(std::get<ExprNode>(args[i]).get());
         if (not std::any_of(it->arguments[i].begin(), it->arguments[i].end(),
-                [&arg](const Type &type) { return type == arg.info->data.primitive; })) {
+                [&arg](const Type &type) { return type == arg.info->primitive; })) {
             using namespace std::string_literals;
             std::string type_error = "Cannot pass argument of type '"s + stringify(arg.info) +
                                      "' as argument number "s + std::to_string(i + 1) + " to builtin function '"s +
@@ -442,7 +440,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     if (expr.function->type_tag() == NodeType::GetExpr) {
         auto *get = dynamic_cast<GetExpr *>(expr.function.get());
         expr.args.insert(expr.args.begin(),
-            {std::move(get->object), NumericConversionType::NONE, not called->params[0].second->data.is_ref});
+            {std::move(get->object), NumericConversionType::NONE, not called->params[0].second->is_ref});
     }
 
     if (called->params.size() != expr.args.size()) {
@@ -452,20 +450,19 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
 
     for (std::size_t i{0}; i < expr.args.size(); i++) {
         ExprVisitorType argument = resolve(std::get<ExprNode>(expr.args[i]).get());
-        if (not convertible_to(called->params[i].second.get(), argument.info, argument.is_lvalue, argument.token, true)) {
+        if (not convertible_to(
+                called->params[i].second.get(), argument.info, argument.is_lvalue, argument.token, true)) {
             error("Type of argument is not convertible to type of parameter", argument.token);
             show_conversion_note(argument.info, called->params[i].second.get());
-        } else if (argument.info->data.primitive == Type::FLOAT &&
-                   called->params[i].second->data.primitive == Type::INT) {
+        } else if (argument.info->primitive == Type::FLOAT && called->params[i].second->primitive == Type::INT) {
             std::get<NumericConversionType>(expr.args[i]) = NumericConversionType::FLOAT_TO_INT;
-        } else if (argument.info->data.primitive == Type::INT &&
-                   called->params[i].second->data.primitive == Type::FLOAT) {
+        } else if (argument.info->primitive == Type::INT && called->params[i].second->primitive == Type::FLOAT) {
             std::get<NumericConversionType>(expr.args[i]) = NumericConversionType::INT_TO_FLOAT;
         }
 
         auto &param = called->params[i];
-        if (not is_builtin_type(param.second->data.primitive)) {
-            if (param.second->data.is_ref) {
+        if (not is_builtin_type(param.second->primitive)) {
+            if (param.second->is_ref) {
                 std::get<RequiresCopy>(expr.args[i]) = false; // A reference binding to anything does not need a copy
             } else if (argument.is_lvalue) {
                 std::get<RequiresCopy>(expr.args[i]) =
@@ -487,7 +484,7 @@ ExprVisitorType TypeResolver::visit(CommaExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, const Token &name) {
-    if (object.info->data.primitive == Type::CLASS) {
+    if (object.info->primitive == Type::CLASS) {
         ClassStmt *accessed_type = object.class_;
 
         for (auto &member_decl : accessed_type->members) {
@@ -547,16 +544,16 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
 
     ExprVisitorType index = resolve(expr.index.get());
 
-    if (index.info->data.primitive != Type::INT) {
+    if (index.info->primitive != Type::INT) {
         error("Expected integral type for index", expr.resolved.token);
         throw TypeException{"Expected integral type for index"};
     }
 
-    if (list.info->data.primitive == Type::LIST) {
+    if (list.info->primitive == Type::LIST) {
         auto *contained_type = dynamic_cast<ListType *>(list.info)->contained.get();
         return expr.resolved = {contained_type, expr.resolved.token,
-                   expr.object->resolved.is_lvalue || expr.object->resolved.info->data.is_ref};
-    } else if (list.info->data.primitive == Type::STRING) {
+                   expr.object->resolved.is_lvalue || expr.object->resolved.info->is_ref};
+    } else if (list.info->primitive == Type::STRING) {
         return expr.resolved = {list.info, expr.resolved.token, false}; // For now, strings are immutable.
     } else {
         error("Expected list or string type for indexing", expr.resolved.token);
@@ -574,9 +571,9 @@ ExprVisitorType TypeResolver::visit(ListExpr &expr) {
     }
 
     auto *list_size = allocate_node(LiteralExpr, LiteralValue{static_cast<int>(expr.elements.size())},
-        TypeNode{allocate_node(PrimitiveType, {Type::INT, true, false})});
+        TypeNode{allocate_node(PrimitiveType, Type::INT, true, false)});
 
-    expr.type.reset(allocate_node(ListType, {Type::LIST, false, false},
+    expr.type.reset(allocate_node(ListType, Type::LIST, false, false,
         TypeNode{copy_type(resolve(std::get<ExprNode>(*expr.elements.begin()).get()).info)}, ExprNode{list_size}));
 
     for (std::size_t i = 1; i < expr.elements.size(); i++) {
@@ -584,22 +581,22 @@ ExprVisitorType TypeResolver::visit(ListExpr &expr) {
     }
 
     if (std::none_of(expr.elements.begin(), expr.elements.end(),
-            [](const ListExpr::ElementType &x) { return std::get<ExprNode>(x)->resolved.info->data.is_ref; })) {
+            [](const ListExpr::ElementType &x) { return std::get<ExprNode>(x)->resolved.info->is_ref; })) {
         // If there are no references in the list, the individual elements can safely be made non-const
-        expr.type->contained->data.is_const = false;
+        expr.type->contained->is_const = false;
     }
 
     for (ListExpr::ElementType &element : expr.elements) {
-        if (std::get<ExprNode>(element)->resolved.info->data.primitive == Type::INT &&
-            expr.type->contained->data.primitive == Type::FLOAT) {
+        if (std::get<ExprNode>(element)->resolved.info->primitive == Type::INT &&
+            expr.type->contained->primitive == Type::FLOAT) {
             std::get<NumericConversionType>(element) = NumericConversionType::INT_TO_FLOAT;
-        } else if (std::get<ExprNode>(element)->resolved.info->data.primitive == Type::FLOAT &&
-                   expr.type->contained->data.primitive == Type::INT) {
+        } else if (std::get<ExprNode>(element)->resolved.info->primitive == Type::FLOAT &&
+                   expr.type->contained->primitive == Type::INT) {
             std::get<NumericConversionType>(element) = NumericConversionType::FLOAT_TO_INT;
         }
 
         // Converting to non-ref from any non-trivial type (i.e. list) regardless of ref-ness requires a copy
-        if (not expr.type->contained->data.is_ref && not is_builtin_type(expr.type->contained->data.primitive) &&
+        if (not expr.type->contained->is_ref && not is_builtin_type(expr.type->contained->primitive) &&
             std::get<ExprNode>(element)->resolved.is_lvalue) {
             std::get<RequiresCopy>(element) = true;
         }
@@ -611,7 +608,7 @@ ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
     ExprVisitorType contained = resolve(&expr.list);
     ExprVisitorType value = resolve(expr.value.get());
 
-    if (not (expr.list.resolved.is_lvalue || expr.list.resolved.info->data.is_ref)) {
+    if (not(expr.list.resolved.is_lvalue || expr.list.resolved.info->is_ref)) {
         error("Cannot assign to non-lvalue or non-ref list", expr.resolved.token);
         note("Only variables or references can be assigned to");
         throw TypeException{"Cannot assign to non-lvalue or non-ref list"};
@@ -623,27 +620,27 @@ ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
         throw TypeException{"Cannot assign to non-lvalue element"};
     }
 
-    if (contained.info->data.is_const) {
+    if (contained.info->is_const) {
         error("Cannot assign to constant value", expr.resolved.token);
         show_conversion_note(value.info, contained.info);
         throw TypeException{"Cannot assign to constant value"};
-    } else if (expr.list.object->resolved.info->data.is_const) {
+    } else if (expr.list.object->resolved.info->is_const) {
         error("Cannot assign to constant list", expr.resolved.token);
         show_conversion_note(value.info, expr.list.object->resolved.info);
         throw TypeException{"Cannot assign to constant list"};
     } else if (one_of(expr.resolved.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                    TokenType::SLASH_EQUAL) &&
-               not one_of(contained.info->data.primitive, Type::INT, Type::FLOAT) &&
-               not one_of(value.info->data.primitive, Type::INT, Type::FLOAT)) {
+               not one_of(contained.info->primitive, Type::INT, Type::FLOAT) &&
+               not one_of(value.info->primitive, Type::INT, Type::FLOAT)) {
         error("Expected integral types for compound assignment operator", expr.resolved.token);
         throw TypeException{"Expected integral types for compound assignment operator"};
     } else if (not convertible_to(contained.info, value.info, value.is_lvalue, expr.resolved.token, false)) {
         error("Cannot convert from contained type of list to type being assigned", expr.resolved.token);
         show_conversion_note(contained.info, value.info);
         throw TypeException{"Cannot convert from contained type of list to type being assigned"};
-    } else if (value.info->data.primitive == Type::FLOAT && contained.info->data.primitive == Type::INT) {
+    } else if (value.info->primitive == Type::FLOAT && contained.info->primitive == Type::INT) {
         expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
-    } else if (value.info->data.primitive == Type::INT && contained.info->data.primitive == Type::FLOAT) {
+    } else if (value.info->primitive == Type::INT && contained.info->primitive == Type::FLOAT) {
         expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
     }
 
@@ -727,9 +724,9 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
     ExprVisitorType attribute_type = resolve_class_access(object, expr.name);
     ExprVisitorType value_type = resolve(expr.value.get());
 
-    if (object.info->data.is_const) {
+    if (object.info->is_const) {
         error("Cannot assign to a const object", expr.name);
-    } else if (not in_ctor && attribute_type.info->data.is_const) {
+    } else if (not in_ctor && attribute_type.info->is_const) {
         error("Cannot assign to const attribute", expr.name);
     }
 
@@ -737,13 +734,13 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
         error("Cannot convert value of assigned expresion to type of target", expr.name);
         show_conversion_note(value_type.info, attribute_type.info);
         throw TypeException{"Cannot convert value of assigned expression to type of target"};
-    } else if (value_type.info->data.primitive == Type::FLOAT && attribute_type.info->data.primitive == Type::INT) {
+    } else if (value_type.info->primitive == Type::FLOAT && attribute_type.info->primitive == Type::INT) {
         expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
-    } else if (value_type.info->data.primitive == Type::INT && attribute_type.info->data.primitive == Type::FLOAT) {
+    } else if (value_type.info->primitive == Type::INT && attribute_type.info->primitive == Type::FLOAT) {
         expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
     }
 
-    expr.requires_copy = not is_builtin_type(value_type.info->data.primitive); // Similar case to AssignExpr
+    expr.requires_copy = not is_builtin_type(value_type.info->primitive); // Similar case to AssignExpr
     return expr.resolved = {attribute_type.info, expr.resolved.token};
 }
 
@@ -780,28 +777,28 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
     ExprVisitorType right = resolve(expr.right.get());
     switch (expr.oper.type) {
         case TokenType::BIT_NOT:
-            if (right.info->data.primitive != Type::INT) {
+            if (right.info->primitive != Type::INT) {
                 error("Wrong type of argument to bitwise unary operator (expected integral argument)", expr.oper);
             }
             return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
         case TokenType::NOT:
-            if (one_of(right.info->data.primitive, Type::CLASS, Type::LIST, Type::NULL_)) {
+            if (one_of(right.info->primitive, Type::CLASS, Type::LIST, Type::NULL_)) {
                 error("Wrong type of argument to logical not operator", expr.oper);
             }
             return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
         case TokenType::PLUS_PLUS:
         case TokenType::MINUS_MINUS:
-            if (not one_of(right.info->data.primitive, Type::INT, Type::FLOAT)) {
+            if (not one_of(right.info->primitive, Type::INT, Type::FLOAT)) {
                 error("Expected integral or floating type as argument to increment operator", expr.oper);
                 throw TypeException{"Expected integral or floating type as argument to increment operator"};
-            } else if (right.info->data.is_const || not (right.is_lvalue || right.info->data.is_ref)) {
+            } else if (right.info->is_const || not(right.is_lvalue || right.info->is_ref)) {
                 error("Expected non-const l-value or reference type as argument for increment operator", expr.oper);
                 throw TypeException{"Expected non-const l-value or reference type as argument for increment operator"};
             };
             return expr.resolved = {right.info, expr.oper};
         case TokenType::MINUS:
         case TokenType::PLUS:
-            if (not one_of(right.info->data.primitive, Type::INT, Type::FLOAT)) {
+            if (not one_of(right.info->primitive, Type::INT, Type::FLOAT)) {
                 error("Expected integral or floating point argument to operator", expr.oper);
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
             }
@@ -877,7 +874,7 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
     // Creation of the implicit constructor
     if (stmt.ctor == nullptr) {
         stmt.ctor = allocate_node(FunctionStmt, stmt.name,
-            TypeNode{allocate_node(UserDefinedType, {Type::CLASS, false, false}, stmt.name)}, {},
+            TypeNode{allocate_node(UserDefinedType, Type::CLASS, false, false, stmt.name)}, {},
             StmtNode{allocate_node(BlockStmt, {})}, {}, values.empty() ? 0 : values.crbegin()->scope_depth);
         stmt.methods.emplace_back(std::unique_ptr<FunctionStmt>{stmt.ctor}, VisibilityType::PUBLIC);
     }
@@ -974,7 +971,7 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     if (auto *body = dynamic_cast<BlockStmt *>(stmt.body.get());
         (not body->stmts.empty() && body->stmts.back()->type_tag() != NodeType::ReturnStmt) || body->stmts.empty()) {
         // TODO: also for constructors and destructors
-        if (stmt.return_type->data.primitive == Type::NULL_) {
+        if (stmt.return_type->primitive == Type::NULL_) {
             body->stmts.emplace_back(allocate_node(ReturnStmt, stmt.name, nullptr, 0, nullptr));
         }
     }
@@ -984,7 +981,7 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
 
 StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
     ExprVisitorType condition = resolve(stmt.condition.get());
-    if (one_of(condition.info->data.primitive, Type::CLASS, Type::LIST)) {
+    if (one_of(condition.info->primitive, Type::CLASS, Type::LIST)) {
         error("Class or list types are not implicitly convertible to bool", stmt.keyword);
     }
 
@@ -997,7 +994,7 @@ StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
 
 StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
     if (stmt.value == nullptr) {
-        if (current_function->return_type->data.primitive != Type::NULL_) {
+        if (current_function->return_type->primitive != Type::NULL_) {
             error("Can only have empty return expressions in functions which return 'null'", stmt.keyword);
             throw TypeException{"Can only have empty return expressions in functions which return 'null'"};
         }
@@ -1062,19 +1059,19 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
                 // If there is a var statement without a specified type that is not binding to a reference it is
                 // automatically non-const
                 if (originally_typeless) {
-                    stmt.type->data.is_const = false;
-                    stmt.type->data.is_ref = false;
+                    stmt.type->is_const = false;
+                    stmt.type->is_ref = false;
                 }
                 break;
-            case TokenType::CONST: stmt.type->data.is_const = true; break;
-            case TokenType::REF: stmt.type->data.is_ref = true; break;
+            case TokenType::CONST: stmt.type->is_const = true; break;
+            case TokenType::REF: stmt.type->is_ref = true; break;
             default: break;
         }
 
         // Infer some more information about the type of the list expression from the type of the variable if needed
         //  If a variable is defined as `var x: [ref int] = [a, b, c]`, then the list needs to be inferred as a list of
         //  [ref int], not as [int]
-        if (stmt.initializer->type_tag() == NodeType::ListExpr && stmt.type->data.primitive == Type::LIST) {
+        if (stmt.initializer->type_tag() == NodeType::ListExpr && stmt.type->primitive == Type::LIST) {
             infer_list_type(
                 dynamic_cast<ListExpr *>(stmt.initializer.get()), dynamic_cast<ListType *>(stmt.type.get()));
         }
@@ -1083,16 +1080,16 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
             error("Cannot convert from initializer type to type of variable", stmt.name);
             show_conversion_note(initializer.info, type);
             throw TypeException{"Cannot convert from initializer type to type of variable"};
-        } else if (initializer.info->data.primitive == Type::FLOAT && type->data.primitive == Type::INT) {
+        } else if (initializer.info->primitive == Type::FLOAT && type->primitive == Type::INT) {
             stmt.conversion_type = NumericConversionType::FLOAT_TO_INT;
-        } else if (initializer.info->data.primitive == Type::INT && type->data.primitive == Type::FLOAT) {
+        } else if (initializer.info->primitive == Type::INT && type->primitive == Type::FLOAT) {
             stmt.conversion_type = NumericConversionType::INT_TO_FLOAT;
         }
 
-        if (not is_builtin_type(stmt.type->data.primitive)) {
-            if (type->data.is_ref) {
+        if (not is_builtin_type(stmt.type->primitive)) {
+            if (type->is_ref) {
                 stmt.requires_copy = false; // A reference binding to anything does not need a copy
-            } else if (initializer.is_lvalue || initializer.info->data.is_ref) {
+            } else if (initializer.is_lvalue || initializer.info->is_ref) {
                 stmt.requires_copy = true; // A copy is made when initializing from an lvalue without a reference or
                                            // when converting a ref to non-ref
             }
@@ -1130,7 +1127,7 @@ StmtVisitorType TypeResolver::visit(WhileStmt &stmt) {
     ScopedBooleanManager loop_manager{in_loop};
 
     ExprVisitorType condition = resolve(stmt.condition.get());
-    if (one_of(condition.info->data.primitive, Type::CLASS, Type::LIST)) {
+    if (one_of(condition.info->primitive, Type::CLASS, Type::LIST)) {
         error("Class or list types are not implicitly convertible to bool", stmt.keyword);
     }
     if (stmt.increment != nullptr) {
@@ -1159,8 +1156,8 @@ BaseTypeVisitorType TypeResolver::visit(ListType &type) {
 
 BaseTypeVisitorType TypeResolver::visit(TypeofType &type) {
     BaseTypeVisitorType typeof_expr = copy_type(resolve(type.expr.get()).info);
-    typeof_expr->data.is_const = typeof_expr->data.is_const || type.data.is_const;
-    typeof_expr->data.is_ref = typeof_expr->data.is_ref || type.data.is_ref;
+    typeof_expr->is_const = typeof_expr->is_const || type.is_const;
+    typeof_expr->is_ref = typeof_expr->is_ref || type.is_ref;
     type_scratch_space.emplace_back(typeof_expr); // This is to make sure the newly synthesized type is managed properly
     return typeof_expr;
 }

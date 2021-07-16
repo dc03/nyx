@@ -6,15 +6,15 @@
 
 std::string stringify(BaseType *node) {
     std::string result{};
-    if (node->data.is_const) {
+    if (node->is_const) {
         result += "const ";
     }
 
-    if (node->data.is_ref) {
+    if (node->is_ref) {
         result += "ref ";
     }
 
-    switch (node->data.primitive) {
+    switch (node->primitive) {
         case Type::INT: result += "int"; break;
         case Type::BOOL: result += "bool"; break;
         case Type::STRING: result += "string"; break;
@@ -38,13 +38,14 @@ std::string stringify(BaseType *node) {
 
 BaseTypeVisitorType copy_type(BaseType *node) {
     if (node->type_tag() == NodeType::PrimitiveType) {
-        return allocate_node(PrimitiveType, node->data);
+        return allocate_node(PrimitiveType, node->primitive, node->is_const, node->is_ref);
     } else if (node->type_tag() == NodeType::UserDefinedType) {
         auto *type = dynamic_cast<UserDefinedType *>(node);
-        return allocate_node(UserDefinedType, type->data, type->name);
+        return allocate_node(UserDefinedType, type->primitive, type->is_const, type->is_ref, type->name);
     } else if (node->type_tag() == NodeType::ListType) {
         auto *type = dynamic_cast<ListType *>(node);
-        return allocate_node(ListType, type->data, TypeNode{copy_type(type->contained.get())}, nullptr);
+        return allocate_node(ListType, type->primitive, type->is_const, type->is_ref,
+            TypeNode{copy_type(type->contained.get())}, nullptr);
     }
     unreachable();
 }

@@ -191,16 +191,14 @@ if __name__ == '__main__':
         declare_base(file, 'Expr', 'ExprVisitorType resolved{};')
         declare_base(file, 'Stmt')
 
-        file.write('struct SharedData {\n')
+        file.write('struct BaseType {\n')
         tab(file, 1).write('Type primitive;\n')
         tab(file, 1).write('bool is_const;\n')
         tab(file, 1).write('bool is_ref;\n\n')
-        file.write('};\n\n')
-
-        file.write('struct BaseType {\n')
-        tab(file, 1).write('SharedData data;\n\n')
         tab(file, 1).write('BaseType() = default;\n')
-        tab(file, 1).write('explicit BaseType(SharedData data): data{data} {}\n')
+        tab(file, 1).write(
+            'explicit BaseType(Type primitive, bool is_const, bool is_ref): primitive{primitive}, is_const{is_const}, '
+            'is_ref{is_ref} {}\n')
         tab(file, 1).write('virtual std::string_view string_tag() = 0;\n')
         tab(file, 1).write('virtual NodeType type_tag() = 0;\n')
         tab(file, 1).write('virtual BaseTypeVisitorType accept(Visitor& visitor) = 0;\n')
@@ -213,19 +211,21 @@ if __name__ == '__main__':
 
         file.write('// Type node definitions\n\n')
 
-        declare_derived_type(file, 'BaseType', Types[0], 'BaseType{data}', '', 'SharedData data')
+        declare_derived_type(file, 'BaseType', Types[0], 'BaseType{primitive, is_const, is_ref}', '',
+                             'Type primitive, bool is_const, bool is_ref')
 
-        declare_derived_type(file, 'BaseType', Types[1], 'BaseType{data}, name{std::move(name)}',
-                             'Token name', 'SharedData data, Token name')
+        declare_derived_type(file, 'BaseType', Types[1], 'BaseType{primitive, is_const, is_ref}, name{std::move(name)}',
+                             'Token name', 'Type primitive, bool is_const, bool is_ref, Token name')
 
         declare_derived_type(file, 'BaseType', Types[2],
-                             'BaseType{data}, contained{std::move(contained)}, size{std::move(size)}',
+                             'BaseType{primitive, is_const, is_ref}, contained{std::move(contained)}, size{std::move('
+                             'size)}',
                              'TypeNode contained, ExprNode size',
-                             'SharedData data, TypeNode contained, ExprNode size')
+                             'Type primitive, bool is_const, bool is_ref, TypeNode contained, ExprNode size')
 
         declare_derived_type(file, 'BaseType', Types[3],
-                             'BaseType{data}, expr{std::move(expr)}', 'ExprNode expr',
-                             'SharedData data, ExprNode expr')
+                             'BaseType{primitive, is_const, is_ref}, expr{std::move(expr)}', 'ExprNode expr',
+                             'Type primitive, bool is_const, bool is_ref, ExprNode expr')
 
         file.write('// End of type node definitions\n\n')
 
@@ -246,15 +246,16 @@ if __name__ == '__main__':
 
         declare_expr_type('target{std::move(target)}, value{std::move(value)}, conversion_type{conversion_type},'
                           'requires_copy{requires_copy}, target_type{target_type}',
-                          'Token target, ExprNode value, NumericConversionType conversion_type, RequiresCopy requires_copy, '
-                          'IdentifierType target_type')
+                          'Token target, ExprNode value, NumericConversionType conversion_type, RequiresCopy '
+                          'requires_copy, IdentifierType target_type')
 
         declare_expr_type('left{std::move(left)}, right{std::move(right)}',
                           'ExprNode left, ExprNode right')
 
         declare_expr_type(
             'function{std::move(function)}, args{std::move(args)}, is_native_call{is_native_call}',
-            'ExprNode function, std::vector<std::tuple<ExprNode,NumericConversionType,RequiresCopy>> args, bool is_native_call')
+            'ExprNode function, std::vector<std::tuple<ExprNode,NumericConversionType,RequiresCopy>> args, '
+            'bool is_native_call')
 
         declare_expr_type('exprs{std::move(exprs)}',
                           'std::vector<ExprNode> exprs')
@@ -274,7 +275,8 @@ if __name__ == '__main__':
 
         declare_expr_type('list{std::move(list)}, value{std::move(value)}, conversion_type{conversion_type}, '
                           'requires_copy{requires_copy}',
-                          'IndexExpr list, ExprNode value, NumericConversionType conversion_type, RequiresCopy requires_copy')
+                          'IndexExpr list, ExprNode value, NumericConversionType conversion_type, RequiresCopy '
+                          'requires_copy')
 
         declare_expr_type('value{std::move(value)}, type{std::move(type)}',
                           'LiteralValue value, TypeNode type')
@@ -291,7 +293,8 @@ if __name__ == '__main__':
         declare_expr_type(
             'object{std::move(object)}, name{std::move(name)}, value{std::move(value)}, '
             'conversion_type{conversion_type}, requires_copy{requires_copy}',
-            'ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type, RequiresCopy requires_copy')
+            'ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type, RequiresCopy '
+            'requires_copy')
 
         declare_expr_type('keyword{std::move(keyword)}, name{std::move(name)}',
                           'Token keyword, Token name')

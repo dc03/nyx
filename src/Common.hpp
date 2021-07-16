@@ -12,21 +12,21 @@
 #define assume(Cond) __assume(Cond)
 #define unreachable()                                                                                                  \
     do {                                                                                                               \
-        assert(not "Error: Control flow cannot reach here.");                                                             \
+        assert(not "Error: Control flow cannot reach here.");                                                          \
         __assume(0);                                                                                                   \
     } while (0)
 #elif defined(__clang__)
 #define assume(Cond) __builtin_assume(Cond)
 #define unreachable()                                                                                                  \
     do {                                                                                                               \
-        assert(not "Error: Control flow cannot reach here.");                                                             \
+        assert(not "Error: Control flow cannot reach here.");                                                          \
         __builtin_unreachable();                                                                                       \
     } while (0)
 #else
 #define assume(Cond) ((Cond) ? static_cast<void>(0) : __builtin_unreachable())
 #define unreachable()                                                                                                  \
     do {                                                                                                               \
-        assert(not "Error: Control flow cannot reach here.");                                                             \
+        assert(not "Error: Control flow cannot reach here.");                                                          \
         __builtin_unreachable();                                                                                       \
     } while (0)
 #endif

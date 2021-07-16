@@ -410,7 +410,7 @@ ExprNode Parser::list(bool) {
 }
 
 ExprNode Parser::literal(bool) {
-    auto *type = allocate_node(PrimitiveType, SharedData{Type::INT, true, false});
+    auto *type = allocate_node(PrimitiveType, Type::INT, true, false);
     auto *node = allocate_node(LiteralExpr, LiteralValue{nullptr}, TypeNode{type});
     node->resolved.token = previous();
     switch (previous().type) {
@@ -420,11 +420,11 @@ ExprNode Parser::literal(bool) {
         }
         case TokenType::FLOAT_VALUE: {
             node->value = LiteralValue{std::stod(previous().lexeme)};
-            node->type->data.primitive = Type::FLOAT;
+            node->type->primitive = Type::FLOAT;
             break;
         }
         case TokenType::STRING_VALUE: {
-            node->type->data.primitive = Type::STRING;
+            node->type->primitive = Type::STRING;
             node->value = LiteralValue{previous().lexeme};
             while (match(TokenType::STRING_VALUE)) {
                 node->value.to_string() += previous().lexeme;
@@ -432,17 +432,17 @@ ExprNode Parser::literal(bool) {
             break;
         }
         case TokenType::FALSE: {
-            node->type->data.primitive = Type::BOOL;
+            node->type->primitive = Type::BOOL;
             node->value = LiteralValue{false};
             break;
         }
         case TokenType::TRUE: {
-            node->type->data.primitive = Type::BOOL;
+            node->type->primitive = Type::BOOL;
             node->value = LiteralValue{true};
             break;
         }
         case TokenType::NULL_: {
-            node->type->data.primitive = Type::NULL_;
+            node->type->primitive = Type::NULL_;
             node->value = LiteralValue{nullptr};
             break;
         }
@@ -463,7 +463,7 @@ ExprNode Parser::scope_access(bool, ExprNode left) {
 }
 
 ExprNode Parser::super(bool) {
-    if (not (in_class && in_function)) {
+    if (not(in_class && in_function)) {
         throw_parse_error("Cannot use super expression outside a class");
     }
     Token super = previous();
@@ -484,7 +484,7 @@ ExprNode Parser::ternary(bool, ExprNode left) {
 }
 
 ExprNode Parser::this_expr(bool) {
-    if (not (in_class && in_function)) {
+    if (not(in_class && in_function)) {
         throw_parse_error("Cannot use 'this' keyword outside a class's constructor or destructor");
     }
     Token keyword = previous();
@@ -549,16 +549,16 @@ TypeNode Parser::type() {
         }
     }();
 
-    SharedData data{type, is_const, is_ref};
     if (type == Type::CLASS) {
         Token name = previous();
-        return TypeNode{allocate_node(UserDefinedType, data, std::move(name))};
+        return TypeNode{allocate_node(UserDefinedType, type, is_const, is_ref, std::move(name))};
     } else if (type == Type::LIST) {
         return list_type(is_const, is_ref);
     } else if (type == Type::TYPEOF) {
-        return TypeNode{allocate_node(TypeofType, data, parse_precedence(ParsePrecedence::of::LOGIC_OR))};
+        return TypeNode{
+            allocate_node(TypeofType, type, is_const, is_ref, parse_precedence(ParsePrecedence::of::LOGIC_OR))};
     } else {
-        return TypeNode{allocate_node(PrimitiveType, data)};
+        return TypeNode{allocate_node(PrimitiveType, type, is_const, is_ref)};
     }
 }
 
@@ -566,8 +566,7 @@ TypeNode Parser::list_type(bool is_const, bool is_ref) {
     TypeNode contained = type();
     ExprNode size = match(TokenType::COMMA) ? expression() : nullptr;
     consume("Expected ']' after array declaration", TokenType::RIGHT_INDEX);
-    SharedData data{Type::LIST, is_const, is_ref};
-    return TypeNode{allocate_node(ListType, data, std::move(contained), std::move(size))};
+    return TypeNode{allocate_node(ListType, Type::LIST, is_const, is_ref, std::move(contained), std::move(size))};
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -20,9 +20,9 @@ void Generator::begin_scope() {
 
 void Generator::end_scope() {
     for (auto begin = scopes.top().crbegin(); begin != scopes.top().crend(); begin++) {
-        if ((*begin)->data.primitive == Type::STRING) {
+        if ((*begin)->primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, 0);
-        } else if ((*begin)->data.primitive == Type::LIST && not (*begin)->data.is_ref) {
+        } else if ((*begin)->primitive == Type::LIST && not(*begin)->is_ref) {
             current_chunk->emit_instruction(Instruction::POP_LIST, 0);
         } else {
             current_chunk->emit_instruction(Instruction::POP, 0);
@@ -89,7 +89,7 @@ BaseTypeVisitorType Generator::compile(BaseType *type) {
 ExprVisitorType Generator::visit(AssignExpr &expr) {
     auto compile_right = [&expr, this] {
         compile(expr.value.get());
-        if (expr.value->resolved.info->data.is_ref && expr.value->resolved.info->data.primitive != Type::LIST) {
+        if (expr.value->resolved.info->is_ref && expr.value->resolved.info->primitive != Type::LIST) {
             current_chunk->emit_instruction(Instruction::DEREF, expr.target.line);
         } // As there is no difference between a list and a reference to a list (aside from the tag), there is no need
           // to add an explicit Instruction::DEREF
@@ -108,7 +108,7 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
             // Assigning to lists needs to be handled separately, as it can involve destroying the list that was
             // previously there in the variable. This code is moved off of the hot path into ASSIGN_LOCAL_LIST and
             // ASSIGN_GLOBAL_LIST
-            if (expr.resolved.info->data.primitive == Type::LIST) {
+            if (expr.resolved.info->primitive == Type::LIST) {
                 current_chunk->emit_instruction(expr.target_type == IdentifierType::LOCAL
                                                     ? Instruction::ASSIGN_LOCAL_LIST
                                                     : Instruction::ASSIGN_GLOBAL_LIST,
@@ -124,29 +124,29 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
                 expr.target_type == IdentifierType::LOCAL ? Instruction::ACCESS_LOCAL : Instruction::ACCESS_GLOBAL,
                 expr.resolved.token.line);
             emit_three_bytes_of(expr.resolved.stack_slot);
-            if (expr.resolved.info->data.is_ref) {
+            if (expr.resolved.info->is_ref) {
                 current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.token.line);
             }
             compile_right();
             switch (expr.resolved.token.type) {
                 case TokenType::PLUS_EQUAL:
                     current_chunk->emit_instruction(
-                        expr.resolved.info->data.primitive == Type::FLOAT ? Instruction::FADD : Instruction::IADD,
+                        expr.resolved.info->primitive == Type::FLOAT ? Instruction::FADD : Instruction::IADD,
                         expr.resolved.token.line);
                     break;
                 case TokenType::MINUS_EQUAL:
                     current_chunk->emit_instruction(
-                        expr.resolved.info->data.primitive == Type::FLOAT ? Instruction::FSUB : Instruction::ISUB,
+                        expr.resolved.info->primitive == Type::FLOAT ? Instruction::FSUB : Instruction::ISUB,
                         expr.resolved.token.line);
                     break;
                 case TokenType::STAR_EQUAL:
                     current_chunk->emit_instruction(
-                        expr.resolved.info->data.primitive == Type::FLOAT ? Instruction::FMUL : Instruction::IMUL,
+                        expr.resolved.info->primitive == Type::FLOAT ? Instruction::FMUL : Instruction::IMUL,
                         expr.resolved.token.line);
                     break;
                 case TokenType::SLASH_EQUAL:
                     current_chunk->emit_instruction(
-                        expr.resolved.info->data.primitive == Type::FLOAT ? Instruction::FDIV : Instruction::IDIV,
+                        expr.resolved.info->primitive == Type::FLOAT ? Instruction::FDIV : Instruction::IDIV,
                         expr.resolved.token.line);
                     break;
                 default: break;
@@ -162,24 +162,22 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
 
 ExprVisitorType Generator::visit(BinaryExpr &expr) {
     compile(expr.left.get());
-    if (expr.left->resolved.info->data.is_ref) {
+    if (expr.left->resolved.info->is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.token.line);
     }
 
-    bool requires_floating = expr.left->resolved.info->data.primitive == Type::FLOAT ||
-                             expr.right->resolved.info->data.primitive == Type::FLOAT;
+    bool requires_floating =
+        expr.left->resolved.info->primitive == Type::FLOAT || expr.right->resolved.info->primitive == Type::FLOAT;
 
-    if (expr.left->resolved.info->data.primitive == Type::INT &&
-        expr.right->resolved.info->data.primitive == Type::FLOAT) {
+    if (expr.left->resolved.info->primitive == Type::INT && expr.right->resolved.info->primitive == Type::FLOAT) {
         current_chunk->emit_instruction(Instruction::INT_TO_FLOAT, expr.left->resolved.token.line);
     }
 
     compile(expr.right.get());
-    if (expr.right->resolved.info->data.is_ref) {
+    if (expr.right->resolved.info->is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.token.line);
     }
-    if (expr.left->resolved.info->data.primitive == Type::FLOAT &&
-        expr.right->resolved.info->data.primitive == Type::INT) {
+    if (expr.left->resolved.info->primitive == Type::FLOAT && expr.right->resolved.info->primitive == Type::INT) {
         current_chunk->emit_instruction(Instruction::INT_TO_FLOAT, expr.left->resolved.token.line);
     }
 
@@ -199,8 +197,8 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
             break;
 
         case TokenType::EQUAL_EQUAL:
-            if (expr.left->resolved.info->data.primitive == Type::LIST ||
-                expr.left->resolved.info->data.primitive == Type::STRING) {
+            if (expr.left->resolved.info->primitive == Type::LIST ||
+                expr.left->resolved.info->primitive == Type::STRING) {
                 current_chunk->emit_instruction(Instruction::EQUAL_SL, expr.resolved.token.line);
             } else {
                 current_chunk->emit_instruction(Instruction::EQUAL, expr.resolved.token.line);
@@ -210,8 +208,8 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
         case TokenType::LESS: current_chunk->emit_instruction(Instruction::LESSER, expr.resolved.token.line); break;
 
         case TokenType::NOT_EQUAL:
-            if (expr.left->resolved.info->data.primitive == Type::LIST ||
-                expr.left->resolved.info->data.primitive == Type::STRING) {
+            if (expr.left->resolved.info->primitive == Type::LIST ||
+                expr.left->resolved.info->primitive == Type::STRING) {
                 current_chunk->emit_instruction(Instruction::EQUAL_SL, expr.resolved.token.line);
             } else {
                 current_chunk->emit_instruction(Instruction::EQUAL, expr.resolved.token.line);
@@ -228,7 +226,7 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
             break;
 
         case TokenType::PLUS:
-            switch (expr.resolved.info->data.primitive) {
+            switch (expr.resolved.info->primitive) {
                 case Type::INT: current_chunk->emit_instruction(Instruction::IADD, expr.resolved.token.line); break;
                 case Type::FLOAT: current_chunk->emit_instruction(Instruction::FADD, expr.resolved.token.line); break;
                 case Type::STRING:
@@ -269,7 +267,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
         auto &value = std::get<ExprNode>(arg);
         if (not expr.is_native_call) {
             if (auto &param = expr.function->resolved.func->params[i];
-                param.second->data.is_ref && not value->resolved.info->data.is_ref) {
+                param.second->is_ref && not value->resolved.info->is_ref) {
                 if (value->type_tag() == NodeType::VariableExpr) {
                     if (dynamic_cast<VariableExpr *>(value.get())->type == IdentifierType::LOCAL) {
                         current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, value->resolved.token.line);
@@ -281,7 +279,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
                     // This is a fallback, but I don't think it would ever be triggered
                 }
                 emit_three_bytes_of(value->resolved.stack_slot);
-            } else if (not param.second->data.is_ref && value->resolved.info->data.is_ref) {
+            } else if (not param.second->is_ref && value->resolved.info->is_ref) {
                 compile(value.get());
                 current_chunk->emit_instruction(Instruction::DEREF, value->resolved.token.line);
             } else {
@@ -300,7 +298,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
 
         // This ALLOC_AT_LEAST is emitted after the COPY since the list that is copied needs to be resized and not the
         // list that is being copied.
-        if (not expr.is_native_call && expr.function->resolved.func->params[i].second->data.primitive == Type::LIST) {
+        if (not expr.is_native_call && expr.function->resolved.func->params[i].second->primitive == Type::LIST) {
             auto *list = dynamic_cast<ListType *>(expr.function->resolved.func->params[i].second.get());
             if (list->size != nullptr) {
                 compile(list->size.get());
@@ -316,10 +314,10 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
         auto begin = expr.args.crbegin();
         for (; begin != expr.args.crend(); begin++) {
             auto &arg = std::get<ExprNode>(*begin);
-            if (arg->resolved.info->data.primitive == Type::LIST && not arg->resolved.is_lvalue &&
-                not arg->resolved.info->data.is_ref) {
+            if (arg->resolved.info->primitive == Type::LIST && not arg->resolved.is_lvalue &&
+                not arg->resolved.info->is_ref) {
                 current_chunk->emit_instruction(Instruction::POP_LIST, arg->resolved.token.line);
-            } else if (arg->resolved.info->data.primitive == Type::STRING) {
+            } else if (arg->resolved.info->primitive == Type::STRING) {
                 current_chunk->emit_instruction(Instruction::POP_STRING, arg->resolved.token.line);
             } else {
                 current_chunk->emit_instruction(Instruction::POP, arg->resolved.token.line);
@@ -337,9 +335,9 @@ ExprVisitorType Generator::visit(CommaExpr &expr) {
 
     for (auto next = std::next(it); next != end(expr.exprs); it = next, ++next) {
         compile(it->get());
-        if ((*it)->resolved.info->data.primitive == Type::STRING) {
+        if ((*it)->resolved.info->primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, (*it)->resolved.token.line);
-        } else if ((*it)->resolved.info->data.primitive == Type::LIST && not (*it)->resolved.is_lvalue) {
+        } else if ((*it)->resolved.info->primitive == Type::LIST && not(*it)->resolved.is_lvalue) {
             current_chunk->emit_instruction(Instruction::POP_LIST, (*it)->resolved.token.line);
         } else {
             current_chunk->emit_instruction(Instruction::POP, (*it)->resolved.token.line);
@@ -362,7 +360,7 @@ ExprVisitorType Generator::visit(GroupingExpr &expr) {
 ExprVisitorType Generator::visit(IndexExpr &expr) {
     compile(expr.object.get());
     compile(expr.index.get());
-    if (expr.index->resolved.info->data.is_ref) {
+    if (expr.index->resolved.info->is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.index->resolved.token.line);
     }
     current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.token.line);
@@ -385,15 +383,15 @@ ExprVisitorType Generator::visit(ListExpr &expr) {
         emit_three_bytes_of(1);
         current_chunk->emit_constant(Value{static_cast<int>(i)}, element_expr->resolved.token.line);
 
-        if (not expr.type->contained->data.is_ref) {
+        if (not expr.type->contained->is_ref) {
             // References have to be conditionally compiled when not binding to a name
             compile(element_expr.get());
             emit_conversion(std::get<NumericConversionType>(element), element_expr->resolved.token.line);
         }
 
-        if (not expr.type->contained->data.is_ref) {
+        if (not expr.type->contained->is_ref) {
             // Type is not a reference type
-            if (element_expr->resolved.info->data.is_ref) {
+            if (element_expr->resolved.info->is_ref) {
                 current_chunk->emit_instruction(Instruction::DEREF, element_expr->resolved.token.line);
             }
         } else if (element_expr->resolved.is_lvalue) {
@@ -426,7 +424,7 @@ ExprVisitorType Generator::visit(ListExpr &expr) {
 ExprVisitorType Generator::visit(ListAssignExpr &expr) {
     compile(expr.list.object.get());
     compile(expr.list.index.get());
-    if (expr.list.index->resolved.info->data.is_ref) {
+    if (expr.list.index->resolved.info->is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.list.index->resolved.token.line);
     }
     current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.token.line);
@@ -434,7 +432,7 @@ ExprVisitorType Generator::visit(ListAssignExpr &expr) {
     switch (expr.resolved.token.type) {
         case TokenType::EQUAL: {
             compile(expr.value.get());
-            if (expr.value->resolved.info->data.is_ref) {
+            if (expr.value->resolved.info->is_ref) {
                 current_chunk->emit_instruction(Instruction::DEREF, expr.value->resolved.token.line);
             }
             if (expr.requires_copy) {
@@ -447,7 +445,7 @@ ExprVisitorType Generator::visit(ListAssignExpr &expr) {
         default: {
             compile(expr.list.object.get());
             compile(expr.list.index.get());
-            if (expr.list.index->resolved.info->data.is_ref) {
+            if (expr.list.index->resolved.info->is_ref) {
                 current_chunk->emit_instruction(Instruction::DEREF, expr.list.index->resolved.token.line);
             }
             // There is no need for a CHECK_INDEX here because that index has already been checked before
@@ -459,7 +457,7 @@ ExprVisitorType Generator::visit(ListAssignExpr &expr) {
                 emit_conversion(expr.conversion_type, expr.resolved.token.line);
             }
 
-            Type contained_type = dynamic_cast<ListType *>(expr.list.object->resolved.info)->contained->data.primitive;
+            Type contained_type = dynamic_cast<ListType *>(expr.list.object->resolved.info)->contained->primitive;
             switch (expr.resolved.token.type) {
                 case TokenType::PLUS_EQUAL:
                     current_chunk->emit_instruction(
@@ -518,7 +516,7 @@ ExprVisitorType Generator::visit(LiteralExpr &expr) {
 
 ExprVisitorType Generator::visit(LogicalExpr &expr) {
     compile(expr.left.get());
-    if (expr.left->resolved.info->data.is_ref) {
+    if (expr.left->resolved.info->is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.left->resolved.token.line);
     }
     std::size_t jump_idx{};
@@ -566,7 +564,7 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
      * HALT
      */
     compile(expr.left.get());
-    if (expr.left->resolved.info->data.is_ref) {
+    if (expr.left->resolved.info->is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.left->resolved.token.line);
     }
 
@@ -597,7 +595,7 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
     if (expr.oper.type != TokenType::PLUS_PLUS && expr.oper.type != TokenType::MINUS_MINUS) {
         compile(expr.right.get());
     }
-    bool requires_floating = expr.right->resolved.info->data.primitive == Type::FLOAT;
+    bool requires_floating = expr.right->resolved.info->primitive == Type::FLOAT;
     switch (expr.oper.type) {
         case TokenType::BIT_NOT: current_chunk->emit_instruction(Instruction::BIT_NOT, expr.oper.line); break;
         case TokenType::NOT: current_chunk->emit_instruction(Instruction::NOT, expr.oper.line); break;
@@ -614,11 +612,11 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
                     variable->resolved.token.line);
                 emit_three_bytes_of(variable->resolved.stack_slot);
 
-                if (variable->resolved.info->data.primitive == Type::FLOAT) {
+                if (variable->resolved.info->primitive == Type::FLOAT) {
                     current_chunk->emit_constant(Value{1.0}, expr.oper.line);
                     current_chunk->emit_instruction(
                         expr.oper.type == TokenType::PLUS_PLUS ? Instruction::FADD : Instruction::FSUB, expr.oper.line);
-                } else if (variable->resolved.info->data.primitive == Type::INT) {
+                } else if (variable->resolved.info->primitive == Type::INT) {
                     current_chunk->emit_constant(Value{1}, expr.oper.line);
                     current_chunk->emit_instruction(
                         expr.oper.type == TokenType::PLUS_PLUS ? Instruction::IADD : Instruction::ISUB, expr.oper.line);
@@ -641,13 +639,13 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
         case IdentifierType::GLOBAL:
             if (expr.resolved.stack_slot < Chunk::const_long_max) {
                 if (expr.type == IdentifierType::LOCAL) {
-                    if (expr.resolved.info->data.primitive == Type::LIST) {
+                    if (expr.resolved.info->primitive == Type::LIST) {
                         current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LIST, expr.name.line);
                     } else {
                         current_chunk->emit_instruction(Instruction::ACCESS_LOCAL, expr.name.line);
                     }
                 } else {
-                    if (expr.resolved.info->data.primitive == Type::LIST) {
+                    if (expr.resolved.info->primitive == Type::LIST) {
                         current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL_LIST, expr.name.line);
                     } else {
                         current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL, expr.name.line);
@@ -691,9 +689,9 @@ StmtVisitorType Generator::visit(ContinueStmt &stmt) {
 
 StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
     compile(stmt.expr.get());
-    if (stmt.expr->resolved.info->data.primitive == Type::STRING) {
+    if (stmt.expr->resolved.info->primitive == Type::STRING) {
         current_chunk->emit_instruction(Instruction::POP_STRING, current_chunk->line_numbers.back().first);
-    } else if (stmt.expr->resolved.info->data.primitive == Type::LIST) {
+    } else if (stmt.expr->resolved.info->primitive == Type::LIST) {
         current_chunk->emit_instruction(Instruction::POP_LIST, current_chunk->line_numbers.back().first);
     } else {
         current_chunk->emit_instruction(Instruction::POP, current_chunk->line_numbers.back().first);
@@ -711,18 +709,19 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
 
     end_scope();
     for (auto begin = stmt.params.crbegin(); begin != stmt.params.crend(); begin++) {
-        if (begin->second->data.primitive == Type::STRING) {
+        if (begin->second->primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, 0);
-        } else if (begin->second->data.primitive == Type::LIST && not begin->second->data.is_ref) {
+        } else if (begin->second->primitive == Type::LIST && not begin->second->is_ref) {
             current_chunk->emit_instruction(Instruction::POP_LIST, 0);
         } else {
             current_chunk->emit_instruction(Instruction::POP, 0);
         }
     }
 
-    if (stmt.return_type->data.primitive != Type::NULL_) {
+    if (stmt.return_type->primitive != Type::NULL_) {
         if (auto *body = dynamic_cast<BlockStmt *>(stmt.body.get());
-            (not body->stmts.empty() && body->stmts.back()->type_tag() != NodeType::ReturnStmt) || body->stmts.empty()) {
+            (not body->stmts.empty() && body->stmts.back()->type_tag() != NodeType::ReturnStmt) ||
+            body->stmts.empty()) {
             current_chunk->emit_instruction(Instruction::TRAP_RETURN, stmt.name.line);
         }
     }
@@ -733,7 +732,7 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
 
 StmtVisitorType Generator::visit(IfStmt &stmt) {
     compile(stmt.condition.get());
-    if (stmt.condition->resolved.info->data.is_ref) {
+    if (stmt.condition->resolved.info->is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, stmt.condition->resolved.token.line);
     }
     std::size_t jump_idx = current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, stmt.keyword.line);
@@ -777,7 +776,7 @@ StmtVisitorType Generator::visit(ReturnStmt &stmt) {
     if (stmt.value != nullptr) {
         compile(stmt.value.get());
         if (auto &return_type = stmt.function->return_type;
-            return_type->data.primitive == Type::LIST && not return_type->data.is_ref) {
+            return_type->primitive == Type::LIST && not return_type->is_ref) {
             current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.keyword.line);
         }
     } else {
@@ -818,7 +817,7 @@ StmtVisitorType Generator::visit(SwitchStmt &stmt) {
      */
     break_stmts.emplace();
     compile(stmt.condition.get());
-    if (stmt.condition->resolved.info->data.is_ref) {
+    if (stmt.condition->resolved.info->is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, stmt.condition->resolved.token.line);
     }
     std::vector<std::size_t> jumps{};
@@ -861,7 +860,7 @@ std::size_t Generator::recursively_compile_size(ListType *list) {
     auto compile_size = [this, &list] {
         if (list->size != nullptr) {
             compile(list->size.get());
-            if (list->size->resolved.info->data.is_ref) {
+            if (list->size->resolved.info->is_ref) {
                 current_chunk->emit_instruction(Instruction::DEREF, list->size->resolved.token.line);
             }
         } else {
@@ -869,7 +868,7 @@ std::size_t Generator::recursively_compile_size(ListType *list) {
         }
     };
 
-    if (list->contained->data.primitive == Type::LIST) {
+    if (list->contained->primitive == Type::LIST) {
         std::size_t inner = recursively_compile_size(dynamic_cast<ListType *>(list->contained.get()));
         compile_size();
         return inner + 1;
@@ -881,11 +880,11 @@ std::size_t Generator::recursively_compile_size(ListType *list) {
 }
 
 StmtVisitorType Generator::visit(VarStmt &stmt) {
-    if (stmt.type->data.primitive == Type::LIST && stmt.initializer == nullptr) {
+    if (stmt.type->primitive == Type::LIST && stmt.initializer == nullptr) {
         auto *list = dynamic_cast<ListType *>(stmt.type.get());
         if (list->size != nullptr) {
             compile(list->size.get());
-            if (list->size->resolved.info->data.is_ref) {
+            if (list->size->resolved.info->is_ref) {
                 current_chunk->emit_instruction(Instruction::DEREF, list->size->resolved.token.line);
             }
         } else {
@@ -893,7 +892,7 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
         }
         current_chunk->emit_instruction(Instruction::MAKE_LIST, stmt.name.line);
     } else if (stmt.initializer != nullptr) {
-        if (stmt.type->data.is_ref && not stmt.initializer->resolved.info->data.is_ref &&
+        if (stmt.type->is_ref && not stmt.initializer->resolved.info->is_ref &&
             stmt.initializer->type_tag() == NodeType::VariableExpr) {
             if (dynamic_cast<VariableExpr *>(stmt.initializer.get())->type == IdentifierType::LOCAL) {
                 current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, stmt.name.line);
@@ -903,8 +902,8 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
             emit_three_bytes_of(stmt.initializer->resolved.stack_slot);
         } else {
             compile(stmt.initializer.get());
-            if (stmt.initializer->resolved.info->data.is_ref && not stmt.type->data.is_ref &&
-                stmt.initializer->resolved.info->data.primitive != Type::LIST) {
+            if (stmt.initializer->resolved.info->is_ref && not stmt.type->is_ref &&
+                stmt.initializer->resolved.info->primitive != Type::LIST) {
                 current_chunk->emit_instruction(Instruction::DEREF, stmt.name.line);
             }
 
@@ -973,7 +972,7 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
 
     std::size_t condition_idx = current_chunk->bytes.size();
     compile(stmt.condition.get());
-    if (stmt.condition->resolved.info->data.is_ref) {
+    if (stmt.condition->resolved.info->is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, stmt.condition->resolved.token.line);
     }
 

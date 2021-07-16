@@ -164,17 +164,14 @@ struct Stmt {
     virtual ~Stmt() = default;
 };
 
-struct SharedData {
+struct BaseType {
     Type primitive;
     bool is_const;
     bool is_ref;
-};
-
-struct BaseType {
-    SharedData data;
 
     BaseType() = default;
-    explicit BaseType(SharedData data) : data{data} {}
+    explicit BaseType(Type primitive, bool is_const, bool is_ref)
+        : primitive{primitive}, is_const{is_const}, is_ref{is_ref} {}
     virtual std::string_view string_tag() = 0;
     virtual NodeType type_tag() = 0;
     virtual BaseTypeVisitorType accept(Visitor &visitor) = 0;
@@ -188,7 +185,7 @@ struct PrimitiveType final : public BaseType {
 
     NodeType type_tag() override final { return NodeType::PrimitiveType; }
 
-    explicit PrimitiveType(SharedData data) : BaseType{data} {}
+    explicit PrimitiveType(Type primitive, bool is_const, bool is_ref) : BaseType{primitive, is_const, is_ref} {}
 
     BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -200,7 +197,8 @@ struct UserDefinedType final : public BaseType {
 
     NodeType type_tag() override final { return NodeType::UserDefinedType; }
 
-    explicit UserDefinedType(SharedData data, Token name) : BaseType{data}, name{std::move(name)} {}
+    explicit UserDefinedType(Type primitive, bool is_const, bool is_ref, Token name)
+        : BaseType{primitive, is_const, is_ref}, name{std::move(name)} {}
 
     BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -213,8 +211,8 @@ struct ListType final : public BaseType {
 
     NodeType type_tag() override final { return NodeType::ListType; }
 
-    ListType(SharedData data, TypeNode contained, ExprNode size)
-        : BaseType{data}, contained{std::move(contained)}, size{std::move(size)} {}
+    ListType(Type primitive, bool is_const, bool is_ref, TypeNode contained, ExprNode size)
+        : BaseType{primitive, is_const, is_ref}, contained{std::move(contained)}, size{std::move(size)} {}
 
     BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -226,7 +224,8 @@ struct TypeofType final : public BaseType {
 
     NodeType type_tag() override final { return NodeType::TypeofType; }
 
-    explicit TypeofType(SharedData data, ExprNode expr) : BaseType{data}, expr{std::move(expr)} {}
+    explicit TypeofType(Type primitive, bool is_const, bool is_ref, ExprNode expr)
+        : BaseType{primitive, is_const, is_ref}, expr{std::move(expr)} {}
 
     BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

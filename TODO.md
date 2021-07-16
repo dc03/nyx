@@ -33,7 +33,7 @@
 - [ ] Create stable C API to use the interpreter in other projects
 - [ ] Make tests (many many of them)
 - [ ] Make a command line interface
-- [ ] Merge `SharedData` into `BaseType`
+- [x] Merge `SharedData` into `BaseType`
 - [ ] Remove switch case fallthrough (later enabled using something like annotations)
 - [ ] Make error handling prettier (eg. printing a line above and below for context)
 - [ ] Remove list size in list type
