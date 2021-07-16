@@ -269,16 +269,23 @@ ExecutionState VirtualMachine::step() {
         }
         /* Local variable operations */
         case is Instruction::ASSIGN_LOCAL: {
-            Value &assigned = frames[frame_top].stack[operand];
-            if (assigned.tag == Value::Tag::REF) {
-                *assigned.w_ref = stack[stack_top - 1];
+            Value *assigned = &frames[frame_top].stack[operand];
+            if (assigned->tag == Value::Tag::REF) {
+                assigned = assigned->w_ref;
+            }
+            if (assigned->tag == Value::Tag::STRING) {
+                cache.remove(*assigned->w_str);
+                *assigned = Value{&cache.insert(*stack[stack_top - 1].w_str)};
             } else {
-                assigned = stack[stack_top - 1];
+                *assigned = stack[stack_top - 1];
             }
             break;
         }
         case is Instruction::ACCESS_LOCAL: {
             push(frames[frame_top].stack[operand]);
+            if (stack[stack_top - 1].tag == Value::Tag::STRING) {
+                (void)cache.insert(*stack[stack_top - 1].w_str);
+            }
             break;
         }
         case is Instruction::MAKE_REF_TO_LOCAL: {
@@ -289,7 +296,6 @@ ExecutionState VirtualMachine::step() {
             } else {
                 push(Value{&value});
             }
-            //            push(Value{&frames[frame_top].stack[next_three]});
             break;
         }
         case is Instruction::DEREF: {
@@ -298,16 +304,23 @@ ExecutionState VirtualMachine::step() {
         }
         /* Global variable operations */
         case is Instruction::ASSIGN_GLOBAL: {
-            Value &assigned = stack[operand];
-            if (assigned.tag == Value::Tag::REF) {
-                *assigned.w_ref = stack[stack_top - 1];
+            Value *assigned = &stack[operand];
+            if (assigned->tag == Value::Tag::REF) {
+                assigned = assigned->w_ref;
+            }
+            if (assigned->tag == Value::Tag::STRING) {
+                cache.remove(*assigned->w_str);
+                *assigned = Value{&cache.insert(*stack[stack_top - 1].w_str)};
             } else {
-                assigned = stack[stack_top - 1];
+                *assigned = stack[stack_top - 1];
             }
             break;
         }
         case is Instruction::ACCESS_GLOBAL: {
             push(Value{stack[operand]});
+            if (stack[stack_top - 1].tag == Value::Tag::STRING) {
+                (void)cache.insert(*stack[stack_top - 1].w_str);
+            }
             break;
         }
         case is Instruction::MAKE_REF_TO_GLOBAL: {
@@ -367,16 +380,6 @@ ExecutionState VirtualMachine::step() {
             push(Value{&cache.insert(*string)});
             break;
         }
-        case is Instruction::ACCESS_LOCAL_STRING: {
-            Value &local = frames[frame_top].stack[operand];
-            push(Value{&cache.insert(*local.w_str)});
-            break;
-        }
-        case is Instruction::ACCESS_GLOBAL_STRING: {
-            Value &global = stack[operand];
-            push(Value{&cache.insert(*global.w_str)});
-            break;
-        }
         case is Instruction::POP_STRING: {
             cache.remove(*stack[--stack_top].w_str);
             break;
@@ -399,8 +402,11 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::COPY_LIST: {
-            stack[stack_top - 1] = copy(stack[stack_top - 1]);
-            stack[stack_top - 1].tag = Value::Tag::LIST;
+            // COPY_LIST is a no-op for temporary lists, i.e those not bound to names
+            if (stack[stack_top - 1].tag == Value::Tag::LIST_REF) {
+                stack[stack_top - 1] = copy(stack[stack_top - 1]);
+                stack[stack_top - 1].tag = Value::Tag::LIST;
+            }
             break;
         }
         case is Instruction::APPEND_LIST: {
@@ -454,6 +460,16 @@ ExecutionState VirtualMachine::step() {
             }
             break;
         }
+        case is Instruction::ACCESS_LOCAL_LIST: {
+            push(frames[frame_top].stack[operand]);
+            stack[stack_top - 1].tag = Value::Tag::LIST_REF;
+            break;
+        }
+        case is Instruction::ACCESS_GLOBAL_LIST: {
+            push(stack[operand]);
+            stack[stack_top - 1].tag = Value::Tag::LIST_REF;
+            break;
+        }
         case is Instruction::ASSIGN_LOCAL_LIST: {
             Value &assigned = frames[frame_top].stack[operand];
             if (assigned.w_list != nullptr) {
@@ -491,6 +507,23 @@ ExecutionState VirtualMachine::step() {
         /* Miscellaneous */
         case is Instruction::ACCESS_FROM_TOP: {
             push(stack[stack_top - operand]);
+            break;
+        }
+        case is Instruction::EQUAL_SL: {
+            Value val2 = stack[--stack_top];
+            Value val1 = stack[stack_top - 1];
+            bool result = val1 == val2;
+            if (val1.tag == Value::Tag::STRING) {
+                cache.remove(*val2.w_str);
+                cache.remove(*val1.w_str);
+            }
+            if (val1.tag == Value::Tag::LIST) {
+                destroy_list(val1.w_list);
+            }
+            if (val2.tag == Value::Tag::LIST) {
+                destroy_list(val2.w_list);
+            }
+            stack[stack_top - 1] = Value{result};
             break;
         }
     }
