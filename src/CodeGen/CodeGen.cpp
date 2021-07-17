@@ -353,6 +353,9 @@ ExprVisitorType Generator::visit(GetExpr &expr) {
 
 ExprVisitorType Generator::visit(GroupingExpr &expr) {
     compile(expr.expr.get());
+    if (expr.expr->resolved.info->is_ref) {
+        current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.token.line);
+    }
     return {};
 }
 

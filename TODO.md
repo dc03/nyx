@@ -26,7 +26,7 @@
 - [ ] Refactor `visit(UserDefinedType &)` in TypeResolver to return pointer to
   ClassStmt
 - [ ] Refactor `TypeResolver::show_conversion_note`, `TypeResolver::show_equality_note`
-- [ ] Fix `TypeResolver::visit(GroupingExpr&)` to not return the *exact* type of the expression
+- [x] Fix `TypeResolver::visit(GroupingExpr&)` to not return the *exact* type of the expression
   it contains, because that doesn't make sense for something like `(x)`
 - [ ] Move utility functions of Parser into `ParserUtils.cpp` and those of TypeResolver into
   `TypeResolverUtils.cpp`

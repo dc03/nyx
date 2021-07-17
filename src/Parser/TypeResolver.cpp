@@ -527,7 +527,12 @@ ExprVisitorType TypeResolver::visit(GetExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(GroupingExpr &expr) {
-    return expr.resolved = resolve(expr.expr.get());
+    expr.resolved = resolve(expr.expr.get());
+    expr.type.reset(copy_type(expr.resolved.info));
+    expr.type->is_ref = false;
+    expr.resolved.info = expr.type.get();
+    expr.resolved.is_lvalue = false;
+    return expr.resolved;
 }
 
 ExprVisitorType TypeResolver::visit(IndexExpr &expr) {

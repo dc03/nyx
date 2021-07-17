@@ -397,7 +397,7 @@ ExprNode Parser::or_(bool, ExprNode left) {
 ExprNode Parser::grouping(bool) {
     ExprNode expr = expression();
     consume("Expected ')' after parenthesized expression", TokenType::RIGHT_PAREN);
-    return ExprNode{allocate_node(GroupingExpr, std::move(expr))};
+    return ExprNode{allocate_node(GroupingExpr, std::move(expr), nullptr)};
 }
 
 ExprNode Parser::list(bool) {

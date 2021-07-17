@@ -316,12 +316,13 @@ struct GetExpr final : public Expr {
 
 struct GroupingExpr final : public Expr {
     ExprNode expr;
+    TypeNode type;
 
     std::string_view string_tag() override final { return "GroupingExpr"; }
 
     NodeType type_tag() override final { return NodeType::GroupingExpr; }
 
-    explicit GroupingExpr(ExprNode expr) : expr{std::move(expr)} {}
+    GroupingExpr(ExprNode expr, TypeNode type) : expr{std::move(expr)}, type{std::move(type)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

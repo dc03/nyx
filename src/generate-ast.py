@@ -263,8 +263,8 @@ if __name__ == '__main__':
         declare_expr_type('object{std::move(object)}, name{std::move(name)}',
                           'ExprNode object, Token name')
 
-        declare_expr_type('expr{std::move(expr)}',
-                          'ExprNode expr')
+        declare_expr_type('expr{std::move(expr)}, type{std::move(type)}',
+                          'ExprNode expr, TypeNode type')
 
         declare_expr_type('object{std::move(object)}, index{std::move(index)}',
                           'ExprNode object, ExprNode index')
