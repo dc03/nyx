@@ -44,7 +44,7 @@ calling `make_new_type` with the values for `is_const` and `is_ref`
 - [x] Make `error()` accept a `std::vector` of `std::string(_view)?`s to reduce jankiness
 in the code
 - [x] Add `not` keyword as alternative to `!`
-- [ ] Change switch syntax from `case expr: stmt` to `expr -> stmt`
+- [x] Change switch syntax from `case expr: stmt` to `expr -> stmt`
 - [ ] Disallow `ListExpr`s being used directly in `==` and `!=` expressions
 - [x] Fix if statements allowing use of list expressions as conditions
 - [x] Replace all instances of `!` with `not`

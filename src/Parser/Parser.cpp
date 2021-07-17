@@ -149,7 +149,6 @@ Parser::Parser(const std::vector<Token> &tokens, Module &module, std::size_t cur
     add_rule(TokenType::FLOAT_VALUE,   {&Parser::literal, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::AND,           {nullptr, &Parser::and_, ParsePrecedence::of::LOGIC_AND});
     add_rule(TokenType::BREAK,         {nullptr, nullptr, ParsePrecedence::of::NONE});
-    add_rule(TokenType::CASE,          {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::CLASS,         {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::CONST,         {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::CONTINUE,      {nullptr, nullptr, ParsePrecedence::of::NONE});
@@ -992,20 +991,17 @@ StmtNode Parser::switch_statement() {
     ScopedBooleanManager switch_manager{in_switch};
 
     while (not is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
-        if (match(TokenType::CASE)) {
+        if (match(TokenType::DEFAULT)) {
+            if (default_case != nullptr) {
+                throw_parse_error("Cannot have more than one default case in a switch");
+            }
+            consume("Expected '->' after 'default'", TokenType::ARROW);
+            default_case = statement();
+        } else {
             ExprNode expr = expression();
-            consume("Expected ':' after case expression", TokenType::COLON);
-
+            consume("Expected '->' after case expression", TokenType::ARROW);
             StmtNode stmt = statement();
             cases.emplace_back(std::move(expr), std::move(stmt));
-        } else if (match(TokenType::DEFAULT) && default_case == nullptr) {
-            consume("Expected ':' after case expression", TokenType::COLON);
-            StmtNode stmt = statement();
-            default_case = std::move(stmt);
-        } else if (default_case != nullptr) {
-            throw_parse_error("Cannot have more than one default cases in a switch");
-        } else {
-            throw_parse_error("Expected either 'case' or 'default' as start of switch statement cases");
         }
     }
 

@@ -78,7 +78,6 @@ enum class TokenType {
     // Keywords
     /* AND, */ BOOL,
     BREAK,
-    CASE,
     CLASS,
     CONST,
     CONTINUE,
