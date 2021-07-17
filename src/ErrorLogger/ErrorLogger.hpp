@@ -8,7 +8,9 @@
 
 #include "../Token.hpp"
 
+#include <string>
 #include <string_view>
+#include <vector>
 
 struct ErrorLogger {
     bool had_error{false};
@@ -21,10 +23,10 @@ struct ErrorLogger {
 
 extern ErrorLogger logger;
 
-void warning(std::string_view message, const Token &where);
-void error(std::string_view message, const Token &where);
+void warning(std::vector<std::string> message, const Token &where);
+void error(std::vector<std::string> message, const Token &where);
 void runtime_error(std::string_view message, std::size_t line_number);
-void note(std::string_view message);
-void compile_error(std::string_view message);
+void note(std::vector<std::string> message);
+void compile_error(std::vector<std::string> message);
 
 #endif

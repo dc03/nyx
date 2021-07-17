@@ -61,7 +61,6 @@ std::ostream &print_access_specifier(VisibilityType visibility) {
 }
 
 std::string escape(const std::string &string_value) {
-    using namespace std::string_literals;
     std::string result{};
     auto is_escape = [](char ch) {
         switch (ch) {

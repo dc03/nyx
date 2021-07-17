@@ -59,12 +59,12 @@ void Parser::add_rule(TokenType type, ParseRule rule) noexcept {
 
 void Parser::throw_parse_error(const std::string_view message) const {
     const Token &erroneous = peek();
-    error(message, erroneous);
+    error({std::string{message}}, erroneous);
     throw ParseException{erroneous, message};
 }
 
 void Parser::throw_parse_error(const std::string_view message, const Token &where) const {
-    error(message, where);
+    error({std::string{message}}, where);
     throw ParseException{where, message};
 }
 
@@ -194,7 +194,7 @@ Parser::Parser(const std::vector<Token> &tokens, Module &module, std::size_t cur
 
 const Token &Parser::advance() {
     if (is_at_end()) {
-        error("Found unexpected EOF while parsing", previous());
+        error({"Found unexpected EOF while parsing"}, previous());
         throw ParseException{previous(), "Found unexpected EOF while parsing"};
     }
 
@@ -225,7 +225,7 @@ bool Parser::match(Args... args) {
 template <typename... Args>
 void Parser::consume(const std::string_view message, Args... args) {
     if (not match(args...)) {
-        error(message, peek());
+        error({std::string{message}}, peek());
         throw ParseException{peek(), message};
     }
 }
@@ -233,7 +233,7 @@ void Parser::consume(const std::string_view message, Args... args) {
 template <typename... Args>
 void Parser::consume(std::string_view message, const Token &where, Args... args) {
     if (not match(args...)) {
-        error(message, where);
+        error({std::string{message}}, where);
         throw ParseException{where, message};
     }
 }
@@ -268,9 +268,9 @@ ExprNode Parser::parse_precedence(ParsePrecedence::of precedence) {
             }
         }();
         bool had_error_before = logger.had_error;
-        error(message, previous());
+        error({message}, previous());
         if (had_error_before) {
-            note("This may occur because of previous errors leading to the parser being confused");
+            note({"This may occur because of previous errors leading to the parser being confused"});
         }
         throw ParseException{previous(), message};
     }
@@ -281,16 +281,20 @@ ExprNode Parser::parse_precedence(ParsePrecedence::of precedence) {
     while (precedence <= get_rule(peek().type).precedence) {
         ExprInfixParseFn infix = get_rule(advance().type).infix;
         if (infix == nullptr) {
-            std::string message = "'" + previous().lexeme + "' cannot occur in infix/postfix expression";
-            error(message, previous());
-            throw ParseException{previous(), message};
+            error({"'", previous().lexeme, "' cannot occur in an infix/postfix expression"}, previous());
+            if (previous().type == TokenType::PLUS_PLUS) {
+                note({"Postfix increment is not supported"});
+            } else if (previous().type == TokenType::MINUS_MINUS) {
+                note({"Postfix decrement is not supported"});
+            }
+            throw ParseException{previous(), "Incorrect infix/postfix expression"};
         }
         left = std::invoke(infix, this, can_assign, std::move(left));
     }
 
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
-        error("Invalid assignment target", previous());
+        error({"Invalid assignment target"}, previous());
         throw ParseException{previous(), "Invalid assignment target"};
     }
 
@@ -543,8 +547,8 @@ TypeNode Parser::type() {
         } else if (match(TokenType::NULL_)) {
             return Type::NULL_;
         } else {
-            error("Unexpected token in type specifier", peek());
-            note("The type needs to be one of: bool, int, float, string, an identifier or an array type");
+            error({"Unexpected token in type specifier"}, peek());
+            note({"The type needs to be one of: bool, int, float, string, an identifier or an array type"});
             throw ParseException{peek(), "Unexpected token in type specifier"};
         }
     }();
@@ -652,7 +656,7 @@ StmtNode Parser::class_declaration() {
                     } else {
                         constexpr const std::string_view message =
                             "Cannot declare constructors or destructors more than once";
-                        error(message, method_name);
+                        error({std::string{message}}, method_name);
                         throw ParseException{method_name, message};
                     }
                 }
@@ -747,15 +751,12 @@ StmtNode Parser::import_statement() {
     std::size_t name_index = imported.lexeme.find_last_of('/');
     std::string module_name = imported.lexeme.substr(name_index != std::string::npos ? name_index + 1 : 0);
     if (not module.is_open()) {
-        std::string message = "Unable to open module '";
-        message += module_name;
-        message += "'";
-        error(message, imported);
+        error({"Unable to open module '", module_name, "'"}, imported);
         return {nullptr};
     }
 
     if (module_name == current_module.name) {
-        error("Cannot import module with the same name as the current one", imported);
+        error({"Cannot import module with the same name as the current one"}, imported);
     }
 
     std::string module_source{std::istreambuf_iterator<char>{module}, std::istreambuf_iterator<char>{}};

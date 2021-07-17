@@ -49,7 +49,7 @@ std::size_t Chunk::emit_constant(Value value, std::size_t line_number) {
         emit_byte(constant & 0xff);
         return bytes.size() - 4;
     } else {
-        compile_error("Too many constants in chunk");
+        compile_error({"Too many constants in chunk"});
         return 0;
     }
 }
@@ -62,7 +62,7 @@ std::size_t Chunk::emit_string(std::string value, std::size_t line_number) {
         emit_byte(constant & 0xff);
         return bytes.size() - 4;
     } else {
-        compile_error("Too many constants in chunk");
+        compile_error({"Too many constants in chunk"});
         return 0;
     }
 }

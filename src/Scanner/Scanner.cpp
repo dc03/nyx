@@ -136,19 +136,16 @@ void Scanner::string(const char delimiter) {
                 lexeme += '\"';
             } else {
                 advance();
-                warning("Unrecognized escape sequence", previous());
+                warning({"Unrecognized escape sequence"}, previous());
             }
         } else {
             lexeme += advance();
         }
     }
 
-    using namespace std::string_literals;
     if (is_at_end()) {
-        std::string message{"Unexpected end of file while reading string, did you"
-                            " forget the closing '"s +
-                            std::string{delimiter} + "'?"};
-        error(message,
+        error(
+            {"Unexpected end of file while reading string, did you forget the closing '", std::string{delimiter}, "'?"},
             Token{TokenType::STRING_VALUE, std::string{source.substr(start, (current - start))}, line, start, current});
     }
 
@@ -175,7 +172,7 @@ void Scanner::multiline_comment() {
     }
 
     if (is_at_end()) {
-        error("Unexpected end of file while reading comment, did you forget the closing '*/'?",
+        error({"Unexpected end of file while reading comment, did you forget the closing '*/'?"},
             Token{TokenType::STRING_VALUE, std::string{source.substr(start, (current - start))}, line, start, current});
     }
 
@@ -316,8 +313,7 @@ void Scanner::scan_token() {
                 break;
             }
 
-            using namespace std::string_literals;
-            error(("Unrecognized character "s + std::string{ch} + " in input"),
+            error({"Unrecognized character ", std::string{ch}, " in input"},
                 Token{TokenType::STRING_VALUE, std::string{source.substr(start, (current - start))}, line, start,
                     current});
         }

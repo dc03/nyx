@@ -41,7 +41,7 @@
 - [ ] Fix clang warnings
 - [ ] Make enum to replace `true`/`false` by enumerators to have better code, like when
 calling `make_new_type` with the values for `is_const` and `is_ref`
-- [ ] Make `error()` accept a `std::vector` of `std::string(_view)?`s to reduce jankiness
+- [x] Make `error()` accept a `std::vector` of `std::string(_view)?`s to reduce jankiness
 in the code
 - [x] Add `not` keyword as alternative to `!`
 - [ ] Change switch syntax from `case expr: stmt` to `expr -> stmt`

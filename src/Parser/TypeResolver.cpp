@@ -54,10 +54,10 @@ bool TypeResolver::convertible_to(
     if (to->is_ref &&
         in_initializer) { // Only need to check conversion between references when we are in an initializer
         if (not from_lvalue && not from->is_ref) {
-            error("Cannot bind reference to non l-value type object", where);
+            error({"Cannot bind reference to non l-value type object"}, where);
             return false;
         } else if (from->is_const && not to->is_const) {
-            error("Cannot bind non-const reference to constant object", where);
+            error({"Cannot bind non-const reference to constant object"}, where);
             return false;
         }
 
@@ -69,7 +69,7 @@ bool TypeResolver::convertible_to(
         return from->primitive == to->primitive && class_condition;
     } else if ((from->primitive == Type::FLOAT && to->primitive == Type::INT) ||
                (from->primitive == Type::INT && to->primitive == Type::FLOAT)) {
-        warning("Implicit conversion between float and int", where);
+        warning({"Implicit conversion between float and int"}, where);
         return true;
     } else if (from->primitive == Type::LIST && to->primitive == Type::LIST) {
         return are_equivalent_types(
@@ -80,15 +80,11 @@ bool TypeResolver::convertible_to(
 }
 
 void show_conversion_note(QualifiedTypeInfo from, QualifiedTypeInfo to) {
-    using namespace std::string_literals;
-    std::string note_message = "Trying to convert from '"s + stringify(from) + "' to '" + stringify(to) + "'";
-    note(note_message);
+    note({"Trying to convert from '", stringify(from), "' to '", stringify(to), "'"});
 }
 
 void show_equality_note(QualifiedTypeInfo from, QualifiedTypeInfo to) {
-    using namespace std::string_literals;
-    std::string note_message = "Trying to check equality of '"s + stringify(from) + "' and '" + stringify(to) + "'";
-    note(note_message);
+    note({"Trying to check equality of '", stringify(from), "' and '", stringify(to), "'"});
 }
 
 bool is_builtin_type(Type type) {
@@ -258,21 +254,21 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
     }
 
     if (it < values.begin()) {
-        error("No such variable in the current scope", expr.target);
+        error({"No such variable in the current scope"}, expr.target);
         throw TypeException{"No such variable in the current scope"};
     }
 
     ExprVisitorType value = resolve(expr.value.get());
     if (it->info->is_const) {
-        error("Cannot assign to a const variable", expr.resolved.token);
+        error({"Cannot assign to a const variable"}, expr.resolved.token);
     } else if (not convertible_to(it->info, value.info, value.is_lvalue, expr.target, false)) {
-        error("Cannot convert type of value to type of target", expr.resolved.token);
+        error({"Cannot convert type of value to type of target"}, expr.resolved.token);
         show_conversion_note(value.info, it->info);
     } else if (one_of(expr.resolved.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                    TokenType::SLASH_EQUAL) &&
                not one_of(it->info->primitive, Type::INT, Type::FLOAT) &&
                not one_of(value.info->primitive, Type::INT, Type::FLOAT)) {
-        error("Expected integral types for compound assignment operator", expr.resolved.token);
+        error({"Expected integral types for compound assignment operator"}, expr.resolved.token);
         throw TypeException{"Expected integral types for compound assignment operator"};
     } else if (value.info->primitive == Type::FLOAT && it->info->primitive == Type::INT) {
         expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
@@ -304,10 +300,10 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
         case TokenType::MODULO:
             if (left_expr.info->primitive != Type::INT || right_expr.info->primitive != Type::INT) {
                 if (expr.resolved.token.type == TokenType::MODULO) {
-                    error("Wrong types of arguments to modulo operator (expected integral arguments)",
+                    error({"Wrong types of arguments to modulo operator (expected integral arguments)"},
                         expr.resolved.token);
                 } else {
-                    error("Wrong types of arguments to bitwise binary operator (expected integral arguments)",
+                    error({"Wrong types of arguments to bitwise binary operator (expected integral arguments)"},
                         expr.resolved.token);
                 }
             }
@@ -317,13 +313,13 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             if (left_expr.info->primitive == Type::LIST && right_expr.info->primitive == Type::LIST) {
                 if (not convertible_to(left_expr.info, right_expr.info, false, expr.resolved.token, false) &&
                     not convertible_to(right_expr.info, left_expr.info, false, expr.resolved.token, false)) {
-                    error("Cannot compare two lists that have incompatible contained types", expr.resolved.token);
+                    error({"Cannot compare two lists that have incompatible contained types"}, expr.resolved.token);
                     show_equality_note(left_expr.info, right_expr.info);
                 }
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             } else if (one_of(left_expr.info->primitive, Type::BOOL, Type::STRING, Type::NULL_)) {
                 if (left_expr.info->primitive != right_expr.info->primitive) {
-                    error("Cannot compare equality of objects of different types", expr.resolved.token);
+                    error({"Cannot compare equality of objects of different types"}, expr.resolved.token);
                 }
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             }
@@ -335,13 +331,13 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             if (one_of(left_expr.info->primitive, Type::INT, Type::FLOAT) &&
                 one_of(right_expr.info->primitive, Type::INT, Type::FLOAT)) {
                 if (left_expr.info->primitive != right_expr.info->primitive) {
-                    warning("Comparison between objects of types int and float", expr.resolved.token);
+                    warning({"Comparison between objects of types int and float"}, expr.resolved.token);
                 }
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             } else if (left_expr.info->primitive == Type::BOOL && right_expr.info->primitive == Type::BOOL) {
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             } else {
-                error("Cannot compare objects of incompatible types", expr.resolved.token);
+                error({"Cannot compare objects of incompatible types"}, expr.resolved.token);
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             }
         case TokenType::PLUS:
@@ -360,7 +356,7 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::FLOAT, true, false), expr.resolved.token};
                 // Integral promotion
             } else {
-                error("Cannot use arithmetic operators on objects of incompatible types", expr.resolved.token);
+                error({"Cannot use arithmetic operators on objects of incompatible types"}, expr.resolved.token);
                 throw TypeException{"Cannot use arithmetic operators on objects of incompatible types"};
             }
         case TokenType::DOT_DOT:
@@ -370,13 +366,13 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
                     Type::LIST, true, false, TypeNode{make_new_type<PrimitiveType>(Type::INT, true, false)}, nullptr);
                 return expr.resolved = {list, expr.resolved.token};
             } else {
-                error("Ranges can only be created for integral types", expr.resolved.token);
+                error({"Ranges can only be created for integral types"}, expr.resolved.token);
                 throw TypeException{"Ranges can only be created for integral types"};
             }
             break;
 
         default:
-            error("Bug in parser with illegal token type of expression's operator", expr.resolved.token);
+            error({"Bug in parser with illegal token type of expression's operator"}, expr.resolved.token);
             throw TypeException{"Bug in parser with illegal token type of expression's operator"};
     }
 }
@@ -388,29 +384,25 @@ bool is_builtin_function(VariableExpr *expr) {
 
 ExprVisitorType TypeResolver::check_inbuilt(
     VariableExpr *function, const Token &oper, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> &args) {
-    using namespace std::string_literals;
-
     auto it = std::find_if(native_functions.begin(), native_functions.end(),
         [&function](const NativeFn &native) { return native.name == function->name.lexeme; });
 
     if (args.size() != it->arity) {
-        using namespace std::string_literals;
-        std::string arity_error = "Cannot pass "s + (args.size() < it->arity ? "less"s : "more"s) + " than "s +
-                                  std::to_string(it->arity) + " argument(s) to function '"s + it->name + "'"s;
-        error(arity_error, oper);
-        throw TypeException{arity_error};
+        std::string num_args = args.size() < it->arity ? "less" : "more";
+        error({"Cannot pass ", num_args, " than ", std::to_string(it->arity), " argument(s) to function '", it->name,
+                  "'"},
+            oper);
+        throw TypeException{"Arity error"};
     }
 
     for (std::size_t i = 0; i < it->arity; i++) {
         ExprVisitorType arg = resolve(std::get<ExprNode>(args[i]).get());
         if (not std::any_of(it->arguments[i].begin(), it->arguments[i].end(),
                 [&arg](const Type &type) { return type == arg.info->primitive; })) {
-            using namespace std::string_literals;
-            std::string type_error = "Cannot pass argument of type '"s + stringify(arg.info) +
-                                     "' as argument number "s + std::to_string(i + 1) + " to builtin function '"s +
-                                     it->name + "'";
-            error(type_error, oper);
-            throw TypeException{type_error};
+            error({"Cannot pass argument of type '", stringify(arg.info), "' as argument number ",
+                      std::to_string(i + 1), " to builtin function '", it->name, "'"},
+                oper);
+            throw TypeException{"Builtin argument type error"};
         }
     }
 
@@ -444,7 +436,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     }
 
     if (called->params.size() != expr.args.size()) {
-        error("Number of arguments passed to function must match the number of parameters", expr.resolved.token);
+        error({"Number of arguments passed to function must match the number of parameters"}, expr.resolved.token);
         throw TypeException{"Number of arguments passed to function must match the number of parameters"};
     }
 
@@ -452,7 +444,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         ExprVisitorType argument = resolve(std::get<ExprNode>(expr.args[i]).get());
         if (not convertible_to(
                 called->params[i].second.get(), argument.info, argument.is_lvalue, argument.token, true)) {
-            error("Type of argument is not convertible to type of parameter", argument.token);
+            error({"Type of argument is not convertible to type of parameter"}, argument.token);
             show_conversion_note(argument.info, called->params[i].second.get());
         } else if (argument.info->primitive == Type::FLOAT && called->params[i].second->primitive == Type::INT) {
             std::get<NumericConversionType>(expr.args[i]) = NumericConversionType::FLOAT_TO_INT;
@@ -492,9 +484,9 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
             if (member->name == name) {
                 if (not in_class || (in_class && current_class->name != accessed_type->name)) {
                     if (member_decl.second == VisibilityType::PROTECTED) {
-                        error("Cannot access protected member outside class", name);
+                        error({"Cannot access protected member outside class"}, name);
                     } else if (member_decl.second == VisibilityType::PRIVATE) {
-                        error("Cannot access private member outside class", name);
+                        error({"Cannot access private member outside class"}, name);
                     }
                 }
 
@@ -513,18 +505,18 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
                     (in_class && current_class->name == accessed_type->name)) {
                     return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method_decl.first.get(), name};
                 } else if (method_decl.second == VisibilityType::PROTECTED) {
-                    error("Cannot access protected method outside class", name);
+                    error({"Cannot access protected method outside class"}, name);
                 } else if (method_decl.second == VisibilityType::PRIVATE) {
-                    error("Cannot access private method outside class", name);
+                    error({"Cannot access private method outside class"}, name);
                 }
                 return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method_decl.first.get(), name};
             }
         }
 
-        error("No such attribute exists in the class", name);
+        error({"No such attribute exists in the class"}, name);
         throw TypeException{"No such attribute exists in the class"};
     } else {
-        error("Expected class or list type to take attribute of", name);
+        error({"Expected class or list type to take attribute of"}, name);
         throw TypeException{"Expected class or list type to take attribute of"};
     }
 }
@@ -545,7 +537,7 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
     ExprVisitorType index = resolve(expr.index.get());
 
     if (index.info->primitive != Type::INT) {
-        error("Expected integral type for index", expr.resolved.token);
+        error({"Expected integral type for index"}, expr.resolved.token);
         throw TypeException{"Expected integral type for index"};
     }
 
@@ -556,17 +548,17 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
     } else if (list.info->primitive == Type::STRING) {
         return expr.resolved = {list.info, expr.resolved.token, false}; // For now, strings are immutable.
     } else {
-        error("Expected list or string type for indexing", expr.resolved.token);
+        error({"Expected list or string type for indexing"}, expr.resolved.token);
         throw TypeException{"Expected list or string type for indexing"};
     }
 }
 
 ExprVisitorType TypeResolver::visit(ListExpr &expr) {
     if (expr.elements.empty()) {
-        error("Cannot have empty list expression", expr.bracket);
+        error({"Cannot have empty list expression"}, expr.bracket);
         throw TypeException{"Cannot have empty list expression"};
     } else if (expr.elements.size() > 255) {
-        error("Cannot have more than 255 elements in list expression", expr.bracket);
+        error({"Cannot have more than 255 elements in list expression"}, expr.bracket);
         throw TypeException{"Cannot have more than 255 elements in list expression"};
     }
 
@@ -609,33 +601,33 @@ ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
     ExprVisitorType value = resolve(expr.value.get());
 
     if (not(expr.list.resolved.is_lvalue || expr.list.resolved.info->is_ref)) {
-        error("Cannot assign to non-lvalue or non-ref list", expr.resolved.token);
-        note("Only variables or references can be assigned to");
+        error({"Cannot assign to non-lvalue or non-ref list"}, expr.resolved.token);
+        note({"Only variables or references can be assigned to"});
         throw TypeException{"Cannot assign to non-lvalue or non-ref list"};
     }
 
     if (not contained.is_lvalue) {
-        error("Cannot assign to non-lvalue element", expr.resolved.token);
-        note("String elements are non-assignable");
+        error({"Cannot assign to non-lvalue element"}, expr.resolved.token);
+        note({"String elements are non-assignable"});
         throw TypeException{"Cannot assign to non-lvalue element"};
     }
 
     if (contained.info->is_const) {
-        error("Cannot assign to constant value", expr.resolved.token);
+        error({"Cannot assign to constant value"}, expr.resolved.token);
         show_conversion_note(value.info, contained.info);
         throw TypeException{"Cannot assign to constant value"};
     } else if (expr.list.object->resolved.info->is_const) {
-        error("Cannot assign to constant list", expr.resolved.token);
+        error({"Cannot assign to constant list"}, expr.resolved.token);
         show_conversion_note(value.info, expr.list.object->resolved.info);
         throw TypeException{"Cannot assign to constant list"};
     } else if (one_of(expr.resolved.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                    TokenType::SLASH_EQUAL) &&
                not one_of(contained.info->primitive, Type::INT, Type::FLOAT) &&
                not one_of(value.info->primitive, Type::INT, Type::FLOAT)) {
-        error("Expected integral types for compound assignment operator", expr.resolved.token);
+        error({"Expected integral types for compound assignment operator"}, expr.resolved.token);
         throw TypeException{"Expected integral types for compound assignment operator"};
     } else if (not convertible_to(contained.info, value.info, value.is_lvalue, expr.resolved.token, false)) {
-        error("Cannot convert from contained type of list to type being assigned", expr.resolved.token);
+        error({"Cannot convert from contained type of list to type being assigned"}, expr.resolved.token);
         show_conversion_note(contained.info, value.info);
         throw TypeException{"Cannot convert from contained type of list to type being assigned"};
     } else if (value.info->primitive == Type::FLOAT && contained.info->primitive == Type::INT) {
@@ -656,7 +648,7 @@ ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
         case LiteralValue::tag::NULL_: return expr.resolved = {expr.type.get(), expr.resolved.token};
 
         default:
-            error("Bug in parser with illegal type for literal value", expr.resolved.token);
+            error({"Bug in parser with illegal type for literal value"}, expr.resolved.token);
             throw TypeException{"Bug in parser with illegal type for literal value"};
     }
 }
@@ -678,7 +670,7 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
                                method.first.get(), left.class_, expr.resolved.token};
                 }
             }
-            error("No such method exists in the class", expr.name);
+            error({"No such method exists in the class"}, expr.name);
             throw TypeException{"No such method exists in the class"};
 
         case ExprTypeInfo::ScopeType::MODULE: {
@@ -693,12 +685,12 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
                            expr.resolved.token};
             }
         }
-            error("No such function/class exists in the module", expr.name);
+            error({"No such function/class exists in the module"}, expr.name);
             throw TypeException{"No such function/class exists in the module"};
 
         case ExprTypeInfo::ScopeType::NONE:
         default:
-            error("No such module/class exists in the current global scope", expr.name);
+            error({"No such module/class exists in the current global scope"}, expr.name);
             throw TypeException{"No such module/class exists in the current global scope"};
     }
 }
@@ -715,7 +707,7 @@ ExprVisitorType TypeResolver::visit(ScopeNameExpr &expr) {
         return expr.resolved = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.resolved.token};
     }
 
-    error("No such scope exists with the given name", expr.name);
+    error({"No such scope exists with the given name"}, expr.name);
     throw TypeException{"No such scope exists with the given name"};
 }
 
@@ -725,13 +717,13 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
     ExprVisitorType value_type = resolve(expr.value.get());
 
     if (object.info->is_const) {
-        error("Cannot assign to a const object", expr.name);
+        error({"Cannot assign to a const object"}, expr.name);
     } else if (not in_ctor && attribute_type.info->is_const) {
-        error("Cannot assign to const attribute", expr.name);
+        error({"Cannot assign to const attribute"}, expr.name);
     }
 
     if (not convertible_to(attribute_type.info, value_type.info, value_type.is_lvalue, expr.name, false)) {
-        error("Cannot convert value of assigned expresion to type of target", expr.name);
+        error({"Cannot convert value of assigned expression to type of target"}, expr.name);
         show_conversion_note(value_type.info, attribute_type.info);
         throw TypeException{"Cannot convert value of assigned expression to type of target"};
     } else if (value_type.info->primitive == Type::FLOAT && attribute_type.info->primitive == Type::INT) {
@@ -757,7 +749,7 @@ ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
 
     if (not convertible_to(middle.info, right.info, right.is_lvalue, expr.resolved.token, false) &&
         not convertible_to(right.info, middle.info, right.is_lvalue, expr.resolved.token, false)) {
-        error("Expected equivalent expression types for branches of ternary expression", expr.resolved.token);
+        error({"Expected equivalent expression types for branches of ternary expression"}, expr.resolved.token);
         show_conversion_note(right.info, middle.info);
     }
 
@@ -766,7 +758,7 @@ ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
 
 ExprVisitorType TypeResolver::visit(ThisExpr &expr) {
     if (not in_ctor && not in_dtor) {
-        error("Cannot use 'this' keyword outside a class's constructor or destructor", expr.keyword);
+        error({"Cannot use 'this' keyword outside a class's constructor or destructor"}, expr.keyword);
         throw TypeException{"Cannot use 'this' keyword outside a class's constructor or destructor"};
     }
     return expr.resolved = {make_new_type<UserDefinedType>(Type::CLASS, false, false, current_class->name),
@@ -778,41 +770,41 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
     switch (expr.oper.type) {
         case TokenType::BIT_NOT:
             if (right.info->primitive != Type::INT) {
-                error("Wrong type of argument to bitwise unary operator (expected integral argument)", expr.oper);
+                error({"Wrong type of argument to bitwise unary operator (expected integral argument)"}, expr.oper);
             }
             return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
         case TokenType::NOT:
             if (one_of(right.info->primitive, Type::CLASS, Type::LIST, Type::NULL_)) {
-                error("Wrong type of argument to logical not operator", expr.oper);
+                error({"Wrong type of argument to logical not operator"}, expr.oper);
             }
             return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
         case TokenType::PLUS_PLUS:
         case TokenType::MINUS_MINUS:
             if (not one_of(right.info->primitive, Type::INT, Type::FLOAT)) {
-                error("Expected integral or floating type as argument to increment operator", expr.oper);
+                error({"Expected integral or floating type as argument to increment operator"}, expr.oper);
                 throw TypeException{"Expected integral or floating type as argument to increment operator"};
             } else if (right.info->is_const || not(right.is_lvalue || right.info->is_ref)) {
-                error("Expected non-const l-value or reference type as argument for increment operator", expr.oper);
+                error({"Expected non-const l-value or reference type as argument for increment operator"}, expr.oper);
                 throw TypeException{"Expected non-const l-value or reference type as argument for increment operator"};
             };
             return expr.resolved = {right.info, expr.oper};
         case TokenType::MINUS:
         case TokenType::PLUS:
             if (not one_of(right.info->primitive, Type::INT, Type::FLOAT)) {
-                error("Expected integral or floating point argument to operator", expr.oper);
+                error({"Expected integral or floating point argument to operator"}, expr.oper);
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
             }
             return expr.resolved = {right.info, expr.resolved.token};
 
         default:
-            error("Bug in parser with illegal type for unary expression", expr.oper);
+            error({"Bug in parser with illegal type for unary expression"}, expr.oper);
             throw TypeException{"Bug in parser with illegal type for unary expression"};
     }
 }
 
 ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
     if (is_builtin_function(&expr)) {
-        error("Cannot use in-built function as an expression", expr.name);
+        error({"Cannot use in-built function as an expression"}, expr.name);
         throw TypeException{"Cannot use in-built function as an expression"};
     }
 
@@ -839,7 +831,7 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
         return expr.resolved = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.resolved.token};
     }
 
-    error("No such variable/function in the current module's scope", expr.name);
+    error({"No such variable/function '", expr.name.lexeme, "' in the current module's scope"}, expr.name);
     throw TypeException{"No such variable/function in the current module's scope"};
 }
 
@@ -888,7 +880,6 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
     for (auto &member_declaration : stmt.members) {
         auto *member = member_declaration.first.get();
         if (member->initializer != nullptr) {
-            using namespace std::string_literals;
             // Transform the declaration of the member into an implicit assignment in the constructor
             // i.e `public var x = 0` becomes `public var x: int` and `this.x = 0`
             // TODO: What about references?
@@ -960,7 +951,7 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
         if (param.second->type_tag() == NodeType::UserDefinedType) {
             param_class = find_class(dynamic_cast<UserDefinedType &>(*param.second).name.lexeme);
             if (param_class == nullptr) {
-                error("No such module/class exists in the current global scope", stmt.name);
+                error({"No such module/class exists in the current global scope"}, stmt.name);
                 throw TypeException{"No such module/class exists in the current global scope"};
             }
         }
@@ -982,7 +973,7 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
 StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
     ExprVisitorType condition = resolve(stmt.condition.get());
     if (one_of(condition.info->primitive, Type::CLASS, Type::LIST)) {
-        error("Class or list types are not implicitly convertible to bool", stmt.keyword);
+        error({"Class or list types are not implicitly convertible to bool"}, stmt.keyword);
     }
 
     resolve(stmt.thenBranch.get());
@@ -995,13 +986,13 @@ StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
 StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
     if (stmt.value == nullptr) {
         if (current_function->return_type->primitive != Type::NULL_) {
-            error("Can only have empty return expressions in functions which return 'null'", stmt.keyword);
+            error({"Can only have empty return expressions in functions which return 'null'"}, stmt.keyword);
             throw TypeException{"Can only have empty return expressions in functions which return 'null'"};
         }
     } else if (ExprVisitorType return_value = resolve(stmt.value.get());
                not convertible_to(current_function->return_type.get(), return_value.info, return_value.is_lvalue,
                    stmt.keyword, true)) {
-        error("Type of expression in return statement does not match return type of function", stmt.keyword);
+        error({"Type of expression in return statement does not match return type of function"}, stmt.keyword);
         show_conversion_note(return_value.info, current_function->return_type.get());
     }
 
@@ -1019,7 +1010,7 @@ StmtVisitorType TypeResolver::visit(SwitchStmt &stmt) {
     for (auto &case_stmt : stmt.cases) {
         ExprVisitorType case_expr = resolve(case_stmt.first.get());
         if (not convertible_to(case_expr.info, condition.info, condition.is_lvalue, case_expr.token, false)) {
-            error("Type of case expression cannot be converted to type of switch condition", case_expr.token);
+            error({"Type of case expression cannot be converted to type of switch condition"}, case_expr.token);
             show_conversion_note(condition.info, case_expr.info);
         }
         resolve(case_stmt.second.get());
@@ -1039,7 +1030,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
     if (not in_class && std::any_of(values.crbegin(), values.crend(), [this, &stmt](const Value &value) {
             return value.scope_depth == scope_depth && value.lexeme == stmt.name.lexeme;
         })) {
-        error("A variable with the same name has already been created in this scope", stmt.name);
+        error({"A variable with the same name has already been created in this scope"}, stmt.name);
         throw TypeException{"A variable with the same name has already been created in this scope"};
     }
 
@@ -1077,7 +1068,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         }
 
         if (not convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name, true)) {
-            error("Cannot convert from initializer type to type of variable", stmt.name);
+            error({"Cannot convert from initializer type to type of variable"}, stmt.name);
             show_conversion_note(initializer.info, type);
             throw TypeException{"Cannot convert from initializer type to type of variable"};
         } else if (initializer.info->primitive == Type::FLOAT && type->primitive == Type::INT) {
@@ -1107,7 +1098,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         if (stmt.type->type_tag() == NodeType::UserDefinedType) {
             stmt_class = find_class(dynamic_cast<UserDefinedType &>(*stmt.type).name.lexeme);
             if (stmt_class == nullptr) {
-                error("No such module/class exists in the current global scope", stmt.name);
+                error({"No such module/class exists in the current global scope"}, stmt.name);
                 throw TypeException{"No such module/class exists in the current global scope"};
             }
         }
@@ -1117,7 +1108,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
                 {stmt.name.lexeme, type, scope_depth, stmt_class, (values.empty() ? 0 : values.back().stack_slot + 1)});
         }
     } else {
-        error("Expected type for variable", stmt.name);
+        error({"Expected type for variable"}, stmt.name);
         // The variable is never created if there is an error creating it thus any references to it also break
     }
 }
@@ -1128,7 +1119,7 @@ StmtVisitorType TypeResolver::visit(WhileStmt &stmt) {
 
     ExprVisitorType condition = resolve(stmt.condition.get());
     if (one_of(condition.info->primitive, Type::CLASS, Type::LIST)) {
-        error("Class or list types are not implicitly convertible to bool", stmt.keyword);
+        error({"Class or list types are not implicitly convertible to bool"}, stmt.keyword);
     }
     if (stmt.increment != nullptr) {
         resolve(stmt.increment.get());

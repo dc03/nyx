@@ -16,9 +16,13 @@ void ErrorLogger::set_source(std::string_view file_source) {
     this->source = file_source;
 }
 
-void print_message(const std::string_view message, const Token &where, const std::string_view prefix) {
+void print_message(const std::vector<std::string> &message, const Token &where, const std::string_view prefix) {
     std::cerr << "\n  | In module '" << logger.module_name << "',";
-    std::cerr << "\n!-| line " << where.line << " | " << prefix << ": " << message << '\n';
+    std::cerr << "\n!-| line " << where.line << " | " << prefix << ": ";
+    for (const std::string &str : message) {
+        std::cerr << str;
+    }
+    std::cerr << '\n';
     std::size_t line_start = where.start;
     std::size_t line_end = where.end;
     while (line_start > 0 && logger.source[line_start] != '\n') {
@@ -48,11 +52,11 @@ void print_message(const std::string_view message, const Token &where, const std
     std::cerr << '\n';
 }
 
-void warning(std::string_view message, const Token &where) {
+void warning(std::vector<std::string> message, const Token &where) {
     print_message(message, where, "Warning");
 }
 
-void error(const std::string_view message, const Token &where) {
+void error(std::vector<std::string> message, const Token &where) {
     logger.had_error = true;
     print_message(message, where, "Error");
 }
@@ -74,11 +78,19 @@ void runtime_error(const std::string_view message, std::size_t line_number) {
     std::cerr << '\n';
 }
 
-void note(const std::string_view message) {
-    std::cerr << "->| note: " << message << '\n';
+void note(std::vector<std::string> message) {
+    std::cerr << "->| note: ";
+    for (const std::string &str : message) {
+        std::cerr << str;
+    }
+    std::cerr << '\n';
 }
 
-void compile_error(std::string_view message) {
+void compile_error(std::vector<std::string> message) {
     std::cerr << "\n  | In module '" << logger.module_name << "',";
-    std::cerr << "\n!-| Compile error: " << message << '\n';
+    std::cerr << "\n!-| Compile error: ";
+    for (const std::string &str : message) {
+        std::cerr << str;
+    }
+    std::cerr << '\n';
 }

@@ -33,7 +33,7 @@ void Generator::end_scope() {
 
 void Generator::patch_jump(std::size_t jump_idx, std::size_t jump_amount) {
     if (jump_amount >= Chunk::const_long_max) {
-        compile_error("Size of jump is greater than that allowed by the instruction set");
+        compile_error({"Size of jump is greater than that allowed by the instruction set"});
         return;
     }
 
@@ -58,7 +58,6 @@ RuntimeModule Generator::compile(Module &module) {
 }
 
 void Generator::emit_conversion(NumericConversionType conversion_type, std::size_t line_number) {
-    using namespace std::string_literals;
     switch (conversion_type) {
         case NumericConversionType::FLOAT_TO_INT:
             current_chunk->emit_instruction(Instruction::FLOAT_TO_INT, line_number);
@@ -252,7 +251,7 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
         case TokenType::DOT_DOT:
         case TokenType::DOT_DOT_EQUAL: break;
 
-        default: error("Bug in parser with illegal token type of expression's operator", expr.resolved.token); break;
+        default: error({"Bug in parser with illegal token type of expression's operator"}, expr.resolved.token); break;
     }
 
     return {};
@@ -628,7 +627,7 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
             }
             break;
         }
-        default: error("Bug in parser with illegal type for unary expression", expr.oper); break;
+        default: error({"Bug in parser with illegal type for unary expression"}, expr.oper); break;
     }
     return {};
 }
@@ -653,7 +652,7 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
                 }
                 emit_three_bytes_of(expr.resolved.stack_slot);
             } else {
-                compile_error("Too many variables in current scope");
+                compile_error({"Too many variables in current scope"});
             }
             return {};
         case IdentifierType::FUNCTION:
