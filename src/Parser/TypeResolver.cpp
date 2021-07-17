@@ -79,14 +79,6 @@ bool TypeResolver::convertible_to(
     }
 }
 
-void show_conversion_note(QualifiedTypeInfo from, QualifiedTypeInfo to) {
-    note({"Trying to convert from '", stringify(from), "' to '", stringify(to), "'"});
-}
-
-void show_equality_note(QualifiedTypeInfo from, QualifiedTypeInfo to) {
-    note({"Trying to check equality of '", stringify(from), "' and '", stringify(to), "'"});
-}
-
 bool is_builtin_type(Type type) {
     switch (type) {
         case Type::BOOL:
@@ -263,12 +255,13 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
         error({"Cannot assign to a const variable"}, expr.resolved.token);
     } else if (not convertible_to(it->info, value.info, value.is_lvalue, expr.target, false)) {
         error({"Cannot convert type of value to type of target"}, expr.resolved.token);
-        show_conversion_note(value.info, it->info);
+        note({"Trying to convert from '", stringify(value.info), "' to '", stringify(it->info), "'"});
     } else if (one_of(expr.resolved.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                    TokenType::SLASH_EQUAL) &&
                not one_of(it->info->primitive, Type::INT, Type::FLOAT) &&
                not one_of(value.info->primitive, Type::INT, Type::FLOAT)) {
         error({"Expected integral types for compound assignment operator"}, expr.resolved.token);
+        note({"Trying to assign '", stringify(value.info), "' to '", stringify(it->info), "'"});
         throw TypeException{"Expected integral types for compound assignment operator"};
     } else if (value.info->primitive == Type::FLOAT && it->info->primitive == Type::INT) {
         expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
@@ -299,13 +292,11 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
         case TokenType::BIT_XOR:
         case TokenType::MODULO:
             if (left_expr.info->primitive != Type::INT || right_expr.info->primitive != Type::INT) {
-                if (expr.resolved.token.type == TokenType::MODULO) {
-                    error({"Wrong types of arguments to modulo operator (expected integral arguments)"},
-                        expr.resolved.token);
-                } else {
-                    error({"Wrong types of arguments to bitwise binary operator (expected integral arguments)"},
-                        expr.resolved.token);
-                }
+                error({"Wrong types of arguments to ",
+                          (expr.resolved.token.type == TokenType::MODULO ? "modulo" : "binary bitwise"),
+                          " operator (expected integral arguments)"},
+                    expr.resolved.token);
+                note({"Received types '", stringify(left_expr.info), "' and '", stringify(right_expr.info), "'"});
             }
             return expr.resolved = {left_expr.info, expr.resolved.token};
         case TokenType::NOT_EQUAL:
@@ -314,12 +305,14 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
                 if (not convertible_to(left_expr.info, right_expr.info, false, expr.resolved.token, false) &&
                     not convertible_to(right_expr.info, left_expr.info, false, expr.resolved.token, false)) {
                     error({"Cannot compare two lists that have incompatible contained types"}, expr.resolved.token);
-                    show_equality_note(left_expr.info, right_expr.info);
+                    note({"Received types '", stringify(left_expr.info), "' and '", stringify(right_expr.info), "'"});
                 }
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             } else if (one_of(left_expr.info->primitive, Type::BOOL, Type::STRING, Type::NULL_)) {
                 if (left_expr.info->primitive != right_expr.info->primitive) {
                     error({"Cannot compare equality of objects of different types"}, expr.resolved.token);
+                    note(
+                        {"Trying to compare '", stringify(left_expr.info), "' and '", stringify(right_expr.info), "'"});
                 }
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             }
@@ -338,6 +331,7 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             } else {
                 error({"Cannot compare objects of incompatible types"}, expr.resolved.token);
+                note({"Trying to compare '", stringify(left_expr.info), "' and '", stringify(right_expr.info), "'"});
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
             }
         case TokenType::PLUS:
@@ -357,6 +351,8 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
                 // Integral promotion
             } else {
                 error({"Cannot use arithmetic operators on objects of incompatible types"}, expr.resolved.token);
+                note({"Trying to use '", stringify(left_expr.info), "' and '", stringify(right_expr.info), "'"});
+                note({"The operators '+', '-', '/' and '*' currently only work on integral types"});
                 throw TypeException{"Cannot use arithmetic operators on objects of incompatible types"};
             }
         case TokenType::DOT_DOT:
@@ -367,6 +363,8 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
                 return expr.resolved = {list, expr.resolved.token};
             } else {
                 error({"Ranges can only be created for integral types"}, expr.resolved.token);
+                note({"Trying to use '", stringify(left_expr.info), "' and '", stringify(right_expr.info),
+                    "' as range interval"});
                 throw TypeException{"Ranges can only be created for integral types"};
             }
             break;
@@ -392,6 +390,7 @@ ExprVisitorType TypeResolver::check_inbuilt(
         error({"Cannot pass ", num_args, " than ", std::to_string(it->arity), " argument(s) to function '", it->name,
                   "'"},
             oper);
+        note({"Trying to pass ", std::to_string(args.size()), " arguments"});
         throw TypeException{"Arity error"};
     }
 
@@ -437,6 +436,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
 
     if (called->params.size() != expr.args.size()) {
         error({"Number of arguments passed to function must match the number of parameters"}, expr.resolved.token);
+        note({"Trying to pass ", std::to_string(expr.args.size()), " arguments"});
         throw TypeException{"Number of arguments passed to function must match the number of parameters"};
     }
 
@@ -445,7 +445,8 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         if (not convertible_to(
                 called->params[i].second.get(), argument.info, argument.is_lvalue, argument.token, true)) {
             error({"Type of argument is not convertible to type of parameter"}, argument.token);
-            show_conversion_note(argument.info, called->params[i].second.get());
+            note({"Trying to convert to '", stringify(called->params[i].second.get()), "' from '",
+                stringify(argument.info), "'"});
         } else if (argument.info->primitive == Type::FLOAT && called->params[i].second->primitive == Type::INT) {
             std::get<NumericConversionType>(expr.args[i]) = NumericConversionType::FLOAT_TO_INT;
         } else if (argument.info->primitive == Type::INT && called->params[i].second->primitive == Type::FLOAT) {
@@ -554,6 +555,7 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
         return expr.resolved = {list.info, expr.resolved.token, false}; // For now, strings are immutable.
     } else {
         error({"Expected list or string type for indexing"}, expr.resolved.token);
+        note({"Received type '", stringify(list.info), "'"});
         throw TypeException{"Expected list or string type for indexing"};
     }
 }
@@ -605,6 +607,11 @@ ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
     ExprVisitorType contained = resolve(&expr.list);
     ExprVisitorType value = resolve(expr.value.get());
 
+    if (expr.list.object->resolved.info->primitive == Type::STRING) {
+        error({"Strings are immutable and non-assignable"}, expr.resolved.token);
+        throw TypeException{"Strings are immutable and non-assignable"};
+    }
+
     if (not(expr.list.resolved.is_lvalue || expr.list.resolved.info->is_ref)) {
         error({"Cannot assign to non-lvalue or non-ref list"}, expr.resolved.token);
         note({"Only variables or references can be assigned to"});
@@ -619,21 +626,22 @@ ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
 
     if (contained.info->is_const) {
         error({"Cannot assign to constant value"}, expr.resolved.token);
-        show_conversion_note(value.info, contained.info);
+        note({"Trying to assign to '", stringify(contained.info), "'"});
         throw TypeException{"Cannot assign to constant value"};
     } else if (expr.list.object->resolved.info->is_const) {
         error({"Cannot assign to constant list"}, expr.resolved.token);
-        show_conversion_note(value.info, expr.list.object->resolved.info);
+        note({"Trying to assign to '", stringify(contained.info), "'"});
         throw TypeException{"Cannot assign to constant list"};
     } else if (one_of(expr.resolved.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                    TokenType::SLASH_EQUAL) &&
                not one_of(contained.info->primitive, Type::INT, Type::FLOAT) &&
                not one_of(value.info->primitive, Type::INT, Type::FLOAT)) {
         error({"Expected integral types for compound assignment operator"}, expr.resolved.token);
+        note({"Received types '", stringify(contained.info), "' and '", stringify(value.info), "'"});
         throw TypeException{"Expected integral types for compound assignment operator"};
     } else if (not convertible_to(contained.info, value.info, value.is_lvalue, expr.resolved.token, false)) {
         error({"Cannot convert from contained type of list to type being assigned"}, expr.resolved.token);
-        show_conversion_note(contained.info, value.info);
+        note({"Trying to assign to '", stringify(contained.info), "' from '", stringify(value.info), "'"});
         throw TypeException{"Cannot convert from contained type of list to type being assigned"};
     } else if (value.info->primitive == Type::FLOAT && contained.info->primitive == Type::INT) {
         expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
@@ -723,13 +731,15 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
 
     if (object.info->is_const) {
         error({"Cannot assign to a const object"}, expr.name);
+        note({"Trying to assign to '", stringify(object.info), "'"});
     } else if (not in_ctor && attribute_type.info->is_const) {
         error({"Cannot assign to const attribute"}, expr.name);
+        note({"Trying to assign to '", stringify(attribute_type.info), "'"});
     }
 
     if (not convertible_to(attribute_type.info, value_type.info, value_type.is_lvalue, expr.name, false)) {
         error({"Cannot convert value of assigned expression to type of target"}, expr.name);
-        show_conversion_note(value_type.info, attribute_type.info);
+        note({"Trying to convert to '", stringify(attribute_type.info), "' from '", stringify(value_type.info), "'"});
         throw TypeException{"Cannot convert value of assigned expression to type of target"};
     } else if (value_type.info->primitive == Type::FLOAT && attribute_type.info->primitive == Type::INT) {
         expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
@@ -755,7 +765,8 @@ ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
     if (not convertible_to(middle.info, right.info, right.is_lvalue, expr.resolved.token, false) &&
         not convertible_to(right.info, middle.info, right.is_lvalue, expr.resolved.token, false)) {
         error({"Expected equivalent expression types for branches of ternary expression"}, expr.resolved.token);
-        show_conversion_note(right.info, middle.info);
+        note({"Received types '", stringify(middle.info), "' for middle expression and '", stringify(right.info),
+            "' for right expression"});
     }
 
     return expr.resolved = {middle.info, expr.resolved.token};
@@ -776,20 +787,24 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
         case TokenType::BIT_NOT:
             if (right.info->primitive != Type::INT) {
                 error({"Wrong type of argument to bitwise unary operator (expected integral argument)"}, expr.oper);
+                note({"Received operand of type '", stringify(right.info), "'"});
             }
             return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
         case TokenType::NOT:
             if (one_of(right.info->primitive, Type::CLASS, Type::LIST, Type::NULL_)) {
                 error({"Wrong type of argument to logical not operator"}, expr.oper);
+                note({"Received operand of type '", stringify(right.info), "'"});
             }
             return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
         case TokenType::PLUS_PLUS:
         case TokenType::MINUS_MINUS:
             if (not one_of(right.info->primitive, Type::INT, Type::FLOAT)) {
                 error({"Expected integral or floating type as argument to increment operator"}, expr.oper);
+                note({"Received operand of type '", stringify(right.info), "'"});
                 throw TypeException{"Expected integral or floating type as argument to increment operator"};
             } else if (right.info->is_const || not(right.is_lvalue || right.info->is_ref)) {
                 error({"Expected non-const l-value or reference type as argument for increment operator"}, expr.oper);
+                note({"Received operand of type '", stringify(right.info), "'"});
                 throw TypeException{"Expected non-const l-value or reference type as argument for increment operator"};
             };
             return expr.resolved = {right.info, expr.oper};
@@ -797,6 +812,7 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
         case TokenType::PLUS:
             if (not one_of(right.info->primitive, Type::INT, Type::FLOAT)) {
                 error({"Expected integral or floating point argument to operator"}, expr.oper);
+                note({"Received operand of type '", stringify(right.info), "'"});
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
             }
             return expr.resolved = {right.info, expr.resolved.token};
@@ -992,13 +1008,15 @@ StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
     if (stmt.value == nullptr) {
         if (current_function->return_type->primitive != Type::NULL_) {
             error({"Can only have empty return expressions in functions which return 'null'"}, stmt.keyword);
+            note({"Return type of the function is '", stringify(current_function->return_type.get()), "'"});
             throw TypeException{"Can only have empty return expressions in functions which return 'null'"};
         }
     } else if (ExprVisitorType return_value = resolve(stmt.value.get());
                not convertible_to(current_function->return_type.get(), return_value.info, return_value.is_lvalue,
                    stmt.keyword, true)) {
         error({"Type of expression in return statement does not match return type of function"}, stmt.keyword);
-        show_conversion_note(return_value.info, current_function->return_type.get());
+        note({"Trying to convert to '", stringify(current_function->return_type.get()), "' from '",
+            stringify(return_value.info), "'"});
     }
 
     stmt.locals_popped = std::count_if(values.crbegin(), values.crend(),
@@ -1016,7 +1034,8 @@ StmtVisitorType TypeResolver::visit(SwitchStmt &stmt) {
         ExprVisitorType case_expr = resolve(case_stmt.first.get());
         if (not convertible_to(case_expr.info, condition.info, condition.is_lvalue, case_expr.token, false)) {
             error({"Type of case expression cannot be converted to type of switch condition"}, case_expr.token);
-            show_conversion_note(condition.info, case_expr.info);
+            note({"Trying to compare '", stringify(condition.info), "' (condition) and '", stringify(case_expr.info),
+                "' (case expression)"});
         }
         resolve(case_stmt.second.get());
     }
@@ -1074,7 +1093,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
 
         if (not convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name, true)) {
             error({"Cannot convert from initializer type to type of variable"}, stmt.name);
-            show_conversion_note(initializer.info, type);
+            note({"Trying to convert to '", stringify(type), "' from '", stringify(initializer.info), "'"});
             throw TypeException{"Cannot convert from initializer type to type of variable"};
         } else if (initializer.info->primitive == Type::FLOAT && type->primitive == Type::INT) {
             stmt.conversion_type = NumericConversionType::FLOAT_TO_INT;
@@ -1125,6 +1144,7 @@ StmtVisitorType TypeResolver::visit(WhileStmt &stmt) {
     ExprVisitorType condition = resolve(stmt.condition.get());
     if (one_of(condition.info->primitive, Type::CLASS, Type::LIST)) {
         error({"Class or list types are not implicitly convertible to bool"}, stmt.keyword);
+        note({"Received type '", stringify(condition.info), "'"});
     }
     if (stmt.increment != nullptr) {
         resolve(stmt.increment.get());
