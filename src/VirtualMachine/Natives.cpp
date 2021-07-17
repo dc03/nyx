@@ -107,7 +107,7 @@ Value native_string(VirtualMachine &vm, Value *args) {
 
 Value native_readline(VirtualMachine &vm, Value *args) {
     Value &prompt = args[0];
-    if (prompt.tag == Value::Tag::STRING) {
+    if (prompt.tag == Value::Tag::REF) {
         std::cout << prompt.w_ref->w_str->str;
     } else {
         std::cout << prompt.w_str->str;
