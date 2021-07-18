@@ -149,8 +149,22 @@ enum class NodeType {
     TypeofType
 };
 
+struct BaseType {
+    Type primitive;
+    bool is_const;
+    bool is_ref;
+
+    BaseType() = default;
+    BaseType(Type primitive, bool is_const, bool is_ref) : primitive{primitive}, is_const{is_const}, is_ref{is_ref} {}
+    virtual std::string_view string_tag() = 0;
+    virtual NodeType type_tag() = 0;
+    virtual BaseTypeVisitorType accept(Visitor &visitor) = 0;
+    virtual ~BaseType() = default;
+};
+
 struct Expr {
-    ExprVisitorType resolved{};
+    ExprVisitorType resolved;
+
     virtual std::string_view string_tag() = 0;
     virtual NodeType type_tag() = 0;
     virtual ExprVisitorType accept(Visitor &visitor) = 0;
@@ -162,20 +176,6 @@ struct Stmt {
     virtual NodeType type_tag() = 0;
     virtual StmtVisitorType accept(Visitor &visitor) = 0;
     virtual ~Stmt() = default;
-};
-
-struct BaseType {
-    Type primitive;
-    bool is_const;
-    bool is_ref;
-
-    BaseType() = default;
-    explicit BaseType(Type primitive, bool is_const, bool is_ref)
-        : primitive{primitive}, is_const{is_const}, is_ref{is_ref} {}
-    virtual std::string_view string_tag() = 0;
-    virtual NodeType type_tag() = 0;
-    virtual BaseTypeVisitorType accept(Visitor &visitor) = 0;
-    virtual ~BaseType() = default;
 };
 
 // Type node definitions
