@@ -380,6 +380,31 @@ ExecutionState VirtualMachine::step() {
             push(Value{&cache.insert(*string)});
             break;
         }
+        case is Instruction::INDEX_STRING: {
+            Value &index = stack[--stack_top];
+            Value *string = &stack[stack_top - 1];
+            if (string->tag == Value::Tag::REF) {
+                string = string->w_ref;
+            }
+            Value temp = stack[stack_top - 1];
+            stack[stack_top - 1] = Value{&cache.insert({(string->w_str->str)[index.w_int]})};
+            if (temp.tag == Value::Tag::STRING) {
+                cache.remove(*temp.w_str);
+            }
+            break;
+        }
+        case is Instruction::CHECK_STRING_INDEX: {
+            Value &index = stack[stack_top - 1];
+            Value *string = &stack[stack_top - 2];
+            if (string->tag == Value::Tag::REF) {
+                string = string->w_ref;
+            }
+            if (index.w_int > static_cast<int>(string->w_str->str.size())) {
+                runtime_error("String index out of range", get_current_line());
+                return ExecutionState::FINISHED;
+            }
+            break;
+        }
         case is Instruction::POP_STRING: {
             cache.remove(*stack[--stack_top].w_str);
             break;
