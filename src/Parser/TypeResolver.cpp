@@ -359,7 +359,7 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
         case TokenType::DOT_DOT_EQUAL:
             if (left_expr.info->primitive == Type::INT && right_expr.info->primitive == Type::INT) {
                 BaseType *list = make_new_type<ListType>(
-                    Type::LIST, true, false, TypeNode{make_new_type<PrimitiveType>(Type::INT, true, false)}, nullptr);
+                    Type::LIST, true, false, TypeNode{allocate_node(PrimitiveType, Type::INT, true, false)}, nullptr);
                 return expr.resolved = {list, expr.resolved.token};
             } else {
                 error({"Ranges can only be created for integral types"}, expr.resolved.token);
