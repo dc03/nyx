@@ -85,6 +85,7 @@ enum class Instruction {
     POP_LIST,
     /* Miscellaneous */
     ACCESS_FROM_TOP,
+    ASSIGN_FROM_TOP,
     EQUAL_SL, // Equality operation for lists and strings
 };
 

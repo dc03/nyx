@@ -90,6 +90,12 @@ void instruction(Chunk &chunk, std::string_view name, std::size_t where) {
     } else if (name == "ACCESS_GLOBAL" || name == "ACCESS_GLOBAL_LIST") {
         std::cout << "\t\t| access global " << next_bytes << '\n';
         print_trailing_bytes();
+    } else if (name == "ACCESS_FROM_TOP") {
+        std::cout << "\t\t| access " << next_bytes << " from top\n";
+        print_trailing_bytes();
+    } else if (name == "ASSIGN_FROM_TOP") {
+        std::cout << "\t\t| assign " << next_bytes << " from top\n";
+        print_trailing_bytes();
     } else if (name == "RETURN") {
         std::cout << "\t\t| pop " << next_bytes << " local(s)\n";
         print_trailing_bytes();
@@ -164,6 +170,7 @@ void disassemble_instruction(Chunk &chunk, Instruction insn, std::size_t where) 
         case Instruction::ASSIGN_GLOBAL_LIST: instruction(chunk, "ASSIGN_GLOBAL_LIST", where); return;
         case Instruction::POP_LIST: instruction(chunk, "POP_LIST", where); return;
         case Instruction::ACCESS_FROM_TOP: instruction(chunk, "ACCESS_FROM_TOP", where); return;
+        case Instruction::ASSIGN_FROM_TOP: instruction(chunk, "ASSIGN_FROM_TOP", where); return;
         case Instruction::EQUAL_SL: instruction(chunk, "EQUAL_SL", where); return;
     }
     unreachable();
