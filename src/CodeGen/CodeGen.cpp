@@ -191,10 +191,18 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
 
     switch (expr.resolved.token.type) {
         case TokenType::LEFT_SHIFT:
-            current_chunk->emit_instruction(Instruction::SHIFT_LEFT, expr.resolved.token.line);
+            if (expr.left->resolved.info->primitive == Type::LIST) {
+                current_chunk->emit_instruction(Instruction::APPEND_LIST, expr.resolved.token.line);
+            } else {
+                current_chunk->emit_instruction(Instruction::SHIFT_LEFT, expr.resolved.token.line);
+            }
             break;
         case TokenType::RIGHT_SHIFT:
-            current_chunk->emit_instruction(Instruction::SHIFT_RIGHT, expr.resolved.token.line);
+            if (expr.left->resolved.info->primitive == Type::LIST) {
+                current_chunk->emit_instruction(Instruction::POP_FROM_LIST, expr.resolved.token.line);
+            } else {
+                current_chunk->emit_instruction(Instruction::SHIFT_RIGHT, expr.resolved.token.line);
+            }
             break;
         case TokenType::BIT_AND: current_chunk->emit_instruction(Instruction::BIT_AND, expr.resolved.token.line); break;
         case TokenType::BIT_OR: current_chunk->emit_instruction(Instruction::BIT_OR, expr.resolved.token.line); break;

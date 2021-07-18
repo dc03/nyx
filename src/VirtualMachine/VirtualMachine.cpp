@@ -440,6 +440,23 @@ ExecutionState VirtualMachine::step() {
             list.w_list->push_back(appended);
             break;
         }
+        case is Instruction::POP_FROM_LIST: {
+            Value &how_many = stack[--stack_top];
+            Value &list = stack[stack_top - 1];
+            if (static_cast<Value::IntType>(list.w_list->size()) < how_many.w_int) {
+                runtime_error("Trying to pop from empty list", get_current_line());
+                return ExecutionState::FINISHED;
+            }
+            for (Value::IntType i = 0; i < how_many.w_int; i++) {
+                if (list.w_list->back().tag == Value::Tag::LIST) {
+                    destroy_list(list.w_list->back().w_list);
+                } else if (list.w_list->back().tag == Value::Tag::STRING) {
+                    cache.remove(*list.w_list->back().w_str);
+                }
+                list.w_list->pop_back();
+            }
+            break;
+        }
         case is Instruction::ASSIGN_LIST: {
             Value &assigned = stack[--stack_top];
             Value &index = stack[--stack_top];

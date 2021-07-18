@@ -287,6 +287,27 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
     switch (expr.resolved.token.type) {
         case TokenType::LEFT_SHIFT:
         case TokenType::RIGHT_SHIFT:
+            if (left_expr.info->primitive == Type::LIST) {
+                auto *left_type = dynamic_cast<ListType *>(left_expr.info);
+                if (expr.resolved.token.type == TokenType::LEFT_SHIFT) {
+                    if (not convertible_to(left_type->contained.get(), right_expr.info, right_expr.is_lvalue,
+                            right_expr.token, false)) {
+                        error({"Appended value cannot be converted to type of list"}, expr.resolved.token);
+                        note({"The list type is '", stringify(left_expr.info), "' and the appended type is '",
+                            stringify(right_expr.info), "'"});
+                        throw TypeException{"Appended value cannot be converted to type of list"};
+                    }
+                    return expr.resolved = {left_expr.info, expr.resolved.token};
+                } else if (expr.resolved.token.type == TokenType::RIGHT_SHIFT) {
+                    if (right_expr.info->primitive != Type::INT) {
+                        error({"Expected integral type as amount of elements to pop from list"}, expr.resolved.token);
+                        note({"Received type '", stringify(right_expr.info), "'"});
+                        throw TypeException{"Expected integral type as amount of elements to pop from list"};
+                    }
+                    return expr.resolved = {left_expr.info, expr.resolved.token};
+                }
+            }
+            [[fallthrough]];
         case TokenType::BIT_AND:
         case TokenType::BIT_OR:
         case TokenType::BIT_XOR:

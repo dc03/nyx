@@ -77,6 +77,7 @@ enum class Instruction {
     MAKE_LIST,
     COPY_LIST,
     APPEND_LIST,
+    POP_FROM_LIST,
     ASSIGN_LIST,
     INDEX_LIST,
     MAKE_REF_TO_INDEX,
