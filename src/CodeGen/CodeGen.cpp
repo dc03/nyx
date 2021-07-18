@@ -160,24 +160,33 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(BinaryExpr &expr) {
-    compile(expr.left.get());
-    if (expr.left->resolved.info->is_ref) {
-        current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.token.line);
-    }
-
     bool requires_floating =
         expr.left->resolved.info->primitive == Type::FLOAT || expr.right->resolved.info->primitive == Type::FLOAT;
 
-    if (expr.left->resolved.info->primitive == Type::INT && expr.right->resolved.info->primitive == Type::FLOAT) {
-        current_chunk->emit_instruction(Instruction::INT_TO_FLOAT, expr.left->resolved.token.line);
-    }
+    auto compile_left = [&expr, this] {
+        compile(expr.left.get());
+        if (expr.left->resolved.info->is_ref) {
+            current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.token.line);
+        }
 
-    compile(expr.right.get());
-    if (expr.right->resolved.info->is_ref) {
-        current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.token.line);
-    }
-    if (expr.left->resolved.info->primitive == Type::FLOAT && expr.right->resolved.info->primitive == Type::INT) {
-        current_chunk->emit_instruction(Instruction::INT_TO_FLOAT, expr.left->resolved.token.line);
+        if (expr.left->resolved.info->primitive == Type::INT && expr.right->resolved.info->primitive == Type::FLOAT) {
+            current_chunk->emit_instruction(Instruction::INT_TO_FLOAT, expr.left->resolved.token.line);
+        }
+    };
+
+    auto compile_right = [&expr, this] {
+        compile(expr.right.get());
+        if (expr.right->resolved.info->is_ref) {
+            current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.token.line);
+        }
+        if (expr.left->resolved.info->primitive == Type::FLOAT && expr.right->resolved.info->primitive == Type::INT) {
+            current_chunk->emit_instruction(Instruction::INT_TO_FLOAT, expr.left->resolved.token.line);
+        }
+    };
+
+    if (expr.resolved.token.type != TokenType::DOT_DOT && expr.resolved.token.type != TokenType::DOT_DOT_EQUAL) {
+        compile_left();
+        compile_right();
     }
 
     switch (expr.resolved.token.type) {
@@ -249,7 +258,70 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
             break;
 
         case TokenType::DOT_DOT:
-        case TokenType::DOT_DOT_EQUAL: break;
+        case TokenType::DOT_DOT_EQUAL: {
+            current_chunk->emit_constant(Value{0}, expr.resolved.token.line);
+            current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.resolved.token.line);
+            compile_left();
+            compile_right();
+            /* This is effectively an unrolled while loop of the kind:
+             *
+             * {
+             *      var list = []
+             *      var x = left_expr
+             *      var y = right_expr
+             *      while (x < y) or while (x <= y) {
+             *          list.append(x)
+             *          x = x + 1
+             *      }
+             *      list
+             * }
+             */
+            std::size_t jump_to_cond =
+                current_chunk->emit_instruction(Instruction::JUMP_FORWARD, expr.resolved.token.line);
+            emit_three_bytes_of(0);
+
+            // list.append(x)
+            std::size_t jump_back =
+                current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
+            emit_three_bytes_of(3);
+            current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
+            emit_three_bytes_of(3);
+            current_chunk->emit_instruction(Instruction::APPEND_LIST, expr.resolved.token.line);
+            current_chunk->emit_instruction(Instruction::POP, expr.resolved.token.line);
+
+            // x = x + 1
+            current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
+            emit_three_bytes_of(2);
+            current_chunk->emit_constant(Value{1}, expr.resolved.token.line);
+            current_chunk->emit_instruction(Instruction::IADD, expr.resolved.token.line);
+            current_chunk->emit_instruction(Instruction::ASSIGN_FROM_TOP, expr.resolved.token.line);
+            emit_three_bytes_of(3);
+            current_chunk->emit_instruction(Instruction::POP, expr.resolved.token.line);
+
+            // Emit x < y or !(x > y) depending on .. or ..=
+            std::size_t loop_cond =
+                current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
+            emit_three_bytes_of(2);
+            current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
+            emit_three_bytes_of(2);
+            if (expr.resolved.token.type == TokenType::DOT_DOT) {
+                current_chunk->emit_instruction(Instruction::LESSER, expr.resolved.token.line);
+            } else {
+                current_chunk->emit_instruction(Instruction::GREATER, expr.resolved.token.line);
+                current_chunk->emit_instruction(Instruction::NOT, expr.resolved.token.line);
+            }
+
+            // Jump back to the start of the loop
+            std::size_t loop_end =
+                current_chunk->emit_instruction(Instruction::POP_JUMP_BACK_IF_TRUE, expr.resolved.token.line);
+            emit_three_bytes_of(0);
+            current_chunk->emit_instruction(Instruction::POP, expr.resolved.token.line);
+            current_chunk->emit_instruction(Instruction::POP, expr.resolved.token.line);
+
+            patch_jump(jump_to_cond, loop_cond - jump_to_cond - 1);
+            patch_jump(loop_end, loop_end - jump_back + 1);
+            break;
+        }
 
         default: error({"Bug in parser with illegal token type of expression's operator"}, expr.resolved.token); break;
     }
@@ -705,6 +777,10 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
     RuntimeFunction function{};
     function.arity = stmt.params.size();
     function.name = stmt.name.lexeme;
+
+    for (auto begin = stmt.params.cbegin(); begin != stmt.params.cend(); begin++) {
+        scopes.top().push_back(begin->second.get());
+    }
 
     current_chunk = &function.code;
     compile(stmt.body.get());
