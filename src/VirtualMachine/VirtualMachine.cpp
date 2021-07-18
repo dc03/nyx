@@ -509,6 +509,19 @@ ExecutionState VirtualMachine::step() {
             push(stack[stack_top - operand]);
             break;
         }
+        case is Instruction::ASSIGN_FROM_TOP: {
+            Value *assigned = &stack[stack_top - operand];
+            if (assigned->tag == Value::Tag::REF) {
+                assigned = assigned->w_ref;
+            }
+            if (assigned->tag == Value::Tag::STRING) {
+                cache.remove(*assigned->w_str);
+                *assigned = Value{&cache.insert(*stack[stack_top - 1].w_str)};
+            } else {
+                *assigned = stack[stack_top - 1];
+            }
+            break;
+        }
         case is Instruction::EQUAL_SL: {
             Value val2 = stack[--stack_top];
             Value val1 = stack[stack_top - 1];
