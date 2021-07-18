@@ -61,12 +61,11 @@ def declare_base(file, base_name: str, members: str = '', ctor_args: str = '') -
     member_list = members.split(', ')
     if members != '':
         for member in member_list:
-            tab(file, 1).write(member.strip() + ';\n')
+            tab(file, 1).write(member.strip() + '{};\n')
         file.write('\n')
 
+    tab(file, 1).write(base_name + '() = default;\n')
     if ctor_args != '':
-        file.write('\n')
-        tab(file, 1).write(base_name + '() = default;\n')
         tab(file, 1).write(base_name + '(' + members + '): ' + ctor_args + '{}\n')
     tab(file, 1).write('virtual std::string_view string_tag() = 0;\n')
     tab(file, 1).write('virtual NodeType type_tag() = 0;\n')
@@ -89,7 +88,7 @@ def declare_derived_type(file, base_name: str, derived_name: str, ctor_args: str
     member_list = members.split(', ')
     if members != '':
         for member in member_list:
-            tab(file, 1).write(member.strip() + ';\n')
+            tab(file, 1).write(member.strip() + '{};\n')
         file.write('\n')
         # Class members
 
@@ -103,6 +102,7 @@ def declare_derived_type(file, base_name: str, derived_name: str, ctor_args: str
     tab(file, 1).write('}\n\n')
     # type_tag() method
 
+    tab(file, 1).write(derived_name + '() = default;\n')
     tab(file, 1).write(('explicit ' if len(member_list) == 1 else '') + derived_name + '(' + ctor_params + ')' + (
         ':\n' if ctor_args != '' else '\n'))
     tab(file, 2).write(ctor_args + ' {}\n')

@@ -48,6 +48,7 @@ struct LiteralValue {
     enum tag { INT, DOUBLE, STRING, BOOL, NULL_ };
     std::variant<int, double, std::string, bool, std::nullptr_t> value;
 
+    LiteralValue() = default;
     explicit LiteralValue(int value);
     explicit LiteralValue(double value);
     explicit LiteralValue(const std::string &value);
