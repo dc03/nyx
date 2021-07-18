@@ -444,7 +444,7 @@ ExprVisitorType Generator::visit(IndexExpr &expr) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.index->resolved.token.line);
     }
     if (expr.object->resolved.info->primitive == Type::LIST) {
-        current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.token.line);
+        current_chunk->emit_instruction(Instruction::CHECK_LIST_INDEX, expr.resolved.token.line);
         current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.resolved.token.line);
     } else if (expr.object->resolved.info->primitive == Type::STRING) {
         current_chunk->emit_instruction(Instruction::CHECK_STRING_INDEX, expr.resolved.token.line);
@@ -512,7 +512,7 @@ ExprVisitorType Generator::visit(ListAssignExpr &expr) {
     if (expr.list.index->resolved.info->is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.list.index->resolved.token.line);
     }
-    current_chunk->emit_instruction(Instruction::CHECK_INDEX, expr.resolved.token.line);
+    current_chunk->emit_instruction(Instruction::CHECK_LIST_INDEX, expr.resolved.token.line);
 
     switch (expr.resolved.token.type) {
         case TokenType::EQUAL: {

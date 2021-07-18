@@ -436,29 +436,23 @@ ExecutionState VirtualMachine::step() {
         }
         case is Instruction::APPEND_LIST: {
             Value &appended = stack[--stack_top];
-            Value *list = &stack[stack_top - 1];
-            if (list->tag == Value::Tag::REF) {
-                list = list->w_ref;
-            }
-            list->w_list->push_back(appended);
+            Value &list = stack[stack_top - 1];
+            list.w_list->push_back(appended);
             break;
         }
         case is Instruction::ASSIGN_LIST: {
             Value &assigned = stack[--stack_top];
             Value &index = stack[--stack_top];
-            Value *list = &stack[stack_top - 1];
-            if (list->tag == Value::Tag::REF) {
-                list = list->w_ref;
-            }
-            Value::Tag tag = (*list->w_list)[index.w_int].tag;
+            Value &list = stack[stack_top - 1];
+            Value::Tag tag = (*list.w_list)[index.w_int].tag;
             if (tag == Value::Tag::LIST) {
-                destroy_list((*list->w_list)[index.w_int].w_list);
+                destroy_list((*list.w_list)[index.w_int].w_list);
             } else if (tag == Value::Tag::STRING) {
-                cache.remove(*(*list->w_list)[index.w_int].w_str);
+                cache.remove(*(*list.w_list)[index.w_int].w_str);
                 (void)cache.insert(*assigned.w_str);
             }
-            (*list->w_list)[index.w_int] = assigned;
-            stack[stack_top - 1] = (*list->w_list)[index.w_int];
+            (*list.w_list)[index.w_int] = assigned;
+            stack[stack_top - 1] = (*list.w_list)[index.w_int];
             if (tag == Value::Tag::LIST) {
                 stack[stack_top - 1].tag = Value::Tag::LIST_REF;
             }
@@ -466,11 +460,8 @@ ExecutionState VirtualMachine::step() {
         }
         case is Instruction::INDEX_LIST: {
             Value &index = stack[--stack_top];
-            Value *list = &stack[stack_top - 1];
-            if (list->tag == Value::Tag::REF) {
-                list = list->w_ref;
-            }
-            stack[stack_top - 1] = (*list->w_list)[index.w_int];
+            Value &list = stack[stack_top - 1];
+            stack[stack_top - 1] = (*list.w_list)[index.w_int];
             break;
         }
         case is Instruction::MAKE_REF_TO_INDEX: {
@@ -484,13 +475,10 @@ ExecutionState VirtualMachine::step() {
             }
             break;
         }
-        case is Instruction::CHECK_INDEX: {
+        case is Instruction::CHECK_LIST_INDEX: {
             Value &index = stack[stack_top - 1];
-            Value *list = &stack[stack_top - 2];
-            if (list->tag == Value::Tag::REF) {
-                list = list->w_ref;
-            }
-            if (index.w_int > static_cast<int>(list->w_list->size())) {
+            Value &list = stack[stack_top - 2];
+            if (index.w_int > static_cast<int>(list.w_list->size())) {
                 runtime_error("List index out of range", get_current_line());
                 return ExecutionState::FINISHED;
             }
