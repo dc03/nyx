@@ -69,6 +69,8 @@ enum class Instruction {
     TRAP_RETURN,
     /* String instructions */
     CONSTANT_STRING,
+    INDEX_STRING,
+    CHECK_STRING_INDEX,
     POP_STRING,
     CONCATENATE,
     /* List instructions */

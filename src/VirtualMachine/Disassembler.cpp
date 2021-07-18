@@ -156,6 +156,8 @@ void disassemble_instruction(Chunk &chunk, Instruction insn, std::size_t where) 
         case Instruction::RETURN: instruction(chunk, "RETURN", where); return;
         case Instruction::TRAP_RETURN: instruction(chunk, "TRAP_RETURN", where); return;
         case Instruction::CONSTANT_STRING: instruction(chunk, "CONSTANT_STRING", where); return;
+        case Instruction::INDEX_STRING: instruction(chunk, "INDEX_STRING", where); return;
+        case Instruction::CHECK_STRING_INDEX: instruction(chunk, "CHECK_STRING_INDEX", where); return;
         case Instruction::POP_STRING: instruction(chunk, "POP_STRING", where); return;
         case Instruction::CONCATENATE: instruction(chunk, "CONCATENATE", where); return;
         case Instruction::MAKE_LIST: instruction(chunk, "MAKE_LIST", where); return;
