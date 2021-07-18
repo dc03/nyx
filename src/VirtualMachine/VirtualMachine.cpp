@@ -473,6 +473,17 @@ ExecutionState VirtualMachine::step() {
             stack[stack_top - 1] = (*list->w_list)[index.w_int];
             break;
         }
+        case is Instruction::MAKE_REF_TO_INDEX: {
+            Value &index = stack[--stack_top];
+            Value &list = stack[stack_top - 1];
+            if ((*list.w_list)[index.w_int].tag == Value::Tag::LIST) {
+                stack[stack_top - 1] = (*list.w_list)[index.w_int];
+                stack[stack_top - 1].tag = Value::Tag::LIST_REF;
+            } else {
+                stack[stack_top - 1] = Value{&(*list.w_list)[index.w_int]};
+            }
+            break;
+        }
         case is Instruction::CHECK_INDEX: {
             Value &index = stack[stack_top - 1];
             Value *list = &stack[stack_top - 2];

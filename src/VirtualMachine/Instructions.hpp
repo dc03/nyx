@@ -79,6 +79,7 @@ enum class Instruction {
     APPEND_LIST,
     ASSIGN_LIST,
     INDEX_LIST,
+    MAKE_REF_TO_INDEX,
     CHECK_INDEX,
     ACCESS_LOCAL_LIST,
     ACCESS_GLOBAL_LIST,

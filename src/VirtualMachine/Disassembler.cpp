@@ -165,6 +165,7 @@ void disassemble_instruction(Chunk &chunk, Instruction insn, std::size_t where) 
         case Instruction::APPEND_LIST: instruction(chunk, "APPEND_LIST", where); return;
         case Instruction::ASSIGN_LIST: instruction(chunk, "ASSIGN_LIST", where); return;
         case Instruction::INDEX_LIST: instruction(chunk, "INDEX_LIST", where); return;
+        case Instruction::MAKE_REF_TO_INDEX: instruction(chunk, "MAKE_REF_TO_INDEX", where); return;
         case Instruction::CHECK_INDEX: instruction(chunk, "CHECK_INDEX", where); return;
         case Instruction::ACCESS_LOCAL_LIST: instruction(chunk, "ACCESS_LOCAL_LIST", where); return;
         case Instruction::ACCESS_GLOBAL_LIST: instruction(chunk, "ACCESS_GLOBAL_LIST", where); return;

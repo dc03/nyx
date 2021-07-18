@@ -345,11 +345,17 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
                     } else {
                         current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, value->resolved.token.line);
                     }
+                    emit_three_bytes_of(value->resolved.stack_slot);
+                } else if (value->type_tag() == NodeType::IndexExpr) {
+                    IndexExpr *list = dynamic_cast<IndexExpr *>(value.get());
+                    compile(list->object.get());
+                    compile(list->index.get());
+                    current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, value->resolved.token.line);
                 } else {
                     current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, value->resolved.token.line);
                     // This is a fallback, but I don't think it would ever be triggered
+                    emit_three_bytes_of(value->resolved.stack_slot);
                 }
-                emit_three_bytes_of(value->resolved.stack_slot);
             } else if (not param.second->is_ref && value->resolved.info->is_ref) {
                 compile(value.get());
                 current_chunk->emit_instruction(Instruction::DEREF, value->resolved.token.line);
@@ -983,6 +989,12 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
                 current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, stmt.name.line);
             }
             emit_three_bytes_of(stmt.initializer->resolved.stack_slot);
+        } else if (stmt.type->is_ref && not stmt.initializer->resolved.info->is_ref &&
+                   stmt.initializer->type_tag() == NodeType::IndexExpr) {
+            auto *list = dynamic_cast<IndexExpr *>(stmt.initializer.get());
+            compile(list->object.get());
+            compile(list->index.get());
+            current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, stmt.name.line);
         } else {
             compile(stmt.initializer.get());
             if (stmt.initializer->resolved.info->is_ref && not stmt.type->is_ref &&
