@@ -11,6 +11,7 @@ BUILTIN        ::= CONST? REF? ("int"|"float"|"string"|"bool")
 TYPE           ::= BUILTIN
                  | CONST? REF? IDENTIFIER
                  | CONST? REF? "[" TYPE ("," expression)? "]"
+                 | CONST? REF? "{" TYPE ("," TYPE)* "," "}"
                  | "typeof" logic_or
 
 STRING         ::= "\'" (NUM|ALPHA|UNDER|ESCAPE)*  "\'"
@@ -41,6 +42,8 @@ unary          ::= ("!"|"-"|"~"|"++"|"--") unary
 arguments      ::= assignment     ("," assignment)*
 call           ::= list           ("(" arguments? ")")*
 list           ::= "[" assignment ("," assignment)* ","? "]"
+                 | tuple
+tuple          ::= "{" assignment ("," assignment)* ","? "}"
                  | get
 
 get            ::= expression "." IDENTIFIER
