@@ -47,6 +47,7 @@ std::ostream &print_type(Type type) {
         case Type::NULL_: std::cout << "null"; break;
         case Type::FUNCTION: std::cout << "function"; break;
         case Type::MODULE: std::cout << "module"; break;
+        case Type::TUPLE: std::cout << "tuple"; break;
     }
     return std::cout;
 }
@@ -326,6 +327,23 @@ ExprVisitorType ASTPrinter::visit(ThisExpr &expr) {
     return {};
 }
 
+ExprVisitorType ASTPrinter::visit(TupleExpr &expr) {
+    print_tabs(current_depth);
+    print_token(expr.brace) << '\n';
+    current_depth++;
+    current_depth++;
+    for (std::size_t i = 0; i < expr.elements.size(); i++) {
+        print_tabs(current_depth);
+        std::cout << "Element:(" << i + 1 << ")::Conv:";
+        print_conversion_type(std::get<NumericConversionType>(expr.elements[i])) << "::Copy:" << std::boolalpha << std::get<RequiresCopy>(expr.elements[i]) << std::noboolalpha << '\n';
+        print(std::get<ExprNode>(expr.elements[i]).get());
+    }
+    current_depth--;
+    print(expr.type.get());
+    current_depth--;
+    return {};
+}
+
 ExprVisitorType ASTPrinter::visit(UnaryExpr &expr) {
     print_tabs(current_depth);
     print_token(expr.oper) << '\n';
@@ -523,6 +541,19 @@ BaseTypeVisitorType ASTPrinter::visit(ListType &type) {
         std::cout << "^^^ size vvv\n";
         print(type.size.get());
     }
+    current_depth--;
+    return {};
+}
+
+BaseTypeVisitorType ASTPrinter::visit(TupleType &type) {
+    current_depth++;
+    print_tabs(current_depth);
+    std::cout << "Contained:\n";
+    current_depth++;
+    for (std::size_t i = 0; i < type.types.size(); i++) {
+        print(type.types[i].get());
+    }
+    current_depth--;
     current_depth--;
     return {};
 }
