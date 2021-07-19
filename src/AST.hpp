@@ -44,6 +44,7 @@ struct SetExpr;
 struct SuperExpr;
 struct TernaryExpr;
 struct ThisExpr;
+struct TupleExpr;
 struct UnaryExpr;
 struct VariableExpr;
 
@@ -67,6 +68,7 @@ struct WhileStmt;
 struct PrimitiveType;
 struct UserDefinedType;
 struct ListType;
+struct TupleType;
 struct TypeofType;
 
 struct Visitor {
@@ -87,6 +89,7 @@ struct Visitor {
     virtual ExprVisitorType visit(SuperExpr &expr) = 0;
     virtual ExprVisitorType visit(TernaryExpr &expr) = 0;
     virtual ExprVisitorType visit(ThisExpr &expr) = 0;
+    virtual ExprVisitorType visit(TupleExpr &expr) = 0;
     virtual ExprVisitorType visit(UnaryExpr &expr) = 0;
     virtual ExprVisitorType visit(VariableExpr &expr) = 0;
 
@@ -106,6 +109,7 @@ struct Visitor {
     virtual BaseTypeVisitorType visit(PrimitiveType &basetype) = 0;
     virtual BaseTypeVisitorType visit(UserDefinedType &basetype) = 0;
     virtual BaseTypeVisitorType visit(ListType &basetype) = 0;
+    virtual BaseTypeVisitorType visit(TupleType &basetype) = 0;
     virtual BaseTypeVisitorType visit(TypeofType &basetype) = 0;
 };
 
@@ -127,6 +131,7 @@ enum class NodeType {
     SuperExpr,
     TernaryExpr,
     ThisExpr,
+    TupleExpr,
     UnaryExpr,
     VariableExpr,
 
@@ -146,6 +151,7 @@ enum class NodeType {
     PrimitiveType,
     UserDefinedType,
     ListType,
+    TupleType,
     TypeofType
 };
 
@@ -218,6 +224,20 @@ struct ListType final : public BaseType {
     ListType() = default;
     ListType(Type primitive, bool is_const, bool is_ref, TypeNode contained, ExprNode size)
         : BaseType{primitive, is_const, is_ref}, contained{std::move(contained)}, size{std::move(size)} {}
+
+    BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct TupleType final : public BaseType {
+    std::vector<TypeNode> types{};
+
+    std::string_view string_tag() override final { return "TupleType"; }
+
+    NodeType type_tag() override final { return NodeType::TupleType; }
+
+    TupleType() = default;
+    explicit TupleType(Type primitive, bool is_const, bool is_ref, std::vector<TypeNode> types)
+        : BaseType{primitive, is_const, is_ref}, types{std::move(types)} {}
 
     BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -508,6 +528,24 @@ struct ThisExpr final : public Expr {
 
     ThisExpr() = default;
     explicit ThisExpr(Token keyword) : keyword{std::move(keyword)} {}
+
+    ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct TupleExpr final : public Expr {
+    using ElementType = std::tuple<ExprNode, NumericConversionType, RequiresCopy>;
+
+    Token brace{};
+    std::vector<ElementType> elements{};
+    std::unique_ptr<TupleType> type{};
+
+    std::string_view string_tag() override final { return "TupleExpr"; }
+
+    NodeType type_tag() override final { return NodeType::TupleExpr; }
+
+    TupleExpr() = default;
+    TupleExpr(Token brace, std::vector<ElementType> elements, std::unique_ptr<TupleType> type)
+        : brace{std::move(brace)}, elements{std::move(elements)}, type{std::move(type)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

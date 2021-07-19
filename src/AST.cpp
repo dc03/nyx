@@ -31,6 +31,16 @@ std::string stringify(BaseType *node) {
             result += "["s + stringify(type->contained.get()) + "]"s;
             break;
         }
+        case Type::TUPLE: {
+            auto *tuple = dynamic_cast<TupleType *>(node);
+            result += "{";
+            auto begin = tuple->types.begin();
+            for (; begin != tuple->types.end() - 1; begin++) {
+                result += stringify(begin->get()) + ", ";
+            }
+            result += stringify(begin->get()) + "}";
+            break;
+        }
         default: unreachable();
     }
     return result;
@@ -46,6 +56,13 @@ BaseTypeVisitorType copy_type(BaseType *node) {
         auto *type = dynamic_cast<ListType *>(node);
         return allocate_node(ListType, type->primitive, type->is_const, type->is_ref,
             TypeNode{copy_type(type->contained.get())}, nullptr);
+    } else if (node->type_tag() == NodeType::TupleType) {
+        auto *tuple = dynamic_cast<TupleType *>(node);
+        std::vector<TypeNode> types{};
+        for (auto &type : tuple->types) {
+            types.emplace_back(copy_type(type.get()));
+        }
+        return allocate_node(TupleType, tuple->primitive, tuple->is_const, tuple->is_ref, std::move(types));
     }
     unreachable();
 }

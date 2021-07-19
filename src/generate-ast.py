@@ -174,10 +174,10 @@ if __name__ == '__main__':
 
         Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'List', 'ListAssign',
                             'Literal', 'Logical', 'ScopeAccess', 'ScopeName', 'Set', 'Super', 'Ternary', 'This',
-                            'Unary', 'Variable']
+                            'Tuple', 'Unary', 'Variable']
         Stmts: List[str] = ['Block', 'Break', 'Class', 'Continue', 'Expression', 'Function',
                             'If', 'Return', 'Switch', 'Type', 'Var', 'While']
-        Types: List[str] = ['Primitive', 'UserDefined', 'List', 'Typeof']
+        Types: List[str] = ['Primitive', 'UserDefined', 'List', 'Tuple', 'Typeof']
 
         Exprs: List[str] = [x + 'Expr' for x in Exprs]
         Stmts: List[str] = [x + 'Stmt' for x in Stmts]
@@ -224,8 +224,15 @@ if __name__ == '__main__':
                           'size)}',
                           'TypeNode contained, ExprNode size',
                           'Type primitive, bool is_const, bool is_ref, TypeNode contained, ExprNode size')
+
+        declare_type_type('Tuple',
+                          'BaseType{primitive, is_const, is_ref}, types{std::move(types)}',
+                          'std::vector<TypeNode> types',
+                          'Type primitive, bool is_const, bool is_ref, std::vector<TypeNode> types')
+
         declare_type_type('Typeof',
-                          'BaseType{primitive, is_const, is_ref}, expr{std::move(expr)}', 'ExprNode expr',
+                          'BaseType{primitive, is_const, is_ref}, expr{std::move(expr)}',
+                          'ExprNode expr',
                           'Type primitive, bool is_const, bool is_ref, ExprNode expr')
 
         file.write('// End of type node definitions\n\n')
@@ -306,8 +313,8 @@ if __name__ == '__main__':
         declare_expr_type('Set',
                           'object{std::move(object)}, name{std::move(name)}, value{std::move(value)}, '
                           'conversion_type{conversion_type}, requires_copy{requires_copy}',
-                          'ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type, RequiresCopy '
-                          'requires_copy')
+                          'ExprNode object, Token name, ExprNode value, NumericConversionType conversion_type, '
+                          'RequiresCopy requires_copy')
 
         declare_expr_type('Super',
                           'keyword{std::move(keyword)}, name{std::move(name)}',
@@ -320,6 +327,11 @@ if __name__ == '__main__':
         declare_expr_type('This',
                           'keyword{std::move(keyword)}',
                           'Token keyword')
+
+        declare_expr_type('Tuple',
+                          'brace{std::move(brace)}, elements{std::move(elements)}, type{std::move(type)}',
+                          'Token brace, std::vector<ElementType> elements, std::unique_ptr<TupleType> type',
+                          ['using ElementType = std::tuple<ExprNode, NumericConversionType, RequiresCopy>'])
 
         declare_expr_type('Unary',
                           'oper{std::move(oper)}, right{std::move(right)}',
