@@ -61,6 +61,7 @@ class Generator final : Visitor {
     ExprVisitorType visit(SuperExpr &expr) override final;
     ExprVisitorType visit(TernaryExpr &expr) override final;
     ExprVisitorType visit(ThisExpr &expr) override final;
+    ExprVisitorType visit(TupleExpr &expr) override final;
     ExprVisitorType visit(UnaryExpr &expr) override final;
     ExprVisitorType visit(VariableExpr &expr) override final;
 
@@ -80,6 +81,7 @@ class Generator final : Visitor {
     BaseTypeVisitorType visit(PrimitiveType &type) override final;
     BaseTypeVisitorType visit(UserDefinedType &type) override final;
     BaseTypeVisitorType visit(ListType &type) override final;
+    BaseTypeVisitorType visit(TupleType &type) override final;
     BaseTypeVisitorType visit(TypeofType &type) override final;
 };
 

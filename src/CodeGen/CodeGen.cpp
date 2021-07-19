@@ -22,7 +22,7 @@ void Generator::end_scope() {
     for (auto begin = scopes.top().crbegin(); begin != scopes.top().crend(); begin++) {
         if ((*begin)->primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, 0);
-        } else if ((*begin)->primitive == Type::LIST && not(*begin)->is_ref) {
+        } else if (((*begin)->primitive == Type::LIST || (*begin)->primitive == Type::TUPLE) && not(*begin)->is_ref) {
             current_chunk->emit_instruction(Instruction::POP_LIST, 0);
         } else {
             current_chunk->emit_instruction(Instruction::POP, 0);
@@ -88,7 +88,8 @@ BaseTypeVisitorType Generator::compile(BaseType *type) {
 ExprVisitorType Generator::visit(AssignExpr &expr) {
     auto compile_right = [&expr, this] {
         compile(expr.value.get());
-        if (expr.value->resolved.info->is_ref && expr.value->resolved.info->primitive != Type::LIST) {
+        if (expr.value->resolved.info->is_ref && expr.value->resolved.info->primitive != Type::LIST &&
+            expr.value->resolved.info->primitive != Type::TUPLE) {
             current_chunk->emit_instruction(Instruction::DEREF, expr.target.line);
         } // As there is no difference between a list and a reference to a list (aside from the tag), there is no need
           // to add an explicit Instruction::DEREF
@@ -107,7 +108,7 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
             // Assigning to lists needs to be handled separately, as it can involve destroying the list that was
             // previously there in the variable. This code is moved off of the hot path into ASSIGN_LOCAL_LIST and
             // ASSIGN_GLOBAL_LIST
-            if (expr.resolved.info->primitive == Type::LIST) {
+            if (expr.resolved.info->primitive == Type::LIST || expr.resolved.info->primitive == Type::TUPLE) {
                 current_chunk->emit_instruction(expr.target_type == IdentifierType::LOCAL
                                                     ? Instruction::ASSIGN_LOCAL_LIST
                                                     : Instruction::ASSIGN_GLOBAL_LIST,
@@ -214,6 +215,7 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
 
         case TokenType::EQUAL_EQUAL:
             if (expr.left->resolved.info->primitive == Type::LIST ||
+                expr.left->resolved.info->primitive == Type::TUPLE ||
                 expr.left->resolved.info->primitive == Type::STRING) {
                 current_chunk->emit_instruction(Instruction::EQUAL_SL, expr.resolved.token.line);
             } else {
@@ -225,6 +227,7 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
 
         case TokenType::NOT_EQUAL:
             if (expr.left->resolved.info->primitive == Type::LIST ||
+                expr.left->resolved.info->primitive == Type::TUPLE ||
                 expr.left->resolved.info->primitive == Type::STRING) {
                 current_chunk->emit_instruction(Instruction::EQUAL_SL, expr.resolved.token.line);
             } else {
@@ -381,15 +384,17 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
             current_chunk->emit_instruction(Instruction::COPY_LIST, value->resolved.token.line);
         }
 
-        // This ALLOC_AT_LEAST is emitted after the COPY since the list that is copied needs to be resized and not the
-        // list that is being copied.
-        if (not expr.is_native_call && expr.function->resolved.func->params[i].second->primitive == Type::LIST) {
-            auto *list = dynamic_cast<ListType *>(expr.function->resolved.func->params[i].second.get());
-            if (list->size != nullptr) {
-                compile(list->size.get());
-                current_chunk->emit_instruction(Instruction::MAKE_LIST, list->size->resolved.token.line);
-            }
-        }
+        //        // This ALLOC_AT_LEAST is emitted after the COPY since the list that is copied needs to be resized and
+        //        not the
+        //        // list that is being copied.
+        //        if (not expr.is_native_call && expr.function->resolved.func->params[i].second->primitive ==
+        //        Type::LIST) {
+        //            auto *list = dynamic_cast<ListType *>(expr.function->resolved.func->params[i].second.get());
+        //            if (list->size != nullptr) {
+        //                compile(list->size.get());
+        //                current_chunk->emit_instruction(Instruction::MAKE_LIST, list->size->resolved.token.line);
+        //            }
+        //        }
         i++;
     }
     if (expr.is_native_call) {
@@ -399,8 +404,8 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
         auto begin = expr.args.crbegin();
         for (; begin != expr.args.crend(); begin++) {
             auto &arg = std::get<ExprNode>(*begin);
-            if (arg->resolved.info->primitive == Type::LIST && not arg->resolved.is_lvalue &&
-                not arg->resolved.info->is_ref) {
+            if ((arg->resolved.info->primitive == Type::LIST || arg->resolved.info->primitive == Type::TUPLE) &&
+                not arg->resolved.is_lvalue && not arg->resolved.info->is_ref) {
                 current_chunk->emit_instruction(Instruction::POP_LIST, arg->resolved.token.line);
             } else if (arg->resolved.info->primitive == Type::STRING) {
                 current_chunk->emit_instruction(Instruction::POP_STRING, arg->resolved.token.line);
@@ -422,7 +427,8 @@ ExprVisitorType Generator::visit(CommaExpr &expr) {
         compile(it->get());
         if ((*it)->resolved.info->primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, (*it)->resolved.token.line);
-        } else if ((*it)->resolved.info->primitive == Type::LIST && not(*it)->resolved.is_lvalue) {
+        } else if (((*it)->resolved.info->primitive == Type::LIST || (*it)->resolved.info->primitive == Type::TUPLE) &&
+                   not(*it)->resolved.is_lvalue) {
             current_chunk->emit_instruction(Instruction::POP_LIST, (*it)->resolved.token.line);
         } else {
             current_chunk->emit_instruction(Instruction::POP, (*it)->resolved.token.line);
@@ -434,6 +440,11 @@ ExprVisitorType Generator::visit(CommaExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(GetExpr &expr) {
+    if (expr.object->resolved.info->primitive == Type::TUPLE && expr.name.type == TokenType::INT_VALUE) {
+        compile(expr.object.get());
+        current_chunk->emit_constant(Value{std::stoi(expr.name.lexeme)}, expr.name.line);
+        current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.resolved.token.line);
+    }
     return {};
 }
 
@@ -474,7 +485,7 @@ ExprVisitorType Generator::visit(ListExpr &expr) {
         auto &element_expr = std::get<ExprNode>(element);
         current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
         emit_three_bytes_of(1);
-        current_chunk->emit_constant(Value{static_cast<int>(i)}, element_expr->resolved.token.line);
+        current_chunk->emit_constant(Value{static_cast<Value::IntType>(i)}, element_expr->resolved.token.line);
 
         if (not expr.type->contained->is_ref) {
             // References have to be conditionally compiled when not binding to a name
@@ -635,6 +646,12 @@ ExprVisitorType Generator::visit(ScopeNameExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(SetExpr &expr) {
+    if (expr.object->resolved.info->primitive == Type::TUPLE && expr.name.type == TokenType::INT_VALUE) {
+        compile(expr.object.get());
+        current_chunk->emit_constant(Value{std::stoi(expr.name.lexeme)}, expr.name.line);
+        compile(expr.value.get());
+        current_chunk->emit_instruction(Instruction::ASSIGN_LIST, expr.name.line);
+    }
     return {};
 }
 
@@ -681,6 +698,31 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(ThisExpr &expr) {
+    return {};
+}
+
+ExprVisitorType Generator::visit(TupleExpr &expr) {
+    current_chunk->emit_constant(Value{static_cast<Value::IntType>(expr.elements.size())}, expr.resolved.token.line);
+    current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.resolved.token.line);
+    std::size_t i = 0;
+    for (auto &element : expr.elements) {
+        current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
+        emit_three_bytes_of(1);
+        current_chunk->emit_constant(
+            Value{static_cast<Value::IntType>(i)}, std::get<ExprNode>(element)->resolved.token.line);
+
+        compile(std::get<ExprNode>(element).get());
+
+        if (std::get<RequiresCopy>(element)) {
+            current_chunk->emit_instruction(Instruction::COPY_LIST, expr.resolved.token.line);
+        }
+        if (std::get<NumericConversionType>(element) != NumericConversionType::NONE) {
+            emit_conversion(std::get<NumericConversionType>(element), std::get<ExprNode>(element)->resolved.token.line);
+        }
+        current_chunk->emit_instruction(Instruction::ASSIGN_LIST, expr.resolved.token.line);
+        current_chunk->emit_instruction(Instruction::POP, expr.resolved.token.line);
+        i++;
+    }
     return {};
 }
 
@@ -732,13 +774,13 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
         case IdentifierType::GLOBAL:
             if (expr.resolved.stack_slot < Chunk::const_long_max) {
                 if (expr.type == IdentifierType::LOCAL) {
-                    if (expr.resolved.info->primitive == Type::LIST) {
+                    if (expr.resolved.info->primitive == Type::LIST || expr.resolved.info->primitive == Type::TUPLE) {
                         current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LIST, expr.name.line);
                     } else {
                         current_chunk->emit_instruction(Instruction::ACCESS_LOCAL, expr.name.line);
                     }
                 } else {
-                    if (expr.resolved.info->primitive == Type::LIST) {
+                    if (expr.resolved.info->primitive == Type::LIST || expr.resolved.info->primitive == Type::TUPLE) {
                         current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL_LIST, expr.name.line);
                     } else {
                         current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL, expr.name.line);
@@ -784,7 +826,8 @@ StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
     compile(stmt.expr.get());
     if (stmt.expr->resolved.info->primitive == Type::STRING) {
         current_chunk->emit_instruction(Instruction::POP_STRING, current_chunk->line_numbers.back().first);
-    } else if (stmt.expr->resolved.info->primitive == Type::LIST) {
+    } else if (stmt.expr->resolved.info->primitive == Type::LIST ||
+               stmt.expr->resolved.info->primitive == Type::TUPLE) {
         current_chunk->emit_instruction(Instruction::POP_LIST, current_chunk->line_numbers.back().first);
     } else {
         current_chunk->emit_instruction(Instruction::POP, current_chunk->line_numbers.back().first);
@@ -873,7 +916,8 @@ StmtVisitorType Generator::visit(ReturnStmt &stmt) {
     if (stmt.value != nullptr) {
         compile(stmt.value.get());
         if (auto &return_type = stmt.function->return_type;
-            return_type->primitive == Type::LIST && not return_type->is_ref) {
+            (return_type->primitive == Type::LIST || return_type->primitive == Type::TUPLE) &&
+            not return_type->is_ref) {
             current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.keyword.line);
         }
     } else {
@@ -1006,7 +1050,8 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
         } else {
             compile(stmt.initializer.get());
             if (stmt.initializer->resolved.info->is_ref && not stmt.type->is_ref &&
-                stmt.initializer->resolved.info->primitive != Type::LIST) {
+                stmt.initializer->resolved.info->primitive != Type::LIST &&
+                stmt.initializer->resolved.info->primitive != Type::TUPLE) {
                 current_chunk->emit_instruction(Instruction::DEREF, stmt.name.line);
             }
 
@@ -1114,6 +1159,10 @@ BaseTypeVisitorType Generator::visit(ListType &type) {
         current_chunk->emit_constant(Value{0}, type.size->resolved.token.line);
     }
     current_chunk->emit_instruction(Instruction::MAKE_LIST, type.size->resolved.token.line);
+    return {};
+}
+
+BaseTypeVisitorType Generator::visit(TupleType &type) {
     return {};
 }
 
