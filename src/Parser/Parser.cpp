@@ -138,7 +138,7 @@ Parser::Parser(const std::vector<Token> &tokens, Module &module, std::size_t cur
     add_rule(TokenType::RIGHT_PAREN,   {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::LEFT_INDEX,    {&Parser::list, &Parser::index, ParsePrecedence::of::CALL});
     add_rule(TokenType::RIGHT_INDEX,   {nullptr, nullptr, ParsePrecedence::of::NONE});
-    add_rule(TokenType::LEFT_BRACE,    {nullptr, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::LEFT_BRACE,    {&Parser::tuple, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::RIGHT_BRACE,   {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::DOUBLE_COLON,  {nullptr, &Parser::scope_access, ParsePrecedence::of::PRIMARY});
     add_rule(TokenType::SEMICOLON,     {nullptr, nullptr, ParsePrecedence::of::NONE});
@@ -350,8 +350,49 @@ ExprNode Parser::comma(bool, ExprNode left) {
 }
 
 ExprNode Parser::dot(bool can_assign, ExprNode left) {
-    consume("Expected identifier after '.'", TokenType::IDENTIFIER);
+    // Roughly based on: https://github.com/rust-lang/rust/pull/71322/files
+    //
+    // If a dot access is followed by a floating point literal, that likely means the code is in the form of `x.2.0`
+    // This will be scanned as `x`, `.`, `2.0`
+    // Thus, split the floating literal into its components (`2`, `.`, `0`) and use those components while parsing
+    std::vector<Token> components{};
+    if (peek().type == TokenType::FLOAT_VALUE) {
+        std::string num = peek().lexeme;
+        if (num.find('.') == std::string::npos) {
+            error({"Use of float literal in member access"}, peek());
+            advance();
+            throw_parse_error("Use of float literal in member access", previous());
+        }
+        std::size_t cursor = 0;
+        while (num[cursor] != '.') {
+            cursor++;
+        }
+
+        components.emplace_back(
+            Token{TokenType::INT_VALUE, num.substr(0, cursor), peek().line, peek().start, peek().start + cursor});
+        // The dot is unnecessary so it is skipped
+        components.emplace_back(
+            Token{TokenType::INT_VALUE, num.substr(cursor + 1), peek().line, peek().start + cursor + 1, peek().end});
+
+        advance();
+    } else {
+        consume("Expected identifier or integer literal after '.'", TokenType::IDENTIFIER, TokenType::INT_VALUE);
+    }
+    if (not components.empty()) {
+        // If components is not empty, transform left
+        // For example, `x.2.0`, has left as `x`.
+        // Left is transformed into `x.2`
+        // Then `name` is set to `0`, to make `x.2.0`
+        left = ExprNode{allocate_node(GetExpr, std::move(left), components[0])};
+    }
+
     Token name = previous();
+
+    // A floating literal was used as an access
+    if (not components.empty()) {
+        name = components[1];
+    }
+
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
         Token oper = previous();
@@ -494,6 +535,17 @@ ExprNode Parser::this_expr(bool) {
     return ExprNode{allocate_node(ThisExpr, std::move(keyword))};
 }
 
+ExprNode Parser::tuple(bool) {
+    Token brace = previous();
+    std::vector<TupleExpr::ElementType> elements{};
+    while (peek().type != TokenType::RIGHT_BRACE) {
+        elements.emplace_back(std::make_tuple(ExprNode{assignment()}, NumericConversionType::NONE, false));
+        match(TokenType::COMMA);
+    }
+    consume("Expected '}' after tuple expression", TokenType::RIGHT_BRACE);
+    return ExprNode{allocate_node(TupleExpr, std::move(brace), std::move(elements), {})};
+}
+
 ExprNode Parser::unary(bool) {
     Token oper = previous();
     ExprNode expr = parse_precedence(get_rule(previous().type).precedence);
@@ -545,6 +597,8 @@ TypeNode Parser::type() {
             return Type::TYPEOF;
         } else if (match(TokenType::NULL_)) {
             return Type::NULL_;
+        } else if (match(TokenType::LEFT_BRACE)) {
+            return Type::TUPLE;
         } else {
             error({"Unexpected token in type specifier"}, peek());
             note({"The type needs to be one of: bool, int, float, string, an identifier or an array type"});
@@ -557,6 +611,8 @@ TypeNode Parser::type() {
         return TypeNode{allocate_node(UserDefinedType, type, is_const, is_ref, std::move(name))};
     } else if (type == Type::LIST) {
         return list_type(is_const, is_ref);
+    } else if (type == Type::TUPLE) {
+        return tuple_type(is_const, is_ref);
     } else if (type == Type::TYPEOF) {
         return TypeNode{
             allocate_node(TypeofType, type, is_const, is_ref, parse_precedence(ParsePrecedence::of::LOGIC_OR))};
@@ -570,6 +626,16 @@ TypeNode Parser::list_type(bool is_const, bool is_ref) {
     ExprNode size = match(TokenType::COMMA) ? expression() : nullptr;
     consume("Expected ']' after array declaration", TokenType::RIGHT_INDEX);
     return TypeNode{allocate_node(ListType, Type::LIST, is_const, is_ref, std::move(contained), std::move(size))};
+}
+
+TypeNode Parser::tuple_type(bool is_const, bool is_ref) {
+    std::vector<TypeNode> types{};
+    while (peek().type != TokenType::RIGHT_BRACE) {
+        types.emplace_back(type());
+        match(TokenType::COMMA);
+    }
+    consume("Expected '}' after tuple type", TokenType::RIGHT_BRACE);
+    return TypeNode{allocate_node(TupleType, Type::TUPLE, is_const, is_ref, std::move(types))};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
