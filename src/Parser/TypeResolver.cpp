@@ -51,6 +51,22 @@ bool TypeResolver::convertible_to(
     // The class condition is used to check if the names of the classes being converted between are same
     // This is only useful if both to and from are class types, hence it is only checked if so
 
+    auto compare_tuples = [this, &to, &from, &from_lvalue, &where, &in_initializer] {
+        auto *from_tuple = dynamic_cast<TupleType *>(from);
+        auto *to_tuple = dynamic_cast<TupleType *>(to);
+        if (to_tuple->types.size() != from_tuple->types.size()) {
+            return false;
+        }
+
+        for (std::size_t i = 0; i < to_tuple->types.size(); i++) {
+            if (not convertible_to(
+                    to_tuple->types[i].get(), from_tuple->types[i].get(), from_lvalue, where, in_initializer)) {
+                return false;
+            }
+        }
+        return true;
+    };
+
     if (to->is_ref &&
         in_initializer) { // Only need to check conversion between references when we are in an initializer
         if (not from_lvalue && not from->is_ref) {
@@ -64,6 +80,8 @@ bool TypeResolver::convertible_to(
         if (from->primitive == Type::LIST && to->primitive == Type::LIST) {
             return are_equivalent_types(
                 dynamic_cast<ListType *>(from)->contained.get(), dynamic_cast<ListType *>(to)->contained.get());
+        } else if (from->primitive == Type::TUPLE && to->primitive == Type::TUPLE) {
+            return compare_tuples();
         }
 
         return from->primitive == to->primitive && class_condition;
@@ -74,6 +92,8 @@ bool TypeResolver::convertible_to(
     } else if (from->primitive == Type::LIST && to->primitive == Type::LIST) {
         return are_equivalent_types(
             dynamic_cast<ListType *>(from)->contained.get(), dynamic_cast<ListType *>(to)->contained.get());
+    } else if (from->primitive == Type::TUPLE && to->primitive == Type::TUPLE) {
+        return compare_tuples();
     } else {
         return from->primitive == to->primitive && class_condition;
     }
@@ -198,6 +218,23 @@ void TypeResolver::infer_list_type(ListExpr *of, ListType *from) {
     }
 }
 
+void TypeResolver::infer_tuple_type(TupleExpr *of, TupleType *from) {
+    // The two tuple types need to store the same number of convertible primitives
+
+    if (from->is_ref) {
+        return;
+    }
+
+    for (std::size_t i = 0; i < from->types.size(); i++) {
+        auto &expr = std::get<ExprNode>(of->elements[i]);
+        if (from->types[i]->primitive == Type::FLOAT && expr->resolved.info->primitive == Type::INT) {
+            std::get<NumericConversionType>(of->elements[i]) = NumericConversionType::INT_TO_FLOAT;
+        } else if (from->types[i]->primitive == Type::INT && expr->resolved.info->primitive == Type::FLOAT) {
+            std::get<NumericConversionType>(of->elements[i]) = NumericConversionType::FLOAT_TO_INT;
+        }
+    }
+}
+
 bool TypeResolver::are_equivalent_primitives(QualifiedTypeInfo first, QualifiedTypeInfo second) {
     if (first->primitive == second->primitive) {
         if (first->primitive == Type::LIST && second->primitive == Type::LIST) {
@@ -208,6 +245,19 @@ bool TypeResolver::are_equivalent_primitives(QualifiedTypeInfo first, QualifiedT
             } else {
                 return first_contained->primitive == second_contained->primitive;
             }
+        } else if (first->primitive == Type::TUPLE && second->primitive == Type::TUPLE) {
+            auto *first_tuple = dynamic_cast<TupleType *>(first);
+            auto *second_tuple = dynamic_cast<TupleType *>(second);
+            if (first_tuple->types.size() != second_tuple->types.size()) {
+                return false;
+            }
+
+            for (std::size_t i = 0; i < first_tuple->types.size(); i++) {
+                if (not are_equivalent_primitives(first_tuple->types[i].get(), second_tuple->types[i].get())) {
+                    return false;
+                }
+            }
+            return true;
         } else {
             return true;
         }
@@ -220,6 +270,20 @@ bool TypeResolver::are_equivalent_types(QualifiedTypeInfo first, QualifiedTypeIn
         return are_equivalent_types(dynamic_cast<ListType *>(first)->contained.get(),
                    dynamic_cast<ListType *>(second)->contained.get()) &&
                (first->is_const == second->is_const) && (first->is_ref == second->is_ref);
+    } else if (first->primitive == Type::TUPLE && second->primitive == Type::TUPLE) {
+        auto *first_tuple = dynamic_cast<TupleType *>(first);
+        auto *second_tuple = dynamic_cast<TupleType *>(second);
+        if (first_tuple->types.size() != second_tuple->types.size()) {
+            return false;
+        }
+
+        for (std::size_t i = 0; i < first_tuple->types.size(); i++) {
+            if (not are_equivalent_types(first_tuple->types[i].get(), second_tuple->types[i].get())) {
+                return false;
+            }
+        }
+
+        return (first_tuple->is_const == second_tuple->is_const) && (first_tuple->is_ref == second_tuple->is_ref);
     } else {
         return are_equivalent_primitives(first, second) && (first->is_const == second->is_const) &&
                (first->is_ref == second->is_ref);
@@ -322,10 +386,17 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             return expr.resolved = {left_expr.info, expr.resolved.token};
         case TokenType::NOT_EQUAL:
         case TokenType::EQUAL_EQUAL:
-            if (left_expr.info->primitive == Type::LIST && right_expr.info->primitive == Type::LIST) {
-                if (not convertible_to(left_expr.info, right_expr.info, false, expr.resolved.token, false) &&
-                    not convertible_to(right_expr.info, left_expr.info, false, expr.resolved.token, false)) {
-                    error({"Cannot compare two lists that have incompatible contained types"}, expr.resolved.token);
+            if ((left_expr.info->primitive == Type::LIST && right_expr.info->primitive == Type::LIST) ||
+                (left_expr.info->primitive == Type::TUPLE && right_expr.info->primitive == Type::TUPLE)) {
+                //                if (not convertible_to(left_expr.info, right_expr.info, false, expr.resolved.token,
+                //                false) &&
+                //                    not convertible_to(right_expr.info, left_expr.info, false, expr.resolved.token,
+                //                    false)) {
+                if (not are_equivalent_primitives(left_expr.info, right_expr.info)) {
+                    error({"Cannot compare two ", (left_expr.info->primitive == Type::LIST ? "lists" : "tuples"),
+                              " that have incompatible types"},
+                        expr.resolved.token);
+                    note({"Only types with equivalent primitives can be compared"});
                     note({"Received types '", stringify(left_expr.info), "' and '", stringify(right_expr.info), "'"});
                 }
                 return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
@@ -545,7 +616,30 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
 
 ExprVisitorType TypeResolver::visit(GetExpr &expr) {
     ExprVisitorType object = resolve(expr.object.get());
-    return expr.resolved = resolve_class_access(object, expr.name);
+    if (expr.object->resolved.info->primitive == Type::TUPLE && expr.name.type == TokenType::INT_VALUE) {
+        int index = std::stoi(expr.name.lexeme); // Get the 0 in x.0
+        auto *tuple = dynamic_cast<TupleType *>(expr.object->resolved.info);
+        if (index >= static_cast<int>(tuple->types.size())) {
+            error({"Tuple index out of range"}, expr.name);
+            note({"Tuple holds '", std::to_string(tuple->types.size()), "' elements, but given index is '",
+                std::to_string(index), "'"});
+            throw TypeException{"Tuple index out of range"};
+        }
+
+        return expr.resolved = {tuple->types[index].get(), expr.name};
+    } else if (expr.object->resolved.info->primitive == Type::CLASS && expr.name.type == TokenType::IDENTIFIER) {
+        return expr.resolved = resolve_class_access(object, expr.name);
+    } else if (expr.object->resolved.info->primitive == Type::TUPLE) {
+        error({"Expected integer to access tuple type"}, expr.name);
+        throw TypeException{"Expected integer to access tuple type"};
+    } else if (expr.object->resolved.info->primitive == Type::CLASS) {
+        error({"Expected name of member to access in class"}, expr.name);
+        throw TypeException{"Expected name of member to access in class"};
+    } else {
+        error({"Expected tuple or class type to access member of"}, expr.object->resolved.token);
+        note({"Received type '", stringify(expr.object->resolved.info), "'"});
+        throw TypeException{"Expected tuple or class type to access member of"};
+    }
 }
 
 ExprVisitorType TypeResolver::visit(GroupingExpr &expr) {
@@ -747,29 +841,73 @@ ExprVisitorType TypeResolver::visit(ScopeNameExpr &expr) {
 
 ExprVisitorType TypeResolver::visit(SetExpr &expr) {
     ExprVisitorType object = resolve(expr.object.get());
-    ExprVisitorType attribute_type = resolve_class_access(object, expr.name);
     ExprVisitorType value_type = resolve(expr.value.get());
 
-    if (object.info->is_const) {
-        error({"Cannot assign to a const object"}, expr.name);
-        note({"Trying to assign to '", stringify(object.info), "'"});
-    } else if (not in_ctor && attribute_type.info->is_const) {
-        error({"Cannot assign to const attribute"}, expr.name);
-        note({"Trying to assign to '", stringify(attribute_type.info), "'"});
-    }
+    if (object.info->primitive == Type::TUPLE && expr.name.type == TokenType::INT_VALUE) {
+        int index = std::stoi(expr.name.lexeme); // Get the 0 in x.0
+        auto *tuple = dynamic_cast<TupleType *>(expr.object->resolved.info);
+        if (index >= static_cast<int>(tuple->types.size())) {
+            error({"Tuple index out of range"}, expr.name);
+            note({"Tuple holds '", std::to_string(tuple->types.size()), "' elements, but given index is '",
+                std::to_string(index), "'"});
+            if (index == static_cast<int>(tuple->types.size())) {}
+            throw TypeException{"Tuple index out of range"};
+        }
 
-    if (not convertible_to(attribute_type.info, value_type.info, value_type.is_lvalue, expr.name, false)) {
-        error({"Cannot convert value of assigned expression to type of target"}, expr.name);
-        note({"Trying to convert to '", stringify(attribute_type.info), "' from '", stringify(value_type.info), "'"});
-        throw TypeException{"Cannot convert value of assigned expression to type of target"};
-    } else if (value_type.info->primitive == Type::FLOAT && attribute_type.info->primitive == Type::INT) {
-        expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
-    } else if (value_type.info->primitive == Type::INT && attribute_type.info->primitive == Type::FLOAT) {
-        expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
-    }
+        auto *assigned_type = tuple->types[index].get();
+        if (assigned_type->is_const) {
+            error({"Cannot assign to const tuple member"}, expr.name);
+            note({"Trying to assign '", stringify(expr.value->resolved.info), "' to '", stringify(assigned_type), "'"});
+            throw TypeException{"Cannot assign to const tuple member"};
+        } else if (expr.object->resolved.info->is_const) {
+            error({"Cannot assign to const tuple"}, expr.name);
+            note({"Trying to assign to '", stringify(expr.object->resolved.info), "'"});
+            throw TypeException{"Cannot assign to const tuple member"};
+        }
 
-    expr.requires_copy = not is_builtin_type(value_type.info->primitive); // Similar case to AssignExpr
-    return expr.resolved = {attribute_type.info, expr.resolved.token};
+        if (assigned_type->primitive == Type::FLOAT && value_type.info->primitive == Type::INT) {
+            expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
+        } else if (assigned_type->primitive == Type::INT && value_type.info->primitive == Type::FLOAT) {
+            expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
+        }
+
+        expr.requires_copy = not is_builtin_type(value_type.info->primitive);
+        return expr.resolved = {assigned_type, expr.name};
+    } else if (object.info->primitive == Type::CLASS && expr.name.type == TokenType::IDENTIFIER) {
+        ExprVisitorType attribute_type = resolve_class_access(object, expr.name);
+
+        if (object.info->is_const) {
+            error({"Cannot assign to a const object"}, expr.name);
+            note({"Trying to assign to '", stringify(object.info), "'"});
+        } else if (not in_ctor && attribute_type.info->is_const) {
+            error({"Cannot assign to const attribute"}, expr.name);
+            note({"Trying to assign to '", stringify(attribute_type.info), "'"});
+        }
+
+        if (not convertible_to(attribute_type.info, value_type.info, value_type.is_lvalue, expr.name, false)) {
+            error({"Cannot convert value of assigned expression to type of target"}, expr.name);
+            note({"Trying to convert to '", stringify(attribute_type.info), "' from '", stringify(value_type.info),
+                "'"});
+            throw TypeException{"Cannot convert value of assigned expression to type of target"};
+        } else if (value_type.info->primitive == Type::FLOAT && attribute_type.info->primitive == Type::INT) {
+            expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
+        } else if (value_type.info->primitive == Type::INT && attribute_type.info->primitive == Type::FLOAT) {
+            expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
+        }
+
+        expr.requires_copy = not is_builtin_type(value_type.info->primitive); // Similar case to AssignExpr
+        return expr.resolved = {attribute_type.info, expr.resolved.token};
+    } else if (expr.object->resolved.info->primitive == Type::TUPLE) {
+        error({"Expected integer to access tuple type"}, expr.name);
+        throw TypeException{"Expected integer to access tuple type"};
+    } else if (expr.object->resolved.info->primitive == Type::CLASS) {
+        error({"Expected name of member to access in class"}, expr.name);
+        throw TypeException{"Expected name of member to access in class"};
+    } else {
+        error({"Expected tuple or class type to access member of"}, expr.object->resolved.token);
+        note({"Received type '", stringify(expr.object->resolved.info), "'"});
+        throw TypeException{"Expected tuple or class type to access member of"};
+    }
 }
 
 ExprVisitorType TypeResolver::visit(SuperExpr &expr) {
@@ -800,6 +938,17 @@ ExprVisitorType TypeResolver::visit(ThisExpr &expr) {
     }
     return expr.resolved = {make_new_type<UserDefinedType>(Type::CLASS, false, false, current_class->name),
                current_class, expr.keyword};
+}
+
+ExprVisitorType TypeResolver::visit(TupleExpr &expr) {
+    expr.type.reset(allocate_node(TupleType, Type::TUPLE, false, false, {}));
+
+    for (auto &element : expr.elements) {
+        resolve(std::get<ExprNode>(element).get());
+        expr.type->types.emplace_back(copy_type(std::get<ExprNode>(element)->resolved.info));
+    }
+
+    return expr.resolved = {expr.type.get(), expr.brace, false};
 }
 
 ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
@@ -1110,6 +1259,9 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         if (stmt.initializer->type_tag() == NodeType::ListExpr && stmt.type->primitive == Type::LIST) {
             infer_list_type(
                 dynamic_cast<ListExpr *>(stmt.initializer.get()), dynamic_cast<ListType *>(stmt.type.get()));
+        } else if (stmt.initializer->type_tag() == NodeType::TupleExpr && stmt.type->primitive == Type::TUPLE) {
+            infer_tuple_type(
+                dynamic_cast<TupleExpr *>(stmt.initializer.get()), dynamic_cast<TupleType *>(stmt.type.get()));
         }
 
         if (not convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name, true)) {
@@ -1188,6 +1340,10 @@ BaseTypeVisitorType TypeResolver::visit(ListType &type) {
     if (type.size != nullptr) {
         resolve(type.size.get());
     }
+    return &type;
+}
+
+BaseTypeVisitorType TypeResolver::visit(TupleType &type) {
     return &type;
 }
 
