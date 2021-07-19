@@ -12,7 +12,7 @@
 #include <string>
 #include <variant>
 
-enum class Type { BOOL, INT, FLOAT, STRING, CLASS, LIST, TYPEOF, NULL_, FUNCTION, MODULE };
+enum class Type { BOOL, INT, FLOAT, STRING, CLASS, LIST, TYPEOF, NULL_, FUNCTION, MODULE, TUPLE };
 
 struct Expr;
 struct BaseType;
