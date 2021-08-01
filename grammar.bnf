@@ -11,7 +11,7 @@ BUILTIN        ::= CONST? REF? ("int"|"float"|"string"|"bool")
 TYPE           ::= BUILTIN
                  | CONST? REF? IDENTIFIER
                  | CONST? REF? "[" TYPE ("," expression)? "]"
-                 | CONST? REF? "{" TYPE ("," TYPE)* "," "}"
+                 | CONST? REF? "{" TYPE ("," TYPE)* ","? "}"
                  | "typeof" logic_or
 
 STRING         ::= "\'" (NUM|ALPHA|UNDER|ESCAPE)*  "\'"
@@ -22,7 +22,7 @@ LITERAL        ::= "false"|"true"|"null"|STRING|NUMBER
 
 expression     ::= comma
 comma          ::= assignment     ("," assignment)*
-assignment     ::= (call ".")? IDENTIFIER ("="|"+="|"-="|"*="|"/=") assignment?
+assignment     ::= (call ".")? IDENTIFIER ("="|"+="|"-="|"*="|"/=") assignment
                  | ternary
 ternary        ::= logic_or       ("?" logic_or ":" ternary)*
 logic_or       ::= logic_and      (("or"|"||") logic_and)*
@@ -40,7 +40,7 @@ unary          ::= ("!"|"-"|"~"|"++"|"--") unary
                  | call
 
 arguments      ::= assignment     ("," assignment)*
-call           ::= list           ("(" arguments? ")")*
+call           ::= list           (("(" arguments? ")")|("." IDENTIFIER))*
 list           ::= "[" assignment ("," assignment)* ","? "]"
                  | tuple
 tuple          ::= "{" assignment ("," assignment)* ","? "}"
