@@ -626,7 +626,7 @@ ExprVisitorType TypeResolver::visit(GetExpr &expr) {
             throw TypeException{"Tuple index out of range"};
         }
 
-        return expr.resolved = {tuple->types[index].get(), expr.name};
+        return expr.resolved = {tuple->types[index].get(), expr.name, object.is_lvalue};
     } else if (expr.object->resolved.info->primitive == Type::CLASS && expr.name.type == TokenType::IDENTIFIER) {
         return expr.resolved = resolve_class_access(object, expr.name);
     } else if (expr.object->resolved.info->primitive == Type::TUPLE) {
