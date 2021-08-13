@@ -33,7 +33,7 @@ Value native_print(VirtualMachine &vm, Value *args) {
     } else if (arg.tag == Value::Tag::REF) {
         native_print(vm, arg.w_ref);
     } else if (arg.tag == Value::Tag::LIST || arg.tag == Value::Tag::LIST_REF) {
-        if (arg.w_list->empty()) {
+        if (arg.w_list == nullptr || arg.w_list->empty()) {
             std::cout << "[]";
         } else {
             std::cout << "[";

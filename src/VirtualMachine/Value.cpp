@@ -72,7 +72,7 @@ std::string Value::repr() const noexcept {
         std::sprintf(name, "<function %s at %p>", w_fun->name.c_str(), reinterpret_cast<void *>(w_fun));
         return {name};
     } else if (tag == Tag::LIST || tag == Tag::LIST_REF) {
-        if (w_list->empty()) {
+        if (w_list == nullptr || w_list->empty()) {
             return tag == Tag::LIST ? "[]" : "ref to []";
         }
         std::string result = tag == Tag::LIST ? "[" : "ref to [";

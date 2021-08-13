@@ -585,6 +585,27 @@ ExecutionState VirtualMachine::step() {
             stack[stack_top - 1] = Value{result};
             break;
         }
+        /* Move instructions */
+        case is Instruction::MOVE_LOCAL: {
+            Value &moved = frames[frame_top].stack[operand];
+            stack[stack_top] = moved;
+            stack[stack_top++].tag = Value::Tag::LIST;
+            moved = Value{Value::NullType{}};
+            break;
+        }
+        case is Instruction::MOVE_GLOBAL: {
+            Value &moved = stack[operand];
+            stack[stack_top++] = moved;
+            moved = Value{Value::NullType{}};
+            break;
+        }
+        case is Instruction::MOVE_INDEX: {
+            Value::IntType index = stack[--stack_top].w_int;
+            Value::ListType &list = *stack[stack_top - 1].w_list;
+            stack[stack_top - 1] = list[index];
+            list[index] = Value{Value::NullType{}};
+            break;
+        }
     }
     return ExecutionState::RUNNING;
 }
