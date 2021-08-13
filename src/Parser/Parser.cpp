@@ -161,6 +161,7 @@ Parser::Parser(const std::vector<Token> &tokens, Module &module, std::size_t cur
     add_rule(TokenType::IF,            {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::IMPORT,        {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::INT,           {&Parser::variable, nullptr, ParsePrecedence::of::NONE});
+    add_rule(TokenType::MOVE,          {&Parser::move, nullptr, ParsePrecedence::of::PRIMARY});
     add_rule(TokenType::NULL_,         {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::OR,            {nullptr, &Parser::or_, ParsePrecedence::of::LOGIC_OR});
     add_rule(TokenType::PROTECTED,     {nullptr, nullptr, ParsePrecedence::of::NONE});
@@ -495,6 +496,16 @@ ExprNode Parser::literal(bool) {
     }
 
     return ExprNode{node};
+}
+
+ExprNode Parser::move(bool) {
+    Token op = previous();
+    consume("Expected identifier after 'move' keyword", TokenType::IDENTIFIER);
+    auto *var = allocate_node(VariableExpr, previous(), IdentifierType::LOCAL);
+    var->resolved.token = var->name;
+    auto *expr = allocate_node(MoveExpr, ExprNode{var});
+    expr->resolved.token = op;
+    return ExprNode{expr};
 }
 
 ExprNode Parser::scope_access(bool, ExprNode left) {

@@ -106,6 +106,7 @@ class Parser {
     ExprNode index(bool, ExprNode object);
     ExprNode list(bool);
     ExprNode literal(bool);
+    ExprNode move(bool);
     ExprNode or_(bool, ExprNode left);
     ExprNode scope_access(bool, ExprNode left);
     ExprNode super(bool);
