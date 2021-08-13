@@ -787,6 +787,26 @@ ExprVisitorType TypeResolver::visit(LogicalExpr &expr) {
     return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
 }
 
+ExprVisitorType TypeResolver::visit(MoveExpr &expr) {
+    ExprVisitorType right = resolve(expr.expr.get());
+    if (not one_of(right.info->primitive, Type::CLASS, Type::LIST, Type::TUPLE)) {
+        error({"Can only move classes, lists or tuples"}, right.token);
+        note({"Trying to move type '", stringify(right.info), "'"});
+        throw TypeException{"Can only move classes, lists or tuples"};
+    } else if (not right.is_lvalue) {
+        error({"Can only move lvalues"}, right.token);
+        note({"Trying to move type '", stringify(right.info), "'"});
+        throw TypeException{"Can only move classes, lists or tuples"};
+    } else if (right.info->is_const || right.info->is_ref) {
+        error({"Cannot move a ", right.info->is_const ? "constant" : "", right.info->is_ref ? "reference to" : "",
+                  " value"},
+            expr.expr->resolved.token);
+        note({"Trying to move type '", stringify(right.info), "'"});
+        throw TypeException{"Cannot move a constant value"};
+    }
+    return expr.resolved = {right.info, expr.resolved.token, false};
+}
+
 ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
     ExprVisitorType left = resolve(expr.scope.get());
 
