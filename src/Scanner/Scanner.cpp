@@ -11,15 +11,15 @@
 
 Scanner::Scanner() {
     const char *words[]{"and", "bool", "break", "class", "const", "continue", "default", "else", "false", "float", "fn",
-        "for", "if", "import", "int", "null", "not", "or", "protected", "private", "public", "ref", "return", "string",
-        "super", "switch", "this", "true", "type", "typeof", "var", "while"};
+        "for", "if", "import", "int", "move", "null", "not", "or", "protected", "private", "public", "ref", "return",
+        "string", "super", "switch", "this", "true", "type", "typeof", "var", "while"};
 
     TokenType types[]{TokenType::AND, TokenType::BOOL, TokenType::BREAK, TokenType::CLASS, TokenType::CONST,
         TokenType::CONTINUE, TokenType::DEFAULT, TokenType::ELSE, TokenType::FALSE, TokenType::FLOAT, TokenType::FN,
-        TokenType::FOR, TokenType::IF, TokenType::IMPORT, TokenType::INT, TokenType::NULL_, TokenType::NOT,
-        TokenType::OR, TokenType::PROTECTED, TokenType::PRIVATE, TokenType::PUBLIC, TokenType::REF, TokenType::RETURN,
-        TokenType::STRING, TokenType::SUPER, TokenType::SWITCH, TokenType::THIS, TokenType::TRUE, TokenType::TYPE,
-        TokenType::TYPEOF, TokenType::VAR, TokenType::WHILE};
+        TokenType::FOR, TokenType::IF, TokenType::IMPORT, TokenType::INT, TokenType::MOVE, TokenType::NULL_,
+        TokenType::NOT, TokenType::OR, TokenType::PROTECTED, TokenType::PRIVATE, TokenType::PUBLIC, TokenType::REF,
+        TokenType::RETURN, TokenType::STRING, TokenType::SUPER, TokenType::SWITCH, TokenType::THIS, TokenType::TRUE,
+        TokenType::TYPE, TokenType::TYPEOF, TokenType::VAR, TokenType::WHILE};
 
     static_assert(std::size(words) == std::size(types), "Size of array of keywords and their types have to be same.");
 

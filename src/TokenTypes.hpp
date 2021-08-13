@@ -90,6 +90,7 @@ enum class TokenType {
     IF,
     IMPORT,
     INT,
+    MOVE,
     NULL_,
     /* OR, */ PROTECTED,
     PRIVATE,
