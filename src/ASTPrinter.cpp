@@ -267,6 +267,15 @@ ExprVisitorType ASTPrinter::visit(LogicalExpr &expr) {
     return {};
 }
 
+ExprVisitorType ASTPrinter::visit(MoveExpr &expr) {
+    print_tabs(current_depth);
+    print_token(expr.resolved.token) << '\n';
+    current_depth++;
+    print(expr.expr.get());
+    current_depth--;
+    return {};
+}
+
 ExprVisitorType ASTPrinter::visit(ScopeAccessExpr &expr) {
     current_depth++;
     print(expr.scope.get());
@@ -335,7 +344,8 @@ ExprVisitorType ASTPrinter::visit(TupleExpr &expr) {
     for (std::size_t i = 0; i < expr.elements.size(); i++) {
         print_tabs(current_depth);
         std::cout << "Element:(" << i + 1 << ")::Conv:";
-        print_conversion_type(std::get<NumericConversionType>(expr.elements[i])) << "::Copy:" << std::boolalpha << std::get<RequiresCopy>(expr.elements[i]) << std::noboolalpha << '\n';
+        print_conversion_type(std::get<NumericConversionType>(expr.elements[i]))
+            << "::Copy:" << std::boolalpha << std::get<RequiresCopy>(expr.elements[i]) << std::noboolalpha << '\n';
         print(std::get<ExprNode>(expr.elements[i]).get());
     }
     current_depth--;

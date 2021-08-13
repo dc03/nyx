@@ -173,7 +173,7 @@ if __name__ == '__main__':
         # Base class and alias declarations complete
 
         Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'List', 'ListAssign',
-                            'Literal', 'Logical', 'ScopeAccess', 'ScopeName', 'Set', 'Super', 'Ternary', 'This',
+                            'Literal', 'Logical', 'Move', 'ScopeAccess', 'ScopeName', 'Set', 'Super', 'Ternary', 'This',
                             'Tuple', 'Unary', 'Variable']
         Stmts: List[str] = ['Block', 'Break', 'Class', 'Continue', 'Expression', 'Function',
                             'If', 'Return', 'Switch', 'Type', 'Var', 'While']
@@ -301,6 +301,10 @@ if __name__ == '__main__':
         declare_expr_type('Logical',
                           'left{std::move(left)}, right{std::move(right)}',
                           'ExprNode left, ExprNode right')
+
+        declare_expr_type('Move',
+                          'expr{std::move(expr)}',
+                          'ExprNode expr')
 
         declare_expr_type('ScopeAccess',
                           'scope{std::move(scope)}, name{std::move(name)}',

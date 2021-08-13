@@ -38,6 +38,7 @@ struct ListExpr;
 struct ListAssignExpr;
 struct LiteralExpr;
 struct LogicalExpr;
+struct MoveExpr;
 struct ScopeAccessExpr;
 struct ScopeNameExpr;
 struct SetExpr;
@@ -83,6 +84,7 @@ struct Visitor {
     virtual ExprVisitorType visit(ListAssignExpr &expr) = 0;
     virtual ExprVisitorType visit(LiteralExpr &expr) = 0;
     virtual ExprVisitorType visit(LogicalExpr &expr) = 0;
+    virtual ExprVisitorType visit(MoveExpr &expr) = 0;
     virtual ExprVisitorType visit(ScopeAccessExpr &expr) = 0;
     virtual ExprVisitorType visit(ScopeNameExpr &expr) = 0;
     virtual ExprVisitorType visit(SetExpr &expr) = 0;
@@ -125,6 +127,7 @@ enum class NodeType {
     ListAssignExpr,
     LiteralExpr,
     LogicalExpr,
+    MoveExpr,
     ScopeAccessExpr,
     ScopeNameExpr,
     SetExpr,
@@ -435,6 +438,19 @@ struct LogicalExpr final : public Expr {
 
     LogicalExpr() = default;
     LogicalExpr(ExprNode left, ExprNode right) : left{std::move(left)}, right{std::move(right)} {}
+
+    ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct MoveExpr final : public Expr {
+    ExprNode expr{};
+
+    std::string_view string_tag() override final { return "MoveExpr"; }
+
+    NodeType type_tag() override final { return NodeType::MoveExpr; }
+
+    MoveExpr() = default;
+    explicit MoveExpr(ExprNode expr) : expr{std::move(expr)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
