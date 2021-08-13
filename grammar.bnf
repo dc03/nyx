@@ -55,6 +55,7 @@ primary        ::= LITERAL|IDENTIFIER|index
                  | super|"this"
                  | "(" expression ")"
                  | expression "::" IDENTIFIER
+                 | "move" IDENTIFIER
 
 declaration    ::= statement
                  | import
