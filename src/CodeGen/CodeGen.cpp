@@ -637,6 +637,18 @@ ExprVisitorType Generator::visit(LogicalExpr &expr) {
     return {};
 }
 
+ExprVisitorType Generator::visit(MoveExpr &expr) {
+    if (expr.expr->type_tag() == NodeType::VariableExpr) {
+        if (dynamic_cast<VariableExpr *>(expr.expr.get())->type == IdentifierType::LOCAL) {
+            current_chunk->emit_instruction(Instruction::MOVE_LOCAL, expr.resolved.token.line);
+        } else {
+            current_chunk->emit_instruction(Instruction::MOVE_GLOBAL, expr.resolved.token.line);
+        }
+        emit_three_bytes_of(expr.expr->resolved.stack_slot);
+    }
+    return {};
+}
+
 ExprVisitorType Generator::visit(ScopeAccessExpr &expr) {
     return {};
 }
@@ -917,7 +929,7 @@ StmtVisitorType Generator::visit(ReturnStmt &stmt) {
         compile(stmt.value.get());
         if (auto &return_type = stmt.function->return_type;
             (return_type->primitive == Type::LIST || return_type->primitive == Type::TUPLE) &&
-            not return_type->is_ref) {
+            not return_type->is_ref && stmt.value->resolved.is_lvalue) {
             current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.keyword.line);
         }
     } else {

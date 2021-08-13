@@ -91,6 +91,10 @@ enum class Instruction {
     ACCESS_FROM_TOP,
     ASSIGN_FROM_TOP,
     EQUAL_SL, // Equality operation for lists and strings
+    /* Move instructions */
+    MOVE_LOCAL,
+    MOVE_GLOBAL,
+    MOVE_INDEX,
 };
 
 #endif

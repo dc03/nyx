@@ -55,6 +55,7 @@ class Generator final : Visitor {
     ExprVisitorType visit(ListAssignExpr &expr) override final;
     ExprVisitorType visit(LiteralExpr &expr) override final;
     ExprVisitorType visit(LogicalExpr &expr) override final;
+    ExprVisitorType visit(MoveExpr &expr) override final;
     ExprVisitorType visit(ScopeAccessExpr &expr) override final;
     ExprVisitorType visit(ScopeNameExpr &expr) override final;
     ExprVisitorType visit(SetExpr &expr) override final;

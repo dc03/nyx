@@ -176,6 +176,9 @@ void disassemble_instruction(Chunk &chunk, Instruction insn, std::size_t where) 
         case Instruction::ACCESS_FROM_TOP: instruction(chunk, "ACCESS_FROM_TOP", where); return;
         case Instruction::ASSIGN_FROM_TOP: instruction(chunk, "ASSIGN_FROM_TOP", where); return;
         case Instruction::EQUAL_SL: instruction(chunk, "EQUAL_SL", where); return;
+        case Instruction::MOVE_LOCAL: instruction(chunk, "MOVE_LOCAL", where); return;
+        case Instruction::MOVE_GLOBAL: instruction(chunk, "MOVE_GLOBAL", where); return;
+        case Instruction::MOVE_INDEX: instruction(chunk, "MOVE_INDEX", where); return;
     }
     unreachable();
 }
