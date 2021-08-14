@@ -606,6 +606,14 @@ ExecutionState VirtualMachine::step() {
             list[index] = Value{Value::NullType{}};
             break;
         }
+        /* Swap instructions */
+        case is Instruction::SWAP_TOP: {
+            Value first = stack[stack_top - 1];
+            Value second = stack[stack_top - 2];
+            stack[stack_top - 2] = first;
+            stack[stack_top - 1] = second;
+            break;
+        }
     }
     return ExecutionState::RUNNING;
 }

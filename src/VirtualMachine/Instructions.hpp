@@ -95,6 +95,8 @@ enum class Instruction {
     MOVE_LOCAL,
     MOVE_GLOBAL,
     MOVE_INDEX,
+    /* Swap instructions */
+    SWAP_TOP, // Swaps the top two values on the stack
 };
 
 #endif
