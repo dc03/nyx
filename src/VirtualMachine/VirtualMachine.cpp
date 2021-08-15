@@ -607,11 +607,11 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         /* Swap instructions */
-        case is Instruction::SWAP_TOP: {
-            Value first = stack[stack_top - 1];
-            Value second = stack[stack_top - 2];
-            stack[stack_top - 2] = first;
-            stack[stack_top - 1] = second;
+        case is Instruction::SWAP: {
+            Value first = stack[stack_top - operand];
+            Value second = stack[stack_top - operand - 1];
+            stack[stack_top - operand - 1] = first;
+            stack[stack_top - operand] = second;
             break;
         }
     }
