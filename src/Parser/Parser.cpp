@@ -662,7 +662,12 @@ StmtNode Parser::declaration() {
         } else if (match(TokenType::TYPE)) {
             return type_declaration();
         } else if (match(TokenType::VAR, TokenType::CONST, TokenType::REF)) {
-            return variable_declaration();
+            if (peek().type == TokenType::LEFT_BRACE) {
+                advance();
+                return vartuple_declaration();
+            } else {
+                return variable_declaration();
+            }
         } else {
             return statement();
         }
@@ -898,6 +903,47 @@ StmtNode Parser::variable_declaration() {
     auto *variable = allocate_node(VarStmt, std::move(keyword), std::move(name), std::move(var_type),
         std::move(initializer), NumericConversionType::NONE, false);
     return StmtNode{variable};
+}
+
+IdentifierTuple Parser::ident_tuple() {
+    IdentifierTuple::TupleType result{};
+    while (peek().type != TokenType::RIGHT_BRACE) {
+        consume("Expected either identifier or '{' in identifier tuple", TokenType::IDENTIFIER, TokenType::LEFT_BRACE);
+        if (previous().type == TokenType::IDENTIFIER) {
+            result.emplace_back(
+                IdentifierTuple::DeclarationDetails{previous(), NumericConversionType::NONE, false, nullptr});
+        } else {
+            result.emplace_back(ident_tuple());
+        }
+        if (peek().type != TokenType::RIGHT_BRACE && peek().type != TokenType::COMMA) {
+            consume("Expected '}' after identifier tuple", TokenType::RIGHT_BRACE); // This consume will always fail
+        } else {
+            match(TokenType::COMMA);
+        }
+    }
+    consume("Expected '}' after identifier tuple", TokenType::RIGHT_BRACE);
+    return IdentifierTuple{std::move(result)};
+}
+
+StmtNode Parser::vartuple_declaration() {
+    Token brace = previous();
+    Token token = previous();
+    IdentifierTuple tuple = ident_tuple();
+
+    if (peek().type == TokenType::COLON) {
+        token = peek();
+    }
+    TypeNode var_types = match(TokenType::COLON) ? type() : nullptr;
+
+    if (peek().type == TokenType::EQUAL && token.type != TokenType::COLON) {
+        token = peek();
+    }
+    ExprNode initializer = match(TokenType::EQUAL) ? expression() : nullptr;
+
+    consume("Expected ';' or newline after var-tuple initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
+
+    return StmtNode{allocate_node(VarTupleStmt, std::move(tuple), std::move(var_types), std::move(initializer),
+        std::move(token), std::move(brace))};
 }
 
 StmtNode Parser::statement() {

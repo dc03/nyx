@@ -84,6 +84,7 @@ class Parser {
 
     template <typename Allocated>
     StmtNode single_token_statement(std::string_view token, bool condition, std::string_view error_message);
+    IdentifierTuple ident_tuple();
 
   public:
     static std::vector<std::pair<Module, std::size_t>> parsed_modules;
@@ -128,6 +129,7 @@ class Parser {
     StmtNode import_statement();
     StmtNode type_declaration();
     StmtNode variable_declaration();
+    StmtNode vartuple_declaration();
 
     StmtNode statement();
     StmtNode block_statement();
