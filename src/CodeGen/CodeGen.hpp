@@ -34,6 +34,9 @@ class Generator final : Visitor {
 
     std::size_t recursively_compile_size(ListType *list);
 
+    void add_vartuple_to_scope(IdentifierTuple::TupleType &tuple);
+    std::size_t compile_vartuple(IdentifierTuple::TupleType &tuple);
+
     ExprVisitorType compile(Expr *expr);
     StmtVisitorType compile(Stmt *stmt);
     BaseTypeVisitorType compile(BaseType *type);
@@ -77,6 +80,7 @@ class Generator final : Visitor {
     StmtVisitorType visit(SwitchStmt &stmt) override final;
     StmtVisitorType visit(TypeStmt &stmt) override final;
     StmtVisitorType visit(VarStmt &stmt) override final;
+    StmtVisitorType visit(VarTupleStmt &stmt) override final;
     StmtVisitorType visit(WhileStmt &stmt) override final;
 
     BaseTypeVisitorType visit(PrimitiveType &type) override final;
