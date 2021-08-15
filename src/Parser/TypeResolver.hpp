@@ -55,6 +55,10 @@ class TypeResolver final : Visitor {
     bool are_equivalent_primitives(QualifiedTypeInfo first, QualifiedTypeInfo second);
     bool are_equivalent_types(QualifiedTypeInfo first, QualifiedTypeInfo second);
 
+    bool match_ident_tuple_with_type(IdentifierTuple::TupleType &tuple, TupleType &type);
+    void copy_types_into_vartuple(IdentifierTuple::TupleType &tuple, TupleType &type);
+    void add_vartuple_to_stack(IdentifierTuple::TupleType &tuple);
+
     void begin_scope();
     void end_scope();
     friend class ScopedScopeManager;
@@ -101,6 +105,7 @@ class TypeResolver final : Visitor {
     StmtVisitorType visit(SwitchStmt &stmt) override final;
     StmtVisitorType visit(TypeStmt &stmt) override final;
     StmtVisitorType visit(VarStmt &stmt) override final;
+    StmtVisitorType visit(VarTupleStmt &stmt) override final;
     StmtVisitorType visit(WhileStmt &stmt) override final;
 
     BaseTypeVisitorType visit(PrimitiveType &type) override final;

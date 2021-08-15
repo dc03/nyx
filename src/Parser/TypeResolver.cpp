@@ -1330,6 +1330,111 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
     }
 }
 
+bool TypeResolver::match_ident_tuple_with_type(IdentifierTuple::TupleType &tuple, TupleType &type) {
+    if (tuple.size() != type.types.size()) {
+        return false;
+    }
+
+    for (std::size_t i = 0; i < tuple.size(); i++) {
+        if (tuple[i].index() == IdentifierTuple::IDENT_TUPLE) {
+            if (type.types[i]->primitive != Type::TUPLE ||
+                not match_ident_tuple_with_type(
+                    std::get<IdentifierTuple>(tuple[i]).tuple, dynamic_cast<TupleType &>(*type.types[i]))) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+void TypeResolver::copy_types_into_vartuple(IdentifierTuple::TupleType &tuple, TupleType &type) {
+    for (std::size_t i = 0; i < tuple.size(); i++) {
+        if (tuple[i].index() == IdentifierTuple::IDENT_TUPLE) {
+            copy_types_into_vartuple(
+                std::get<IdentifierTuple>(tuple[i]).tuple, dynamic_cast<TupleType &>(*type.types[i]));
+        } else {
+            auto &decl = std::get<IdentifierTuple::DeclarationDetails>(tuple[i]);
+            std::get<TypeNode>(decl) = TypeNode{copy_type(type.types[i].get())};
+        }
+    }
+}
+
+void TypeResolver::add_vartuple_to_stack(IdentifierTuple::TupleType &tuple) {
+    for (auto &elem : tuple) {
+        if (elem.index() == IdentifierTuple::IDENT_TUPLE) {
+            add_vartuple_to_stack(std::get<IdentifierTuple>(elem).tuple);
+        } else {
+            auto &decl = std::get<IdentifierTuple::DeclarationDetails>(elem);
+            if (not in_class && std::any_of(values.crbegin(), values.crend(), [this, &decl](const Value &value) {
+                    return value.scope_depth == scope_depth && value.lexeme == std::get<Token>(decl).lexeme;
+                })) {
+                error({"A variable with the same name has already been declared in this scope"}, std::get<Token>(decl));
+            } else {
+                // TODO: fix use of `nullptr` here
+                values.push_back({std::get<Token>(decl).lexeme, std::get<TypeNode>(decl).get(), scope_depth, nullptr,
+                    (values.empty() ? 0 : values.back().stack_slot + 1)});
+            }
+        }
+    }
+}
+
+StmtVisitorType TypeResolver::visit(VarTupleStmt &stmt) {
+    if (stmt.initializer != nullptr) {
+        ExprVisitorType initializer = resolve(stmt.initializer.get());
+        QualifiedTypeInfo type = nullptr;
+        bool originally_typeless = stmt.type == nullptr;
+        if (stmt.type == nullptr) {
+            stmt.type = TypeNode{copy_type(initializer.info)};
+            type = stmt.type.get();
+        } else {
+            replace_if_typeof(stmt.type);
+            type = resolve(stmt.type.get());
+        }
+
+        if (stmt.type->primitive != Type::TUPLE) {
+            error({"Expected tuple type for var-tuple declaration"}, stmt.token);
+            note({"Received type '", stringify(stmt.type.get()), "'"});
+            throw TypeException{"Expected tuple type for var-tuple declaration"};
+        } else if (not match_ident_tuple_with_type(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type))) {
+            error({"Var-tuple declaration does not match type"}, stmt.brace);
+            throw TypeException{"Var-tuple declaration does not match type"};
+        }
+
+        copy_types_into_vartuple(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type));
+
+        if (not convertible_to(
+                type, stmt.initializer->resolved.info, stmt.initializer->resolved.is_lvalue, stmt.token, true)) {
+            error({"Cannot convert from type of initializer to type of var-tuple"}, stmt.token);
+            note({"Type of initializer is '", stringify(stmt.initializer->resolved.info), "'"});
+            throw TypeException{"Cannot convert from type of initializer to type of var-tuple"};
+        }
+
+        if (not in_class || in_function) {
+            add_vartuple_to_stack(stmt.names.tuple);
+        }
+    } else if (stmt.type != nullptr) {
+        replace_if_typeof(stmt.type);
+        if (stmt.type->primitive != Type::TUPLE) {
+            error({"Expected tuple type for var-tuple declaration"}, stmt.token);
+            note({"Received type '", stringify(stmt.type.get()), "'"});
+            throw TypeException{"Expected tuple type for var-tuple declaration"};
+        } else if (not match_ident_tuple_with_type(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type))) {
+            error({"Var-tuple declaration does not match type"}, stmt.brace);
+            throw TypeException{"Var-tuple declaration does not match type"};
+        }
+
+        copy_types_into_vartuple(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type));
+
+        if (not in_class || in_function) {
+            add_vartuple_to_stack(stmt.names.tuple);
+        }
+    } else {
+        error({"Cannot have var-tuple without both type and initializer"}, stmt.brace);
+        throw TypeException{"Cannot have var-tuple without both type and initializer"};
+    }
+}
+
 StmtVisitorType TypeResolver::visit(WhileStmt &stmt) {
     // ScopedScopeManager manager{*this};
     ScopedBooleanManager loop_manager{in_loop};
@@ -1364,6 +1469,10 @@ BaseTypeVisitorType TypeResolver::visit(ListType &type) {
 }
 
 BaseTypeVisitorType TypeResolver::visit(TupleType &type) {
+    for (TypeNode &elem : type.types) {
+        replace_if_typeof(elem);
+        resolve(elem.get());
+    }
     return &type;
 }
 
