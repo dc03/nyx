@@ -60,12 +60,16 @@ primary        ::= LITERAL|IDENTIFIER|index
 declaration    ::= statement
                  | import
                  | var
+                 | var_tuple
                  | fn
                  | type_decl
                  | class
 
 import         ::= "import" STRING EOL
 var            ::= ("var"|"const"|"ref") IDENTIFIER (":" TYPE)? ("=" expression)? EOL
+
+ident_tuple    ::= "{" IDENTIFIER|ident_tuple ("," (IDENTIFIER|ident_tuple))* ","? "}"
+var_tuple      ::= ("var"|"const"|"ref") ident_tuple (":" TYPE)? ("=" expression)? EOL
 
 params         ::= (IDENTIFIER ":" TYPE)*
 fn             ::= "fn" "~"? IDENTIFIER "(" params ")" "->" TYPE block
