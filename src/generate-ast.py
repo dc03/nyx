@@ -176,7 +176,7 @@ if __name__ == '__main__':
                             'Literal', 'Logical', 'Move', 'ScopeAccess', 'ScopeName', 'Set', 'Super', 'Ternary', 'This',
                             'Tuple', 'Unary', 'Variable']
         Stmts: List[str] = ['Block', 'Break', 'Class', 'Continue', 'Expression', 'Function',
-                            'If', 'Return', 'Switch', 'Type', 'Var', 'While']
+                            'If', 'Return', 'Switch', 'Type', 'Var', 'VarTuple', 'While']
         Types: List[str] = ['Primitive', 'UserDefined', 'List', 'Tuple', 'Typeof']
 
         Exprs: List[str] = [x + 'Expr' for x in Exprs]
@@ -408,6 +408,20 @@ if __name__ == '__main__':
                           'std::move(initializer)}, conversion_type{conversion_type}, requires_copy{requires_copy}',
                           'Token keyword, Token name, TypeNode type, ExprNode initializer, NumericConversionType '
                           'conversion_type, RequiresCopy requires_copy')
+
+        file.write('struct IdentifierTuple {\n')
+        tab(file, 1).write('using DeclarationDetails = std::tuple<Token, NumericConversionType, RequiresCopy, '
+                           'TypeNode>;\n')
+        tab(file, 1).write('using TupleType = std::vector<std::variant<IdentifierTuple, DeclarationDetails>>;\n')
+        tab(file, 1).write('enum Contained { IDENT_TUPLE = 0, DECL_DETAILS = 1 };\n\n')
+        tab(file, 1).write('TupleType tuple;\n')
+        file.write('};\n\n')
+
+        declare_stmt_type('VarTuple',
+                          'names{std::move(names)}, type{std::move(type)}, initializer{std::move(initializer)},'
+                          'token{std::move(token)}, brace{std::move(brace)}',
+                          'IdentifierTuple names, TypeNode type, ExprNode initializer, Token token, Token brace',
+                          ['friend struct IdentifierTuple'])
 
         declare_stmt_type('While',
                           'keyword{std::move(keyword)}, condition{std::move(condition)}, body{std::move(body)}, '

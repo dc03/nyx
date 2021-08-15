@@ -62,6 +62,7 @@ struct ReturnStmt;
 struct SwitchStmt;
 struct TypeStmt;
 struct VarStmt;
+struct VarTupleStmt;
 struct WhileStmt;
 
 // Type nodes
@@ -106,6 +107,7 @@ struct Visitor {
     virtual StmtVisitorType visit(SwitchStmt &stmt) = 0;
     virtual StmtVisitorType visit(TypeStmt &stmt) = 0;
     virtual StmtVisitorType visit(VarStmt &stmt) = 0;
+    virtual StmtVisitorType visit(VarTupleStmt &stmt) = 0;
     virtual StmtVisitorType visit(WhileStmt &stmt) = 0;
 
     virtual BaseTypeVisitorType visit(PrimitiveType &basetype) = 0;
@@ -149,6 +151,7 @@ enum class NodeType {
     SwitchStmt,
     TypeStmt,
     VarStmt,
+    VarTupleStmt,
     WhileStmt,
 
     PrimitiveType,
@@ -787,6 +790,38 @@ struct VarStmt final : public Stmt {
           initializer{std::move(initializer)},
           conversion_type{conversion_type},
           requires_copy{requires_copy} {}
+
+    StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct IdentifierTuple {
+    using DeclarationDetails = std::tuple<Token, NumericConversionType, RequiresCopy, TypeNode>;
+    using TupleType = std::vector<std::variant<IdentifierTuple, DeclarationDetails>>;
+    enum Contained { IDENT_TUPLE = 0, DECL_DETAILS = 1 };
+
+    TupleType tuple;
+};
+
+struct VarTupleStmt final : public Stmt {
+    friend struct IdentifierTuple;
+
+    IdentifierTuple names{};
+    TypeNode type{};
+    ExprNode initializer{};
+    Token token{};
+    Token brace{};
+
+    std::string_view string_tag() override final { return "VarTupleStmt"; }
+
+    NodeType type_tag() override final { return NodeType::VarTupleStmt; }
+
+    VarTupleStmt() = default;
+    VarTupleStmt(IdentifierTuple names, TypeNode type, ExprNode initializer, Token token, Token brace)
+        : names{std::move(names)},
+          type{std::move(type)},
+          initializer{std::move(initializer)},
+          token{std::move(token)},
+          brace{std::move(brace)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

@@ -17,6 +17,9 @@ class ASTPrinter final : Visitor {
     StmtVisitorType print(Stmt *stmt);
     BaseTypeVisitorType print(BaseType *type);
 
+    void print_variable(Token &name, NumericConversionType conv, RequiresCopy copy, TypeNode &type);
+    void print_ident_tuple(IdentifierTuple &tuple);
+
   public:
     void print_stmt(StmtNode &stmt);
     void print_stmts(std::vector<StmtNode> &stmts);
@@ -54,6 +57,7 @@ class ASTPrinter final : Visitor {
     StmtVisitorType visit(SwitchStmt &stmt) override final;
     StmtVisitorType visit(TypeStmt &stmt) override final;
     StmtVisitorType visit(VarStmt &stmt) override final;
+    StmtVisitorType visit(VarTupleStmt &stmt) override final;
     StmtVisitorType visit(WhileStmt &stmt) override final;
 
     BaseTypeVisitorType visit(PrimitiveType &type) override final;

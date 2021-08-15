@@ -493,12 +493,55 @@ StmtVisitorType ASTPrinter::visit(TypeStmt &stmt) {
     current_depth--;
 }
 
+void ASTPrinter::print_variable(Token &name, NumericConversionType conv, RequiresCopy copy, TypeNode &type) {
+    print_tabs(current_depth);
+    print_token(name) << "::Conv:";
+    print_conversion_type(conv) << "::Copy:" << std::boolalpha << copy << std::noboolalpha << '\n';
+    current_depth++;
+    if (type != nullptr) {
+        print_tabs(current_depth);
+        std::cout << "^^^ type vvv\n";
+        print(type.get());
+    }
+    current_depth--;
+}
+
+void ASTPrinter::print_ident_tuple(IdentifierTuple &tuple) {
+    current_depth++;
+    print_tabs(current_depth);
+    std::cout << "Begin IdentifierTuple\n";
+    for (auto &elem : tuple.tuple) {
+        if (elem.index() == IdentifierTuple::IDENT_TUPLE) {
+            print_ident_tuple(std::get<IdentifierTuple>(elem));
+        } else {
+            current_depth++;
+            auto &var = std::get<IdentifierTuple::DeclarationDetails>(elem);
+            print_variable(std::get<Token>(var), std::get<NumericConversionType>(var), std::get<RequiresCopy>(var),
+                std::get<TypeNode>(var));
+            current_depth--;
+        }
+    }
+    print_tabs(current_depth);
+    std::cout << "End IdentifierTuple\n";
+    current_depth--;
+}
+
 StmtVisitorType ASTPrinter::visit(VarStmt &stmt) {
+    print_variable(stmt.name, stmt.conversion_type, stmt.requires_copy, stmt.type);
+    current_depth++;
     print_tabs(current_depth);
-    print_token(stmt.name) << "::Conv:";
-    print_conversion_type(stmt.conversion_type)
-        << "::Copy:" << std::boolalpha << stmt.requires_copy << std::noboolalpha << '\n';
-    print_tabs(current_depth);
+    std::cout << "^^^ initializer vvv\n";
+    if (stmt.initializer != nullptr) {
+        print(stmt.initializer.get());
+    } else {
+        print_tabs(current_depth);
+        std::cout << "Initializer: none\n";
+    }
+    current_depth--;
+}
+
+StmtVisitorType ASTPrinter::visit(VarTupleStmt &stmt) {
+    print_ident_tuple(stmt.names);
     current_depth++;
     if (stmt.type != nullptr) {
         print_tabs(current_depth);
