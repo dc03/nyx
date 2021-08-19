@@ -99,8 +99,8 @@ void instruction(Chunk &chunk, std::string_view name, std::size_t where) {
     } else if (name == "RETURN") {
         std::cout << "\t\t| pop " << next_bytes << " local(s)\n";
         print_trailing_bytes();
-    } else if (name == "SWAP_TOP") {
-        std::cout << "\t\t| swap " << next_bytes << " and " << next_bytes + 1 << '\n';
+    } else if (name == "SWAP") {
+        std::cout << "\t\t| swap " << next_bytes << " and " << next_bytes + 1 << " from top\n";
         print_trailing_bytes();
     } else {
         std::cout << '\n';
@@ -182,7 +182,7 @@ void disassemble_instruction(Chunk &chunk, Instruction insn, std::size_t where) 
         case Instruction::MOVE_LOCAL: instruction(chunk, "MOVE_LOCAL", where); return;
         case Instruction::MOVE_GLOBAL: instruction(chunk, "MOVE_GLOBAL", where); return;
         case Instruction::MOVE_INDEX: instruction(chunk, "MOVE_INDEX", where); return;
-        case Instruction::SWAP: instruction(chunk, "SWAP_TOP", where); return;
+        case Instruction::SWAP: instruction(chunk, "SWAP", where); return;
     }
     unreachable();
 }
