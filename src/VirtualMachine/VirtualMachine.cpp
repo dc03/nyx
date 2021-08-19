@@ -468,7 +468,12 @@ ExecutionState VirtualMachine::step() {
                 cache.remove(*(*list.w_list)[index.w_int].w_str);
                 (void)cache.insert(*assigned.w_str);
             }
-            (*list.w_list)[index.w_int] = assigned;
+
+            if (tag == Value::Tag::REF) {
+                *(*list.w_list)[index.w_int].w_ref = assigned;
+            } else {
+                (*list.w_list)[index.w_int] = assigned;
+            }
             stack[stack_top - 1] = (*list.w_list)[index.w_int];
             if (tag == Value::Tag::LIST) {
                 stack[stack_top - 1].tag = Value::Tag::LIST_REF;
