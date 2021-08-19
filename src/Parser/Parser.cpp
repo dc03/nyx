@@ -663,7 +663,6 @@ StmtNode Parser::declaration() {
             return type_declaration();
         } else if (match(TokenType::VAR, TokenType::CONST, TokenType::REF)) {
             if (peek().type == TokenType::LEFT_BRACE) {
-                advance();
                 return vartuple_declaration();
             } else {
                 return variable_declaration();
@@ -926,7 +925,8 @@ IdentifierTuple Parser::ident_tuple() {
 }
 
 StmtNode Parser::vartuple_declaration() {
-    Token brace = previous();
+    Token keyword = previous();
+    advance();
     Token token = previous();
     IdentifierTuple tuple = ident_tuple();
 
@@ -943,7 +943,7 @@ StmtNode Parser::vartuple_declaration() {
     consume("Expected ';' or newline after var-tuple initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
 
     return StmtNode{allocate_node(VarTupleStmt, std::move(tuple), std::move(var_types), std::move(initializer),
-        std::move(token), std::move(brace))};
+        std::move(token), std::move(keyword))};
 }
 
 StmtNode Parser::statement() {

@@ -809,19 +809,19 @@ struct VarTupleStmt final : public Stmt {
     TypeNode type{};
     ExprNode initializer{};
     Token token{};
-    Token brace{};
+    Token keyword{};
 
     std::string_view string_tag() override final { return "VarTupleStmt"; }
 
     NodeType type_tag() override final { return NodeType::VarTupleStmt; }
 
     VarTupleStmt() = default;
-    VarTupleStmt(IdentifierTuple names, TypeNode type, ExprNode initializer, Token token, Token brace)
+    VarTupleStmt(IdentifierTuple names, TypeNode type, ExprNode initializer, Token token, Token keyword)
         : names{std::move(names)},
           type{std::move(type)},
           initializer{std::move(initializer)},
           token{std::move(token)},
-          brace{std::move(brace)} {}
+          keyword{std::move(keyword)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

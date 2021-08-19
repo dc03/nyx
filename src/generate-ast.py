@@ -419,8 +419,8 @@ if __name__ == '__main__':
 
         declare_stmt_type('VarTuple',
                           'names{std::move(names)}, type{std::move(type)}, initializer{std::move(initializer)},'
-                          'token{std::move(token)}, brace{std::move(brace)}',
-                          'IdentifierTuple names, TypeNode type, ExprNode initializer, Token token, Token brace',
+                          'token{std::move(token)}, keyword{std::move(keyword)}',
+                          'IdentifierTuple names, TypeNode type, ExprNode initializer, Token token, Token keyword',
                           ['friend struct IdentifierTuple'])
 
         declare_stmt_type('While',
