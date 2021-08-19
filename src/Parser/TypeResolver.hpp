@@ -59,6 +59,18 @@ class TypeResolver final : Visitor {
     void copy_types_into_vartuple(IdentifierTuple::TupleType &tuple, TupleType &type);
     void add_vartuple_to_stack(IdentifierTuple::TupleType &tuple);
 
+    void remove_all_const(TypeNode &node);
+    void remove_top_level_const(TypeNode &node);
+
+    void remove_all_ref(TypeNode &node);
+    void remove_top_level_ref(TypeNode &node);
+
+    void add_all_const(TypeNode &node);
+    void add_top_level_const(TypeNode &node);
+
+    void add_all_ref(TypeNode &node);
+    void add_top_level_ref(TypeNode &node);
+
     void begin_scope();
     void end_scope();
     friend class ScopedScopeManager;

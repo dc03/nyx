@@ -59,9 +59,23 @@ bool TypeResolver::convertible_to(
         }
 
         for (std::size_t i = 0; i < to_tuple->types.size(); i++) {
+            bool initially_const = from_tuple->types[i]->is_const;
+            bool initially_ref = from_tuple->types[i]->is_ref;
+            if (from_tuple->is_const) {
+                add_top_level_const(from_tuple->types[i]);
+            }
+            if (from_tuple->is_ref) {
+                add_top_level_ref(from_tuple->types[i]);
+            }
             if (not convertible_to(
                     to_tuple->types[i].get(), from_tuple->types[i].get(), from_lvalue, where, in_initializer)) {
                 return false;
+            }
+            if (not initially_const && from_tuple->is_const) {
+                remove_top_level_const(from_tuple->types[i]);
+            }
+            if (not initially_ref && from_tuple->is_ref) {
+                remove_top_level_ref(from_tuple->types[i]);
             }
         }
         return true;
@@ -219,8 +233,7 @@ void TypeResolver::infer_list_type(ListExpr *of, ListType *from) {
 }
 
 void TypeResolver::infer_tuple_type(TupleExpr *of, TupleType *from) {
-    // The two tuple types need to store the same number of convertible primitives
-
+    // Cannot make a reference to a TupleExpr
     if (from->is_ref) {
         return;
     }
@@ -231,6 +244,24 @@ void TypeResolver::infer_tuple_type(TupleExpr *of, TupleType *from) {
             std::get<NumericConversionType>(of->elements[i]) = NumericConversionType::INT_TO_FLOAT;
         } else if (from->types[i]->primitive == Type::INT && expr->resolved.info->primitive == Type::FLOAT) {
             std::get<NumericConversionType>(of->elements[i]) = NumericConversionType::FLOAT_TO_INT;
+        }
+
+        if (from->types[i]->is_const) {
+            add_top_level_const(of->type->types[i]);
+        }
+
+        if (from->types[i]->is_ref) {
+            add_top_level_ref(of->type->types[i]);
+        }
+
+        if (not from->types[i]->is_ref && expr->resolved.is_lvalue) {
+            std::get<RequiresCopy>(of->elements[i]) = true;
+        }
+
+        if (expr->type_tag() == NodeType::TupleExpr && from->types[i]->primitive == Type::TUPLE) {
+            auto *inner_tuple = dynamic_cast<TupleExpr *>(expr.get());
+            infer_tuple_type(inner_tuple, dynamic_cast<TupleType*>(from->types[i].get()));
+            of->type->types[i].reset(copy_type(inner_tuple->type.get()));
         }
     }
 }
@@ -289,6 +320,52 @@ bool TypeResolver::are_equivalent_types(QualifiedTypeInfo first, QualifiedTypeIn
                (first->is_ref == second->is_ref);
     }
 }
+
+#define TYPE_METHOD_ALL(name, member, value)                                                                           \
+    node->member = value;                                                                                              \
+    if (node->primitive == Type::LIST) {                                                                               \
+        auto *list = dynamic_cast<ListType *>(node.get());                                                             \
+        name(list->contained);                                                                                         \
+    } else if (node->primitive == Type::TUPLE) {                                                                       \
+        auto *tuple = dynamic_cast<TupleType *>(node.get());                                                           \
+        for (TypeNode & type : tuple->types) {                                                                         \
+            name(type);                                                                                                \
+        }                                                                                                              \
+    }
+
+void TypeResolver::remove_all_const(TypeNode &node) {
+    TYPE_METHOD_ALL(remove_all_const, is_const, false)
+}
+
+void TypeResolver::remove_top_level_const(TypeNode &node) {
+    node->is_const = false;
+}
+
+void TypeResolver::remove_all_ref(TypeNode &node) {
+    TYPE_METHOD_ALL(remove_all_ref, is_ref, false)
+}
+
+void TypeResolver::remove_top_level_ref(TypeNode &node) {
+    node->is_ref = false;
+}
+
+void TypeResolver::add_all_const(TypeNode &node) {
+    TYPE_METHOD_ALL(add_all_const, is_const, true)
+}
+
+void TypeResolver::add_top_level_const(TypeNode &node) {
+    node->is_const = true;
+}
+
+void TypeResolver::add_all_ref(TypeNode &node) {
+    TYPE_METHOD_ALL(add_all_ref, is_ref, true)
+}
+
+void TypeResolver::add_top_level_ref(TypeNode &node) {
+    node->is_ref = true;
+}
+
+#undef TYPE_METHOD_ALL
 
 template <typename T, typename... Args>
 bool one_of(T type, Args... args) {
@@ -1264,12 +1341,12 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
                 // If there is a var statement without a specified type that is not binding to a reference it is
                 // automatically non-const
                 if (originally_typeless) {
-                    stmt.type->is_const = false;
-                    stmt.type->is_ref = false;
+                    remove_all_const(stmt.type);
+                    remove_all_ref(stmt.type);
                 }
                 break;
-            case TokenType::CONST: stmt.type->is_const = true; break;
-            case TokenType::REF: stmt.type->is_ref = true; break;
+            case TokenType::CONST: add_all_const(stmt.type); break;
+            case TokenType::REF: add_top_level_ref(stmt.type); break;
             default: break;
         }
 
@@ -1392,21 +1469,33 @@ StmtVisitorType TypeResolver::visit(VarTupleStmt &stmt) {
             type = resolve(stmt.type.get());
         }
 
+        switch (stmt.keyword.type) {
+            case TokenType::VAR:
+                if (originally_typeless) {
+                    remove_all_const(stmt.type);
+                    remove_all_ref(stmt.type);
+                }
+                break;
+            case TokenType::CONST: add_all_const(stmt.type); break;
+            case TokenType::REF: add_all_ref(stmt.type); break;
+
+            default: break;
+        }
+
         if (stmt.type->primitive != Type::TUPLE) {
             error({"Expected tuple type for var-tuple declaration"}, stmt.token);
             note({"Received type '", stringify(stmt.type.get()), "'"});
             throw TypeException{"Expected tuple type for var-tuple declaration"};
         } else if (not match_ident_tuple_with_type(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type))) {
-            error({"Var-tuple declaration does not match type"}, stmt.brace);
+            error({"Var-tuple declaration does not match type"}, stmt.keyword);
             throw TypeException{"Var-tuple declaration does not match type"};
         }
 
         copy_types_into_vartuple(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type));
 
-        if (not convertible_to(
-                type, stmt.initializer->resolved.info, stmt.initializer->resolved.is_lvalue, stmt.token, true)) {
+        if (not convertible_to(type, initializer.info, initializer.is_lvalue, stmt.token, true)) {
             error({"Cannot convert from type of initializer to type of var-tuple"}, stmt.token);
-            note({"Type of initializer is '", stringify(stmt.initializer->resolved.info), "'"});
+            note({"Trying to convert to '", stringify(type), "' from '", stringify(initializer.info), "'"});
             throw TypeException{"Cannot convert from type of initializer to type of var-tuple"};
         }
 
@@ -1420,7 +1509,7 @@ StmtVisitorType TypeResolver::visit(VarTupleStmt &stmt) {
             note({"Received type '", stringify(stmt.type.get()), "'"});
             throw TypeException{"Expected tuple type for var-tuple declaration"};
         } else if (not match_ident_tuple_with_type(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type))) {
-            error({"Var-tuple declaration does not match type"}, stmt.brace);
+            error({"Var-tuple declaration does not match type"}, stmt.keyword);
             throw TypeException{"Var-tuple declaration does not match type"};
         }
 
@@ -1430,7 +1519,7 @@ StmtVisitorType TypeResolver::visit(VarTupleStmt &stmt) {
             add_vartuple_to_stack(stmt.names.tuple);
         }
     } else {
-        error({"Cannot have var-tuple without both type and initializer"}, stmt.brace);
+        error({"Cannot have var-tuple without both type and initializer"}, stmt.keyword);
         throw TypeException{"Cannot have var-tuple without both type and initializer"};
     }
 }
