@@ -73,6 +73,10 @@ void Generator::emit_three_bytes_of(std::size_t value) {
     current_chunk->bytes.back() |= value & 0x00ff'ffff;
 }
 
+bool Generator::requires_copy(ExprNode &what, TypeNode &type) {
+    return not type->is_ref && (what->resolved.is_lvalue || what->resolved.info->is_ref);
+}
+
 ExprVisitorType Generator::compile(Expr *expr) {
     return expr->accept(*this);
 }
@@ -718,18 +722,34 @@ ExprVisitorType Generator::visit(TupleExpr &expr) {
     current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.resolved.token.line);
     std::size_t i = 0;
     for (auto &element : expr.elements) {
+        auto &elem_expr = std::get<ExprNode>(element);
+
         current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
         emit_three_bytes_of(1);
-        current_chunk->emit_constant(
-            Value{static_cast<Value::IntType>(i)}, std::get<ExprNode>(element)->resolved.token.line);
+        current_chunk->emit_constant(Value{static_cast<Value::IntType>(i)}, elem_expr->resolved.token.line);
 
-        compile(std::get<ExprNode>(element).get());
+        if (expr.type->types[i]->is_ref && elem_expr->resolved.is_lvalue) {
+            if (elem_expr->type_tag() == NodeType::VariableExpr) {
+                auto *var = dynamic_cast<VariableExpr *>(elem_expr.get());
+                current_chunk->emit_instruction(var->type == IdentifierType::LOCAL ? Instruction::MAKE_REF_TO_LOCAL
+                                                                                   : Instruction::MAKE_REF_TO_GLOBAL,
+                    var->name.line);
+                emit_three_bytes_of(var->resolved.stack_slot);
+            } else if (elem_expr->type_tag() == NodeType::IndexExpr) {
+                auto *list = dynamic_cast<IndexExpr *>(elem_expr.get());
+                compile(list->object.get());
+                compile(list->index.get());
+                current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, list->resolved.token.line);
+            }
+        } else {
+            compile(elem_expr.get());
+        }
 
         if (std::get<RequiresCopy>(element)) {
             current_chunk->emit_instruction(Instruction::COPY_LIST, expr.resolved.token.line);
         }
         if (std::get<NumericConversionType>(element) != NumericConversionType::NONE) {
-            emit_conversion(std::get<NumericConversionType>(element), std::get<ExprNode>(element)->resolved.token.line);
+            emit_conversion(std::get<NumericConversionType>(element), elem_expr->resolved.token.line);
         }
         current_chunk->emit_instruction(Instruction::ASSIGN_LIST, expr.resolved.token.line);
         current_chunk->emit_instruction(Instruction::POP, expr.resolved.token.line);
@@ -1091,15 +1111,22 @@ void Generator::add_vartuple_to_scope(IdentifierTuple::TupleType &tuple) {
     }
 }
 
-std::size_t Generator::compile_vartuple(IdentifierTuple::TupleType &tuple) {
+std::size_t Generator::compile_vartuple(IdentifierTuple::TupleType &tuple, TupleType &type) {
     std::size_t count = 0;
     for (std::size_t i = 0; i < tuple.size(); i++) {
         current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, current_chunk->line_numbers.back().first);
         emit_three_bytes_of(count + 1);
+
         current_chunk->emit_constant(Value{static_cast<int>(i)}, current_chunk->line_numbers.back().first);
-        current_chunk->emit_instruction(Instruction::MOVE_INDEX, current_chunk->line_numbers.back().first);
+        if (type.types[i]->is_ref) {
+            current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, current_chunk->line_numbers.back().first);
+        } else {
+            current_chunk->emit_instruction(Instruction::MOVE_INDEX, current_chunk->line_numbers.back().first);
+        }
+
         if (tuple[i].index() == IdentifierTuple::IDENT_TUPLE) {
-            count += compile_vartuple(std::get<IdentifierTuple>(tuple[i]).tuple);
+            count +=
+                compile_vartuple(std::get<IdentifierTuple>(tuple[i]).tuple, dynamic_cast<TupleType &>(*type.types[i]));
         } else {
             count += 1;
         }
@@ -1117,7 +1144,10 @@ std::size_t Generator::compile_vartuple(IdentifierTuple::TupleType &tuple) {
 StmtVisitorType Generator::visit(VarTupleStmt &stmt) {
     if (stmt.initializer != nullptr) {
         compile(stmt.initializer.get());
-        compile_vartuple(stmt.names.tuple);
+        if (requires_copy(stmt.initializer, stmt.type)) {
+            current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.token.line);
+        }
+        compile_vartuple(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type));
     } else {
         current_chunk->emit_instruction(Instruction::PUSH_NULL, stmt.token.line);
     }

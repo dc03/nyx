@@ -32,10 +32,12 @@ class Generator final : Visitor {
     void emit_conversion(NumericConversionType conversion_type, std::size_t line_number);
     void emit_three_bytes_of(std::size_t value);
 
+    bool requires_copy(ExprNode &what, TypeNode &type);
+
     std::size_t recursively_compile_size(ListType *list);
 
     void add_vartuple_to_scope(IdentifierTuple::TupleType &tuple);
-    std::size_t compile_vartuple(IdentifierTuple::TupleType &tuple);
+    std::size_t compile_vartuple(IdentifierTuple::TupleType &tuple, TupleType &type);
 
     ExprVisitorType compile(Expr *expr);
     StmtVisitorType compile(Stmt *stmt);
