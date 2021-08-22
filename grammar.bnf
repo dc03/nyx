@@ -71,7 +71,7 @@ var            ::= ("var"|"const"|"ref") IDENTIFIER (":" TYPE)? ("=" expression)
 ident_tuple    ::= "{" IDENTIFIER|ident_tuple ("," (IDENTIFIER|ident_tuple))* ","? "}"
 var_tuple      ::= ("var"|"const"|"ref") ident_tuple (":" TYPE)? ("=" expression)? EOL
 
-params         ::= (IDENTIFIER ":" TYPE)*
+params         ::= (IDENTIFIER|ident_tuple ":" TYPE)*
 fn             ::= "fn" "~"? IDENTIFIER "(" params ")" "->" TYPE block
 
 type_decl      ::= "type" IDENTIFIER "=" TYPE EOL
