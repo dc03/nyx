@@ -260,7 +260,7 @@ void TypeResolver::infer_tuple_type(TupleExpr *of, TupleType *from) {
 
         if (expr->type_tag() == NodeType::TupleExpr && from->types[i]->primitive == Type::TUPLE) {
             auto *inner_tuple = dynamic_cast<TupleExpr *>(expr.get());
-            infer_tuple_type(inner_tuple, dynamic_cast<TupleType*>(from->types[i].get()));
+            infer_tuple_type(inner_tuple, dynamic_cast<TupleType *>(from->types[i].get()));
             of->type->types[i].reset(copy_type(inner_tuple->type.get()));
         }
     }
@@ -1244,7 +1244,24 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
             }
         }
 
-        values.push_back({param.first.lexeme, param.second.get(), scope_depth + 1, param_class, i++});
+        if (param.first.index() == FunctionStmt::IDENT_TUPLE) {
+            auto &ident_tuple = std::get<IdentifierTuple>(param.first);
+
+            if (param.second->primitive != Type::TUPLE) {
+                error({"Expected tuple type for var-tuple declaration"}, stmt.name);
+                note({"Received type '", stringify(param.second.get()), "'"});
+            } else if (not match_ident_tuple_with_type(ident_tuple.tuple, dynamic_cast<TupleType &>(*param.second))) {
+                error({"Var-tuple declaration does not match type"}, stmt.name);
+                throw TypeException{"Var-tuple declaration does not match type"};
+            }
+
+            copy_types_into_vartuple(ident_tuple.tuple, dynamic_cast<TupleType &>(*param.second));
+            add_vartuple_to_stack(ident_tuple.tuple, i);
+            i += vartuple_size(ident_tuple.tuple);
+        } else {
+            values.push_back(
+                {std::get<Token>(param.first).lexeme, param.second.get(), scope_depth + 1, param_class, i++});
+        }
     }
 
     if (auto *body = dynamic_cast<BlockStmt *>(stmt.body.get());
@@ -1437,10 +1454,10 @@ void TypeResolver::copy_types_into_vartuple(IdentifierTuple::TupleType &tuple, T
     }
 }
 
-void TypeResolver::add_vartuple_to_stack(IdentifierTuple::TupleType &tuple) {
+void TypeResolver::add_vartuple_to_stack(IdentifierTuple::TupleType &tuple, std::size_t stack_slot) {
     for (auto &elem : tuple) {
         if (elem.index() == IdentifierTuple::IDENT_TUPLE) {
-            add_vartuple_to_stack(std::get<IdentifierTuple>(elem).tuple);
+            add_vartuple_to_stack(std::get<IdentifierTuple>(elem).tuple, stack_slot);
         } else {
             auto &decl = std::get<IdentifierTuple::DeclarationDetails>(elem);
             if (not in_class && std::any_of(values.crbegin(), values.crend(), [this, &decl](const Value &value) {
@@ -1449,8 +1466,8 @@ void TypeResolver::add_vartuple_to_stack(IdentifierTuple::TupleType &tuple) {
                 error({"A variable with the same name has already been declared in this scope"}, std::get<Token>(decl));
             } else {
                 // TODO: fix use of `nullptr` here
-                values.push_back({std::get<Token>(decl).lexeme, std::get<TypeNode>(decl).get(), scope_depth, nullptr,
-                    (values.empty() ? 0 : values.back().stack_slot + 1)});
+                values.push_back(
+                    {std::get<Token>(decl).lexeme, std::get<TypeNode>(decl).get(), scope_depth, nullptr, stack_slot++});
             }
         }
     }
@@ -1500,7 +1517,7 @@ StmtVisitorType TypeResolver::visit(VarTupleStmt &stmt) {
         }
 
         if (not in_class || in_function) {
-            add_vartuple_to_stack(stmt.names.tuple);
+            add_vartuple_to_stack(stmt.names.tuple, (values.empty() ? 0 : values.back().stack_slot + 1));
         }
     } else if (stmt.type != nullptr) {
         replace_if_typeof(stmt.type);
@@ -1516,7 +1533,7 @@ StmtVisitorType TypeResolver::visit(VarTupleStmt &stmt) {
         copy_types_into_vartuple(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type));
 
         if (not in_class || in_function) {
-            add_vartuple_to_stack(stmt.names.tuple);
+            add_vartuple_to_stack(stmt.names.tuple, (values.empty() ? 0 : values.back().stack_slot + 1));
         }
     } else {
         error({"Cannot have var-tuple without both type and initializer"}, stmt.keyword);

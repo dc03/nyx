@@ -57,7 +57,7 @@ class TypeResolver final : Visitor {
 
     bool match_ident_tuple_with_type(IdentifierTuple::TupleType &tuple, TupleType &type);
     void copy_types_into_vartuple(IdentifierTuple::TupleType &tuple, TupleType &type);
-    void add_vartuple_to_stack(IdentifierTuple::TupleType &tuple);
+    void add_vartuple_to_stack(IdentifierTuple::TupleType &tuple, std::size_t stack_slot);
 
     void remove_all_const(TypeNode &node);
     void remove_top_level_const(TypeNode &node);
