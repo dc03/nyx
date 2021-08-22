@@ -66,3 +66,15 @@ BaseTypeVisitorType copy_type(BaseType *node) {
     }
     unreachable();
 }
+
+std::size_t vartuple_size(IdentifierTuple::TupleType &tuple) {
+    std::size_t len = 0;
+    for (auto &elem : tuple) {
+        if (elem.index() == IdentifierTuple::IDENT_TUPLE) {
+            len += vartuple_size(std::get<IdentifierTuple>(elem).tuple);
+        } else {
+            len += 1;
+        }
+    }
+    return len;
+}

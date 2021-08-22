@@ -677,10 +677,21 @@ struct ExpressionStmt final : public Stmt {
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
+struct IdentifierTuple {
+    using DeclarationDetails = std::tuple<Token, NumericConversionType, RequiresCopy, TypeNode>;
+    using TupleType = std::vector<std::variant<IdentifierTuple, DeclarationDetails>>;
+    enum Contained { IDENT_TUPLE = 0, DECL_DETAILS = 1 };
+
+    TupleType tuple;
+};
+
 struct FunctionStmt final : public Stmt {
+    using ParameterType = std::pair<std::variant<IdentifierTuple, Token>, TypeNode>;
+    enum Contained { IDENT_TUPLE = 0, TOKEN = 1 };
+
     Token name{};
     TypeNode return_type{};
-    std::vector<std::pair<Token, TypeNode>> params{};
+    std::vector<ParameterType> params{};
     StmtNode body{};
     std::vector<ReturnStmt *> return_stmts{};
     std::size_t scope_depth{};
@@ -690,7 +701,7 @@ struct FunctionStmt final : public Stmt {
     NodeType type_tag() override final { return NodeType::FunctionStmt; }
 
     FunctionStmt() = default;
-    FunctionStmt(Token name, TypeNode return_type, std::vector<std::pair<Token, TypeNode>> params, StmtNode body,
+    FunctionStmt(Token name, TypeNode return_type, std::vector<ParameterType> params, StmtNode body,
         std::vector<ReturnStmt *> return_stmts, std::size_t scope_depth)
         : name{std::move(name)},
           return_type{std::move(return_type)},
@@ -794,14 +805,6 @@ struct VarStmt final : public Stmt {
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
-struct IdentifierTuple {
-    using DeclarationDetails = std::tuple<Token, NumericConversionType, RequiresCopy, TypeNode>;
-    using TupleType = std::vector<std::variant<IdentifierTuple, DeclarationDetails>>;
-    enum Contained { IDENT_TUPLE = 0, DECL_DETAILS = 1 };
-
-    TupleType tuple;
-};
-
 struct VarTupleStmt final : public Stmt {
     friend struct IdentifierTuple;
 
@@ -854,4 +857,6 @@ std::string stringify(BaseType *node);
 // Helper function to copy a given type node (list size expressions are not copied however)
 BaseTypeVisitorType copy_type(BaseType *node);
 
+// Helper function to get the size of a given vartuple
+std::size_t vartuple_size(IdentifierTuple::TupleType &tuple);
 #endif

@@ -378,11 +378,21 @@ if __name__ == '__main__':
                           'expr{std::move(expr)}',
                           'ExprNode expr')
 
+        file.write('struct IdentifierTuple {\n')
+        tab(file, 1).write('using DeclarationDetails = std::tuple<Token, NumericConversionType, RequiresCopy, '
+                           'TypeNode>;\n')
+        tab(file, 1).write('using TupleType = std::vector<std::variant<IdentifierTuple, DeclarationDetails>>;\n')
+        tab(file, 1).write('enum Contained { IDENT_TUPLE = 0, DECL_DETAILS = 1 };\n\n')
+        tab(file, 1).write('TupleType tuple;\n')
+        file.write('};\n\n')
+
         declare_stmt_type('Function',
                           'name{std::move(name)}, return_type{std::move(return_type)}, params{std::move(params)}, '
                           'body{std::move(body)}, return_stmts{std::move(return_stmts)}, scope_depth{scope_depth}',
-                          'Token name, TypeNode return_type, std::vector<std::pair<Token,TypeNode>> params, '
-                          'StmtNode body, std::vector<ReturnStmt*> return_stmts, std::size_t scope_depth')
+                          'Token name, TypeNode return_type, std::vector<ParameterType> params, '
+                          'StmtNode body, std::vector<ReturnStmt*> return_stmts, std::size_t scope_depth',
+                          ['using ParameterType = std::pair<std::variant<IdentifierTuple, Token>, TypeNode>',
+                           'enum Contained { IDENT_TUPLE = 0, TOKEN = 1 }'])
 
         declare_stmt_type('If',
                           'keyword{std::move(keyword)}, condition{std::move(condition)}, thenBranch{std::move('
@@ -409,14 +419,6 @@ if __name__ == '__main__':
                           'Token keyword, Token name, TypeNode type, ExprNode initializer, NumericConversionType '
                           'conversion_type, RequiresCopy requires_copy')
 
-        file.write('struct IdentifierTuple {\n')
-        tab(file, 1).write('using DeclarationDetails = std::tuple<Token, NumericConversionType, RequiresCopy, '
-                           'TypeNode>;\n')
-        tab(file, 1).write('using TupleType = std::vector<std::variant<IdentifierTuple, DeclarationDetails>>;\n')
-        tab(file, 1).write('enum Contained { IDENT_TUPLE = 0, DECL_DETAILS = 1 };\n\n')
-        tab(file, 1).write('TupleType tuple;\n')
-        file.write('};\n\n')
-
         declare_stmt_type('VarTuple',
                           'names{std::move(names)}, type{std::move(type)}, initializer{std::move(initializer)},'
                           'token{std::move(token)}, keyword{std::move(keyword)}',
@@ -434,5 +436,7 @@ if __name__ == '__main__':
         file.write('std::string stringify(BaseType *node);\n\n')
         file.write('// Helper function to copy a given type node (list size expressions are not copied however)\n')
         file.write('BaseTypeVisitorType copy_type(BaseType *node);\n\n')
+        file.write('// Helper function to get the size of a given vartuple\n')
+        file.write('std::size_t vartuple_size(IdentifierTuple::TupleType &tuple);')
 
         end_file(file)

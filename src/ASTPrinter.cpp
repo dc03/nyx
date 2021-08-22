@@ -426,8 +426,12 @@ StmtVisitorType ASTPrinter::visit(FunctionStmt &stmt) {
         print_tabs(current_depth);
         std::cout << "Param:(" << i + 1 << ")\n";
         current_depth++;
-        print_tabs(current_depth);
-        print_token(stmt.params[i].first) << '\n';
+        if (stmt.params[i].first.index() == FunctionStmt::IDENT_TUPLE) {
+            print_ident_tuple(std::get<IdentifierTuple>(stmt.params[i].first));
+        } else {
+            print_tabs(current_depth);
+            print_token(std::get<Token>(stmt.params[i].first)) << '\n';
+        }
         print(stmt.params[i].second.get());
         current_depth--;
     }
