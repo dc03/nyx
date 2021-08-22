@@ -487,10 +487,7 @@ ExprVisitorType Generator::visit(ListExpr &expr) {
     current_chunk->emit_constant(
         Value{dynamic_cast<LiteralExpr *>(expr.type->size.get())->value.to_int()}, expr.bracket.line);
     current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.bracket.line);
-    std::size_t stack_slot = 0;
-    if (not scopes.empty()) {
-        stack_slot = scopes.top().size();
-    }
+
     std::size_t i = 0;
     for (ListExpr::ElementType &element : expr.elements) {
         auto &element_expr = std::get<ExprNode>(element);

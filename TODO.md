@@ -40,7 +40,7 @@ calling `make_new_type` with the values for `is_const` and `is_ref`
 - [ ] Disallow `ListExpr`s being used directly in `==` and `!=` expressions
 - [ ] Fix the order of type checking in `TypeResolver`, check functions before classes,
 before everything else
-- [ ] Fix dumb unused variable warning
+- [x] Fix dumb unused variable warning
 - [ ] Move some `TypeResolver` functions into `AST.hpp`
 - [ ] Reorder project, moving header files into `include/`, separating interpreter into
 `Frontend/` and `Backend/` directories
