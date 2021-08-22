@@ -774,14 +774,21 @@ StmtNode Parser::function_declaration() {
     {
         ScopedIntegerManager manager{scope_depth};
 
-        std::vector<std::pair<Token, TypeNode>> params{};
+        std::vector<FunctionStmt::ParameterType> params{};
         if (peek().type != TokenType::RIGHT_PAREN) {
             do {
-                advance();
-                Token parameter_name = previous();
-                consume("Expected ':' after function parameter name", TokenType::COLON);
-                TypeNode parameter_type = type();
-                params.emplace_back(std::move(parameter_name), std::move(parameter_type));
+                if (match(TokenType::LEFT_BRACE)) {
+                    IdentifierTuple tuple = ident_tuple();
+                    consume("Expected ':' after var-tuple", TokenType::COLON);
+                    TypeNode parameter_type = type();
+                    params.emplace_back(std::move(tuple), std::move(parameter_type));
+                } else {
+                    advance();
+                    Token parameter_name = previous();
+                    consume("Expected ':' after function parameter name", TokenType::COLON);
+                    TypeNode parameter_type = type();
+                    params.emplace_back(std::move(parameter_name), std::move(parameter_type));
+                }
             } while (match(TokenType::COMMA));
         }
         consume("Expected ')' after function parameters", TokenType::RIGHT_PAREN);
