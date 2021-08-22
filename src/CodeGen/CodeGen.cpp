@@ -352,8 +352,15 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
     for (auto &arg : expr.args) {
         auto &value = std::get<ExprNode>(arg);
         if (not expr.is_native_call) {
-            if (auto &param = expr.function->resolved.func->params[i];
-                param.second->is_ref && not value->resolved.info->is_ref) {
+            auto &param = expr.function->resolved.func->params[i];
+            if (param.first.index() == FunctionStmt::IDENT_TUPLE) {
+                compile(value.get());
+                if (requires_copy(value, param.second)) {
+                    current_chunk->emit_instruction(Instruction::COPY_LIST, current_chunk->line_numbers.back().first);
+                }
+                compile_vartuple(
+                    std::get<IdentifierTuple>(param.first).tuple, dynamic_cast<TupleType &>(*param.second));
+            } else if (param.second->is_ref && not value->resolved.info->is_ref) {
                 if (value->type_tag() == NodeType::VariableExpr) {
                     if (dynamic_cast<VariableExpr *>(value.get())->type == IdentifierType::LOCAL) {
                         current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, value->resolved.token.line);
@@ -869,11 +876,21 @@ StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
 StmtVisitorType Generator::visit(FunctionStmt &stmt) {
     begin_scope();
     RuntimeFunction function{};
-    function.arity = stmt.params.size();
+    for (FunctionStmt::ParameterType &param : stmt.params) {
+        if (param.first.index() == FunctionStmt::IDENT_TUPLE) {
+            function.arity += vartuple_size(std::get<IdentifierTuple>(param.first).tuple);
+        } else {
+            function.arity += 1;
+        }
+    }
     function.name = stmt.name.lexeme;
 
-    for (auto begin = stmt.params.cbegin(); begin != stmt.params.cend(); begin++) {
-        scopes.top().push_back(begin->second.get());
+    for (auto &param : stmt.params) {
+        if (param.first.index() == FunctionStmt::IDENT_TUPLE) {
+            add_vartuple_to_scope(std::get<IdentifierTuple>(param.first).tuple);
+        } else {
+            scopes.top().push_back(param.second.get());
+        }
     }
 
     current_chunk = &function.code;
@@ -1118,7 +1135,7 @@ std::size_t Generator::compile_vartuple(IdentifierTuple::TupleType &tuple, Tuple
         emit_three_bytes_of(count + 1);
 
         current_chunk->emit_constant(Value{static_cast<int>(i)}, current_chunk->line_numbers.back().first);
-        if (type.types[i]->is_ref) {
+        if (type.types[i]->is_ref || type.is_ref) {
             current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, current_chunk->line_numbers.back().first);
         } else {
             current_chunk->emit_instruction(Instruction::MOVE_INDEX, current_chunk->line_numbers.back().first);
