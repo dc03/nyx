@@ -367,6 +367,88 @@ void TypeResolver::add_top_level_ref(TypeNode &node) {
 
 #undef TYPE_METHOD_ALL
 
+bool is_builtin_function(VariableExpr *expr) {
+    return std::any_of(native_functions.begin(), native_functions.end(),
+                       [&expr](const NativeFn &native) { return native.name == expr->name.lexeme; });
+}
+
+ExprVisitorType TypeResolver::check_inbuilt(
+    VariableExpr *function, const Token &oper, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> &args) {
+    auto it = std::find_if(native_functions.begin(), native_functions.end(),
+                           [&function](const NativeFn &native) { return native.name == function->name.lexeme; });
+
+    if (args.size() != it->arity) {
+        std::string num_args = args.size() < it->arity ? "less" : "more";
+        error({"Cannot pass ", num_args, " than ", std::to_string(it->arity), " argument(s) to function '", it->name,
+               "'"},
+              oper);
+        note({"Trying to pass ", std::to_string(args.size()), " arguments"});
+        throw TypeException{"Arity error"};
+    }
+
+    for (std::size_t i = 0; i < it->arity; i++) {
+        ExprVisitorType arg = resolve(std::get<ExprNode>(args[i]).get());
+        if (not std::any_of(it->arguments[i].begin(), it->arguments[i].end(),
+                            [&arg](const Type &type) { return type == arg.info->primitive; })) {
+            error({"Cannot pass argument of type '", stringify(arg.info), "' as argument number ",
+                   std::to_string(i + 1), " to builtin function '", it->name, "'"},
+                  oper);
+            throw TypeException{"Builtin argument type error"};
+        }
+    }
+
+    return ExprVisitorType{make_new_type<PrimitiveType>(it->return_type, true, false), function->name};
+}
+
+bool TypeResolver::match_ident_tuple_with_type(IdentifierTuple::TupleType &tuple, TupleType &type) {
+    if (tuple.size() != type.types.size()) {
+        return false;
+    }
+
+    for (std::size_t i = 0; i < tuple.size(); i++) {
+        if (tuple[i].index() == IdentifierTuple::IDENT_TUPLE) {
+            if (type.types[i]->primitive != Type::TUPLE ||
+            not match_ident_tuple_with_type(
+                std::get<IdentifierTuple>(tuple[i]).tuple, dynamic_cast<TupleType &>(*type.types[i]))) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+void TypeResolver::copy_types_into_vartuple(IdentifierTuple::TupleType &tuple, TupleType &type) {
+    for (std::size_t i = 0; i < tuple.size(); i++) {
+        if (tuple[i].index() == IdentifierTuple::IDENT_TUPLE) {
+            copy_types_into_vartuple(
+                std::get<IdentifierTuple>(tuple[i]).tuple, dynamic_cast<TupleType &>(*type.types[i]));
+        } else {
+            auto &decl = std::get<IdentifierTuple::DeclarationDetails>(tuple[i]);
+            std::get<TypeNode>(decl) = TypeNode{copy_type(type.types[i].get())};
+        }
+    }
+}
+
+void TypeResolver::add_vartuple_to_stack(IdentifierTuple::TupleType &tuple, std::size_t stack_slot) {
+    for (auto &elem : tuple) {
+        if (elem.index() == IdentifierTuple::IDENT_TUPLE) {
+            add_vartuple_to_stack(std::get<IdentifierTuple>(elem).tuple, stack_slot);
+        } else {
+            auto &decl = std::get<IdentifierTuple::DeclarationDetails>(elem);
+            if (not in_class && std::any_of(values.crbegin(), values.crend(), [this, &decl](const Value &value) {
+                return value.scope_depth == scope_depth && value.lexeme == std::get<Token>(decl).lexeme;
+            })) {
+                error({"A variable with the same name has already been declared in this scope"}, std::get<Token>(decl));
+            } else {
+                // TODO: fix use of `nullptr` here
+                values.push_back(
+                    {std::get<Token>(decl).lexeme, std::get<TypeNode>(decl).get(), scope_depth, nullptr, stack_slot++});
+            }
+        }
+    }
+}
+
 template <typename T, typename... Args>
 bool one_of(T type, Args... args) {
     const std::array arr{args...};
@@ -542,39 +624,6 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             error({"Bug in parser with illegal token type of expression's operator"}, expr.resolved.token);
             throw TypeException{"Bug in parser with illegal token type of expression's operator"};
     }
-}
-
-bool is_builtin_function(VariableExpr *expr) {
-    return std::any_of(native_functions.begin(), native_functions.end(),
-        [&expr](const NativeFn &native) { return native.name == expr->name.lexeme; });
-}
-
-ExprVisitorType TypeResolver::check_inbuilt(
-    VariableExpr *function, const Token &oper, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> &args) {
-    auto it = std::find_if(native_functions.begin(), native_functions.end(),
-        [&function](const NativeFn &native) { return native.name == function->name.lexeme; });
-
-    if (args.size() != it->arity) {
-        std::string num_args = args.size() < it->arity ? "less" : "more";
-        error({"Cannot pass ", num_args, " than ", std::to_string(it->arity), " argument(s) to function '", it->name,
-                  "'"},
-            oper);
-        note({"Trying to pass ", std::to_string(args.size()), " arguments"});
-        throw TypeException{"Arity error"};
-    }
-
-    for (std::size_t i = 0; i < it->arity; i++) {
-        ExprVisitorType arg = resolve(std::get<ExprNode>(args[i]).get());
-        if (not std::any_of(it->arguments[i].begin(), it->arguments[i].end(),
-                [&arg](const Type &type) { return type == arg.info->primitive; })) {
-            error({"Cannot pass argument of type '", stringify(arg.info), "' as argument number ",
-                      std::to_string(i + 1), " to builtin function '", it->name, "'"},
-                oper);
-            throw TypeException{"Builtin argument type error"};
-        }
-    }
-
-    return ExprVisitorType{make_new_type<PrimitiveType>(it->return_type, true, false), function->name};
 }
 
 ExprVisitorType TypeResolver::visit(CallExpr &expr) {
@@ -1421,55 +1470,6 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
     } else {
         error({"Expected type for variable"}, stmt.name);
         // The variable is never created if there is an error creating it thus any references to it also break
-    }
-}
-
-bool TypeResolver::match_ident_tuple_with_type(IdentifierTuple::TupleType &tuple, TupleType &type) {
-    if (tuple.size() != type.types.size()) {
-        return false;
-    }
-
-    for (std::size_t i = 0; i < tuple.size(); i++) {
-        if (tuple[i].index() == IdentifierTuple::IDENT_TUPLE) {
-            if (type.types[i]->primitive != Type::TUPLE ||
-                not match_ident_tuple_with_type(
-                    std::get<IdentifierTuple>(tuple[i]).tuple, dynamic_cast<TupleType &>(*type.types[i]))) {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-void TypeResolver::copy_types_into_vartuple(IdentifierTuple::TupleType &tuple, TupleType &type) {
-    for (std::size_t i = 0; i < tuple.size(); i++) {
-        if (tuple[i].index() == IdentifierTuple::IDENT_TUPLE) {
-            copy_types_into_vartuple(
-                std::get<IdentifierTuple>(tuple[i]).tuple, dynamic_cast<TupleType &>(*type.types[i]));
-        } else {
-            auto &decl = std::get<IdentifierTuple::DeclarationDetails>(tuple[i]);
-            std::get<TypeNode>(decl) = TypeNode{copy_type(type.types[i].get())};
-        }
-    }
-}
-
-void TypeResolver::add_vartuple_to_stack(IdentifierTuple::TupleType &tuple, std::size_t stack_slot) {
-    for (auto &elem : tuple) {
-        if (elem.index() == IdentifierTuple::IDENT_TUPLE) {
-            add_vartuple_to_stack(std::get<IdentifierTuple>(elem).tuple, stack_slot);
-        } else {
-            auto &decl = std::get<IdentifierTuple::DeclarationDetails>(elem);
-            if (not in_class && std::any_of(values.crbegin(), values.crend(), [this, &decl](const Value &value) {
-                    return value.scope_depth == scope_depth && value.lexeme == std::get<Token>(decl).lexeme;
-                })) {
-                error({"A variable with the same name has already been declared in this scope"}, std::get<Token>(decl));
-            } else {
-                // TODO: fix use of `nullptr` here
-                values.push_back(
-                    {std::get<Token>(decl).lexeme, std::get<TypeNode>(decl).get(), scope_depth, nullptr, stack_slot++});
-            }
-        }
     }
 }
 

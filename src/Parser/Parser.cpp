@@ -238,6 +238,33 @@ void Parser::consume(std::string_view message, const Token &where, Args... args)
     }
 }
 
+void recursively_change_module_depth(std::pair<Module, std::size_t> &module, std::size_t value) {
+    module.second = value;
+    for (std::size_t imported : module.first.imported) {
+        recursively_change_module_depth(Parser::parsed_modules[imported], value + 1);
+    }
+}
+
+IdentifierTuple Parser::ident_tuple() {
+    IdentifierTuple::TupleType result{};
+    while (peek().type != TokenType::RIGHT_BRACE) {
+        consume("Expected either identifier or '{' in identifier tuple", TokenType::IDENTIFIER, TokenType::LEFT_BRACE);
+        if (previous().type == TokenType::IDENTIFIER) {
+            result.emplace_back(
+                IdentifierTuple::DeclarationDetails{previous(), NumericConversionType::NONE, false, nullptr});
+        } else {
+            result.emplace_back(ident_tuple());
+        }
+        if (peek().type != TokenType::RIGHT_BRACE && peek().type != TokenType::COMMA) {
+            consume("Expected '}' after identifier tuple", TokenType::RIGHT_BRACE); // This consume will always fail
+        } else {
+            match(TokenType::COMMA);
+        }
+    }
+    consume("Expected '}' after identifier tuple", TokenType::RIGHT_BRACE);
+    return IdentifierTuple{std::move(result)};
+}
+
 std::vector<StmtNode> Parser::program() {
     std::vector<StmtNode> statements;
 
@@ -819,13 +846,6 @@ StmtNode Parser::function_declaration() {
     return StmtNode{function_definition};
 }
 
-void recursively_change_module_depth(std::pair<Module, std::size_t> &module, std::size_t value) {
-    module.second = value;
-    for (std::size_t imported : module.first.imported) {
-        recursively_change_module_depth(Parser::parsed_modules[imported], value + 1);
-    }
-}
-
 StmtNode Parser::import_statement() {
     Token keyword = previous();
     consume("Expected path to module after 'import' keyword", TokenType::STRING_VALUE);
@@ -909,26 +929,6 @@ StmtNode Parser::variable_declaration() {
     auto *variable = allocate_node(VarStmt, std::move(keyword), std::move(name), std::move(var_type),
         std::move(initializer), NumericConversionType::NONE, false);
     return StmtNode{variable};
-}
-
-IdentifierTuple Parser::ident_tuple() {
-    IdentifierTuple::TupleType result{};
-    while (peek().type != TokenType::RIGHT_BRACE) {
-        consume("Expected either identifier or '{' in identifier tuple", TokenType::IDENTIFIER, TokenType::LEFT_BRACE);
-        if (previous().type == TokenType::IDENTIFIER) {
-            result.emplace_back(
-                IdentifierTuple::DeclarationDetails{previous(), NumericConversionType::NONE, false, nullptr});
-        } else {
-            result.emplace_back(ident_tuple());
-        }
-        if (peek().type != TokenType::RIGHT_BRACE && peek().type != TokenType::COMMA) {
-            consume("Expected '}' after identifier tuple", TokenType::RIGHT_BRACE); // This consume will always fail
-        } else {
-            match(TokenType::COMMA);
-        }
-    }
-    consume("Expected '}' after identifier tuple", TokenType::RIGHT_BRACE);
-    return IdentifierTuple{std::move(result)};
 }
 
 StmtNode Parser::vartuple_declaration() {

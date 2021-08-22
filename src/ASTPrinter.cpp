@@ -103,6 +103,39 @@ std::ostream &print_token(const Token &token) {
                      << token.end;
 }
 
+void ASTPrinter::print_variable(Token &name, NumericConversionType conv, RequiresCopy copy, TypeNode &type) {
+    print_tabs(current_depth);
+    print_token(name) << "::Conv:";
+    print_conversion_type(conv) << "::Copy:" << std::boolalpha << copy << std::noboolalpha << '\n';
+    current_depth++;
+    if (type != nullptr) {
+        print_tabs(current_depth);
+        std::cout << "^^^ type vvv\n";
+        print(type.get());
+    }
+    current_depth--;
+}
+
+void ASTPrinter::print_ident_tuple(IdentifierTuple &tuple) {
+    current_depth++;
+    print_tabs(current_depth);
+    std::cout << "Begin IdentifierTuple\n";
+    for (auto &elem : tuple.tuple) {
+        if (elem.index() == IdentifierTuple::IDENT_TUPLE) {
+            print_ident_tuple(std::get<IdentifierTuple>(elem));
+        } else {
+            current_depth++;
+            auto &var = std::get<IdentifierTuple::DeclarationDetails>(elem);
+            print_variable(std::get<Token>(var), std::get<NumericConversionType>(var), std::get<RequiresCopy>(var),
+                           std::get<TypeNode>(var));
+            current_depth--;
+        }
+    }
+    print_tabs(current_depth);
+    std::cout << "End IdentifierTuple\n";
+    current_depth--;
+}
+
 void ASTPrinter::print_stmt(StmtNode &stmt) {
     print(stmt.get());
 }
@@ -494,39 +527,6 @@ StmtVisitorType ASTPrinter::visit(TypeStmt &stmt) {
     current_depth++;
     print_tabs(current_depth);
     print(stmt.type.get());
-    current_depth--;
-}
-
-void ASTPrinter::print_variable(Token &name, NumericConversionType conv, RequiresCopy copy, TypeNode &type) {
-    print_tabs(current_depth);
-    print_token(name) << "::Conv:";
-    print_conversion_type(conv) << "::Copy:" << std::boolalpha << copy << std::noboolalpha << '\n';
-    current_depth++;
-    if (type != nullptr) {
-        print_tabs(current_depth);
-        std::cout << "^^^ type vvv\n";
-        print(type.get());
-    }
-    current_depth--;
-}
-
-void ASTPrinter::print_ident_tuple(IdentifierTuple &tuple) {
-    current_depth++;
-    print_tabs(current_depth);
-    std::cout << "Begin IdentifierTuple\n";
-    for (auto &elem : tuple.tuple) {
-        if (elem.index() == IdentifierTuple::IDENT_TUPLE) {
-            print_ident_tuple(std::get<IdentifierTuple>(elem));
-        } else {
-            current_depth++;
-            auto &var = std::get<IdentifierTuple::DeclarationDetails>(elem);
-            print_variable(std::get<Token>(var), std::get<NumericConversionType>(var), std::get<RequiresCopy>(var),
-                std::get<TypeNode>(var));
-            current_depth--;
-        }
-    }
-    print_tabs(current_depth);
-    std::cout << "End IdentifierTuple\n";
     current_depth--;
 }
 

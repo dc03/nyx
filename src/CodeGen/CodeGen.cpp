@@ -77,6 +77,70 @@ bool Generator::requires_copy(ExprNode &what, TypeNode &type) {
     return not type->is_ref && (what->resolved.is_lvalue || what->resolved.info->is_ref);
 }
 
+void Generator::add_vartuple_to_scope(IdentifierTuple::TupleType &tuple) {
+    for (auto &elem : tuple) {
+        if (elem.index() == IdentifierTuple::IDENT_TUPLE) {
+            add_vartuple_to_scope(std::get<IdentifierTuple>(elem).tuple);
+        } else {
+            auto &decl = std::get<IdentifierTuple::DeclarationDetails>(elem);
+            scopes.top().push_back(std::get<TypeNode>(decl).get());
+        }
+    }
+}
+
+std::size_t Generator::compile_vartuple(IdentifierTuple::TupleType &tuple, TupleType &type) {
+    std::size_t count = 0;
+    for (std::size_t i = 0; i < tuple.size(); i++) {
+        current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, current_chunk->line_numbers.back().first);
+        emit_three_bytes_of(count + 1);
+
+        current_chunk->emit_constant(Value{static_cast<int>(i)}, current_chunk->line_numbers.back().first);
+        if (type.types[i]->is_ref || type.is_ref) {
+            current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, current_chunk->line_numbers.back().first);
+        } else {
+            current_chunk->emit_instruction(Instruction::MOVE_INDEX, current_chunk->line_numbers.back().first);
+        }
+
+        if (tuple[i].index() == IdentifierTuple::IDENT_TUPLE) {
+            count +=
+                compile_vartuple(std::get<IdentifierTuple>(tuple[i]).tuple, dynamic_cast<TupleType &>(*type.types[i]));
+        } else {
+            count += 1;
+        }
+    }
+
+    for (std::size_t i = 0; i < count; i++) {
+        current_chunk->emit_instruction(Instruction::SWAP, current_chunk->line_numbers.back().first);
+        emit_three_bytes_of(count - i);
+    }
+
+    current_chunk->emit_instruction(Instruction::POP_LIST, current_chunk->line_numbers.back().first);
+    return count;
+}
+
+std::size_t Generator::recursively_compile_size(ListType *list) {
+    auto compile_size = [this, &list] {
+      if (list->size != nullptr) {
+          compile(list->size.get());
+          if (list->size->resolved.info->is_ref) {
+              current_chunk->emit_instruction(Instruction::DEREF, list->size->resolved.token.line);
+          }
+      } else {
+          current_chunk->emit_constant(Value{1}, 0);
+      }
+    };
+
+    if (list->contained->primitive == Type::LIST) {
+        std::size_t inner = recursively_compile_size(dynamic_cast<ListType *>(list->contained.get()));
+        compile_size();
+        return inner + 1;
+    } else {
+        compile(list);
+        compile_size();
+        return 1;
+    }
+}
+
 ExprVisitorType Generator::compile(Expr *expr) {
     return expr->accept(*this);
 }
@@ -1043,29 +1107,6 @@ StmtVisitorType Generator::visit(SwitchStmt &stmt) {
 
 StmtVisitorType Generator::visit(TypeStmt &stmt) {}
 
-std::size_t Generator::recursively_compile_size(ListType *list) {
-    auto compile_size = [this, &list] {
-        if (list->size != nullptr) {
-            compile(list->size.get());
-            if (list->size->resolved.info->is_ref) {
-                current_chunk->emit_instruction(Instruction::DEREF, list->size->resolved.token.line);
-            }
-        } else {
-            current_chunk->emit_constant(Value{1}, 0);
-        }
-    };
-
-    if (list->contained->primitive == Type::LIST) {
-        std::size_t inner = recursively_compile_size(dynamic_cast<ListType *>(list->contained.get()));
-        compile_size();
-        return inner + 1;
-    } else {
-        compile(list);
-        compile_size();
-        return 1;
-    }
-}
-
 StmtVisitorType Generator::visit(VarStmt &stmt) {
     if (stmt.type->primitive == Type::LIST && stmt.initializer == nullptr) {
         auto *list = dynamic_cast<ListType *>(stmt.type.get());
@@ -1112,47 +1153,6 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
         current_chunk->emit_instruction(Instruction::PUSH_NULL, stmt.name.line);
     }
     scopes.top().push_back(stmt.type.get());
-}
-
-void Generator::add_vartuple_to_scope(IdentifierTuple::TupleType &tuple) {
-    for (auto &elem : tuple) {
-        if (elem.index() == IdentifierTuple::IDENT_TUPLE) {
-            add_vartuple_to_scope(std::get<IdentifierTuple>(elem).tuple);
-        } else {
-            auto &decl = std::get<IdentifierTuple::DeclarationDetails>(elem);
-            scopes.top().push_back(std::get<TypeNode>(decl).get());
-        }
-    }
-}
-
-std::size_t Generator::compile_vartuple(IdentifierTuple::TupleType &tuple, TupleType &type) {
-    std::size_t count = 0;
-    for (std::size_t i = 0; i < tuple.size(); i++) {
-        current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, current_chunk->line_numbers.back().first);
-        emit_three_bytes_of(count + 1);
-
-        current_chunk->emit_constant(Value{static_cast<int>(i)}, current_chunk->line_numbers.back().first);
-        if (type.types[i]->is_ref || type.is_ref) {
-            current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, current_chunk->line_numbers.back().first);
-        } else {
-            current_chunk->emit_instruction(Instruction::MOVE_INDEX, current_chunk->line_numbers.back().first);
-        }
-
-        if (tuple[i].index() == IdentifierTuple::IDENT_TUPLE) {
-            count +=
-                compile_vartuple(std::get<IdentifierTuple>(tuple[i]).tuple, dynamic_cast<TupleType &>(*type.types[i]));
-        } else {
-            count += 1;
-        }
-    }
-
-    for (std::size_t i = 0; i < count; i++) {
-        current_chunk->emit_instruction(Instruction::SWAP, current_chunk->line_numbers.back().first);
-        emit_three_bytes_of(count - i);
-    }
-
-    current_chunk->emit_instruction(Instruction::POP_LIST, current_chunk->line_numbers.back().first);
-    return count;
 }
 
 StmtVisitorType Generator::visit(VarTupleStmt &stmt) {
