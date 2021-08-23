@@ -6,7 +6,7 @@
 #ifndef TYPE_RESOLVER_HPP
 #define TYPE_RESOLVER_HPP
 
-#include "../../VirtualMachine/Module.hpp"
+#include "Backend/VirtualMachine/Module.hpp"
 #include "AST/AST.hpp"
 
 #include <string_view>

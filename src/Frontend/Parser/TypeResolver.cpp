@@ -2,7 +2,7 @@
 /* See LICENSE at project root for license details */
 #include "Frontend/Parser/TypeResolver.hpp"
 
-#include "../../VirtualMachine/Natives.hpp"
+#include "Backend/VirtualMachine/Natives.hpp"
 #include "Common.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
 #include "Frontend/Parser/Parser.hpp"

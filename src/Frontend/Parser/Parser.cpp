@@ -2,8 +2,8 @@
 /* See LICENSE at project root for license details */
 #include "Frontend/Parser/Parser.hpp"
 
-#include "../../Scanner/Scanner.hpp"
-#include "../../VirtualMachine/Value.hpp"
+#include "Frontend/Scanner/Scanner.hpp"
+#include "Backend/VirtualMachine/Value.hpp"
 #include "Common.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
 #include "Frontend/Parser/TypeResolver.hpp"

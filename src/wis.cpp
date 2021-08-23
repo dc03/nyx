@@ -1,13 +1,13 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 #include "AST/ASTPrinter.hpp"
-#include "../CodeGen/CodeGen.hpp"
+#include "Backend/CodeGen/CodeGen.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
-#include "Parser/Parser.hpp"
-#include "Parser/TypeResolver.hpp"
-#include "Scanner/Scanner.hpp"
-#include "VirtualMachine/Disassembler.hpp"
-#include "VirtualMachine/VirtualMachine.hpp"
+#include "Frontend/Parser/Parser.hpp"
+#include "Frontend/Parser/TypeResolver.hpp"
+#include "Frontend/Scanner/Scanner.hpp"
+#include "Backend/VirtualMachine/Disassembler.hpp"
+#include "Backend/VirtualMachine/VirtualMachine.hpp"
 
 #include <algorithm>
 #include <cxxopts.hpp>
