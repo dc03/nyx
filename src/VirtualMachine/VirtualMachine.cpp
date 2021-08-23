@@ -419,10 +419,9 @@ ExecutionState VirtualMachine::step() {
         }
         /* List instructions */
         case is Instruction::MAKE_LIST: {
-            std::size_t size = stack[--stack_top].w_int;
             push(Value{make_new_list()});
-            if (size != 0) {
-                stack[stack_top - 1].w_list->resize(size);
+            if (operand != 0) {
+                stack[stack_top - 1].w_list->resize(operand);
             }
             break;
         }

@@ -102,6 +102,9 @@ void instruction(Chunk &chunk, std::string_view name, std::size_t where) {
     } else if (name == "SWAP") {
         std::cout << "\t\t| swap " << next_bytes << " and " << next_bytes + 1 << " from top\n";
         print_trailing_bytes();
+    } else if (name == "MAKE_LIST") {
+        std::cout << "\t\t| size " << next_bytes << "\n";
+        print_trailing_bytes();
     } else {
         std::cout << '\n';
     }

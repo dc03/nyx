@@ -315,8 +315,8 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
 
         case TokenType::DOT_DOT:
         case TokenType::DOT_DOT_EQUAL: {
-            current_chunk->emit_constant(Value{0}, expr.resolved.token.line);
             current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.resolved.token.line);
+            emit_three_bytes_of(0);
             compile_left();
             compile_right();
             /* This is effectively an unrolled while loop of the kind:
@@ -435,18 +435,6 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
         if (std::get<RequiresCopy>(arg)) {
             current_chunk->emit_instruction(Instruction::COPY_LIST, value->resolved.token.line);
         }
-
-        //        // This ALLOC_AT_LEAST is emitted after the COPY since the list that is copied needs to be resized and
-        //        not the
-        //        // list that is being copied.
-        //        if (not expr.is_native_call && expr.function->resolved.func->params[i].second->primitive ==
-        //        Type::LIST) {
-        //            auto *list = dynamic_cast<ListType *>(expr.function->resolved.func->params[i].second.get());
-        //            if (list->size != nullptr) {
-        //                compile(list->size.get());
-        //                current_chunk->emit_instruction(Instruction::MAKE_LIST, list->size->resolved.token.line);
-        //            }
-        //        }
         i++;
     }
     if (expr.is_native_call) {
@@ -525,9 +513,8 @@ ExprVisitorType Generator::visit(IndexExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(ListExpr &expr) {
-    current_chunk->emit_constant(
-        Value{static_cast<Value::IntType>(expr.elements.size())}, expr.bracket.line);
     current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.bracket.line);
+    emit_three_bytes_of(expr.elements.size());
 
     std::size_t i = 0;
     for (ListExpr::ElementType &element : expr.elements) {
@@ -763,8 +750,9 @@ ExprVisitorType Generator::visit(ThisExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(TupleExpr &expr) {
-    current_chunk->emit_constant(Value{static_cast<Value::IntType>(expr.elements.size())}, expr.resolved.token.line);
     current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.resolved.token.line);
+    emit_three_bytes_of(expr.elements.size());
+
     std::size_t i = 0;
     for (auto &element : expr.elements) {
         auto &elem_expr = std::get<ExprNode>(element);
