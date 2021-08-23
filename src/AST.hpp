@@ -221,15 +221,14 @@ struct UserDefinedType final : public BaseType {
 
 struct ListType final : public BaseType {
     TypeNode contained{};
-    ExprNode size{};
 
     std::string_view string_tag() override final { return "ListType"; }
 
     NodeType type_tag() override final { return NodeType::ListType; }
 
     ListType() = default;
-    ListType(Type primitive, bool is_const, bool is_ref, TypeNode contained, ExprNode size)
-        : BaseType{primitive, is_const, is_ref}, contained{std::move(contained)}, size{std::move(size)} {}
+    explicit ListType(Type primitive, bool is_const, bool is_ref, TypeNode contained)
+        : BaseType{primitive, is_const, is_ref}, contained{std::move(contained)} {}
 
     BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

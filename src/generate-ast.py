@@ -220,10 +220,9 @@ if __name__ == '__main__':
                           'Type primitive, bool is_const, bool is_ref, Token name')
 
         declare_type_type('List',
-                          'BaseType{primitive, is_const, is_ref}, contained{std::move(contained)}, size{std::move('
-                          'size)}',
-                          'TypeNode contained, ExprNode size',
-                          'Type primitive, bool is_const, bool is_ref, TypeNode contained, ExprNode size')
+                          'BaseType{primitive, is_const, is_ref}, contained{std::move(contained)}',
+                          'TypeNode contained',
+                          'Type primitive, bool is_const, bool is_ref, TypeNode contained')
 
         declare_type_type('Tuple',
                           'BaseType{primitive, is_const, is_ref}, types{std::move(types)}',

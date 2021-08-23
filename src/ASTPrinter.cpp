@@ -127,7 +127,7 @@ void ASTPrinter::print_ident_tuple(IdentifierTuple &tuple) {
             current_depth++;
             auto &var = std::get<IdentifierTuple::DeclarationDetails>(elem);
             print_variable(std::get<Token>(var), std::get<NumericConversionType>(var), std::get<RequiresCopy>(var),
-                           std::get<TypeNode>(var));
+                std::get<TypeNode>(var));
             current_depth--;
         }
     }
@@ -593,11 +593,6 @@ BaseTypeVisitorType ASTPrinter::visit(ListType &type) {
     print_tabs(current_depth);
     std::cout << "Contained:\n";
     print(type.contained.get());
-    if (type.size != nullptr) {
-        print_tabs(current_depth);
-        std::cout << "^^^ size vvv\n";
-        print(type.size.get());
-    }
     current_depth--;
     return {};
 }

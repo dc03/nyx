@@ -55,7 +55,7 @@ BaseTypeVisitorType copy_type(BaseType *node) {
     } else if (node->type_tag() == NodeType::ListType) {
         auto *type = dynamic_cast<ListType *>(node);
         return allocate_node(ListType, type->primitive, type->is_const, type->is_ref,
-            TypeNode{copy_type(type->contained.get())}, nullptr);
+            TypeNode{copy_type(type->contained.get())});
     } else if (node->type_tag() == NodeType::TupleType) {
         auto *tuple = dynamic_cast<TupleType *>(node);
         std::vector<TypeNode> types{};
