@@ -369,19 +369,19 @@ void TypeResolver::add_top_level_ref(TypeNode &node) {
 
 bool is_builtin_function(VariableExpr *expr) {
     return std::any_of(native_functions.begin(), native_functions.end(),
-                       [&expr](const NativeFn &native) { return native.name == expr->name.lexeme; });
+        [&expr](const NativeFn &native) { return native.name == expr->name.lexeme; });
 }
 
 ExprVisitorType TypeResolver::check_inbuilt(
     VariableExpr *function, const Token &oper, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> &args) {
     auto it = std::find_if(native_functions.begin(), native_functions.end(),
-                           [&function](const NativeFn &native) { return native.name == function->name.lexeme; });
+        [&function](const NativeFn &native) { return native.name == function->name.lexeme; });
 
     if (args.size() != it->arity) {
         std::string num_args = args.size() < it->arity ? "less" : "more";
         error({"Cannot pass ", num_args, " than ", std::to_string(it->arity), " argument(s) to function '", it->name,
-               "'"},
-              oper);
+                  "'"},
+            oper);
         note({"Trying to pass ", std::to_string(args.size()), " arguments"});
         throw TypeException{"Arity error"};
     }
@@ -389,10 +389,10 @@ ExprVisitorType TypeResolver::check_inbuilt(
     for (std::size_t i = 0; i < it->arity; i++) {
         ExprVisitorType arg = resolve(std::get<ExprNode>(args[i]).get());
         if (not std::any_of(it->arguments[i].begin(), it->arguments[i].end(),
-                            [&arg](const Type &type) { return type == arg.info->primitive; })) {
+                [&arg](const Type &type) { return type == arg.info->primitive; })) {
             error({"Cannot pass argument of type '", stringify(arg.info), "' as argument number ",
-                   std::to_string(i + 1), " to builtin function '", it->name, "'"},
-                  oper);
+                      std::to_string(i + 1), " to builtin function '", it->name, "'"},
+                oper);
             throw TypeException{"Builtin argument type error"};
         }
     }
@@ -408,8 +408,8 @@ bool TypeResolver::match_ident_tuple_with_type(IdentifierTuple::TupleType &tuple
     for (std::size_t i = 0; i < tuple.size(); i++) {
         if (tuple[i].index() == IdentifierTuple::IDENT_TUPLE) {
             if (type.types[i]->primitive != Type::TUPLE ||
-            not match_ident_tuple_with_type(
-                std::get<IdentifierTuple>(tuple[i]).tuple, dynamic_cast<TupleType &>(*type.types[i]))) {
+                not match_ident_tuple_with_type(
+                    std::get<IdentifierTuple>(tuple[i]).tuple, dynamic_cast<TupleType &>(*type.types[i]))) {
                 return false;
             }
         }
@@ -437,8 +437,8 @@ void TypeResolver::add_vartuple_to_stack(IdentifierTuple::TupleType &tuple, std:
         } else {
             auto &decl = std::get<IdentifierTuple::DeclarationDetails>(elem);
             if (not in_class && std::any_of(values.crbegin(), values.crend(), [this, &decl](const Value &value) {
-                return value.scope_depth == scope_depth && value.lexeme == std::get<Token>(decl).lexeme;
-            })) {
+                    return value.scope_depth == scope_depth && value.lexeme == std::get<Token>(decl).lexeme;
+                })) {
                 error({"A variable with the same name has already been declared in this scope"}, std::get<Token>(decl));
             } else {
                 // TODO: fix use of `nullptr` here

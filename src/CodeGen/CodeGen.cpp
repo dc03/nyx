@@ -69,7 +69,7 @@ void Generator::emit_conversion(NumericConversionType conversion_type, std::size
     }
 }
 
-void Generator::emit_three_bytes_of(std::size_t value) {
+void Generator::emit_operand(std::size_t value) {
     current_chunk->bytes.back() |= value & 0x00ff'ffff;
 }
 
@@ -92,7 +92,7 @@ std::size_t Generator::compile_vartuple(IdentifierTuple::TupleType &tuple, Tuple
     std::size_t count = 0;
     for (std::size_t i = 0; i < tuple.size(); i++) {
         current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, current_chunk->line_numbers.back().first);
-        emit_three_bytes_of(count + 1);
+        emit_operand(count + 1);
 
         current_chunk->emit_constant(Value{static_cast<int>(i)}, current_chunk->line_numbers.back().first);
         if (type.types[i]->is_ref || type.is_ref) {
@@ -111,7 +111,7 @@ std::size_t Generator::compile_vartuple(IdentifierTuple::TupleType &tuple, Tuple
 
     for (std::size_t i = 0; i < count; i++) {
         current_chunk->emit_instruction(Instruction::SWAP, current_chunk->line_numbers.back().first);
-        emit_three_bytes_of(count - i);
+        emit_operand(count - i);
     }
 
     current_chunk->emit_instruction(Instruction::POP_LIST, current_chunk->line_numbers.back().first);
@@ -168,7 +168,7 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
             current_chunk->emit_instruction(
                 expr.target_type == IdentifierType::LOCAL ? Instruction::ACCESS_LOCAL : Instruction::ACCESS_GLOBAL,
                 expr.resolved.token.line);
-            emit_three_bytes_of(expr.resolved.stack_slot);
+            emit_operand(expr.resolved.stack_slot);
             if (expr.resolved.info->is_ref) {
                 current_chunk->emit_instruction(Instruction::DEREF, expr.resolved.token.line);
             }
@@ -201,7 +201,7 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
         }
     }
 
-    emit_three_bytes_of(expr.resolved.stack_slot);
+    emit_operand(expr.resolved.stack_slot);
     return {};
 }
 
@@ -316,7 +316,7 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
         case TokenType::DOT_DOT:
         case TokenType::DOT_DOT_EQUAL: {
             current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.resolved.token.line);
-            emit_three_bytes_of(0);
+            emit_operand(0);
             compile_left();
             compile_right();
             /* This is effectively an unrolled while loop of the kind:
@@ -334,32 +334,32 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
              */
             std::size_t jump_to_cond =
                 current_chunk->emit_instruction(Instruction::JUMP_FORWARD, expr.resolved.token.line);
-            emit_three_bytes_of(0);
+            emit_operand(0);
 
             // list.append(x)
             std::size_t jump_back =
                 current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
-            emit_three_bytes_of(3);
+            emit_operand(3);
             current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
-            emit_three_bytes_of(3);
+            emit_operand(3);
             current_chunk->emit_instruction(Instruction::APPEND_LIST, expr.resolved.token.line);
             current_chunk->emit_instruction(Instruction::POP, expr.resolved.token.line);
 
             // x = x + 1
             current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
-            emit_three_bytes_of(2);
+            emit_operand(2);
             current_chunk->emit_constant(Value{1}, expr.resolved.token.line);
             current_chunk->emit_instruction(Instruction::IADD, expr.resolved.token.line);
             current_chunk->emit_instruction(Instruction::ASSIGN_FROM_TOP, expr.resolved.token.line);
-            emit_three_bytes_of(3);
+            emit_operand(3);
             current_chunk->emit_instruction(Instruction::POP, expr.resolved.token.line);
 
             // Emit x < y or !(x > y) depending on .. or ..=
             std::size_t loop_cond =
                 current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
-            emit_three_bytes_of(2);
+            emit_operand(2);
             current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
-            emit_three_bytes_of(2);
+            emit_operand(2);
             if (expr.resolved.token.type == TokenType::DOT_DOT) {
                 current_chunk->emit_instruction(Instruction::LESSER, expr.resolved.token.line);
             } else {
@@ -370,7 +370,7 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
             // Jump back to the start of the loop
             std::size_t loop_end =
                 current_chunk->emit_instruction(Instruction::POP_JUMP_BACK_IF_TRUE, expr.resolved.token.line);
-            emit_three_bytes_of(0);
+            emit_operand(0);
             current_chunk->emit_instruction(Instruction::POP, expr.resolved.token.line);
             current_chunk->emit_instruction(Instruction::POP, expr.resolved.token.line);
 
@@ -408,7 +408,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
                     } else {
                         current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, value->resolved.token.line);
                     }
-                    emit_three_bytes_of(value->resolved.stack_slot);
+                    emit_operand(value->resolved.stack_slot);
                 } else if (value->type_tag() == NodeType::IndexExpr) {
                     IndexExpr *list = dynamic_cast<IndexExpr *>(value.get());
                     compile(list->object.get());
@@ -417,7 +417,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
                 } else {
                     current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, value->resolved.token.line);
                     // This is a fallback, but I don't think it would ever be triggered
-                    emit_three_bytes_of(value->resolved.stack_slot);
+                    emit_operand(value->resolved.stack_slot);
                 }
             } else if (not param.second->is_ref && value->resolved.info->is_ref) {
                 compile(value.get());
@@ -514,13 +514,13 @@ ExprVisitorType Generator::visit(IndexExpr &expr) {
 
 ExprVisitorType Generator::visit(ListExpr &expr) {
     current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.bracket.line);
-    emit_three_bytes_of(expr.elements.size());
+    emit_operand(expr.elements.size());
 
     std::size_t i = 0;
     for (ListExpr::ElementType &element : expr.elements) {
         auto &element_expr = std::get<ExprNode>(element);
         current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
-        emit_three_bytes_of(1);
+        emit_operand(1);
         current_chunk->emit_constant(Value{static_cast<Value::IntType>(i)}, element_expr->resolved.token.line);
 
         if (not expr.type->contained->is_ref) {
@@ -543,7 +543,7 @@ ExprVisitorType Generator::visit(ListExpr &expr) {
                 } else if (bound_var->type == IdentifierType::GLOBAL) {
                     current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, bound_var->name.line);
                 }
-                emit_three_bytes_of(bound_var->resolved.stack_slot);
+                emit_operand(bound_var->resolved.stack_slot);
             }
         } else {
             compile(element_expr.get()); // A reference not binding to an lvalue
@@ -665,7 +665,7 @@ ExprVisitorType Generator::visit(LogicalExpr &expr) {
     } else { // Since || / or short circuits on true, flip the boolean on top of the stack
         jump_idx = current_chunk->emit_instruction(Instruction::JUMP_IF_FALSE, expr.resolved.token.line);
     }
-    emit_three_bytes_of(0);
+    emit_operand(0);
     current_chunk->emit_instruction(Instruction::POP, expr.resolved.token.line);
     compile(expr.right.get());
     std::size_t to_idx = current_chunk->bytes.size();
@@ -680,7 +680,7 @@ ExprVisitorType Generator::visit(MoveExpr &expr) {
         } else {
             current_chunk->emit_instruction(Instruction::MOVE_GLOBAL, expr.resolved.token.line);
         }
-        emit_three_bytes_of(expr.expr->resolved.stack_slot);
+        emit_operand(expr.expr->resolved.stack_slot);
     }
     return {};
 }
@@ -728,12 +728,12 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
 
     std::size_t condition_jump_idx =
         current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, expr.resolved.token.line);
-    emit_three_bytes_of(0);
+    emit_operand(0);
 
     compile(expr.middle.get());
 
     std::size_t over_false_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, expr.resolved.token.line);
-    emit_three_bytes_of(0);
+    emit_operand(0);
     std::size_t false_to_idx = current_chunk->bytes.size();
 
     compile(expr.right.get());
@@ -751,14 +751,14 @@ ExprVisitorType Generator::visit(ThisExpr &expr) {
 
 ExprVisitorType Generator::visit(TupleExpr &expr) {
     current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.resolved.token.line);
-    emit_three_bytes_of(expr.elements.size());
+    emit_operand(expr.elements.size());
 
     std::size_t i = 0;
     for (auto &element : expr.elements) {
         auto &elem_expr = std::get<ExprNode>(element);
 
         current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.resolved.token.line);
-        emit_three_bytes_of(1);
+        emit_operand(1);
         current_chunk->emit_constant(Value{static_cast<Value::IntType>(i)}, elem_expr->resolved.token.line);
 
         if (expr.type->types[i]->is_ref && elem_expr->resolved.is_lvalue) {
@@ -767,7 +767,7 @@ ExprVisitorType Generator::visit(TupleExpr &expr) {
                 current_chunk->emit_instruction(var->type == IdentifierType::LOCAL ? Instruction::MAKE_REF_TO_LOCAL
                                                                                    : Instruction::MAKE_REF_TO_GLOBAL,
                     var->name.line);
-                emit_three_bytes_of(var->resolved.stack_slot);
+                emit_operand(var->resolved.stack_slot);
             } else if (elem_expr->type_tag() == NodeType::IndexExpr) {
                 auto *list = dynamic_cast<IndexExpr *>(elem_expr.get());
                 compile(list->object.get());
@@ -810,7 +810,7 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
                 current_chunk->emit_instruction(
                     variable->type == IdentifierType::LOCAL ? Instruction::ACCESS_LOCAL : Instruction::ACCESS_GLOBAL,
                     variable->resolved.token.line);
-                emit_three_bytes_of(variable->resolved.stack_slot);
+                emit_operand(variable->resolved.stack_slot);
 
                 if (variable->resolved.info->primitive == Type::FLOAT) {
                     current_chunk->emit_constant(Value{1.0}, expr.oper.line);
@@ -824,7 +824,7 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
                 current_chunk->emit_instruction(
                     variable->type == IdentifierType::LOCAL ? Instruction::ASSIGN_LOCAL : Instruction::ASSIGN_GLOBAL,
                     expr.oper.line);
-                emit_three_bytes_of(variable->resolved.stack_slot);
+                emit_operand(variable->resolved.stack_slot);
             }
             break;
         }
@@ -851,7 +851,7 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
                         current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL, expr.name.line);
                     }
                 }
-                emit_three_bytes_of(expr.resolved.stack_slot);
+                emit_operand(expr.resolved.stack_slot);
             } else {
                 compile_error({"Too many variables in current scope"});
             }
@@ -875,7 +875,7 @@ StmtVisitorType Generator::visit(BlockStmt &stmt) {
 
 StmtVisitorType Generator::visit(BreakStmt &stmt) {
     std::size_t break_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
-    emit_three_bytes_of(0);
+    emit_operand(0);
     break_stmts.top().push_back(break_idx);
 }
 
@@ -883,7 +883,7 @@ StmtVisitorType Generator::visit(ClassStmt &stmt) {}
 
 StmtVisitorType Generator::visit(ContinueStmt &stmt) {
     std::size_t continue_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
-    emit_three_bytes_of(0);
+    emit_operand(0);
     continue_stmts.top().push_back(continue_idx);
 }
 
@@ -951,14 +951,14 @@ StmtVisitorType Generator::visit(IfStmt &stmt) {
         current_chunk->emit_instruction(Instruction::DEREF, stmt.condition->resolved.token.line);
     }
     std::size_t jump_idx = current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, stmt.keyword.line);
-    emit_three_bytes_of(0);
+    emit_operand(0);
     // Reserve three bytes for the offset
     compile(stmt.thenBranch.get());
 
     std::size_t over_else = 0;
     if (stmt.elseBranch != nullptr) {
         over_else = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
-        emit_three_bytes_of(0);
+        emit_operand(0);
     }
 
     std::size_t before_else = current_chunk->bytes.size();
@@ -1000,7 +1000,7 @@ StmtVisitorType Generator::visit(ReturnStmt &stmt) {
     }
 
     current_chunk->emit_instruction(Instruction::RETURN, stmt.keyword.line);
-    emit_three_bytes_of(stmt.locals_popped);
+    emit_operand(stmt.locals_popped);
 }
 
 StmtVisitorType Generator::visit(SwitchStmt &stmt) {
@@ -1042,11 +1042,11 @@ StmtVisitorType Generator::visit(SwitchStmt &stmt) {
         compile(case_.first.get());
         jumps.push_back(
             current_chunk->emit_instruction(Instruction::POP_JUMP_IF_EQUAL, current_chunk->line_numbers.back().first));
-        emit_three_bytes_of(0);
+        emit_operand(0);
     }
     if (stmt.default_case != nullptr) {
         default_jump = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, 0);
-        emit_three_bytes_of(0);
+        emit_operand(0);
     }
 
     std::size_t i = 0;
@@ -1081,7 +1081,7 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
             } else {
                 current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, stmt.name.line);
             }
-            emit_three_bytes_of(stmt.initializer->resolved.stack_slot);
+            emit_operand(stmt.initializer->resolved.stack_slot);
         } else if (stmt.type->is_ref && not stmt.initializer->resolved.info->is_ref &&
                    stmt.initializer->type_tag() == NodeType::IndexExpr) {
             auto *list = dynamic_cast<IndexExpr *>(stmt.initializer.get());
@@ -1163,7 +1163,7 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
     continue_stmts.emplace();
 
     std::size_t jump_begin_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
-    emit_three_bytes_of(0);
+    emit_operand(0);
 
     std::size_t loop_back_idx = current_chunk->bytes.size();
     compile(stmt.body.get());
@@ -1180,7 +1180,7 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
     }
 
     std::size_t jump_back_idx = current_chunk->emit_instruction(Instruction::POP_JUMP_BACK_IF_TRUE, stmt.keyword.line);
-    emit_three_bytes_of(0);
+    emit_operand(0);
 
     std::size_t loop_end_idx = current_chunk->bytes.size();
 
