@@ -10,7 +10,7 @@ IDENTIFIER     ::= (ALPHA|UNDER)(NUM|ALPHA|UNDER)*
 BUILTIN        ::= CONST? REF? ("int"|"float"|"string"|"bool")
 TYPE           ::= BUILTIN
                  | CONST? REF? IDENTIFIER
-                 | CONST? REF? "[" TYPE ("," expression)? "]"
+                 | CONST? REF? "[" TYPE "]"
                  | CONST? REF? "{" TYPE ("," TYPE)* ","? "}"
                  | "typeof" logic_or
 
