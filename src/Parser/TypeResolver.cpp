@@ -1388,153 +1388,108 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         throw TypeException{"A variable with the same name has already been created in this scope"};
     }
 
-    if (stmt.initializer != nullptr) {
-        ExprVisitorType initializer = resolve(stmt.initializer.get());
-        QualifiedTypeInfo type = nullptr;
-        bool originally_typeless = stmt.type == nullptr;
-        if (stmt.type == nullptr) {
-            stmt.type = TypeNode{copy_type(initializer.info)};
-            type = stmt.type.get();
-        } else {
-            replace_if_typeof(stmt.type);
-            type = resolve(stmt.type.get());
-        }
-        switch (stmt.keyword.type) {
-            case TokenType::VAR:
-                // If there is a var statement without a specified type that is not binding to a reference it is
-                // automatically non-const
-                if (originally_typeless) {
-                    remove_all_const(stmt.type);
-                    remove_all_ref(stmt.type);
-                }
-                break;
-            case TokenType::CONST: add_all_const(stmt.type); break;
-            case TokenType::REF: add_top_level_ref(stmt.type); break;
-            default: break;
-        }
-
-        // Infer some more information about the type of the list expression from the type of the variable if needed
-        //  If a variable is defined as `var x: [ref int] = [a, b, c]`, then the list needs to be inferred as a list of
-        //  [ref int], not as [int]
-        if (stmt.initializer->type_tag() == NodeType::ListExpr && stmt.type->primitive == Type::LIST) {
-            infer_list_type(
-                dynamic_cast<ListExpr *>(stmt.initializer.get()), dynamic_cast<ListType *>(stmt.type.get()));
-        } else if (stmt.initializer->type_tag() == NodeType::TupleExpr && stmt.type->primitive == Type::TUPLE) {
-            infer_tuple_type(
-                dynamic_cast<TupleExpr *>(stmt.initializer.get()), dynamic_cast<TupleType *>(stmt.type.get()));
-        }
-
-        if (not convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name, true)) {
-            error({"Cannot convert from initializer type to type of variable"}, stmt.name);
-            note({"Trying to convert to '", stringify(type), "' from '", stringify(initializer.info), "'"});
-            throw TypeException{"Cannot convert from initializer type to type of variable"};
-        } else if (initializer.info->primitive == Type::FLOAT && type->primitive == Type::INT) {
-            stmt.conversion_type = NumericConversionType::FLOAT_TO_INT;
-        } else if (initializer.info->primitive == Type::INT && type->primitive == Type::FLOAT) {
-            stmt.conversion_type = NumericConversionType::INT_TO_FLOAT;
-        }
-
-        if (not is_builtin_type(stmt.type->primitive)) {
-            if (type->is_ref) {
-                stmt.requires_copy = false; // A reference binding to anything does not need a copy
-            } else if (initializer.is_lvalue || initializer.info->is_ref) {
-                stmt.requires_copy = true; // A copy is made when initializing from an lvalue without a reference or
-                                           // when converting a ref to non-ref
-            }
-        }
-
-        if (not in_class || in_function) {
-            values.push_back({stmt.name.lexeme, type, scope_depth, initializer.class_,
-                (values.empty() ? 0 : values.back().stack_slot + 1)});
-        }
-    } else if (stmt.type != nullptr) {
-        replace_if_typeof(stmt.type);
-        QualifiedTypeInfo type = resolve(stmt.type.get());
-        ClassStmt *stmt_class = nullptr;
-
-        if (stmt.type->type_tag() == NodeType::UserDefinedType) {
-            stmt_class = find_class(dynamic_cast<UserDefinedType &>(*stmt.type).name.lexeme);
-            if (stmt_class == nullptr) {
-                error({"No such module/class exists in the current global scope"}, stmt.name);
-                throw TypeException{"No such module/class exists in the current global scope"};
-            }
-        }
-
-        if (not in_class || in_function) {
-            values.push_back(
-                {stmt.name.lexeme, type, scope_depth, stmt_class, (values.empty() ? 0 : values.back().stack_slot + 1)});
-        }
+    ExprVisitorType initializer = resolve(stmt.initializer.get());
+    QualifiedTypeInfo type = nullptr;
+    bool originally_typeless = stmt.type == nullptr;
+    if (stmt.type == nullptr) {
+        stmt.type = TypeNode{copy_type(initializer.info)};
+        type = stmt.type.get();
     } else {
-        error({"Expected type for variable"}, stmt.name);
-        // The variable is never created if there is an error creating it thus any references to it also break
+        replace_if_typeof(stmt.type);
+        type = resolve(stmt.type.get());
+    }
+    switch (stmt.keyword.type) {
+        case TokenType::VAR:
+            // If there is a var statement without a specified type that is not binding to a reference it is
+            // automatically non-const
+            if (originally_typeless) {
+                remove_all_const(stmt.type);
+                remove_all_ref(stmt.type);
+            }
+            break;
+        case TokenType::CONST: add_all_const(stmt.type); break;
+        case TokenType::REF: add_top_level_ref(stmt.type); break;
+        default: break;
+    }
+
+    // Infer some more information about the type of the list expression from the type of the variable if needed
+    //  If a variable is defined as `var x: [ref int] = [a, b, c]`, then the list needs to be inferred as a list of
+    //  [ref int], not as [int]
+    if (stmt.initializer->type_tag() == NodeType::ListExpr && stmt.type->primitive == Type::LIST) {
+        infer_list_type(dynamic_cast<ListExpr *>(stmt.initializer.get()), dynamic_cast<ListType *>(stmt.type.get()));
+    } else if (stmt.initializer->type_tag() == NodeType::TupleExpr && stmt.type->primitive == Type::TUPLE) {
+        infer_tuple_type(dynamic_cast<TupleExpr *>(stmt.initializer.get()), dynamic_cast<TupleType *>(stmt.type.get()));
+    }
+
+    if (not convertible_to(type, initializer.info, initializer.is_lvalue, stmt.name, true)) {
+        error({"Cannot convert from initializer type to type of variable"}, stmt.name);
+        note({"Trying to convert to '", stringify(type), "' from '", stringify(initializer.info), "'"});
+        throw TypeException{"Cannot convert from initializer type to type of variable"};
+    } else if (initializer.info->primitive == Type::FLOAT && type->primitive == Type::INT) {
+        stmt.conversion_type = NumericConversionType::FLOAT_TO_INT;
+    } else if (initializer.info->primitive == Type::INT && type->primitive == Type::FLOAT) {
+        stmt.conversion_type = NumericConversionType::INT_TO_FLOAT;
+    }
+
+    if (not is_builtin_type(stmt.type->primitive)) {
+        if (type->is_ref) {
+            stmt.requires_copy = false; // A reference binding to anything does not need a copy
+        } else if (initializer.is_lvalue || initializer.info->is_ref) {
+            stmt.requires_copy = true; // A copy is made when initializing from an lvalue without a reference or
+                                       // when converting a ref to non-ref
+        }
+    }
+
+    if (not in_class || in_function) {
+        values.push_back({stmt.name.lexeme, type, scope_depth, initializer.class_,
+            (values.empty() ? 0 : values.back().stack_slot + 1)});
     }
 }
 
 StmtVisitorType TypeResolver::visit(VarTupleStmt &stmt) {
-    if (stmt.initializer != nullptr) {
-        ExprVisitorType initializer = resolve(stmt.initializer.get());
-        QualifiedTypeInfo type = nullptr;
-        bool originally_typeless = stmt.type == nullptr;
-        if (stmt.type == nullptr) {
-            stmt.type = TypeNode{copy_type(initializer.info)};
-            type = stmt.type.get();
-        } else {
-            replace_if_typeof(stmt.type);
-            type = resolve(stmt.type.get());
-        }
-
-        switch (stmt.keyword.type) {
-            case TokenType::VAR:
-                if (originally_typeless) {
-                    remove_all_const(stmt.type);
-                    remove_all_ref(stmt.type);
-                }
-                break;
-            case TokenType::CONST: add_all_const(stmt.type); break;
-            case TokenType::REF: add_all_ref(stmt.type); break;
-
-            default: break;
-        }
-
-        if (stmt.type->primitive != Type::TUPLE) {
-            error({"Expected tuple type for var-tuple declaration"}, stmt.token);
-            note({"Received type '", stringify(stmt.type.get()), "'"});
-            throw TypeException{"Expected tuple type for var-tuple declaration"};
-        } else if (not match_ident_tuple_with_type(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type))) {
-            error({"Var-tuple declaration does not match type"}, stmt.keyword);
-            throw TypeException{"Var-tuple declaration does not match type"};
-        }
-
-        copy_types_into_vartuple(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type));
-
-        if (not convertible_to(type, initializer.info, initializer.is_lvalue, stmt.token, true)) {
-            error({"Cannot convert from type of initializer to type of var-tuple"}, stmt.token);
-            note({"Trying to convert to '", stringify(type), "' from '", stringify(initializer.info), "'"});
-            throw TypeException{"Cannot convert from type of initializer to type of var-tuple"};
-        }
-
-        if (not in_class || in_function) {
-            add_vartuple_to_stack(stmt.names.tuple, (values.empty() ? 0 : values.back().stack_slot + 1));
-        }
-    } else if (stmt.type != nullptr) {
-        replace_if_typeof(stmt.type);
-        if (stmt.type->primitive != Type::TUPLE) {
-            error({"Expected tuple type for var-tuple declaration"}, stmt.token);
-            note({"Received type '", stringify(stmt.type.get()), "'"});
-            throw TypeException{"Expected tuple type for var-tuple declaration"};
-        } else if (not match_ident_tuple_with_type(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type))) {
-            error({"Var-tuple declaration does not match type"}, stmt.keyword);
-            throw TypeException{"Var-tuple declaration does not match type"};
-        }
-
-        copy_types_into_vartuple(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type));
-
-        if (not in_class || in_function) {
-            add_vartuple_to_stack(stmt.names.tuple, (values.empty() ? 0 : values.back().stack_slot + 1));
-        }
+    ExprVisitorType initializer = resolve(stmt.initializer.get());
+    QualifiedTypeInfo type = nullptr;
+    bool originally_typeless = stmt.type == nullptr;
+    if (stmt.type == nullptr) {
+        stmt.type = TypeNode{copy_type(initializer.info)};
+        type = stmt.type.get();
     } else {
-        error({"Cannot have var-tuple without both type and initializer"}, stmt.keyword);
-        throw TypeException{"Cannot have var-tuple without both type and initializer"};
+        replace_if_typeof(stmt.type);
+        type = resolve(stmt.type.get());
+    }
+
+    switch (stmt.keyword.type) {
+        case TokenType::VAR:
+            if (originally_typeless) {
+                remove_all_const(stmt.type);
+                remove_all_ref(stmt.type);
+            }
+            break;
+        case TokenType::CONST: add_all_const(stmt.type); break;
+        case TokenType::REF: add_all_ref(stmt.type); break;
+
+        default: break;
+    }
+
+    if (stmt.type->primitive != Type::TUPLE) {
+        error({"Expected tuple type for var-tuple declaration"}, stmt.token);
+        note({"Received type '", stringify(stmt.type.get()), "'"});
+        throw TypeException{"Expected tuple type for var-tuple declaration"};
+    } else if (not match_ident_tuple_with_type(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type))) {
+        error({"Var-tuple declaration does not match type"}, stmt.keyword);
+        throw TypeException{"Var-tuple declaration does not match type"};
+    }
+
+    copy_types_into_vartuple(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type));
+
+    if (not convertible_to(type, initializer.info, initializer.is_lvalue, stmt.token, true)) {
+        error({"Cannot convert from type of initializer to type of var-tuple"}, stmt.token);
+        note({"Trying to convert to '", stringify(type), "' from '", stringify(initializer.info), "'"});
+        throw TypeException{"Cannot convert from type of initializer to type of var-tuple"};
+    }
+
+    if (not in_class || in_function) {
+        add_vartuple_to_stack(stmt.names.tuple, (values.empty() ? 0 : values.back().stack_slot + 1));
     }
 }
 

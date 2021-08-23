@@ -66,10 +66,10 @@ declaration    ::= statement
                  | class
 
 import         ::= "import" STRING EOL
-var            ::= ("var"|"const"|"ref") IDENTIFIER (":" TYPE)? ("=" expression)? EOL
+var            ::= ("var"|"const"|"ref") IDENTIFIER (":" TYPE)? "=" expression EOL
 
 ident_tuple    ::= "{" IDENTIFIER|ident_tuple ("," (IDENTIFIER|ident_tuple))* ","? "}"
-var_tuple      ::= ("var"|"const"|"ref") ident_tuple (":" TYPE)? ("=" expression)? EOL
+var_tuple      ::= ("var"|"const"|"ref") ident_tuple (":" TYPE)? "=" expression EOL
 
 params         ::= (IDENTIFIER|ident_tuple ":" TYPE)*
 fn             ::= "fn" "~"? IDENTIFIER "(" params ")" "->" TYPE block

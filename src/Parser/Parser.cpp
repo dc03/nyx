@@ -922,7 +922,8 @@ StmtNode Parser::variable_declaration() {
     Token name = previous();
 
     TypeNode var_type = match(TokenType::COLON) ? type() : nullptr;
-    ExprNode initializer = match(TokenType::EQUAL) ? expression() : nullptr;
+    consume("Expected initializer after variable name", TokenType::EQUAL);
+    ExprNode initializer = expression();
     consume("Expected ';' or newline after variable initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
 
     auto *variable = allocate_node(VarStmt, std::move(keyword), std::move(name), std::move(var_type),
@@ -933,18 +934,14 @@ StmtNode Parser::variable_declaration() {
 StmtNode Parser::vartuple_declaration() {
     Token keyword = previous();
     advance();
-    Token token = previous();
+
     IdentifierTuple tuple = ident_tuple();
 
-    if (peek().type == TokenType::COLON) {
-        token = peek();
-    }
     TypeNode var_types = match(TokenType::COLON) ? type() : nullptr;
 
-    if (peek().type == TokenType::EQUAL && token.type != TokenType::COLON) {
-        token = peek();
-    }
-    ExprNode initializer = match(TokenType::EQUAL) ? expression() : nullptr;
+    consume("Expected initializer after var-tuple", TokenType::EQUAL);
+    Token token = previous();
+    ExprNode initializer = expression();
 
     consume("Expected ';' or newline after var-tuple initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
 

@@ -1073,52 +1073,44 @@ StmtVisitorType Generator::visit(SwitchStmt &stmt) {
 StmtVisitorType Generator::visit(TypeStmt &stmt) {}
 
 StmtVisitorType Generator::visit(VarStmt &stmt) {
-    if (stmt.initializer != nullptr) {
-        if (stmt.type->is_ref && not stmt.initializer->resolved.info->is_ref &&
-            stmt.initializer->type_tag() == NodeType::VariableExpr) {
-            if (dynamic_cast<VariableExpr *>(stmt.initializer.get())->type == IdentifierType::LOCAL) {
-                current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, stmt.name.line);
-            } else {
-                current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, stmt.name.line);
-            }
-            emit_operand(stmt.initializer->resolved.stack_slot);
-        } else if (stmt.type->is_ref && not stmt.initializer->resolved.info->is_ref &&
-                   stmt.initializer->type_tag() == NodeType::IndexExpr) {
-            auto *list = dynamic_cast<IndexExpr *>(stmt.initializer.get());
-            compile(list->object.get());
-            compile(list->index.get());
-            current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, stmt.name.line);
+    if (stmt.type->is_ref && not stmt.initializer->resolved.info->is_ref &&
+        stmt.initializer->type_tag() == NodeType::VariableExpr) {
+        if (dynamic_cast<VariableExpr *>(stmt.initializer.get())->type == IdentifierType::LOCAL) {
+            current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, stmt.name.line);
         } else {
-            compile(stmt.initializer.get());
-            if (stmt.initializer->resolved.info->is_ref && not stmt.type->is_ref &&
-                stmt.initializer->resolved.info->primitive != Type::LIST &&
-                stmt.initializer->resolved.info->primitive != Type::TUPLE) {
-                current_chunk->emit_instruction(Instruction::DEREF, stmt.name.line);
-            }
-
-            if (stmt.conversion_type != NumericConversionType::NONE) {
-                emit_conversion(stmt.conversion_type, stmt.name.line);
-            }
+            current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, stmt.name.line);
         }
-        if (stmt.requires_copy) {
-            current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.name.line);
-        }
+        emit_operand(stmt.initializer->resolved.stack_slot);
+    } else if (stmt.type->is_ref && not stmt.initializer->resolved.info->is_ref &&
+               stmt.initializer->type_tag() == NodeType::IndexExpr) {
+        auto *list = dynamic_cast<IndexExpr *>(stmt.initializer.get());
+        compile(list->object.get());
+        compile(list->index.get());
+        current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, stmt.name.line);
     } else {
-        current_chunk->emit_instruction(Instruction::PUSH_NULL, stmt.name.line);
+        compile(stmt.initializer.get());
+        if (stmt.initializer->resolved.info->is_ref && not stmt.type->is_ref &&
+            stmt.initializer->resolved.info->primitive != Type::LIST &&
+            stmt.initializer->resolved.info->primitive != Type::TUPLE) {
+            current_chunk->emit_instruction(Instruction::DEREF, stmt.name.line);
+        }
+
+        if (stmt.conversion_type != NumericConversionType::NONE) {
+            emit_conversion(stmt.conversion_type, stmt.name.line);
+        }
+    }
+    if (stmt.requires_copy) {
+        current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.name.line);
     }
     scopes.top().push_back(stmt.type.get());
 }
 
 StmtVisitorType Generator::visit(VarTupleStmt &stmt) {
-    if (stmt.initializer != nullptr) {
-        compile(stmt.initializer.get());
-        if (requires_copy(stmt.initializer, stmt.type)) {
-            current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.token.line);
-        }
-        compile_vartuple(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type));
-    } else {
-        current_chunk->emit_instruction(Instruction::PUSH_NULL, stmt.token.line);
+    compile(stmt.initializer.get());
+    if (requires_copy(stmt.initializer, stmt.type)) {
+        current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.token.line);
     }
+    compile_vartuple(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type));
 
     add_vartuple_to_scope(stmt.names.tuple);
 }
