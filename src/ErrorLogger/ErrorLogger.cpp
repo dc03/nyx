@@ -1,8 +1,8 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "ErrorLogger.hpp"
+#include "ErrorLogger/ErrorLogger.hpp"
 
-#include "../Common.hpp"
+#include "Common.hpp"
 
 #include <iostream>
 

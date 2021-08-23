@@ -42,5 +42,5 @@ calling `make_new_type` with the values for `is_const` and `is_ref`
 before everything else
 - [x] Fix dumb unused variable warning
 - [ ] Move some `TypeResolver` functions into `AST.hpp`
-- [ ] Reorder project, moving header files into `include/`, separating interpreter into
+- [x] Reorder project, moving header files into `include/`, separating interpreter into
 `Frontend/` and `Backend/` directories

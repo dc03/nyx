@@ -1,7 +1,7 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "ASTPrinter.hpp"
-#include "CodeGen/CodeGen.hpp"
+#include "AST/ASTPrinter.hpp"
+#include "../CodeGen/CodeGen.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
 #include "Parser/Parser.hpp"
 #include "Parser/TypeResolver.hpp"
