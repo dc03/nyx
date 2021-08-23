@@ -615,68 +615,6 @@ ExprNode Parser::variable(bool can_assign) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TypeNode Parser::type() {
-    bool is_const = match(TokenType::CONST);
-    bool is_ref = match(TokenType::REF);
-    Type type = [this]() {
-        if (match(TokenType::BOOL)) {
-            return Type::BOOL;
-        } else if (match(TokenType::INT)) {
-            return Type::INT;
-        } else if (match(TokenType::FLOAT)) {
-            return Type::FLOAT;
-        } else if (match(TokenType::STRING)) {
-            return Type::STRING;
-        } else if (match(TokenType::IDENTIFIER)) {
-            return Type::CLASS;
-        } else if (match(TokenType::LEFT_INDEX)) {
-            return Type::LIST;
-        } else if (match(TokenType::TYPEOF)) {
-            return Type::TYPEOF;
-        } else if (match(TokenType::NULL_)) {
-            return Type::NULL_;
-        } else if (match(TokenType::LEFT_BRACE)) {
-            return Type::TUPLE;
-        } else {
-            error({"Unexpected token in type specifier"}, peek());
-            note({"The type needs to be one of: bool, int, float, string, an identifier or an array type"});
-            throw ParseException{peek(), "Unexpected token in type specifier"};
-        }
-    }();
-
-    if (type == Type::CLASS) {
-        Token name = previous();
-        return TypeNode{allocate_node(UserDefinedType, type, is_const, is_ref, std::move(name))};
-    } else if (type == Type::LIST) {
-        return list_type(is_const, is_ref);
-    } else if (type == Type::TUPLE) {
-        return tuple_type(is_const, is_ref);
-    } else if (type == Type::TYPEOF) {
-        return TypeNode{
-            allocate_node(TypeofType, type, is_const, is_ref, parse_precedence(ParsePrecedence::of::LOGIC_OR))};
-    } else {
-        return TypeNode{allocate_node(PrimitiveType, type, is_const, is_ref)};
-    }
-}
-
-TypeNode Parser::list_type(bool is_const, bool is_ref) {
-    TypeNode contained = type();
-    consume("Expected ']' after array declaration", TokenType::RIGHT_INDEX);
-    return TypeNode{allocate_node(ListType, Type::LIST, is_const, is_ref, std::move(contained))};
-}
-
-TypeNode Parser::tuple_type(bool is_const, bool is_ref) {
-    std::vector<TypeNode> types{};
-    while (peek().type != TokenType::RIGHT_BRACE) {
-        types.emplace_back(type());
-        match(TokenType::COMMA);
-    }
-    consume("Expected '}' after tuple type", TokenType::RIGHT_BRACE);
-    return TypeNode{allocate_node(TupleType, Type::TUPLE, is_const, is_ref, std::move(types))};
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 StmtNode Parser::declaration() {
     try {
         if (match(TokenType::CLASS)) {
@@ -1148,4 +1086,66 @@ StmtNode Parser::while_statement() {
     StmtNode body = block_statement();
 
     return StmtNode{allocate_node(WhileStmt, std::move(keyword), std::move(condition), std::move(body), nullptr)};
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+TypeNode Parser::type() {
+    bool is_const = match(TokenType::CONST);
+    bool is_ref = match(TokenType::REF);
+    Type type = [this]() {
+        if (match(TokenType::BOOL)) {
+            return Type::BOOL;
+        } else if (match(TokenType::INT)) {
+            return Type::INT;
+        } else if (match(TokenType::FLOAT)) {
+            return Type::FLOAT;
+        } else if (match(TokenType::STRING)) {
+            return Type::STRING;
+        } else if (match(TokenType::IDENTIFIER)) {
+            return Type::CLASS;
+        } else if (match(TokenType::LEFT_INDEX)) {
+            return Type::LIST;
+        } else if (match(TokenType::TYPEOF)) {
+            return Type::TYPEOF;
+        } else if (match(TokenType::NULL_)) {
+            return Type::NULL_;
+        } else if (match(TokenType::LEFT_BRACE)) {
+            return Type::TUPLE;
+        } else {
+            error({"Unexpected token in type specifier"}, peek());
+            note({"The type needs to be one of: bool, int, float, string, an identifier or an array type"});
+            throw ParseException{peek(), "Unexpected token in type specifier"};
+        }
+    }();
+
+    if (type == Type::CLASS) {
+        Token name = previous();
+        return TypeNode{allocate_node(UserDefinedType, type, is_const, is_ref, std::move(name))};
+    } else if (type == Type::LIST) {
+        return list_type(is_const, is_ref);
+    } else if (type == Type::TUPLE) {
+        return tuple_type(is_const, is_ref);
+    } else if (type == Type::TYPEOF) {
+        return TypeNode{
+            allocate_node(TypeofType, type, is_const, is_ref, parse_precedence(ParsePrecedence::of::LOGIC_OR))};
+    } else {
+        return TypeNode{allocate_node(PrimitiveType, type, is_const, is_ref)};
+    }
+}
+
+TypeNode Parser::list_type(bool is_const, bool is_ref) {
+    TypeNode contained = type();
+    consume("Expected ']' after array declaration", TokenType::RIGHT_INDEX);
+    return TypeNode{allocate_node(ListType, Type::LIST, is_const, is_ref, std::move(contained))};
+}
+
+TypeNode Parser::tuple_type(bool is_const, bool is_ref) {
+    std::vector<TypeNode> types{};
+    while (peek().type != TokenType::RIGHT_BRACE) {
+        types.emplace_back(type());
+        match(TokenType::COMMA);
+    }
+    consume("Expected '}' after tuple type", TokenType::RIGHT_BRACE);
+    return TypeNode{allocate_node(TupleType, Type::TUPLE, is_const, is_ref, std::move(types))};
 }

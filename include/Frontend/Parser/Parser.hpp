@@ -117,11 +117,6 @@ class Parser {
     ExprNode unary(bool);
     ExprNode variable(bool can_assign);
 
-    // Type parsing
-    TypeNode type();
-    TypeNode list_type(bool is_const, bool is_ref);
-    TypeNode tuple_type(bool is_const, bool is_ref);
-
     // Statement parsing
     StmtNode declaration();
     StmtNode class_declaration();
@@ -141,6 +136,11 @@ class Parser {
     StmtNode return_statement();
     StmtNode switch_statement();
     StmtNode while_statement();
+
+    // Type parsing
+    TypeNode type();
+    TypeNode list_type(bool is_const, bool is_ref);
+    TypeNode tuple_type(bool is_const, bool is_ref);
 };
 
 #endif

@@ -161,19 +161,6 @@ enum class NodeType {
     TypeofType
 };
 
-struct BaseType {
-    Type primitive{};
-    bool is_const{};
-    bool is_ref{};
-
-    BaseType() = default;
-    BaseType(Type primitive, bool is_const, bool is_ref) : primitive{primitive}, is_const{is_const}, is_ref{is_ref} {}
-    virtual std::string_view string_tag() = 0;
-    virtual NodeType type_tag() = 0;
-    virtual BaseTypeVisitorType accept(Visitor &visitor) = 0;
-    virtual ~BaseType() = default;
-};
-
 struct Expr {
     ExprVisitorType resolved{};
 
@@ -192,76 +179,18 @@ struct Stmt {
     virtual ~Stmt() = default;
 };
 
-// Type node definitions
+struct BaseType {
+    Type primitive{};
+    bool is_const{};
+    bool is_ref{};
 
-struct PrimitiveType final : public BaseType {
-    std::string_view string_tag() override final { return "PrimitiveType"; }
-
-    NodeType type_tag() override final { return NodeType::PrimitiveType; }
-
-    PrimitiveType() = default;
-    explicit PrimitiveType(Type primitive, bool is_const, bool is_ref) : BaseType{primitive, is_const, is_ref} {}
-
-    BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+    BaseType() = default;
+    BaseType(Type primitive, bool is_const, bool is_ref) : primitive{primitive}, is_const{is_const}, is_ref{is_ref} {}
+    virtual std::string_view string_tag() = 0;
+    virtual NodeType type_tag() = 0;
+    virtual BaseTypeVisitorType accept(Visitor &visitor) = 0;
+    virtual ~BaseType() = default;
 };
-
-struct UserDefinedType final : public BaseType {
-    Token name{};
-
-    std::string_view string_tag() override final { return "UserDefinedType"; }
-
-    NodeType type_tag() override final { return NodeType::UserDefinedType; }
-
-    UserDefinedType() = default;
-    explicit UserDefinedType(Type primitive, bool is_const, bool is_ref, Token name)
-        : BaseType{primitive, is_const, is_ref}, name{std::move(name)} {}
-
-    BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
-};
-
-struct ListType final : public BaseType {
-    TypeNode contained{};
-
-    std::string_view string_tag() override final { return "ListType"; }
-
-    NodeType type_tag() override final { return NodeType::ListType; }
-
-    ListType() = default;
-    explicit ListType(Type primitive, bool is_const, bool is_ref, TypeNode contained)
-        : BaseType{primitive, is_const, is_ref}, contained{std::move(contained)} {}
-
-    BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
-};
-
-struct TupleType final : public BaseType {
-    std::vector<TypeNode> types{};
-
-    std::string_view string_tag() override final { return "TupleType"; }
-
-    NodeType type_tag() override final { return NodeType::TupleType; }
-
-    TupleType() = default;
-    explicit TupleType(Type primitive, bool is_const, bool is_ref, std::vector<TypeNode> types)
-        : BaseType{primitive, is_const, is_ref}, types{std::move(types)} {}
-
-    BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
-};
-
-struct TypeofType final : public BaseType {
-    ExprNode expr{};
-
-    std::string_view string_tag() override final { return "TypeofType"; }
-
-    NodeType type_tag() override final { return NodeType::TypeofType; }
-
-    TypeofType() = default;
-    explicit TypeofType(Type primitive, bool is_const, bool is_ref, ExprNode expr)
-        : BaseType{primitive, is_const, is_ref}, expr{std::move(expr)} {}
-
-    BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
-};
-
-// End of type node definitions
 
 // Expression node definitions
 
@@ -849,6 +778,77 @@ struct WhileStmt final : public Stmt {
 };
 
 // End of statement node definitions
+
+// Type node definitions
+
+struct PrimitiveType final : public BaseType {
+    std::string_view string_tag() override final { return "PrimitiveType"; }
+
+    NodeType type_tag() override final { return NodeType::PrimitiveType; }
+
+    PrimitiveType() = default;
+    explicit PrimitiveType(Type primitive, bool is_const, bool is_ref) : BaseType{primitive, is_const, is_ref} {}
+
+    BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct UserDefinedType final : public BaseType {
+    Token name{};
+
+    std::string_view string_tag() override final { return "UserDefinedType"; }
+
+    NodeType type_tag() override final { return NodeType::UserDefinedType; }
+
+    UserDefinedType() = default;
+    explicit UserDefinedType(Type primitive, bool is_const, bool is_ref, Token name)
+        : BaseType{primitive, is_const, is_ref}, name{std::move(name)} {}
+
+    BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct ListType final : public BaseType {
+    TypeNode contained{};
+
+    std::string_view string_tag() override final { return "ListType"; }
+
+    NodeType type_tag() override final { return NodeType::ListType; }
+
+    ListType() = default;
+    explicit ListType(Type primitive, bool is_const, bool is_ref, TypeNode contained)
+        : BaseType{primitive, is_const, is_ref}, contained{std::move(contained)} {}
+
+    BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct TupleType final : public BaseType {
+    std::vector<TypeNode> types{};
+
+    std::string_view string_tag() override final { return "TupleType"; }
+
+    NodeType type_tag() override final { return NodeType::TupleType; }
+
+    TupleType() = default;
+    explicit TupleType(Type primitive, bool is_const, bool is_ref, std::vector<TypeNode> types)
+        : BaseType{primitive, is_const, is_ref}, types{std::move(types)} {}
+
+    BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct TypeofType final : public BaseType {
+    ExprNode expr{};
+
+    std::string_view string_tag() override final { return "TypeofType"; }
+
+    NodeType type_tag() override final { return NodeType::TypeofType; }
+
+    TypeofType() = default;
+    explicit TypeofType(Type primitive, bool is_const, bool is_ref, ExprNode expr)
+        : BaseType{primitive, is_const, is_ref}, expr{std::move(expr)} {}
+
+    BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+// End of type node definitions
 
 // Helper function to turn a given type node into a string
 std::string stringify(BaseType *node);

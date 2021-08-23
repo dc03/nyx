@@ -196,45 +196,12 @@ if __name__ == '__main__':
         declare_tag_enum(file, Exprs, Stmts, Types)
         # Visitor declaration complete
 
-        declare_base(file, 'BaseType',
-                     'Type primitive, bool is_const, bool is_ref',
-                     'primitive{primitive}, is_const{is_const}, is_ref{is_ref}')
         declare_base(file, 'Expr',
                      'ExprVisitorType resolved')
         declare_base(file, 'Stmt')
-
-        # Type base node definition
-
-        # NOTE: Always make sure that these are in the same order as the lists
-
-        file.write('// Type node definitions\n\n')
-
-        declare_type_type('Primitive',
-                          'BaseType{primitive, is_const, is_ref}',
-                          '',
-                          'Type primitive, bool is_const, bool is_ref')
-
-        declare_type_type('UserDefined',
-                          'BaseType{primitive, is_const, is_ref}, name{std::move(name)}',
-                          'Token name',
-                          'Type primitive, bool is_const, bool is_ref, Token name')
-
-        declare_type_type('List',
-                          'BaseType{primitive, is_const, is_ref}, contained{std::move(contained)}',
-                          'TypeNode contained',
-                          'Type primitive, bool is_const, bool is_ref, TypeNode contained')
-
-        declare_type_type('Tuple',
-                          'BaseType{primitive, is_const, is_ref}, types{std::move(types)}',
-                          'std::vector<TypeNode> types',
-                          'Type primitive, bool is_const, bool is_ref, std::vector<TypeNode> types')
-
-        declare_type_type('Typeof',
-                          'BaseType{primitive, is_const, is_ref}, expr{std::move(expr)}',
-                          'ExprNode expr',
-                          'Type primitive, bool is_const, bool is_ref, ExprNode expr')
-
-        file.write('// End of type node definitions\n\n')
+        declare_base(file, 'BaseType',
+                     'Type primitive, bool is_const, bool is_ref',
+                     'primitive{primitive}, is_const{is_const}, is_ref{is_ref}')
 
         file.write('// Expression node definitions\n\n')
 
@@ -345,6 +312,7 @@ if __name__ == '__main__':
                           'Token name, IdentifierType type')
 
         file.write('// End of expression node definitions\n\n')
+
         file.write('// Statement node definitions\n\n')
 
         declare_stmt_type('Block',
@@ -430,6 +398,35 @@ if __name__ == '__main__':
                           'Token keyword, ExprNode condition, StmtNode body, StmtNode increment')
 
         file.write('// End of statement node definitions\n\n')
+
+        file.write('// Type node definitions\n\n')
+
+        declare_type_type('Primitive',
+                          'BaseType{primitive, is_const, is_ref}',
+                          '',
+                          'Type primitive, bool is_const, bool is_ref')
+
+        declare_type_type('UserDefined',
+                          'BaseType{primitive, is_const, is_ref}, name{std::move(name)}',
+                          'Token name',
+                          'Type primitive, bool is_const, bool is_ref, Token name')
+
+        declare_type_type('List',
+                          'BaseType{primitive, is_const, is_ref}, contained{std::move(contained)}',
+                          'TypeNode contained',
+                          'Type primitive, bool is_const, bool is_ref, TypeNode contained')
+
+        declare_type_type('Tuple',
+                          'BaseType{primitive, is_const, is_ref}, types{std::move(types)}',
+                          'std::vector<TypeNode> types',
+                          'Type primitive, bool is_const, bool is_ref, std::vector<TypeNode> types')
+
+        declare_type_type('Typeof',
+                          'BaseType{primitive, is_const, is_ref}, expr{std::move(expr)}',
+                          'ExprNode expr',
+                          'Type primitive, bool is_const, bool is_ref, ExprNode expr')
+
+        file.write('// End of type node definitions\n\n')
 
         file.write('// Helper function to turn a given type node into a string\n')
         file.write('std::string stringify(BaseType *node);\n\n')
