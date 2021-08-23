@@ -118,29 +118,6 @@ std::size_t Generator::compile_vartuple(IdentifierTuple::TupleType &tuple, Tuple
     return count;
 }
 
-std::size_t Generator::recursively_compile_size(ListType *list) {
-    auto compile_size = [this, &list] {
-      if (list->size != nullptr) {
-          compile(list->size.get());
-          if (list->size->resolved.info->is_ref) {
-              current_chunk->emit_instruction(Instruction::DEREF, list->size->resolved.token.line);
-          }
-      } else {
-          current_chunk->emit_constant(Value{1}, 0);
-      }
-    };
-
-    if (list->contained->primitive == Type::LIST) {
-        std::size_t inner = recursively_compile_size(dynamic_cast<ListType *>(list->contained.get()));
-        compile_size();
-        return inner + 1;
-    } else {
-        compile(list);
-        compile_size();
-        return 1;
-    }
-}
-
 ExprVisitorType Generator::compile(Expr *expr) {
     return expr->accept(*this);
 }
@@ -549,7 +526,7 @@ ExprVisitorType Generator::visit(IndexExpr &expr) {
 
 ExprVisitorType Generator::visit(ListExpr &expr) {
     current_chunk->emit_constant(
-        Value{dynamic_cast<LiteralExpr *>(expr.type->size.get())->value.to_int()}, expr.bracket.line);
+        Value{static_cast<Value::IntType>(expr.elements.size())}, expr.bracket.line);
     current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.bracket.line);
 
     std::size_t i = 0;
@@ -1108,18 +1085,7 @@ StmtVisitorType Generator::visit(SwitchStmt &stmt) {
 StmtVisitorType Generator::visit(TypeStmt &stmt) {}
 
 StmtVisitorType Generator::visit(VarStmt &stmt) {
-    if (stmt.type->primitive == Type::LIST && stmt.initializer == nullptr) {
-        auto *list = dynamic_cast<ListType *>(stmt.type.get());
-        if (list->size != nullptr) {
-            compile(list->size.get());
-            if (list->size->resolved.info->is_ref) {
-                current_chunk->emit_instruction(Instruction::DEREF, list->size->resolved.token.line);
-            }
-        } else {
-            current_chunk->emit_constant(Value{0}, stmt.name.line);
-        }
-        current_chunk->emit_instruction(Instruction::MAKE_LIST, stmt.name.line);
-    } else if (stmt.initializer != nullptr) {
+    if (stmt.initializer != nullptr) {
         if (stmt.type->is_ref && not stmt.initializer->resolved.info->is_ref &&
             stmt.initializer->type_tag() == NodeType::VariableExpr) {
             if (dynamic_cast<VariableExpr *>(stmt.initializer.get())->type == IdentifierType::LOCAL) {
@@ -1254,12 +1220,6 @@ BaseTypeVisitorType Generator::visit(UserDefinedType &type) {
 }
 
 BaseTypeVisitorType Generator::visit(ListType &type) {
-    if (type.size != nullptr) {
-        compile(type.size.get());
-    } else {
-        current_chunk->emit_constant(Value{0}, type.size->resolved.token.line);
-    }
-    current_chunk->emit_instruction(Instruction::MAKE_LIST, type.size->resolved.token.line);
     return {};
 }
 

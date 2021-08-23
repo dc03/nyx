@@ -610,7 +610,7 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
         case TokenType::DOT_DOT_EQUAL:
             if (left_expr.info->primitive == Type::INT && right_expr.info->primitive == Type::INT) {
                 BaseType *list = make_new_type<ListType>(
-                    Type::LIST, true, false, TypeNode{allocate_node(PrimitiveType, Type::INT, true, false)}, nullptr);
+                    Type::LIST, true, false, TypeNode{allocate_node(PrimitiveType, Type::INT, true, false)});
                 return expr.resolved = {list, expr.resolved.token};
             } else {
                 error({"Ranges can only be created for integral types"}, expr.resolved.token);
@@ -810,11 +810,8 @@ ExprVisitorType TypeResolver::visit(ListExpr &expr) {
         throw TypeException{"Cannot have more than 255 elements in list expression"};
     }
 
-    auto *list_size = allocate_node(LiteralExpr, LiteralValue{static_cast<int>(expr.elements.size())},
-        TypeNode{allocate_node(PrimitiveType, Type::INT, true, false)});
-
     expr.type.reset(allocate_node(ListType, Type::LIST, false, false,
-        TypeNode{copy_type(resolve(std::get<ExprNode>(*expr.elements.begin()).get()).info)}, ExprNode{list_size}));
+        TypeNode{copy_type(resolve(std::get<ExprNode>(*expr.elements.begin()).get()).info)}));
 
     for (std::size_t i = 1; i < expr.elements.size(); i++) {
         resolve(std::get<ExprNode>(expr.elements[i]).get()); // Will store the type info in the 'resolved' class member
@@ -1568,9 +1565,6 @@ BaseTypeVisitorType TypeResolver::visit(UserDefinedType &type) {
 BaseTypeVisitorType TypeResolver::visit(ListType &type) {
     replace_if_typeof(type.contained);
     resolve(type.contained.get());
-    if (type.size != nullptr) {
-        resolve(type.size.get());
-    }
     return &type;
 }
 

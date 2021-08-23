@@ -661,9 +661,8 @@ TypeNode Parser::type() {
 
 TypeNode Parser::list_type(bool is_const, bool is_ref) {
     TypeNode contained = type();
-    ExprNode size = match(TokenType::COMMA) ? expression() : nullptr;
     consume("Expected ']' after array declaration", TokenType::RIGHT_INDEX);
-    return TypeNode{allocate_node(ListType, Type::LIST, is_const, is_ref, std::move(contained), std::move(size))};
+    return TypeNode{allocate_node(ListType, Type::LIST, is_const, is_ref, std::move(contained))};
 }
 
 TypeNode Parser::tuple_type(bool is_const, bool is_ref) {
