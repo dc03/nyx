@@ -6,8 +6,8 @@
 #ifndef TYPE_RESOLVER_HPP
 #define TYPE_RESOLVER_HPP
 
-#include "Backend/VirtualMachine/Module.hpp"
 #include "AST/AST.hpp"
+#include "Backend/VirtualMachine/Module.hpp"
 
 #include <string_view>
 #include <tuple>
@@ -46,8 +46,14 @@ class TypeResolver final : Visitor {
         std::vector<std::tuple<ExprNode, NumericConversionType, bool>> &args);
     ClassStmt *find_class(const std::string &class_name);
     FunctionStmt *find_function(const std::string &function_name);
+
+    ClassStmt::MemberType *find_member(ClassStmt *class_, const std::string &name);
+    ClassStmt::MethodType *find_method(ClassStmt *class_, const std::string &name);
+
     bool convertible_to(
         QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lvalue, const Token &where, bool in_initializer);
+
+    ExprNode generate_scope_access(ClassStmt *stmt, Token name);
 
     void replace_if_typeof(TypeNode &type);
     void infer_list_type(ListExpr *of, ListType *from);

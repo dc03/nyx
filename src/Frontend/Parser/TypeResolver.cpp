@@ -113,6 +113,11 @@ bool TypeResolver::convertible_to(
     }
 }
 
+ExprNode TypeResolver::generate_scope_access(ClassStmt *stmt, Token name) {
+    ExprNode class_{allocate_node(ScopeNameExpr, stmt->name)};
+    return ExprNode{allocate_node(ScopeAccessExpr, std::move(class_), std::move(name))};
+}
+
 bool is_builtin_type(Type type) {
     switch (type) {
         case Type::BOOL:
@@ -138,6 +143,28 @@ FunctionStmt *TypeResolver::find_function(const std::string &function_name) {
     }
 
     return nullptr;
+}
+
+ClassStmt::MemberType *TypeResolver::find_member(ClassStmt *class_, const std::string &name) {
+    auto member = std::find_if(class_->members.begin(), class_->members.end(),
+        [&name](const ClassStmt::MemberType &member) { return member.first->name.lexeme == name; });
+
+    if (member != class_->members.end()) {
+        return &*member;
+    } else {
+        return nullptr;
+    }
+}
+
+ClassStmt::MethodType *TypeResolver::find_method(ClassStmt *class_, const std::string &name) {
+    auto method = std::find_if(class_->methods.begin(), class_->methods.end(),
+        [&name](const ClassStmt::MethodType &method) { return method.first->name.lexeme == name; });
+
+    if (method != class_->methods.end()) {
+        return &*method;
+    } else {
+        return nullptr;
+    }
 }
 
 void TypeResolver::check(std::vector<StmtNode> &program) {
@@ -635,21 +662,26 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         }
     }
 
-    ExprVisitorType callee = resolve(expr.function.get());
+    ExprVisitorType function = resolve(expr.function.get());
 
-    FunctionStmt *called = callee.func;
-    if (callee.class_ != nullptr) {
-        for (auto &method_decl : callee.class_->methods) {
-            if (method_decl.first->name == callee.token) {
-                called = method_decl.first.get();
-            }
-        }
-    }
+    FunctionStmt *called = function.func;
+    ClassStmt *class_ = function.class_;
 
     if (expr.function->type_tag() == NodeType::GetExpr) {
         auto *get = dynamic_cast<GetExpr *>(expr.function.get());
-        expr.args.insert(expr.args.begin(),
-            {std::move(get->object), NumericConversionType::NONE, not called->params[0].second->is_ref});
+
+        if (get->object->resolved.class_ != nullptr) {
+            class_ = get->object->resolved.class_;
+            auto *method = find_method(class_, get->name.lexeme);
+
+            if (method != nullptr) {
+                called = method->first.get();
+                ExprNode &object = get->object;
+
+                expr.args.insert(expr.args.begin(), {std::move(object), NumericConversionType::NONE, false});
+                expr.function = generate_scope_access(class_, get->name);
+            }
+        }
     }
 
     if (called->params.size() != expr.args.size()) {
@@ -682,7 +714,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         }
     }
 
-    return expr.resolved = {called->return_type.get(), called, callee.class_, expr.resolved.token};
+    return expr.resolved = {called->return_type.get(), called, class_, expr.resolved.token};
 }
 
 ExprVisitorType TypeResolver::visit(CommaExpr &expr) {
@@ -695,49 +727,44 @@ ExprVisitorType TypeResolver::visit(CommaExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, const Token &name) {
-    if (object.info->primitive == Type::CLASS) {
-        ClassStmt *accessed_type = object.class_;
+    ClassStmt *accessed_type = object.class_;
 
-        for (auto &member_decl : accessed_type->members) {
-            auto *member = member_decl.first.get();
-            if (member->name == name) {
-                if (not in_class || (in_class && current_class->name != accessed_type->name)) {
-                    if (member_decl.second == VisibilityType::PROTECTED) {
-                        error({"Cannot access protected member outside class"}, name);
-                    } else if (member_decl.second == VisibilityType::PRIVATE) {
-                        error({"Cannot access private member outside class"}, name);
-                    }
-                }
-
-                if (member->type->type_tag() == NodeType::UserDefinedType) {
-                    return {member->type.get(),
-                        find_class(dynamic_cast<UserDefinedType *>(member->type.get())->name.lexeme), name, true};
-                }
-                return {member->type.get(), name, true};
+    auto *member = find_member(accessed_type, name.lexeme);
+    if (member != nullptr) {
+        if (not in_class || (in_class && current_class->name != accessed_type->name)) {
+            if (member->second == VisibilityType::PROTECTED) {
+                error({"Cannot access protected member outside class"}, name);
+            } else if (member->second == VisibilityType::PRIVATE) {
+                error({"Cannot access private member outside class"}, name);
             }
         }
 
-        for (auto &method_decl : accessed_type->methods) {
-            auto *method = method_decl.first.get();
-            if (method->name == name) {
-                if ((method_decl.second == VisibilityType::PUBLIC) ||
-                    (in_class && current_class->name == accessed_type->name)) {
-                    return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method_decl.first.get(), name};
-                } else if (method_decl.second == VisibilityType::PROTECTED) {
-                    error({"Cannot access protected method outside class"}, name);
-                } else if (method_decl.second == VisibilityType::PRIVATE) {
-                    error({"Cannot access private method outside class"}, name);
-                }
-                return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method_decl.first.get(), name};
-            }
-        }
+        auto *type = copy_type(member->first->type.get());
+        type->is_const = type->is_const || object.info->is_const;
+        ExprVisitorType info{type, name, object.is_lvalue};
 
-        error({"No such attribute exists in the class"}, name);
-        throw TypeException{"No such attribute exists in the class"};
-    } else {
-        error({"Expected class or list type to take attribute of"}, name);
-        throw TypeException{"Expected class or list type to take attribute of"};
+        type_scratch_space.emplace_back(type); // Make sure there's no memory leaks
+
+        if (member->first->type->type_tag() == NodeType::UserDefinedType) {
+            info.class_ = find_class(dynamic_cast<UserDefinedType *>(member->first->type.get())->name.lexeme);
+        }
+        return info;
     }
+
+    auto *method = find_method(accessed_type, name.lexeme);
+    if (method != nullptr) {
+        if ((method->second == VisibilityType::PUBLIC) || (in_class && current_class->name == accessed_type->name)) {
+            return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method->first.get(), name};
+        } else if (method->second == VisibilityType::PROTECTED) {
+            error({"Cannot access protected method outside class"}, name);
+        } else if (method->second == VisibilityType::PRIVATE) {
+            error({"Cannot access private method outside class"}, name);
+        }
+        return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method->first.get(), name};
+    }
+
+    error({"No such attribute exists in the class"}, name);
+    throw TypeException{"No such attribute exists in the class"};
 }
 
 ExprVisitorType TypeResolver::visit(GetExpr &expr) {
@@ -934,15 +961,16 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
     ExprVisitorType left = resolve(expr.scope.get());
 
     switch (left.scope_type) {
-        case ExprTypeInfo::ScopeType::CLASS:
-            for (auto &method : left.class_->methods) {
-                if (method.first->name == expr.name) {
-                    return expr.resolved = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
-                               method.first.get(), left.class_, expr.resolved.token};
-                }
+        case ExprTypeInfo::ScopeType::CLASS: {
+            auto *method = find_method(left.class_, expr.name.lexeme);
+            if (method != nullptr) {
+                return expr.resolved = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method->first.get(),
+                           left.class_, expr.resolved.token};
             }
+
             error({"No such method exists in the class"}, expr.name);
             throw TypeException{"No such method exists in the class"};
+        }
 
         case ExprTypeInfo::ScopeType::MODULE: {
             auto &module = Parser::parsed_modules[left.module_index].first;
@@ -1162,7 +1190,8 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
 
     if (ClassStmt *class_ = find_class(expr.name.lexeme); class_ != nullptr) {
         expr.type = IdentifierType::CLASS;
-        return expr.resolved = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.resolved.token};
+        return expr.resolved = {make_new_type<UserDefinedType>(Type::CLASS, true, false, class_->name), class_->ctor,
+                   class_, expr.resolved.token};
     }
 
     error({"No such variable/function '", expr.name.lexeme, "' in the current module's scope"}, expr.name);
@@ -1205,32 +1234,14 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
         stmt.methods.emplace_back(std::unique_ptr<FunctionStmt>{stmt.ctor}, VisibilityType::PUBLIC);
     }
 
-    std::size_t initialized_count = std::count_if(stmt.members.begin(), stmt.members.end(),
-        [](const auto &member) { return member.first->initializer != nullptr; });
-
-    auto *ctor_body = dynamic_cast<BlockStmt *>(stmt.ctor->body.get());
-    ctor_body->stmts.reserve(initialized_count + ctor_body->stmts.size());
-
-    for (auto &member_declaration : stmt.members) {
-        auto *member = member_declaration.first.get();
-        if (member->initializer != nullptr) {
-            // Transform the declaration of the member into an implicit assignment in the constructor
-            // i.e `public var x = 0` becomes `public var x: int` and `this.x = 0`
-            // TODO: What about references?
-            Expr *this_expr = allocate_node(ThisExpr, member->name);
-
-            if (member->type == nullptr) {
-                member->type = TypeNode{copy_type(resolve(member->initializer.get()).info)};
-            }
-
-            ExprNode member_initializer{allocate_node(SetExpr, ExprNode{this_expr}, member->name,
-                {std::move(member->initializer)}, NumericConversionType::NONE, false)};
-            StmtNode member_init_stmt{allocate_node(ExpressionStmt, std::move(member_initializer))};
-
-            ctor_body->stmts.insert(ctor_body->stmts.begin(), std::move(member_init_stmt));
-
-            member->initializer = nullptr;
-        }
+    // Creation of the implicit destructor
+    if (stmt.dtor == nullptr) {
+        Token name = stmt.name;
+        name.lexeme = "~" + name.lexeme;
+        stmt.dtor = allocate_node(FunctionStmt, std::move(name),
+            TypeNode{allocate_node(UserDefinedType, Type::CLASS, false, false, stmt.name)}, {},
+            StmtNode{allocate_node(BlockStmt, {})}, {}, values.empty() ? 0 : values.crbegin()->scope_depth);
+        stmt.methods.emplace_back(std::unique_ptr<FunctionStmt>{stmt.dtor}, VisibilityType::PUBLIC);
     }
 
     for (auto &member_decl : stmt.members) {
