@@ -682,6 +682,12 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
                 expr.function = generate_scope_access(class_, get->name);
             }
         }
+    } else if (expr.function->type_tag() == NodeType::VariableExpr) {
+        // Determine if a constructor is being called
+        if (function.class_ != nullptr && called == function.class_->ctor) {
+            // Constructors of type `X(...)` need to be converted into `X::X(...)`
+            expr.function = generate_scope_access(function.class_, called->name);
+        }
     }
 
     if (called->params.size() != expr.args.size()) {
@@ -1239,7 +1245,7 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
         Token name = stmt.name;
         name.lexeme = "~" + name.lexeme;
         stmt.dtor = allocate_node(FunctionStmt, std::move(name),
-            TypeNode{allocate_node(UserDefinedType, Type::CLASS, false, false, stmt.name)}, {},
+            TypeNode{allocate_node(PrimitiveType, Type::NULL_, false, false)}, {},
             StmtNode{allocate_node(BlockStmt, {})}, {}, values.empty() ? 0 : values.crbegin()->scope_depth);
         stmt.methods.emplace_back(std::unique_ptr<FunctionStmt>{stmt.dtor}, VisibilityType::PUBLIC);
     }
@@ -1287,6 +1293,27 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     }
 
     replace_if_typeof(stmt.return_type);
+
+    if (in_class && current_class->ctor == &stmt) {
+        if (stmt.return_type->primitive != Type::CLASS || stmt.return_type->is_const || stmt.return_type->is_ref ||
+            current_class != find_class(dynamic_cast<UserDefinedType *>(stmt.return_type.get())->name.lexeme)) {
+            error({"A constructor needs to have a return type of the same name as the class"}, stmt.name);
+            note({"The return type is '", stringify(stmt.return_type.get()), "'"});
+            if (stmt.return_type->is_const) {
+                note({"The return type cannot be a constant type"});
+            }
+            if (stmt.return_type->is_ref) {
+                note({"The return type cannot be a reference type"});
+            }
+            throw TypeException{"A constructor needs to have a return type of the same name as the class"};
+        }
+    } else if (in_class && current_class->dtor == &stmt) {
+        if (stmt.return_type->primitive != Type::NULL_) {
+            error({"A destructor can only have null return type"}, stmt.name);
+            note({"The return type is '", stringify(stmt.return_type.get()), "'"});
+            throw TypeException{"A destructor can only have null return type"};
+        }
+    }
 
     std::size_t i = 0;
     for (auto &param : stmt.params) {
@@ -1346,7 +1373,11 @@ StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
-    if (stmt.value == nullptr) {
+    if ((in_ctor || in_dtor) && stmt.value != nullptr) {
+        error({"Cannot have non-trivial return statement in ", in_ctor ? "constructor" : "destructor"}, stmt.keyword);
+        note({"Returned value's type is '", stringify(stmt.value->resolved.info), "'"});
+        throw TypeException{"Cannot have non-trivial return statement in constructor/destructor"};
+    } else if (stmt.value == nullptr) {
         if (current_function->return_type->primitive != Type::NULL_) {
             error({"Can only have empty return expressions in functions which return 'null'"}, stmt.keyword);
             note({"Return type of the function is '", stringify(current_function->return_type.get()), "'"});
