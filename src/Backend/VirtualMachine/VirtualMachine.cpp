@@ -357,7 +357,9 @@ ExecutionState VirtualMachine::step() {
         case is Instruction::RETURN: {
             Value result = stack[--stack_top];
             std::size_t locals_popped = operand;
-            stack[stack_top - locals_popped - 1] = result;
+            if (result.tag != Value::Tag::NULL_) {
+                stack[stack_top - locals_popped - 1] = result;
+            }
             while (locals_popped-- > 0) {
                 stack_top--;
                 if (stack[stack_top].tag == Value::Tag::STRING) {
