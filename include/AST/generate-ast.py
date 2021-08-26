@@ -355,9 +355,11 @@ if __name__ == '__main__':
 
         declare_stmt_type('Function',
                           'name{std::move(name)}, return_type{std::move(return_type)}, params{std::move(params)}, '
-                          'body{std::move(body)}, return_stmts{std::move(return_stmts)}, scope_depth{scope_depth}',
+                          'body{std::move(body)}, return_stmts{std::move(return_stmts)}, scope_depth{scope_depth}, '
+                          'class_{class_}',
                           'Token name, TypeNode return_type, std::vector<ParameterType> params, '
-                          'StmtNode body, std::vector<ReturnStmt*> return_stmts, std::size_t scope_depth',
+                          'StmtNode body, std::vector<ReturnStmt*> return_stmts, std::size_t scope_depth, '
+                          'ClassStmt *class_',
                           ['using ParameterType = std::pair<std::variant<IdentifierTuple, Token>, TypeNode>',
                            'enum Contained { IDENT_TUPLE = 0, TOKEN = 1 }'])
 

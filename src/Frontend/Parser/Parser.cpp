@@ -2,11 +2,11 @@
 /* See LICENSE at project root for license details */
 #include "Frontend/Parser/Parser.hpp"
 
-#include "Frontend/Scanner/Scanner.hpp"
 #include "Backend/VirtualMachine/Value.hpp"
 #include "Common.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
 #include "Frontend/Parser/TypeResolver.hpp"
+#include "Frontend/Scanner/Scanner.hpp"
 
 #include <algorithm>
 #include <array>
@@ -773,7 +773,7 @@ StmtNode Parser::function_declaration() {
         StmtNode body = block_statement();
 
         function_definition = allocate_node(
-            FunctionStmt, std::move(name), std::move(return_type), std::move(params), std::move(body), {}, 0);
+            FunctionStmt, std::move(name), std::move(return_type), std::move(params), std::move(body), {}, 0, nullptr);
     }
 
     if (not in_class && scope_depth == 0) {

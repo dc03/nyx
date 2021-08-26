@@ -623,6 +623,7 @@ struct FunctionStmt final : public Stmt {
     StmtNode body{};
     std::vector<ReturnStmt *> return_stmts{};
     std::size_t scope_depth{};
+    ClassStmt *class_{};
 
     std::string_view string_tag() override final { return "FunctionStmt"; }
 
@@ -630,13 +631,14 @@ struct FunctionStmt final : public Stmt {
 
     FunctionStmt() = default;
     FunctionStmt(Token name, TypeNode return_type, std::vector<ParameterType> params, StmtNode body,
-        std::vector<ReturnStmt *> return_stmts, std::size_t scope_depth)
+        std::vector<ReturnStmt *> return_stmts, std::size_t scope_depth, ClassStmt *class_)
         : name{std::move(name)},
           return_type{std::move(return_type)},
           params{std::move(params)},
           body{std::move(body)},
           return_stmts{std::move(return_stmts)},
-          scope_depth{scope_depth} {}
+          scope_depth{scope_depth},
+          class_{class_} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

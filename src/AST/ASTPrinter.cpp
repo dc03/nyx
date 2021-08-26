@@ -455,6 +455,10 @@ StmtVisitorType ASTPrinter::visit(FunctionStmt &stmt) {
         print(stmt.return_type.get());
         current_depth--;
     }
+    if (stmt.class_ != nullptr) {
+        print_tabs(current_depth);
+        std::cout << "Class: " << stmt.class_->name.lexeme << '\n';
+    }
     for (std::size_t i = 0; i < stmt.params.size(); i++) {
         print_tabs(current_depth);
         std::cout << "Param:(" << i + 1 << ")\n";

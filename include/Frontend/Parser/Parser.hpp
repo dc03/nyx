@@ -6,9 +6,9 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
-#include "Backend/VirtualMachine/Module.hpp"
 #include "AST/AST.hpp"
 #include "AST/Token.hpp"
+#include "Backend/VirtualMachine/Module.hpp"
 
 #include <string_view>
 #include <vector>
