@@ -37,6 +37,14 @@ class Generator final : Visitor {
     void add_vartuple_to_scope(IdentifierTuple::TupleType &tuple);
     std::size_t compile_vartuple(IdentifierTuple::TupleType &tuple, TupleType &type);
 
+    bool is_ctor_call(ExprNode &node);
+    ClassStmt *get_class(ExprNode &node);
+    void make_instance(ClassStmt *class_);
+    Value::IntType get_member_index(ClassStmt *stmt, const std::string &name);
+
+    std::string mangle_function(FunctionStmt &stmt);
+    std::string mangle_scope_access(ScopeAccessExpr &expr);
+
     ExprVisitorType compile(Expr *expr);
     StmtVisitorType compile(Stmt *stmt);
     BaseTypeVisitorType compile(BaseType *type);

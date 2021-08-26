@@ -6,6 +6,8 @@
 #include "Common.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
 
+#include <algorithm>
+
 std::vector<RuntimeModule> Generator::compiled_modules{};
 
 Generator::Generator() {
@@ -22,7 +24,9 @@ void Generator::end_scope() {
     for (auto begin = scopes.top().crbegin(); begin != scopes.top().crend(); begin++) {
         if ((*begin)->primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, 0);
-        } else if (((*begin)->primitive == Type::LIST || (*begin)->primitive == Type::TUPLE) && not(*begin)->is_ref) {
+        } else if (((*begin)->primitive == Type::LIST || (*begin)->primitive == Type::TUPLE ||
+                       (*begin)->primitive == Type::CLASS) &&
+                   not(*begin)->is_ref) {
             current_chunk->emit_instruction(Instruction::POP_LIST, 0);
         } else {
             current_chunk->emit_instruction(Instruction::POP, 0);
@@ -118,6 +122,60 @@ std::size_t Generator::compile_vartuple(IdentifierTuple::TupleType &tuple, Tuple
     return count;
 }
 
+bool Generator::is_ctor_call(ExprNode &node) {
+    if (node->resolved.class_ != nullptr) {
+        if (node->type_tag() == NodeType::ScopeAccessExpr) {
+            return dynamic_cast<ScopeAccessExpr *>(node.get())->name == node->resolved.class_->name;
+        }
+    }
+    return false;
+}
+
+ClassStmt *Generator::get_class(ExprNode &node) {
+    return node->resolved.class_;
+}
+
+void Generator::make_instance(ClassStmt *class_) {
+    current_chunk->emit_instruction(Instruction::MAKE_LIST, class_->name.line);
+    emit_operand(class_->members.size());
+
+    std::size_t i = 0;
+    for (ClassStmt::MemberType &member : class_->members) {
+        current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, member.first->name.line);
+        emit_operand(1);
+        current_chunk->emit_constant(Value{static_cast<Value::IntType>(i)}, member.first->name.line);
+        compile(member.first.get());
+        current_chunk->emit_instruction(Instruction::ASSIGN_LIST, member.first->name.line);
+        current_chunk->emit_instruction(Instruction::POP, member.first->name.line);
+
+        i++;
+    }
+}
+
+Value::IntType Generator::get_member_index(ClassStmt *stmt, const std::string &name) {
+    return std::distance(stmt->members.begin(),
+        std::find_if(stmt->members.begin(), stmt->members.end(),
+            [&name](ClassStmt::MemberType &member) { return member.first->name.lexeme == name; }));
+}
+
+std::string Generator::mangle_function(FunctionStmt &stmt) {
+    if (stmt.class_ != nullptr) {
+        return stmt.class_->name.lexeme + "@" + stmt.name.lexeme;
+    } else {
+        return stmt.name.lexeme;
+    }
+}
+
+std::string Generator::mangle_scope_access(ScopeAccessExpr &expr) {
+    if (expr.scope->type_tag() == NodeType::ScopeAccessExpr) {
+        return mangle_scope_access(*dynamic_cast<ScopeAccessExpr *>(expr.scope.get())) + "@" + expr.name.lexeme;
+    } else if (expr.scope->type_tag() == NodeType::ScopeNameExpr) {
+        return dynamic_cast<ScopeNameExpr *>(expr.scope.get())->name.lexeme + "@" + expr.name.lexeme;
+    }
+
+    unreachable();
+}
+
 ExprVisitorType Generator::compile(Expr *expr) {
     return expr->accept(*this);
 }
@@ -134,7 +192,8 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
     auto compile_right = [&expr, this] {
         compile(expr.value.get());
         if (expr.value->resolved.info->is_ref && expr.value->resolved.info->primitive != Type::LIST &&
-            expr.value->resolved.info->primitive != Type::TUPLE) {
+            expr.value->resolved.info->primitive != Type::TUPLE &&
+            expr.value->resolved.info->primitive != Type::CLASS) {
             current_chunk->emit_instruction(Instruction::DEREF, expr.target.line);
         } // As there is no difference between a list and a reference to a list (aside from the tag), there is no need
           // to add an explicit Instruction::DEREF
@@ -153,7 +212,8 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
             // Assigning to lists needs to be handled separately, as it can involve destroying the list that was
             // previously there in the variable. This code is moved off of the hot path into ASSIGN_LOCAL_LIST and
             // ASSIGN_GLOBAL_LIST
-            if (expr.resolved.info->primitive == Type::LIST || expr.resolved.info->primitive == Type::TUPLE) {
+            if (expr.resolved.info->primitive == Type::LIST || expr.resolved.info->primitive == Type::TUPLE ||
+                expr.resolved.info->primitive == Type::CLASS) {
                 current_chunk->emit_instruction(expr.target_type == IdentifierType::LOCAL
                                                     ? Instruction::ASSIGN_LOCAL_LIST
                                                     : Instruction::ASSIGN_GLOBAL_LIST,
@@ -386,9 +446,15 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(CallExpr &expr) {
-    // Emit a null value on the stack just before the parameters of the function which is being called. This will serve
-    // as the stack slot in which to save the return value of the function before destroying any arguments or locals.
-    current_chunk->emit_instruction(Instruction::PUSH_NULL, expr.resolved.token.line);
+    if (is_ctor_call(expr.function)) {
+        ClassStmt *class_ = get_class(expr.function);
+        make_instance(class_);
+    } else {
+        // Emit a null value on the stack just before the parameters of the function which is being called. This will
+        // serve as the stack slot in which to save the return value of the function before destroying any arguments or
+        // locals.
+        current_chunk->emit_instruction(Instruction::PUSH_NULL, expr.resolved.token.line);
+    }
     std::size_t i = 0;
     for (auto &arg : expr.args) {
         auto &value = std::get<ExprNode>(arg);
@@ -444,7 +510,8 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
         auto begin = expr.args.crbegin();
         for (; begin != expr.args.crend(); begin++) {
             auto &arg = std::get<ExprNode>(*begin);
-            if ((arg->resolved.info->primitive == Type::LIST || arg->resolved.info->primitive == Type::TUPLE) &&
+            if ((arg->resolved.info->primitive == Type::LIST || arg->resolved.info->primitive == Type::TUPLE ||
+                    arg->resolved.info->primitive == Type::CLASS) &&
                 not arg->resolved.is_lvalue && not arg->resolved.info->is_ref) {
                 current_chunk->emit_instruction(Instruction::POP_LIST, arg->resolved.token.line);
             } else if (arg->resolved.info->primitive == Type::STRING) {
@@ -467,7 +534,8 @@ ExprVisitorType Generator::visit(CommaExpr &expr) {
         compile(it->get());
         if ((*it)->resolved.info->primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, (*it)->resolved.token.line);
-        } else if (((*it)->resolved.info->primitive == Type::LIST || (*it)->resolved.info->primitive == Type::TUPLE) &&
+        } else if (((*it)->resolved.info->primitive == Type::LIST || (*it)->resolved.info->primitive == Type::TUPLE ||
+                       (*it)->resolved.info->primitive == Type::CLASS) &&
                    not(*it)->resolved.is_lvalue) {
             current_chunk->emit_instruction(Instruction::POP_LIST, (*it)->resolved.token.line);
         } else {
@@ -483,6 +551,11 @@ ExprVisitorType Generator::visit(GetExpr &expr) {
     if (expr.object->resolved.info->primitive == Type::TUPLE && expr.name.type == TokenType::INT_VALUE) {
         compile(expr.object.get());
         current_chunk->emit_constant(Value{std::stoi(expr.name.lexeme)}, expr.name.line);
+        current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.resolved.token.line);
+    } else if (expr.object->resolved.info->primitive == Type::CLASS && expr.name.type == TokenType::IDENTIFIER) {
+        compile(expr.object.get());
+        current_chunk->emit_constant(
+            Value{get_member_index(expr.object->resolved.class_, expr.name.lexeme)}, expr.name.line);
         current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.resolved.token.line);
     }
     return {};
@@ -686,6 +759,8 @@ ExprVisitorType Generator::visit(MoveExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(ScopeAccessExpr &expr) {
+    current_chunk->emit_string(mangle_scope_access(expr), expr.resolved.token.line);
+    current_chunk->emit_instruction(Instruction::LOAD_FUNCTION, expr.resolved.token.line);
     return {};
 }
 
@@ -699,6 +774,12 @@ ExprVisitorType Generator::visit(SetExpr &expr) {
         current_chunk->emit_constant(Value{std::stoi(expr.name.lexeme)}, expr.name.line);
         compile(expr.value.get());
         current_chunk->emit_instruction(Instruction::ASSIGN_LIST, expr.name.line);
+    } else if (expr.object->resolved.info->primitive == Type::CLASS && expr.name.type == TokenType::IDENTIFIER) {
+        compile(expr.object.get());
+        current_chunk->emit_constant(
+            Value{get_member_index(expr.object->resolved.class_, expr.name.lexeme)}, expr.name.line);
+        compile(expr.value.get());
+        current_chunk->emit_instruction(Instruction::ASSIGN_LIST, expr.resolved.token.line);
     }
     return {};
 }
@@ -839,13 +920,15 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
         case IdentifierType::GLOBAL:
             if (expr.resolved.stack_slot < Chunk::const_long_max) {
                 if (expr.type == IdentifierType::LOCAL) {
-                    if (expr.resolved.info->primitive == Type::LIST || expr.resolved.info->primitive == Type::TUPLE) {
+                    if (expr.resolved.info->primitive == Type::LIST || expr.resolved.info->primitive == Type::TUPLE ||
+                        expr.resolved.info->primitive == Type::CLASS) {
                         current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LIST, expr.name.line);
                     } else {
                         current_chunk->emit_instruction(Instruction::ACCESS_LOCAL, expr.name.line);
                     }
                 } else {
-                    if (expr.resolved.info->primitive == Type::LIST || expr.resolved.info->primitive == Type::TUPLE) {
+                    if (expr.resolved.info->primitive == Type::LIST || expr.resolved.info->primitive == Type::TUPLE ||
+                        expr.resolved.info->primitive == Type::CLASS) {
                         current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL_LIST, expr.name.line);
                     } else {
                         current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL, expr.name.line);
@@ -879,7 +962,11 @@ StmtVisitorType Generator::visit(BreakStmt &stmt) {
     break_stmts.top().push_back(break_idx);
 }
 
-StmtVisitorType Generator::visit(ClassStmt &stmt) {}
+StmtVisitorType Generator::visit(ClassStmt &stmt) {
+    for (auto &method : stmt.methods) {
+        compile(method.first.get());
+    }
+}
 
 StmtVisitorType Generator::visit(ContinueStmt &stmt) {
     std::size_t continue_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
@@ -892,7 +979,8 @@ StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
     if (stmt.expr->resolved.info->primitive == Type::STRING) {
         current_chunk->emit_instruction(Instruction::POP_STRING, current_chunk->line_numbers.back().first);
     } else if (stmt.expr->resolved.info->primitive == Type::LIST ||
-               stmt.expr->resolved.info->primitive == Type::TUPLE) {
+               stmt.expr->resolved.info->primitive == Type::TUPLE ||
+               stmt.expr->resolved.info->primitive == Type::CLASS) {
         current_chunk->emit_instruction(Instruction::POP_LIST, current_chunk->line_numbers.back().first);
     } else {
         current_chunk->emit_instruction(Instruction::POP, current_chunk->line_numbers.back().first);
@@ -909,7 +997,8 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
             function.arity += 1;
         }
     }
-    function.name = stmt.name.lexeme;
+
+    function.name = mangle_function(stmt);
 
     for (auto &param : stmt.params) {
         if (param.first.index() == FunctionStmt::IDENT_TUPLE) {
@@ -941,7 +1030,7 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
         }
     }
 
-    current_compiled->functions[stmt.name.lexeme] = std::move(function);
+    current_compiled->functions[mangle_function(stmt)] = std::move(function);
     current_chunk = &current_compiled->top_level_code;
 }
 
@@ -991,7 +1080,8 @@ StmtVisitorType Generator::visit(ReturnStmt &stmt) {
     if (stmt.value != nullptr) {
         compile(stmt.value.get());
         if (auto &return_type = stmt.function->return_type;
-            (return_type->primitive == Type::LIST || return_type->primitive == Type::TUPLE) &&
+            (return_type->primitive == Type::LIST || return_type->primitive == Type::TUPLE ||
+                return_type->primitive == Type::CLASS) &&
             not return_type->is_ref && stmt.value->resolved.is_lvalue) {
             current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.keyword.line);
         }
@@ -1091,7 +1181,8 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
         compile(stmt.initializer.get());
         if (stmt.initializer->resolved.info->is_ref && not stmt.type->is_ref &&
             stmt.initializer->resolved.info->primitive != Type::LIST &&
-            stmt.initializer->resolved.info->primitive != Type::TUPLE) {
+            stmt.initializer->resolved.info->primitive != Type::TUPLE &&
+            stmt.initializer->resolved.info->primitive != Type::CLASS) {
             current_chunk->emit_instruction(Instruction::DEREF, stmt.name.line);
         }
 
