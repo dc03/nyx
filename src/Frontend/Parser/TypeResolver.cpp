@@ -680,6 +680,8 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
 
                 expr.args.insert(expr.args.begin(), {std::move(object), NumericConversionType::NONE, false});
                 expr.function = generate_scope_access(class_, get->name);
+                expr.function->resolved.func = called;
+                expr.function->resolved.class_ = function.class_;
             }
         }
     } else if (expr.function->type_tag() == NodeType::VariableExpr) {
@@ -687,6 +689,8 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         if (function.class_ != nullptr && called == function.class_->ctor) {
             // Constructors of type `X(...)` need to be converted into `X::X(...)`
             expr.function = generate_scope_access(function.class_, called->name);
+            expr.function->resolved.func = called;
+            expr.function->resolved.class_ = function.class_;
         }
     }
 
@@ -1236,7 +1240,10 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
     if (stmt.ctor == nullptr) {
         stmt.ctor = allocate_node(FunctionStmt, stmt.name,
             TypeNode{allocate_node(UserDefinedType, Type::CLASS, false, false, stmt.name)}, {},
-            StmtNode{allocate_node(BlockStmt, {})}, {}, values.empty() ? 0 : values.crbegin()->scope_depth);
+            StmtNode{allocate_node(BlockStmt, {})}, {}, values.empty() ? 0 : values.crbegin()->scope_depth, &stmt);
+        StmtNode return_stmt{allocate_node(ReturnStmt, stmt.name, nullptr, 0, stmt.ctor)};
+        dynamic_cast<BlockStmt *>(stmt.ctor->body.get())->stmts.emplace_back(std::move(return_stmt));
+
         stmt.methods.emplace_back(std::unique_ptr<FunctionStmt>{stmt.ctor}, VisibilityType::PUBLIC);
     }
 
@@ -1246,7 +1253,10 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
         name.lexeme = "~" + name.lexeme;
         stmt.dtor = allocate_node(FunctionStmt, std::move(name),
             TypeNode{allocate_node(PrimitiveType, Type::NULL_, false, false)}, {},
-            StmtNode{allocate_node(BlockStmt, {})}, {}, values.empty() ? 0 : values.crbegin()->scope_depth);
+            StmtNode{allocate_node(BlockStmt, {})}, {}, values.empty() ? 0 : values.crbegin()->scope_depth, &stmt);
+        StmtNode return_stmt{allocate_node(ReturnStmt, stmt.name, nullptr, 0, stmt.dtor)};
+        dynamic_cast<BlockStmt *>(stmt.dtor->body.get())->stmts.emplace_back(std::move(return_stmt));
+
         stmt.methods.emplace_back(std::unique_ptr<FunctionStmt>{stmt.dtor}, VisibilityType::PUBLIC);
     }
 
@@ -1293,6 +1303,8 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     }
 
     replace_if_typeof(stmt.return_type);
+
+    stmt.class_ = current_class;
 
     if (in_class && current_class->ctor == &stmt) {
         if (stmt.return_type->primitive != Type::CLASS || stmt.return_type->is_const || stmt.return_type->is_ref ||
@@ -1377,18 +1389,20 @@ StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
         error({"Cannot have non-trivial return statement in ", in_ctor ? "constructor" : "destructor"}, stmt.keyword);
         note({"Returned value's type is '", stringify(stmt.value->resolved.info), "'"});
         throw TypeException{"Cannot have non-trivial return statement in constructor/destructor"};
-    } else if (stmt.value == nullptr) {
-        if (current_function->return_type->primitive != Type::NULL_) {
-            error({"Can only have empty return expressions in functions which return 'null'"}, stmt.keyword);
-            note({"Return type of the function is '", stringify(current_function->return_type.get()), "'"});
-            throw TypeException{"Can only have empty return expressions in functions which return 'null'"};
+    } else if (not in_ctor && not in_dtor) {
+        if (stmt.value == nullptr) {
+            if (current_function->return_type->primitive != Type::NULL_) {
+                error({"Can only have empty return expressions in functions which return 'null'"}, stmt.keyword);
+                note({"Return type of the function is '", stringify(current_function->return_type.get()), "'"});
+                throw TypeException{"Can only have empty return expressions in functions which return 'null'"};
+            }
+        } else if (ExprVisitorType return_value = resolve(stmt.value.get());
+                   not convertible_to(current_function->return_type.get(), return_value.info, return_value.is_lvalue,
+                       stmt.keyword, true)) {
+            error({"Type of expression in return statement does not match return type of function"}, stmt.keyword);
+            note({"Trying to convert to '", stringify(current_function->return_type.get()), "' from '",
+                stringify(return_value.info), "'"});
         }
-    } else if (ExprVisitorType return_value = resolve(stmt.value.get());
-               not convertible_to(current_function->return_type.get(), return_value.info, return_value.is_lvalue,
-                   stmt.keyword, true)) {
-        error({"Type of expression in return statement does not match return type of function"}, stmt.keyword);
-        note({"Trying to convert to '", stringify(current_function->return_type.get()), "' from '",
-            stringify(return_value.info), "'"});
     }
 
     stmt.locals_popped = std::count_if(values.crbegin(), values.crend(),
