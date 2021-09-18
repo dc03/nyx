@@ -42,7 +42,7 @@ class TypeResolver final : Visitor {
     template <typename T, typename... Args>
     BaseType *make_new_type(Type type, bool is_const, bool is_ref, Args &&...args);
     ExprTypeInfo resolve_class_access(ExprVisitorType &object, const Token &name);
-    ExprVisitorType check_inbuilt(VariableExpr *function, const Token &oper,
+    ExprVisitorType check_builtin_function(VariableExpr *function, const Token &oper,
         std::vector<std::tuple<ExprNode, NumericConversionType, bool>> &args);
     ClassStmt *find_class(const std::string &class_name);
     FunctionStmt *find_function(const std::string &function_name);
@@ -61,7 +61,7 @@ class TypeResolver final : Visitor {
     bool are_equivalent_primitives(QualifiedTypeInfo first, QualifiedTypeInfo second);
     bool are_equivalent_types(QualifiedTypeInfo first, QualifiedTypeInfo second);
 
-    bool match_ident_tuple_with_type(IdentifierTuple::TupleType &tuple, TupleType &type);
+    bool match_vartuple_with_type(IdentifierTuple::TupleType &tuple, TupleType &type);
     void copy_types_into_vartuple(IdentifierTuple::TupleType &tuple, TupleType &type);
     void add_vartuple_to_stack(IdentifierTuple::TupleType &tuple, std::size_t stack_slot);
 

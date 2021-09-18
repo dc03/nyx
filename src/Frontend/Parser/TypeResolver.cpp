@@ -118,17 +118,6 @@ ExprNode TypeResolver::generate_scope_access(ClassStmt *stmt, Token name) {
     return ExprNode{allocate_node(ScopeAccessExpr, std::move(class_), std::move(name))};
 }
 
-bool is_builtin_type(Type type) {
-    switch (type) {
-        case Type::BOOL:
-        case Type::FLOAT:
-        case Type::INT:
-        case Type::STRING:
-        case Type::NULL_: return true;
-        default: return false;
-    }
-}
-
 ClassStmt *TypeResolver::find_class(const std::string &class_name) {
     if (auto class_ = classes.find(class_name); class_ != classes.end()) {
         return class_->second;
@@ -251,7 +240,7 @@ void TypeResolver::infer_list_type(ListExpr *of, ListType *from) {
 
     // Decide if copy is needed after inferring type
     for (ListExpr::ElementType &element : of->elements) {
-        if (not is_builtin_type(of->type->contained->primitive)) {
+        if (is_nontrivial_type(of->type->contained->primitive)) {
             if (not of->type->contained->is_ref && std::get<ExprNode>(element)->resolved.is_lvalue) {
                 std::get<RequiresCopy>(element) = true;
             }
@@ -399,7 +388,7 @@ bool is_builtin_function(VariableExpr *expr) {
         [&expr](const NativeFn &native) { return native.name == expr->name.lexeme; });
 }
 
-ExprVisitorType TypeResolver::check_inbuilt(
+ExprVisitorType TypeResolver::check_builtin_function(
     VariableExpr *function, const Token &oper, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> &args) {
     auto it = std::find_if(native_functions.begin(), native_functions.end(),
         [&function](const NativeFn &native) { return native.name == function->name.lexeme; });
@@ -427,7 +416,7 @@ ExprVisitorType TypeResolver::check_inbuilt(
     return ExprVisitorType{make_new_type<PrimitiveType>(it->return_type, true, false), function->name};
 }
 
-bool TypeResolver::match_ident_tuple_with_type(IdentifierTuple::TupleType &tuple, TupleType &type) {
+bool TypeResolver::match_vartuple_with_type(IdentifierTuple::TupleType &tuple, TupleType &type) {
     if (tuple.size() != type.types.size()) {
         return false;
     }
@@ -435,7 +424,7 @@ bool TypeResolver::match_ident_tuple_with_type(IdentifierTuple::TupleType &tuple
     for (std::size_t i = 0; i < tuple.size(); i++) {
         if (tuple[i].index() == IdentifierTuple::IDENT_TUPLE) {
             if (type.types[i]->primitive != Type::TUPLE ||
-                not match_ident_tuple_with_type(
+                not match_vartuple_with_type(
                     std::get<IdentifierTuple>(tuple[i]).tuple, dynamic_cast<TupleType &>(*type.types[i]))) {
                 return false;
             }
@@ -519,12 +508,12 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
         expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
     }
 
-    if (not is_builtin_type(value.info->primitive)) {
+    if (is_nontrivial_type(value.info->primitive)) {
         if (expr.value->resolved.is_lvalue || expr.value->resolved.info->is_ref) {
             expr.requires_copy = true;
         }
     }
-    // Assignment leads to copy when the primitive is not an inbuilt one as inbuilt types are implicitly copied when the
+    // Assignment leads to copy when the primitive is not a trivial one as trivial types are implicitly copied when the
     // values are pushed onto the stack
     expr.resolved.info = it->info;
     expr.resolved.stack_slot = it->stack_slot;
@@ -658,7 +647,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         auto *function = dynamic_cast<VariableExpr *>(expr.function.get());
         if (is_builtin_function(function)) {
             expr.is_native_call = true;
-            return expr.resolved = check_inbuilt(function, expr.resolved.token, expr.args);
+            return expr.resolved = check_builtin_function(function, expr.resolved.token, expr.args);
         }
     }
 
@@ -714,7 +703,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         }
 
         auto &param = called->params[i];
-        if (not is_builtin_type(param.second->primitive)) {
+        if (is_nontrivial_type(param.second->primitive)) {
             if (param.second->is_ref) {
                 std::get<RequiresCopy>(expr.args[i]) = false; // A reference binding to anything does not need a copy
             } else if (argument.is_lvalue) {
@@ -870,7 +859,7 @@ ExprVisitorType TypeResolver::visit(ListExpr &expr) {
         }
 
         // Converting to non-ref from any non-trivial type (i.e. list) regardless of ref-ness requires a copy
-        if (not expr.type->contained->is_ref && not is_builtin_type(expr.type->contained->primitive) &&
+        if (not expr.type->contained->is_ref && is_nontrivial_type(expr.type->contained->primitive) &&
             std::get<ExprNode>(element)->resolved.is_lvalue) {
             std::get<RequiresCopy>(element) = true;
         }
@@ -1052,7 +1041,7 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
             expr.conversion_type = NumericConversionType::FLOAT_TO_INT;
         }
 
-        expr.requires_copy = not is_builtin_type(value_type.info->primitive);
+        expr.requires_copy = is_nontrivial_type(value_type.info->primitive);
         return expr.resolved = {assigned_type, expr.name};
     } else if (object.info->primitive == Type::CLASS && expr.name.type == TokenType::IDENTIFIER) {
         ExprVisitorType attribute_type = resolve_class_access(object, expr.name);
@@ -1076,7 +1065,7 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
             expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
         }
 
-        expr.requires_copy = not is_builtin_type(value_type.info->primitive); // Similar case to AssignExpr
+        expr.requires_copy = is_nontrivial_type(value_type.info->primitive); // Similar case to AssignExpr
         return expr.resolved = {attribute_type.info, expr.resolved.token};
     } else if (expr.object->resolved.info->primitive == Type::TUPLE) {
         error({"Expected integer to access tuple type"}, expr.name);
@@ -1346,7 +1335,7 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
             if (param.second->primitive != Type::TUPLE) {
                 error({"Expected tuple type for var-tuple declaration"}, stmt.name);
                 note({"Received type '", stringify(param.second.get()), "'"});
-            } else if (not match_ident_tuple_with_type(ident_tuple.tuple, dynamic_cast<TupleType &>(*param.second))) {
+            } else if (not match_vartuple_with_type(ident_tuple.tuple, dynamic_cast<TupleType &>(*param.second))) {
                 error({"Var-tuple declaration does not match type"}, stmt.name);
                 throw TypeException{"Var-tuple declaration does not match type"};
             }
@@ -1487,7 +1476,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         stmt.conversion_type = NumericConversionType::INT_TO_FLOAT;
     }
 
-    if (not is_builtin_type(stmt.type->primitive)) {
+    if (is_nontrivial_type(stmt.type->primitive)) {
         if (type->is_ref) {
             stmt.requires_copy = false; // A reference binding to anything does not need a copy
         } else if (initializer.is_lvalue || initializer.info->is_ref) {
@@ -1531,7 +1520,7 @@ StmtVisitorType TypeResolver::visit(VarTupleStmt &stmt) {
         error({"Expected tuple type for var-tuple declaration"}, stmt.token);
         note({"Received type '", stringify(stmt.type.get()), "'"});
         throw TypeException{"Expected tuple type for var-tuple declaration"};
-    } else if (not match_ident_tuple_with_type(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type))) {
+    } else if (not match_vartuple_with_type(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type))) {
         error({"Var-tuple declaration does not match type"}, stmt.keyword);
         throw TypeException{"Var-tuple declaration does not match type"};
     }
