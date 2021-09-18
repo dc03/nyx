@@ -44,3 +44,18 @@ before everything else
 - [ ] Move some `TypeResolver` functions into `AST.hpp`
 - [x] Reorder project, moving header files into `include/`, separating interpreter into
 `Frontend/` and `Backend/` directories
+- [ ] Rewrite the Scanner
+- [ ] Redo Native functions interfaces
+- [ ] Add pair syntax `x: y`, same as `{x, y}`
+- [ ] Rename `resolved` and `ExprTypeInfo` to `synthesized_attrs` and `ExprSynthesizedAttrs`
+- [ ] Possibly add inherited attributes with `inherited_attrs` members and
+`ExprInheritedAttrs` data type
+- [ ] Fix tuple assignment in `SetExpr` having no type checking
+- [ ] Implement references to class member variables at runtime
+- [ ] Replace `... == Type::LIST || ... == Type::TUPLE || ... == Type::CLASS` in
+`CodeGen` with `is_nontrivial_type` call
+- [ ] Rename `builtin`/`inbuilt` to `trivial`
+- [ ] Move expressions for list indices, tuple members and class member variables
+- [ ] Destructor calls, including those of member variables
+- [ ] Add `member_map` and `method_map` in `ClassStmt` for `string_view` -> `size_t`
+mapping from member/method name to index in `members`/`methods` vectors
