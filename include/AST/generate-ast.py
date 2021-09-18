@@ -435,6 +435,12 @@ if __name__ == '__main__':
         file.write('// Helper function to copy a given type node (list size expressions are not copied however)\n')
         file.write('BaseTypeVisitorType copy_type(BaseType *node);\n\n')
         file.write('// Helper function to get the size of a given vartuple\n')
-        file.write('std::size_t vartuple_size(IdentifierTuple::TupleType &tuple);')
+        file.write('std::size_t vartuple_size(IdentifierTuple::TupleType &tuple);\n\n')
+        file.write('// Determine whether passed type is trivial\n')
+        file.write('bool is_trivial_type(Type type);\n')
+        file.write('bool is_trivial_type(BaseType *node);\n\n')
+        file.write('// Determine whether passed type is non-trivial\n')
+        file.write('bool is_nontrivial_type(Type type);\n')
+        file.write('bool is_nontrivial_type(BaseType *node);\n\n')
 
         end_file(file)

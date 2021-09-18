@@ -860,4 +860,13 @@ BaseTypeVisitorType copy_type(BaseType *node);
 
 // Helper function to get the size of a given vartuple
 std::size_t vartuple_size(IdentifierTuple::TupleType &tuple);
+
+// Determine whether passed type is trivial
+bool is_trivial_type(Type type);
+bool is_trivial_type(BaseType *node);
+
+// Determine whether passed type is non-trivial
+bool is_nontrivial_type(Type type);
+bool is_nontrivial_type(BaseType *node);
+
 #endif

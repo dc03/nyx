@@ -78,3 +78,31 @@ std::size_t vartuple_size(IdentifierTuple::TupleType &tuple) {
     }
     return len;
 }
+
+bool is_trivial_type(Type type) {
+    switch (type) {
+        case Type::BOOL:
+        case Type::INT:
+        case Type::FLOAT:
+        case Type::STRING:
+        case Type::NULL_: return true;
+        default: return false;
+    }
+}
+
+bool is_trivial_type(BaseType *node) {
+    return is_trivial_type(node->primitive);
+}
+
+bool is_nontrivial_type(Type type) {
+    switch (type) {
+        case Type::CLASS:
+        case Type::LIST:
+        case Type::TUPLE: return true;
+        default: return false;
+    }
+}
+
+bool is_nontrivial_type(BaseType *node) {
+    return is_nontrivial_type(node->primitive);
+}
