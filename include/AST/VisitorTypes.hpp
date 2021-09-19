@@ -21,7 +21,7 @@ struct FunctionStmt;
 
 using QualifiedTypeInfo = BaseType *;
 
-struct ExprTypeInfo {
+struct ExprSynthesizedAttrs {
     QualifiedTypeInfo info{nullptr};
     FunctionStmt *func{nullptr};
     ClassStmt *class_{nullptr};
@@ -35,13 +35,14 @@ struct ExprTypeInfo {
     bool is_lvalue;
     enum class ScopeType { CLASS, MODULE, NONE } scope_type{};
 
-    ExprTypeInfo() = default;
-    ExprTypeInfo(const ExprTypeInfo &) = default;
-    ExprTypeInfo(QualifiedTypeInfo info, Token token, bool is_lvalue = false);
-    ExprTypeInfo(QualifiedTypeInfo info, FunctionStmt *func, Token token, bool is_lvalue = false);
-    ExprTypeInfo(QualifiedTypeInfo info, ClassStmt *class_, Token token, bool is_lvalue = false);
-    ExprTypeInfo(QualifiedTypeInfo info, std::size_t module_index, Token token);
-    ExprTypeInfo(QualifiedTypeInfo info, FunctionStmt *func, ClassStmt *class_, Token token, bool is_lvalue = false);
+    ExprSynthesizedAttrs() = default;
+    ExprSynthesizedAttrs(const ExprSynthesizedAttrs &) = default;
+    ExprSynthesizedAttrs(QualifiedTypeInfo info, Token token, bool is_lvalue = false);
+    ExprSynthesizedAttrs(QualifiedTypeInfo info, FunctionStmt *func, Token token, bool is_lvalue = false);
+    ExprSynthesizedAttrs(QualifiedTypeInfo info, ClassStmt *class_, Token token, bool is_lvalue = false);
+    ExprSynthesizedAttrs(QualifiedTypeInfo info, std::size_t module_index, Token token);
+    ExprSynthesizedAttrs(
+        QualifiedTypeInfo info, FunctionStmt *func, ClassStmt *class_, Token token, bool is_lvalue = false);
 };
 
 struct LiteralValue {
@@ -76,7 +77,7 @@ struct LiteralValue {
 };
 
 using StmtVisitorType = void;
-using ExprVisitorType = ExprTypeInfo;
+using ExprVisitorType = ExprSynthesizedAttrs;
 using BaseTypeVisitorType = QualifiedTypeInfo;
 
 #endif

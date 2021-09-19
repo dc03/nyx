@@ -171,7 +171,7 @@ BaseTypeVisitorType ASTPrinter::print(BaseType *type) {
 
 ExprVisitorType ASTPrinter::visit(AssignExpr &expr) {
     print_tabs(current_depth);
-    print_token(expr.resolved.token) << std::boolalpha << "::Copy:" << expr.requires_copy << "::Conv:";
+    print_token(expr.synthesized_attrs.token) << std::boolalpha << "::Copy:" << expr.requires_copy << "::Conv:";
     print_conversion_type(expr.conversion_type);
     std::cout << '\n';
     current_depth++;
@@ -187,7 +187,7 @@ ExprVisitorType ASTPrinter::visit(AssignExpr &expr) {
 
 ExprVisitorType ASTPrinter::visit(BinaryExpr &expr) {
     print_tabs(current_depth);
-    print_token(expr.resolved.token) << '\n';
+    print_token(expr.synthesized_attrs.token) << '\n';
     current_depth++;
     print(expr.left.get());
     print(expr.right.get());
@@ -197,8 +197,8 @@ ExprVisitorType ASTPrinter::visit(BinaryExpr &expr) {
 
 ExprVisitorType ASTPrinter::visit(CallExpr &expr) {
     print_tabs(current_depth);
-    print_token(expr.resolved.token) << std::boolalpha << "::Native:" << expr.is_native_call << std::noboolalpha
-                                     << '\n';
+    print_token(expr.synthesized_attrs.token)
+        << std::boolalpha << "::Native:" << expr.is_native_call << std::noboolalpha << '\n';
     current_depth++;
     if (not expr.is_native_call) {
         print(expr.function.get());
@@ -243,7 +243,7 @@ ExprVisitorType ASTPrinter::visit(GroupingExpr &expr) {
 
 ExprVisitorType ASTPrinter::visit(IndexExpr &expr) {
     print_tabs(current_depth);
-    print_token(expr.resolved.token) << '\n';
+    print_token(expr.synthesized_attrs.token) << '\n';
     current_depth++;
     print(expr.object.get());
     print_tabs(current_depth);
@@ -272,8 +272,8 @@ ExprVisitorType ASTPrinter::visit(ListExpr &expr) {
 
 ExprVisitorType ASTPrinter::visit(ListAssignExpr &expr) {
     print_tabs(current_depth);
-    print_token(expr.resolved.token) << std::boolalpha << "::Copy:" << expr.requires_copy << std::noboolalpha
-                                     << "::Conv:";
+    print_token(expr.synthesized_attrs.token)
+        << std::boolalpha << "::Copy:" << expr.requires_copy << std::noboolalpha << "::Conv:";
     print_conversion_type(expr.conversion_type) << '\n';
     current_depth++;
     print(&expr.list);
@@ -286,13 +286,13 @@ ExprVisitorType ASTPrinter::visit(ListAssignExpr &expr) {
 
 ExprVisitorType ASTPrinter::visit(LiteralExpr &expr) {
     print_tabs(current_depth);
-    print_token(expr.resolved.token) << "::Idx:" << expr.value.index() << '\n';
+    print_token(expr.synthesized_attrs.token) << "::Idx:" << expr.value.index() << '\n';
     return {};
 }
 
 ExprVisitorType ASTPrinter::visit(LogicalExpr &expr) {
     print_tabs(current_depth);
-    print_token(expr.resolved.token) << '\n';
+    print_token(expr.synthesized_attrs.token) << '\n';
     current_depth++;
     print(expr.left.get());
     print(expr.right.get());
@@ -302,7 +302,7 @@ ExprVisitorType ASTPrinter::visit(LogicalExpr &expr) {
 
 ExprVisitorType ASTPrinter::visit(MoveExpr &expr) {
     print_tabs(current_depth);
-    print_token(expr.resolved.token) << '\n';
+    print_token(expr.synthesized_attrs.token) << '\n';
     current_depth++;
     print(expr.expr.get());
     current_depth--;
@@ -350,7 +350,7 @@ ExprVisitorType ASTPrinter::visit(SuperExpr &expr) {
 
 ExprVisitorType ASTPrinter::visit(TernaryExpr &expr) {
     print_tabs(current_depth);
-    print_token(expr.resolved.token) << '\n';
+    print_token(expr.synthesized_attrs.token) << '\n';
     current_depth++;
     print(expr.left.get());
     print_tabs(current_depth);

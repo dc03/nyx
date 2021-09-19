@@ -162,7 +162,7 @@ enum class NodeType {
 };
 
 struct Expr {
-    ExprVisitorType resolved{};
+    ExprSynthesizedAttrs synthesized_attrs{};
 
     Expr() = default;
     virtual std::string_view string_tag() = 0;

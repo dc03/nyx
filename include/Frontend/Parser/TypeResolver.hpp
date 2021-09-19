@@ -41,7 +41,7 @@ class TypeResolver final : Visitor {
 
     template <typename T, typename... Args>
     BaseType *make_new_type(Type type, bool is_const, bool is_ref, Args &&...args);
-    ExprTypeInfo resolve_class_access(ExprVisitorType &object, const Token &name);
+    ExprSynthesizedAttrs resolve_class_access(ExprVisitorType &object, const Token &name);
     ExprVisitorType check_builtin_function(VariableExpr *function, const Token &oper,
         std::vector<std::tuple<ExprNode, NumericConversionType, bool>> &args);
     ClassStmt *find_class(const std::string &class_name);

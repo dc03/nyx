@@ -222,13 +222,15 @@ void TypeResolver::infer_list_type(ListExpr *of, ListType *from) {
     }
     if (from->contained->is_ref &&
         std::all_of(of->elements.begin(), of->elements.end(), [](const ListExpr::ElementType &elem) {
-            return std::get<ExprNode>(elem)->resolved.is_lvalue || std::get<ExprNode>(elem)->resolved.info->is_ref;
+            return std::get<ExprNode>(elem)->synthesized_attrs.is_lvalue ||
+                   std::get<ExprNode>(elem)->synthesized_attrs.info->is_ref;
         })) {
         // If there is a ListExpr consisting solely of references or lvalues, it can be safely inferred as a list of
         // references if it is being stored in a name with a reference type
         of->type->contained->is_ref = true;
-        if (std::any_of(of->elements.cbegin(), of->elements.cend(),
-                [](const ListExpr::ElementType &elem) { return std::get<ExprNode>(elem)->resolved.info->is_const; })) {
+        if (std::any_of(of->elements.cbegin(), of->elements.cend(), [](const ListExpr::ElementType &elem) {
+                return std::get<ExprNode>(elem)->synthesized_attrs.info->is_const;
+            })) {
             of->type->contained->is_const = true;
             // A list of references has all its elements become const if any one of them are const
         }
@@ -241,7 +243,7 @@ void TypeResolver::infer_list_type(ListExpr *of, ListType *from) {
     // Decide if copy is needed after inferring type
     for (ListExpr::ElementType &element : of->elements) {
         if (is_nontrivial_type(of->type->contained->primitive)) {
-            if (not of->type->contained->is_ref && std::get<ExprNode>(element)->resolved.is_lvalue) {
+            if (not of->type->contained->is_ref && std::get<ExprNode>(element)->synthesized_attrs.is_lvalue) {
                 std::get<RequiresCopy>(element) = true;
             }
         }
@@ -256,9 +258,9 @@ void TypeResolver::infer_tuple_type(TupleExpr *of, TupleType *from) {
 
     for (std::size_t i = 0; i < from->types.size(); i++) {
         auto &expr = std::get<ExprNode>(of->elements[i]);
-        if (from->types[i]->primitive == Type::FLOAT && expr->resolved.info->primitive == Type::INT) {
+        if (from->types[i]->primitive == Type::FLOAT && expr->synthesized_attrs.info->primitive == Type::INT) {
             std::get<NumericConversionType>(of->elements[i]) = NumericConversionType::INT_TO_FLOAT;
-        } else if (from->types[i]->primitive == Type::INT && expr->resolved.info->primitive == Type::FLOAT) {
+        } else if (from->types[i]->primitive == Type::INT && expr->synthesized_attrs.info->primitive == Type::FLOAT) {
             std::get<NumericConversionType>(of->elements[i]) = NumericConversionType::FLOAT_TO_INT;
         }
 
@@ -270,7 +272,7 @@ void TypeResolver::infer_tuple_type(TupleExpr *of, TupleType *from) {
             add_top_level_ref(of->type->types[i]);
         }
 
-        if (not from->types[i]->is_ref && expr->resolved.is_lvalue) {
+        if (not from->types[i]->is_ref && expr->synthesized_attrs.is_lvalue) {
             std::get<RequiresCopy>(of->elements[i]) = true;
         }
 
@@ -491,15 +493,15 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
 
     ExprVisitorType value = resolve(expr.value.get());
     if (it->info->is_const) {
-        error({"Cannot assign to a const variable"}, expr.resolved.token);
+        error({"Cannot assign to a const variable"}, expr.synthesized_attrs.token);
     } else if (not convertible_to(it->info, value.info, value.is_lvalue, expr.target, false)) {
-        error({"Cannot convert type of value to type of target"}, expr.resolved.token);
+        error({"Cannot convert type of value to type of target"}, expr.synthesized_attrs.token);
         note({"Trying to convert from '", stringify(value.info), "' to '", stringify(it->info), "'"});
-    } else if (one_of(expr.resolved.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
-                   TokenType::SLASH_EQUAL) &&
+    } else if (one_of(expr.synthesized_attrs.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL,
+                   TokenType::STAR_EQUAL, TokenType::SLASH_EQUAL) &&
                not one_of(it->info->primitive, Type::INT, Type::FLOAT) &&
                not one_of(value.info->primitive, Type::INT, Type::FLOAT)) {
-        error({"Expected integral types for compound assignment operator"}, expr.resolved.token);
+        error({"Expected integral types for compound assignment operator"}, expr.synthesized_attrs.token);
         note({"Trying to assign '", stringify(value.info), "' to '", stringify(it->info), "'"});
         throw TypeException{"Expected integral types for compound assignment operator"};
     } else if (value.info->primitive == Type::FLOAT && it->info->primitive == Type::INT) {
@@ -509,41 +511,42 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
     }
 
     if (is_nontrivial_type(value.info->primitive)) {
-        if (expr.value->resolved.is_lvalue || expr.value->resolved.info->is_ref) {
+        if (expr.value->synthesized_attrs.is_lvalue || expr.value->synthesized_attrs.info->is_ref) {
             expr.requires_copy = true;
         }
     }
     // Assignment leads to copy when the primitive is not a trivial one as trivial types are implicitly copied when the
     // values are pushed onto the stack
-    expr.resolved.info = it->info;
-    expr.resolved.stack_slot = it->stack_slot;
-    return expr.resolved;
+    expr.synthesized_attrs.info = it->info;
+    expr.synthesized_attrs.stack_slot = it->stack_slot;
+    return expr.synthesized_attrs;
 }
 
 ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
     ExprVisitorType left_expr = resolve(expr.left.get());
     ExprVisitorType right_expr = resolve(expr.right.get());
-    switch (expr.resolved.token.type) {
+    switch (expr.synthesized_attrs.token.type) {
         case TokenType::LEFT_SHIFT:
         case TokenType::RIGHT_SHIFT:
             if (left_expr.info->primitive == Type::LIST) {
                 auto *left_type = dynamic_cast<ListType *>(left_expr.info);
-                if (expr.resolved.token.type == TokenType::LEFT_SHIFT) {
+                if (expr.synthesized_attrs.token.type == TokenType::LEFT_SHIFT) {
                     if (not convertible_to(left_type->contained.get(), right_expr.info, right_expr.is_lvalue,
                             right_expr.token, false)) {
-                        error({"Appended value cannot be converted to type of list"}, expr.resolved.token);
+                        error({"Appended value cannot be converted to type of list"}, expr.synthesized_attrs.token);
                         note({"The list type is '", stringify(left_expr.info), "' and the appended type is '",
                             stringify(right_expr.info), "'"});
                         throw TypeException{"Appended value cannot be converted to type of list"};
                     }
-                    return expr.resolved = {left_expr.info, expr.resolved.token};
-                } else if (expr.resolved.token.type == TokenType::RIGHT_SHIFT) {
+                    return expr.synthesized_attrs = {left_expr.info, expr.synthesized_attrs.token};
+                } else if (expr.synthesized_attrs.token.type == TokenType::RIGHT_SHIFT) {
                     if (right_expr.info->primitive != Type::INT) {
-                        error({"Expected integral type as amount of elements to pop from list"}, expr.resolved.token);
+                        error({"Expected integral type as amount of elements to pop from list"},
+                            expr.synthesized_attrs.token);
                         note({"Received type '", stringify(right_expr.info), "'"});
                         throw TypeException{"Expected integral type as amount of elements to pop from list"};
                     }
-                    return expr.resolved = {left_expr.info, expr.resolved.token};
+                    return expr.synthesized_attrs = {left_expr.info, expr.synthesized_attrs.token};
                 }
             }
             [[fallthrough]];
@@ -553,12 +556,12 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
         case TokenType::MODULO:
             if (left_expr.info->primitive != Type::INT || right_expr.info->primitive != Type::INT) {
                 error({"Wrong types of arguments to ",
-                          (expr.resolved.token.type == TokenType::MODULO ? "modulo" : "binary bitwise"),
+                          (expr.synthesized_attrs.token.type == TokenType::MODULO ? "modulo" : "binary bitwise"),
                           " operator (expected integral arguments)"},
-                    expr.resolved.token);
+                    expr.synthesized_attrs.token);
                 note({"Received types '", stringify(left_expr.info), "' and '", stringify(right_expr.info), "'"});
             }
-            return expr.resolved = {left_expr.info, expr.resolved.token};
+            return expr.synthesized_attrs = {left_expr.info, expr.synthesized_attrs.token};
         case TokenType::NOT_EQUAL:
         case TokenType::EQUAL_EQUAL:
             if ((left_expr.info->primitive == Type::LIST && right_expr.info->primitive == Type::LIST) ||
@@ -570,18 +573,20 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
                 if (not are_equivalent_primitives(left_expr.info, right_expr.info)) {
                     error({"Cannot compare two ", (left_expr.info->primitive == Type::LIST ? "lists" : "tuples"),
                               " that have incompatible types"},
-                        expr.resolved.token);
+                        expr.synthesized_attrs.token);
                     note({"Only types with equivalent primitives can be compared"});
                     note({"Received types '", stringify(left_expr.info), "' and '", stringify(right_expr.info), "'"});
                 }
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
+                return expr.synthesized_attrs = {
+                           make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.synthesized_attrs.token};
             } else if (one_of(left_expr.info->primitive, Type::BOOL, Type::STRING, Type::NULL_)) {
                 if (left_expr.info->primitive != right_expr.info->primitive) {
-                    error({"Cannot compare equality of objects of different types"}, expr.resolved.token);
+                    error({"Cannot compare equality of objects of different types"}, expr.synthesized_attrs.token);
                     note(
                         {"Trying to compare '", stringify(left_expr.info), "' and '", stringify(right_expr.info), "'"});
                 }
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
+                return expr.synthesized_attrs = {
+                           make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.synthesized_attrs.token};
             }
             [[fallthrough]];
         case TokenType::GREATER:
@@ -591,19 +596,23 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             if (one_of(left_expr.info->primitive, Type::INT, Type::FLOAT) &&
                 one_of(right_expr.info->primitive, Type::INT, Type::FLOAT)) {
                 if (left_expr.info->primitive != right_expr.info->primitive) {
-                    warning({"Comparison between objects of types int and float"}, expr.resolved.token);
+                    warning({"Comparison between objects of types int and float"}, expr.synthesized_attrs.token);
                 }
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
+                return expr.synthesized_attrs = {
+                           make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.synthesized_attrs.token};
             } else if (left_expr.info->primitive == Type::BOOL && right_expr.info->primitive == Type::BOOL) {
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
+                return expr.synthesized_attrs = {
+                           make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.synthesized_attrs.token};
             } else {
-                error({"Cannot compare objects of incompatible types"}, expr.resolved.token);
+                error({"Cannot compare objects of incompatible types"}, expr.synthesized_attrs.token);
                 note({"Trying to compare '", stringify(left_expr.info), "' and '", stringify(right_expr.info), "'"});
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
+                return expr.synthesized_attrs = {
+                           make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.synthesized_attrs.token};
             }
         case TokenType::PLUS:
             if (left_expr.info->primitive == Type::STRING && right_expr.info->primitive == Type::STRING) {
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::STRING, true, false), expr.resolved.token};
+                return expr.synthesized_attrs = {
+                           make_new_type<PrimitiveType>(Type::STRING, true, false), expr.synthesized_attrs.token};
             }
             [[fallthrough]];
         case TokenType::MINUS:
@@ -612,12 +621,15 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             if (one_of(left_expr.info->primitive, Type::INT, Type::FLOAT) &&
                 one_of(right_expr.info->primitive, Type::INT, Type::FLOAT)) {
                 if (left_expr.info->primitive == Type::INT && right_expr.info->primitive == Type::INT) {
-                    return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
+                    return expr.synthesized_attrs = {
+                               make_new_type<PrimitiveType>(Type::INT, true, false), expr.synthesized_attrs.token};
                 }
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::FLOAT, true, false), expr.resolved.token};
+                return expr.synthesized_attrs = {
+                           make_new_type<PrimitiveType>(Type::FLOAT, true, false), expr.synthesized_attrs.token};
                 // Integral promotion
             } else {
-                error({"Cannot use arithmetic operators on objects of incompatible types"}, expr.resolved.token);
+                error(
+                    {"Cannot use arithmetic operators on objects of incompatible types"}, expr.synthesized_attrs.token);
                 note({"Trying to use '", stringify(left_expr.info), "' and '", stringify(right_expr.info), "'"});
                 note({"The operators '+', '-', '/' and '*' currently only work on integral types"});
                 throw TypeException{"Cannot use arithmetic operators on objects of incompatible types"};
@@ -627,9 +639,9 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             if (left_expr.info->primitive == Type::INT && right_expr.info->primitive == Type::INT) {
                 BaseType *list = make_new_type<ListType>(
                     Type::LIST, true, false, TypeNode{allocate_node(PrimitiveType, Type::INT, true, false)});
-                return expr.resolved = {list, expr.resolved.token};
+                return expr.synthesized_attrs = {list, expr.synthesized_attrs.token};
             } else {
-                error({"Ranges can only be created for integral types"}, expr.resolved.token);
+                error({"Ranges can only be created for integral types"}, expr.synthesized_attrs.token);
                 note({"Trying to use '", stringify(left_expr.info), "' and '", stringify(right_expr.info),
                     "' as range interval"});
                 throw TypeException{"Ranges can only be created for integral types"};
@@ -637,7 +649,7 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
             break;
 
         default:
-            error({"Bug in parser with illegal token type of expression's operator"}, expr.resolved.token);
+            error({"Bug in parser with illegal token type of expression's operator"}, expr.synthesized_attrs.token);
             throw TypeException{"Bug in parser with illegal token type of expression's operator"};
     }
 }
@@ -647,7 +659,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         auto *function = dynamic_cast<VariableExpr *>(expr.function.get());
         if (is_builtin_function(function)) {
             expr.is_native_call = true;
-            return expr.resolved = check_builtin_function(function, expr.resolved.token, expr.args);
+            return expr.synthesized_attrs = check_builtin_function(function, expr.synthesized_attrs.token, expr.args);
         }
     }
 
@@ -659,8 +671,8 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     if (expr.function->type_tag() == NodeType::GetExpr) {
         auto *get = dynamic_cast<GetExpr *>(expr.function.get());
 
-        if (get->object->resolved.class_ != nullptr) {
-            class_ = get->object->resolved.class_;
+        if (get->object->synthesized_attrs.class_ != nullptr) {
+            class_ = get->object->synthesized_attrs.class_;
             auto *method = find_method(class_, get->name.lexeme);
 
             if (method != nullptr) {
@@ -669,8 +681,8 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
 
                 expr.args.insert(expr.args.begin(), {std::move(object), NumericConversionType::NONE, false});
                 expr.function = generate_scope_access(class_, get->name);
-                expr.function->resolved.func = called;
-                expr.function->resolved.class_ = function.class_;
+                expr.function->synthesized_attrs.func = called;
+                expr.function->synthesized_attrs.class_ = function.class_;
             }
         }
     } else if (expr.function->type_tag() == NodeType::VariableExpr) {
@@ -678,13 +690,14 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         if (function.class_ != nullptr && called == function.class_->ctor) {
             // Constructors of type `X(...)` need to be converted into `X::X(...)`
             expr.function = generate_scope_access(function.class_, called->name);
-            expr.function->resolved.func = called;
-            expr.function->resolved.class_ = function.class_;
+            expr.function->synthesized_attrs.func = called;
+            expr.function->synthesized_attrs.class_ = function.class_;
         }
     }
 
     if (called->params.size() != expr.args.size()) {
-        error({"Number of arguments passed to function must match the number of parameters"}, expr.resolved.token);
+        error({"Number of arguments passed to function must match the number of parameters"},
+            expr.synthesized_attrs.token);
         note({"Trying to pass ", std::to_string(expr.args.size()), " arguments"});
         throw TypeException{"Number of arguments passed to function must match the number of parameters"};
     }
@@ -713,7 +726,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         }
     }
 
-    return expr.resolved = {called->return_type.get(), called, class_, expr.resolved.token};
+    return expr.synthesized_attrs = {called->return_type.get(), called, class_, expr.synthesized_attrs.token};
 }
 
 ExprVisitorType TypeResolver::visit(CommaExpr &expr) {
@@ -722,7 +735,7 @@ ExprVisitorType TypeResolver::visit(CommaExpr &expr) {
     for (auto next = std::next(it); next != end(expr.exprs); it = next, ++next)
         resolve(it->get());
 
-    return expr.resolved = resolve(it->get());
+    return expr.synthesized_attrs = resolve(it->get());
 }
 
 ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, const Token &name) {
@@ -768,9 +781,9 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
 
 ExprVisitorType TypeResolver::visit(GetExpr &expr) {
     ExprVisitorType object = resolve(expr.object.get());
-    if (expr.object->resolved.info->primitive == Type::TUPLE && expr.name.type == TokenType::INT_VALUE) {
+    if (expr.object->synthesized_attrs.info->primitive == Type::TUPLE && expr.name.type == TokenType::INT_VALUE) {
         int index = std::stoi(expr.name.lexeme); // Get the 0 in x.0
-        auto *tuple = dynamic_cast<TupleType *>(expr.object->resolved.info);
+        auto *tuple = dynamic_cast<TupleType *>(expr.object->synthesized_attrs.info);
         if (index >= static_cast<int>(tuple->types.size())) {
             error({"Tuple index out of range"}, expr.name);
             note({"Tuple holds '", std::to_string(tuple->types.size()), "' elements, but given index is '",
@@ -778,29 +791,30 @@ ExprVisitorType TypeResolver::visit(GetExpr &expr) {
             throw TypeException{"Tuple index out of range"};
         }
 
-        return expr.resolved = {tuple->types[index].get(), expr.name, object.is_lvalue};
-    } else if (expr.object->resolved.info->primitive == Type::CLASS && expr.name.type == TokenType::IDENTIFIER) {
-        return expr.resolved = resolve_class_access(object, expr.name);
-    } else if (expr.object->resolved.info->primitive == Type::TUPLE) {
+        return expr.synthesized_attrs = {tuple->types[index].get(), expr.name, object.is_lvalue};
+    } else if (expr.object->synthesized_attrs.info->primitive == Type::CLASS &&
+               expr.name.type == TokenType::IDENTIFIER) {
+        return expr.synthesized_attrs = resolve_class_access(object, expr.name);
+    } else if (expr.object->synthesized_attrs.info->primitive == Type::TUPLE) {
         error({"Expected integer to access tuple type"}, expr.name);
         throw TypeException{"Expected integer to access tuple type"};
-    } else if (expr.object->resolved.info->primitive == Type::CLASS) {
+    } else if (expr.object->synthesized_attrs.info->primitive == Type::CLASS) {
         error({"Expected name of member to access in class"}, expr.name);
         throw TypeException{"Expected name of member to access in class"};
     } else {
-        error({"Expected tuple or class type to access member of"}, expr.object->resolved.token);
-        note({"Received type '", stringify(expr.object->resolved.info), "'"});
+        error({"Expected tuple or class type to access member of"}, expr.object->synthesized_attrs.token);
+        note({"Received type '", stringify(expr.object->synthesized_attrs.info), "'"});
         throw TypeException{"Expected tuple or class type to access member of"};
     }
 }
 
 ExprVisitorType TypeResolver::visit(GroupingExpr &expr) {
-    expr.resolved = resolve(expr.expr.get());
-    expr.type.reset(copy_type(expr.resolved.info));
+    expr.synthesized_attrs = resolve(expr.expr.get());
+    expr.type.reset(copy_type(expr.synthesized_attrs.info));
     expr.type->is_ref = false;
-    expr.resolved.info = expr.type.get();
-    expr.resolved.is_lvalue = false;
-    return expr.resolved;
+    expr.synthesized_attrs.info = expr.type.get();
+    expr.synthesized_attrs.is_lvalue = false;
+    return expr.synthesized_attrs;
 }
 
 ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
@@ -810,18 +824,19 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
     ExprVisitorType index = resolve(expr.index.get());
 
     if (index.info->primitive != Type::INT) {
-        error({"Expected integral type for index"}, expr.resolved.token);
+        error({"Expected integral type for index"}, expr.synthesized_attrs.token);
         throw TypeException{"Expected integral type for index"};
     }
 
     if (list.info->primitive == Type::LIST) {
         auto *contained_type = dynamic_cast<ListType *>(list.info)->contained.get();
-        return expr.resolved = {contained_type, expr.resolved.token,
-                   expr.object->resolved.is_lvalue || expr.object->resolved.info->is_ref};
+        return expr.synthesized_attrs = {contained_type, expr.synthesized_attrs.token,
+                   expr.object->synthesized_attrs.is_lvalue || expr.object->synthesized_attrs.info->is_ref};
     } else if (list.info->primitive == Type::STRING) {
-        return expr.resolved = {list.info, expr.resolved.token, false}; // For now, strings are immutable.
+        return expr.synthesized_attrs = {
+                   list.info, expr.synthesized_attrs.token, false}; // For now, strings are immutable.
     } else {
-        error({"Expected list or string type for indexing"}, expr.resolved.token);
+        error({"Expected list or string type for indexing"}, expr.synthesized_attrs.token);
         note({"Received type '", stringify(list.info), "'"});
         throw TypeException{"Expected list or string type for indexing"};
     }
@@ -844,67 +859,67 @@ ExprVisitorType TypeResolver::visit(ListExpr &expr) {
     }
 
     if (std::none_of(expr.elements.begin(), expr.elements.end(),
-            [](const ListExpr::ElementType &x) { return std::get<ExprNode>(x)->resolved.info->is_ref; })) {
+            [](const ListExpr::ElementType &x) { return std::get<ExprNode>(x)->synthesized_attrs.info->is_ref; })) {
         // If there are no references in the list, the individual elements can safely be made non-const
         expr.type->contained->is_const = false;
     }
 
     for (ListExpr::ElementType &element : expr.elements) {
-        if (std::get<ExprNode>(element)->resolved.info->primitive == Type::INT &&
+        if (std::get<ExprNode>(element)->synthesized_attrs.info->primitive == Type::INT &&
             expr.type->contained->primitive == Type::FLOAT) {
             std::get<NumericConversionType>(element) = NumericConversionType::INT_TO_FLOAT;
-        } else if (std::get<ExprNode>(element)->resolved.info->primitive == Type::FLOAT &&
+        } else if (std::get<ExprNode>(element)->synthesized_attrs.info->primitive == Type::FLOAT &&
                    expr.type->contained->primitive == Type::INT) {
             std::get<NumericConversionType>(element) = NumericConversionType::FLOAT_TO_INT;
         }
 
         // Converting to non-ref from any non-trivial type (i.e. list) regardless of ref-ness requires a copy
         if (not expr.type->contained->is_ref && is_nontrivial_type(expr.type->contained->primitive) &&
-            std::get<ExprNode>(element)->resolved.is_lvalue) {
+            std::get<ExprNode>(element)->synthesized_attrs.is_lvalue) {
             std::get<RequiresCopy>(element) = true;
         }
     }
-    return expr.resolved = {expr.type.get(), expr.bracket, false};
+    return expr.synthesized_attrs = {expr.type.get(), expr.bracket, false};
 }
 
 ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
     ExprVisitorType contained = resolve(&expr.list);
     ExprVisitorType value = resolve(expr.value.get());
 
-    if (expr.list.object->resolved.info->primitive == Type::STRING) {
-        error({"Strings are immutable and non-assignable"}, expr.resolved.token);
+    if (expr.list.object->synthesized_attrs.info->primitive == Type::STRING) {
+        error({"Strings are immutable and non-assignable"}, expr.synthesized_attrs.token);
         throw TypeException{"Strings are immutable and non-assignable"};
     }
 
-    if (not(expr.list.resolved.is_lvalue || expr.list.resolved.info->is_ref)) {
-        error({"Cannot assign to non-lvalue or non-ref list"}, expr.resolved.token);
+    if (not(expr.list.synthesized_attrs.is_lvalue || expr.list.synthesized_attrs.info->is_ref)) {
+        error({"Cannot assign to non-lvalue or non-ref list"}, expr.synthesized_attrs.token);
         note({"Only variables or references can be assigned to"});
         throw TypeException{"Cannot assign to non-lvalue or non-ref list"};
     }
 
     if (not contained.is_lvalue) {
-        error({"Cannot assign to non-lvalue element"}, expr.resolved.token);
+        error({"Cannot assign to non-lvalue element"}, expr.synthesized_attrs.token);
         note({"String elements are non-assignable"});
         throw TypeException{"Cannot assign to non-lvalue element"};
     }
 
     if (contained.info->is_const) {
-        error({"Cannot assign to constant value"}, expr.resolved.token);
+        error({"Cannot assign to constant value"}, expr.synthesized_attrs.token);
         note({"Trying to assign to '", stringify(contained.info), "'"});
         throw TypeException{"Cannot assign to constant value"};
-    } else if (expr.list.object->resolved.info->is_const) {
-        error({"Cannot assign to constant list"}, expr.resolved.token);
+    } else if (expr.list.object->synthesized_attrs.info->is_const) {
+        error({"Cannot assign to constant list"}, expr.synthesized_attrs.token);
         note({"Trying to assign to '", stringify(contained.info), "'"});
         throw TypeException{"Cannot assign to constant list"};
-    } else if (one_of(expr.resolved.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
-                   TokenType::SLASH_EQUAL) &&
+    } else if (one_of(expr.synthesized_attrs.token.type, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL,
+                   TokenType::STAR_EQUAL, TokenType::SLASH_EQUAL) &&
                not one_of(contained.info->primitive, Type::INT, Type::FLOAT) &&
                not one_of(value.info->primitive, Type::INT, Type::FLOAT)) {
-        error({"Expected integral types for compound assignment operator"}, expr.resolved.token);
+        error({"Expected integral types for compound assignment operator"}, expr.synthesized_attrs.token);
         note({"Received types '", stringify(contained.info), "' and '", stringify(value.info), "'"});
         throw TypeException{"Expected integral types for compound assignment operator"};
-    } else if (not convertible_to(contained.info, value.info, value.is_lvalue, expr.resolved.token, false)) {
-        error({"Cannot convert from contained type of list to type being assigned"}, expr.resolved.token);
+    } else if (not convertible_to(contained.info, value.info, value.is_lvalue, expr.synthesized_attrs.token, false)) {
+        error({"Cannot convert from contained type of list to type being assigned"}, expr.synthesized_attrs.token);
         note({"Trying to assign to '", stringify(contained.info), "' from '", stringify(value.info), "'"});
         throw TypeException{"Cannot convert from contained type of list to type being assigned"};
     } else if (value.info->primitive == Type::FLOAT && contained.info->primitive == Type::INT) {
@@ -913,7 +928,7 @@ ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
         expr.conversion_type = NumericConversionType::INT_TO_FLOAT;
     }
 
-    return expr.resolved = {contained.info, expr.resolved.token, false};
+    return expr.synthesized_attrs = {contained.info, expr.synthesized_attrs.token, false};
 }
 
 ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
@@ -922,10 +937,10 @@ ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
         case LiteralValue::tag::DOUBLE:
         case LiteralValue::tag::STRING:
         case LiteralValue::tag::BOOL:
-        case LiteralValue::tag::NULL_: return expr.resolved = {expr.type.get(), expr.resolved.token};
+        case LiteralValue::tag::NULL_: return expr.synthesized_attrs = {expr.type.get(), expr.synthesized_attrs.token};
 
         default:
-            error({"Bug in parser with illegal type for literal value"}, expr.resolved.token);
+            error({"Bug in parser with illegal type for literal value"}, expr.synthesized_attrs.token);
             throw TypeException{"Bug in parser with illegal type for literal value"};
     }
 }
@@ -933,7 +948,8 @@ ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
 ExprVisitorType TypeResolver::visit(LogicalExpr &expr) {
     resolve(expr.left.get());
     resolve(expr.right.get());
-    return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
+    return expr.synthesized_attrs = {
+               make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.synthesized_attrs.token};
 }
 
 ExprVisitorType TypeResolver::visit(MoveExpr &expr) {
@@ -949,44 +965,44 @@ ExprVisitorType TypeResolver::visit(MoveExpr &expr) {
     } else if (right.info->is_const || right.info->is_ref) {
         error({"Cannot move a ", right.info->is_const ? "constant" : "", right.info->is_ref ? "reference to" : "",
                   " value"},
-            expr.expr->resolved.token);
+            expr.expr->synthesized_attrs.token);
         note({"Trying to move type '", stringify(right.info), "'"});
         throw TypeException{"Cannot move a constant value"};
     }
-    return expr.resolved = {right.info, expr.resolved.token, false};
+    return expr.synthesized_attrs = {right.info, expr.synthesized_attrs.token, false};
 }
 
 ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
     ExprVisitorType left = resolve(expr.scope.get());
 
     switch (left.scope_type) {
-        case ExprTypeInfo::ScopeType::CLASS: {
+        case ExprSynthesizedAttrs::ScopeType::CLASS: {
             auto *method = find_method(left.class_, expr.name.lexeme);
             if (method != nullptr) {
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method->first.get(),
-                           left.class_, expr.resolved.token};
+                return expr.synthesized_attrs = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
+                           method->first.get(), left.class_, expr.synthesized_attrs.token};
             }
 
             error({"No such method exists in the class"}, expr.name);
             throw TypeException{"No such method exists in the class"};
         }
 
-        case ExprTypeInfo::ScopeType::MODULE: {
+        case ExprSynthesizedAttrs::ScopeType::MODULE: {
             auto &module = Parser::parsed_modules[left.module_index].first;
             if (auto class_ = module.classes.find(expr.name.lexeme); class_ != module.classes.end()) {
-                return expr.resolved = {
-                           make_new_type<PrimitiveType>(Type::CLASS, true, false), class_->second, expr.resolved.token};
+                return expr.synthesized_attrs = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_->second,
+                           expr.synthesized_attrs.token};
             }
 
             if (auto func = module.functions.find(expr.name.lexeme); func != module.functions.end()) {
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func->second,
-                           expr.resolved.token};
+                return expr.synthesized_attrs = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
+                           func->second, expr.synthesized_attrs.token};
             }
         }
             error({"No such function/class exists in the module"}, expr.name);
             throw TypeException{"No such function/class exists in the module"};
 
-        case ExprTypeInfo::ScopeType::NONE:
+        case ExprSynthesizedAttrs::ScopeType::NONE:
         default:
             error({"No such module/class exists in the current global scope"}, expr.name);
             throw TypeException{"No such module/class exists in the current global scope"};
@@ -997,12 +1013,14 @@ ExprVisitorType TypeResolver::visit(ScopeNameExpr &expr) {
     for (std::size_t i{0}; i < Parser::parsed_modules.size(); i++) {
         if (Parser::parsed_modules[i].first.name.substr(0, Parser::parsed_modules[i].first.name.find_last_of('.')) ==
             expr.name.lexeme) {
-            return expr.resolved = {make_new_type<PrimitiveType>(Type::MODULE, true, false), i, expr.resolved.token};
+            return expr.synthesized_attrs = {
+                       make_new_type<PrimitiveType>(Type::MODULE, true, false), i, expr.synthesized_attrs.token};
         }
     }
 
     if (ClassStmt *class_ = find_class(expr.name.lexeme); class_ != nullptr) {
-        return expr.resolved = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.resolved.token};
+        return expr.synthesized_attrs = {
+                   make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.synthesized_attrs.token};
     }
 
     error({"No such scope exists with the given name"}, expr.name);
@@ -1015,7 +1033,7 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
 
     if (object.info->primitive == Type::TUPLE && expr.name.type == TokenType::INT_VALUE) {
         int index = std::stoi(expr.name.lexeme); // Get the 0 in x.0
-        auto *tuple = dynamic_cast<TupleType *>(expr.object->resolved.info);
+        auto *tuple = dynamic_cast<TupleType *>(expr.object->synthesized_attrs.info);
         if (index >= static_cast<int>(tuple->types.size())) {
             error({"Tuple index out of range"}, expr.name);
             note({"Tuple holds '", std::to_string(tuple->types.size()), "' elements, but given index is '",
@@ -1027,11 +1045,12 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
         auto *assigned_type = tuple->types[index].get();
         if (assigned_type->is_const) {
             error({"Cannot assign to const tuple member"}, expr.name);
-            note({"Trying to assign '", stringify(expr.value->resolved.info), "' to '", stringify(assigned_type), "'"});
+            note({"Trying to assign '", stringify(expr.value->synthesized_attrs.info), "' to '",
+                stringify(assigned_type), "'"});
             throw TypeException{"Cannot assign to const tuple member"};
-        } else if (expr.object->resolved.info->is_const) {
+        } else if (expr.object->synthesized_attrs.info->is_const) {
             error({"Cannot assign to const tuple"}, expr.name);
-            note({"Trying to assign to '", stringify(expr.object->resolved.info), "'"});
+            note({"Trying to assign to '", stringify(expr.object->synthesized_attrs.info), "'"});
             throw TypeException{"Cannot assign to const tuple member"};
         }
 
@@ -1042,7 +1061,7 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
         }
 
         expr.requires_copy = is_nontrivial_type(value_type.info->primitive);
-        return expr.resolved = {assigned_type, expr.name};
+        return expr.synthesized_attrs = {assigned_type, expr.name};
     } else if (object.info->primitive == Type::CLASS && expr.name.type == TokenType::IDENTIFIER) {
         ExprVisitorType attribute_type = resolve_class_access(object, expr.name);
 
@@ -1066,23 +1085,23 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
         }
 
         expr.requires_copy = is_nontrivial_type(value_type.info->primitive); // Similar case to AssignExpr
-        return expr.resolved = {attribute_type.info, expr.resolved.token};
-    } else if (expr.object->resolved.info->primitive == Type::TUPLE) {
+        return expr.synthesized_attrs = {attribute_type.info, expr.synthesized_attrs.token};
+    } else if (expr.object->synthesized_attrs.info->primitive == Type::TUPLE) {
         error({"Expected integer to access tuple type"}, expr.name);
         throw TypeException{"Expected integer to access tuple type"};
-    } else if (expr.object->resolved.info->primitive == Type::CLASS) {
+    } else if (expr.object->synthesized_attrs.info->primitive == Type::CLASS) {
         error({"Expected name of member to access in class"}, expr.name);
         throw TypeException{"Expected name of member to access in class"};
     } else {
-        error({"Expected tuple or class type to access member of"}, expr.object->resolved.token);
-        note({"Received type '", stringify(expr.object->resolved.info), "'"});
+        error({"Expected tuple or class type to access member of"}, expr.object->synthesized_attrs.token);
+        note({"Received type '", stringify(expr.object->synthesized_attrs.info), "'"});
         throw TypeException{"Expected tuple or class type to access member of"};
     }
 }
 
 ExprVisitorType TypeResolver::visit(SuperExpr &expr) {
     // TODO: Implement me
-    expr.resolved.token = expr.keyword;
+    expr.synthesized_attrs.token = expr.keyword;
     throw TypeException{"Super expressions/inheritance not implemented yet"};
 }
 
@@ -1091,14 +1110,15 @@ ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
     ExprVisitorType middle = resolve(expr.middle.get());
     ExprVisitorType right = resolve(expr.right.get());
 
-    if (not convertible_to(middle.info, right.info, right.is_lvalue, expr.resolved.token, false) &&
-        not convertible_to(right.info, middle.info, right.is_lvalue, expr.resolved.token, false)) {
-        error({"Expected equivalent expression types for branches of ternary expression"}, expr.resolved.token);
+    if (not convertible_to(middle.info, right.info, right.is_lvalue, expr.synthesized_attrs.token, false) &&
+        not convertible_to(right.info, middle.info, right.is_lvalue, expr.synthesized_attrs.token, false)) {
+        error(
+            {"Expected equivalent expression types for branches of ternary expression"}, expr.synthesized_attrs.token);
         note({"Received types '", stringify(middle.info), "' for middle expression and '", stringify(right.info),
             "' for right expression"});
     }
 
-    return expr.resolved = {middle.info, expr.resolved.token};
+    return expr.synthesized_attrs = {middle.info, expr.synthesized_attrs.token};
 }
 
 ExprVisitorType TypeResolver::visit(ThisExpr &expr) {
@@ -1106,7 +1126,7 @@ ExprVisitorType TypeResolver::visit(ThisExpr &expr) {
         error({"Cannot use 'this' keyword outside a class's constructor or destructor"}, expr.keyword);
         throw TypeException{"Cannot use 'this' keyword outside a class's constructor or destructor"};
     }
-    return expr.resolved = {make_new_type<UserDefinedType>(Type::CLASS, false, false, current_class->name),
+    return expr.synthesized_attrs = {make_new_type<UserDefinedType>(Type::CLASS, false, false, current_class->name),
                current_class, expr.keyword};
 }
 
@@ -1115,10 +1135,10 @@ ExprVisitorType TypeResolver::visit(TupleExpr &expr) {
 
     for (auto &element : expr.elements) {
         resolve(std::get<ExprNode>(element).get());
-        expr.type->types.emplace_back(copy_type(std::get<ExprNode>(element)->resolved.info));
+        expr.type->types.emplace_back(copy_type(std::get<ExprNode>(element)->synthesized_attrs.info));
     }
 
-    return expr.resolved = {expr.type.get(), expr.brace, false};
+    return expr.synthesized_attrs = {expr.type.get(), expr.brace, false};
 }
 
 ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
@@ -1129,13 +1149,15 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
                 error({"Wrong type of argument to bitwise unary operator (expected integral argument)"}, expr.oper);
                 note({"Received operand of type '", stringify(right.info), "'"});
             }
-            return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
+            return expr.synthesized_attrs = {
+                       make_new_type<PrimitiveType>(Type::INT, true, false), expr.synthesized_attrs.token};
         case TokenType::NOT:
             if (one_of(right.info->primitive, Type::CLASS, Type::LIST, Type::NULL_)) {
                 error({"Wrong type of argument to logical not operator"}, expr.oper);
                 note({"Received operand of type '", stringify(right.info), "'"});
             }
-            return expr.resolved = {make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.resolved.token};
+            return expr.synthesized_attrs = {
+                       make_new_type<PrimitiveType>(Type::BOOL, true, false), expr.synthesized_attrs.token};
         case TokenType::PLUS_PLUS:
         case TokenType::MINUS_MINUS:
             if (not one_of(right.info->primitive, Type::INT, Type::FLOAT)) {
@@ -1147,15 +1169,16 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
                 note({"Received operand of type '", stringify(right.info), "'"});
                 throw TypeException{"Expected non-const l-value or reference type as argument for increment operator"};
             };
-            return expr.resolved = {right.info, expr.oper};
+            return expr.synthesized_attrs = {right.info, expr.oper};
         case TokenType::MINUS:
         case TokenType::PLUS:
             if (not one_of(right.info->primitive, Type::INT, Type::FLOAT)) {
                 error({"Expected integral or floating point argument to operator"}, expr.oper);
                 note({"Received operand of type '", stringify(right.info), "'"});
-                return expr.resolved = {make_new_type<PrimitiveType>(Type::INT, true, false), expr.resolved.token};
+                return expr.synthesized_attrs = {
+                           make_new_type<PrimitiveType>(Type::INT, true, false), expr.synthesized_attrs.token};
             }
-            return expr.resolved = {right.info, expr.resolved.token};
+            return expr.synthesized_attrs = {right.info, expr.synthesized_attrs.token};
 
         default:
             error({"Bug in parser with illegal type for unary expression"}, expr.oper);
@@ -1176,21 +1199,22 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
             } else {
                 expr.type = IdentifierType::LOCAL;
             }
-            expr.resolved = {it->info, it->class_, expr.resolved.token, true};
-            expr.resolved.stack_slot = it->stack_slot;
-            return expr.resolved;
+            expr.synthesized_attrs = {it->info, it->class_, expr.synthesized_attrs.token, true};
+            expr.synthesized_attrs.stack_slot = it->stack_slot;
+            return expr.synthesized_attrs;
         }
     }
 
     if (FunctionStmt *func = find_function(expr.name.lexeme); func != nullptr) {
         expr.type = IdentifierType::FUNCTION;
-        return expr.resolved = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.resolved.token};
+        return expr.synthesized_attrs = {
+                   make_new_type<PrimitiveType>(Type::FUNCTION, true, false), func, expr.synthesized_attrs.token};
     }
 
     if (ClassStmt *class_ = find_class(expr.name.lexeme); class_ != nullptr) {
         expr.type = IdentifierType::CLASS;
-        return expr.resolved = {make_new_type<UserDefinedType>(Type::CLASS, true, false, class_->name), class_->ctor,
-                   class_, expr.resolved.token};
+        return expr.synthesized_attrs = {make_new_type<UserDefinedType>(Type::CLASS, true, false, class_->name),
+                   class_->ctor, class_, expr.synthesized_attrs.token};
     }
 
     error({"No such variable/function '", expr.name.lexeme, "' in the current module's scope"}, expr.name);
@@ -1376,7 +1400,7 @@ StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
 StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
     if ((in_ctor || in_dtor) && stmt.value != nullptr) {
         error({"Cannot have non-trivial return statement in ", in_ctor ? "constructor" : "destructor"}, stmt.keyword);
-        note({"Returned value's type is '", stringify(stmt.value->resolved.info), "'"});
+        note({"Returned value's type is '", stringify(stmt.value->synthesized_attrs.info), "'"});
         throw TypeException{"Cannot have non-trivial return statement in constructor/destructor"};
     } else if (not in_ctor && not in_dtor) {
         if (stmt.value == nullptr) {

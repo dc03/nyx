@@ -47,7 +47,7 @@ before everything else
 - [ ] Rewrite the Scanner
 - [ ] Redo Native functions interfaces
 - [ ] Add pair syntax `x: y`, same as `{x, y}`
-- [ ] Rename `resolved` and `ExprTypeInfo` to `synthesized_attrs` and `ExprSynthesizedAttrs`
+- [x] Rename `resolved` and `ExprTypeInfo` to `synthesized_attrs` and `ExprSynthesizedAttrs`
 - [ ] Possibly add inherited attributes with `inherited_attrs` members and
 `ExprInheritedAttrs` data type
 - [ ] Fix tuple assignment in `SetExpr` having no type checking
