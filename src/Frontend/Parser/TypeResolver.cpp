@@ -1055,6 +1055,12 @@ ExprVisitorType TypeResolver::visit(SetExpr &expr) {
             error({"Cannot assign to const tuple"}, expr.name);
             note({"Trying to assign to '", stringify(expr.object->synthesized_attrs.info), "'"});
             throw TypeException{"Cannot assign to const tuple member"};
+        } else if (not convertible_to(assigned_type, expr.value->synthesized_attrs.info,
+                       expr.value->synthesized_attrs.is_lvalue, expr.name, false)) {
+            error({"Cannot convert type of value to type of target"}, expr.synthesized_attrs.token);
+            note({"Trying to convert from '", stringify(expr.value->synthesized_attrs.info), "' to '",
+                stringify(assigned_type), "'"});
+            throw TypeException{"Cannot convert type of value to type of target"};
         }
 
         if (assigned_type->primitive == Type::FLOAT && value_type.info->primitive == Type::INT) {

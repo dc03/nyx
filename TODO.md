@@ -50,7 +50,7 @@ before everything else
 - [x] Rename `resolved` and `ExprTypeInfo` to `synthesized_attrs` and `ExprSynthesizedAttrs`
 - [ ] Possibly add inherited attributes with `inherited_attrs` members and
 `ExprInheritedAttrs` data type
-- [ ] Fix tuple assignment in `SetExpr` having no type checking
+- [x] Fix tuple assignment in `SetExpr` having no type checking
 - [ ] Implement references to class member variables at runtime
 - [x] Replace `... == Type::LIST || ... == Type::TUPLE || ... == Type::CLASS` in
 `CodeGen` with `is_nontrivial_type` call
