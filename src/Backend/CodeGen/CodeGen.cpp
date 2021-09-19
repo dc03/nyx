@@ -511,6 +511,18 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
                     compile(list->index.get());
                     current_chunk->emit_instruction(
                         Instruction::MAKE_REF_TO_INDEX, value->synthesized_attrs.token.line);
+                } else if (value->type_tag() == NodeType::GetExpr) {
+                    auto *get = dynamic_cast<GetExpr *>(value.get());
+                    compile(get->object.get());
+                    if (get->object->synthesized_attrs.info->primitive == Type::TUPLE) {
+                        Value::IntType index = std::stoi(get->name.lexeme);
+                        current_chunk->emit_constant(Value{index}, get->name.line);
+                    } else if (get->object->synthesized_attrs.info->primitive == Type::CLASS) {
+                        current_chunk->emit_constant(
+                            Value{get_member_index(get_class(get->object), get->name.lexeme)}, get->name.line);
+                    }
+                    current_chunk->emit_instruction(
+                        Instruction::MAKE_REF_TO_INDEX, value->synthesized_attrs.token.line);
                 } else {
                     current_chunk->emit_instruction(
                         Instruction::MAKE_REF_TO_LOCAL, value->synthesized_attrs.token.line);
@@ -888,6 +900,17 @@ ExprVisitorType Generator::visit(TupleExpr &expr) {
                 compile(list->object.get());
                 compile(list->index.get());
                 current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, list->synthesized_attrs.token.line);
+            } else if (elem_expr->type_tag() == NodeType::GetExpr) {
+                auto *get = dynamic_cast<GetExpr *>(elem_expr.get());
+                compile(get->object.get());
+                if (get->object->synthesized_attrs.info->primitive == Type::TUPLE) {
+                    Value::IntType index = std::stoi(get->name.lexeme);
+                    current_chunk->emit_constant(Value{index}, get->name.line);
+                } else if (get->object->synthesized_attrs.info->primitive == Type::CLASS) {
+                    current_chunk->emit_constant(
+                        Value{get_member_index(get_class(get->object), get->name.lexeme)}, get->name.line);
+                }
+                current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, get->synthesized_attrs.token.line);
             }
         } else {
             compile(elem_expr.get());
@@ -1200,11 +1223,22 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
             current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, stmt.name.line);
         }
         emit_operand(stmt.initializer->synthesized_attrs.stack_slot);
-    } else if (stmt.type->is_ref && not stmt.initializer->synthesized_attrs.info->is_ref &&
-               stmt.initializer->type_tag() == NodeType::IndexExpr) {
-        auto *list = dynamic_cast<IndexExpr *>(stmt.initializer.get());
-        compile(list->object.get());
-        compile(list->index.get());
+    } else if (stmt.type->is_ref && not stmt.initializer->synthesized_attrs.info->is_ref) {
+        if (stmt.initializer->type_tag() == NodeType::IndexExpr) {
+            auto *list = dynamic_cast<IndexExpr *>(stmt.initializer.get());
+            compile(list->object.get());
+            compile(list->index.get());
+        } else if (stmt.initializer->type_tag() == NodeType::GetExpr) {
+            auto *get = dynamic_cast<GetExpr *>(stmt.initializer.get());
+            compile(get->object.get());
+            if (get->object->synthesized_attrs.info->primitive == Type::TUPLE) {
+                Value::IntType index = std::stoi(get->name.lexeme);
+                current_chunk->emit_constant(Value{index}, get->name.line);
+            } else if (get->object->synthesized_attrs.info->primitive == Type::CLASS) {
+                current_chunk->emit_constant(
+                    Value{get_member_index(get_class(get->object), get->name.lexeme)}, get->name.line);
+            }
+        }
         current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, stmt.name.line);
     } else {
         compile(stmt.initializer.get());

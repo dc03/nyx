@@ -43,6 +43,6 @@ before everything else
 - [ ] Add pair syntax `x: y`, same as `{x, y}`
 - [ ] Possibly add inherited attributes with `inherited_attrs` members and
 `ExprInheritedAttrs` data type
-- [ ] Implement references to class member variables at runtime
+- [x] Implement references to class member variables at runtime
 - [ ] Move expressions for list indices, tuple members and class member variables
 - [ ] Destructor calls, including those of member variables
