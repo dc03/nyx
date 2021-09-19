@@ -791,7 +791,13 @@ ExprVisitorType TypeResolver::visit(GetExpr &expr) {
             throw TypeException{"Tuple index out of range"};
         }
 
-        return expr.synthesized_attrs = {tuple->types[index].get(), expr.name, object.is_lvalue};
+        if (tuple->types[index]->primitive == Type::CLASS) {
+            return expr.synthesized_attrs = {tuple->types[index].get(),
+                       find_class(dynamic_cast<UserDefinedType *>(tuple->types[index].get())->name.lexeme), expr.name,
+                       object.is_lvalue};
+        } else {
+            return expr.synthesized_attrs = {tuple->types[index].get(), expr.name, object.is_lvalue};
+        }
     } else if (expr.object->synthesized_attrs.info->primitive == Type::CLASS &&
                expr.name.type == TokenType::IDENTIFIER) {
         return expr.synthesized_attrs = resolve_class_access(object, expr.name);
@@ -830,8 +836,14 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
 
     if (list.info->primitive == Type::LIST) {
         auto *contained_type = dynamic_cast<ListType *>(list.info)->contained.get();
-        return expr.synthesized_attrs = {contained_type, expr.synthesized_attrs.token,
-                   expr.object->synthesized_attrs.is_lvalue || expr.object->synthesized_attrs.info->is_ref};
+        bool is_lvalue = expr.object->synthesized_attrs.is_lvalue || expr.object->synthesized_attrs.info->is_ref;
+        if (contained_type->primitive == Type::CLASS) {
+            return expr.synthesized_attrs = {contained_type,
+                       find_class(dynamic_cast<UserDefinedType *>(contained_type)->name.lexeme),
+                       expr.synthesized_attrs.token, is_lvalue};
+        } else {
+            return expr.synthesized_attrs = {contained_type, expr.synthesized_attrs.token, is_lvalue};
+        }
     } else if (list.info->primitive == Type::STRING) {
         return expr.synthesized_attrs = {
                    list.info, expr.synthesized_attrs.token, false}; // For now, strings are immutable.
