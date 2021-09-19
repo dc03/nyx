@@ -224,9 +224,7 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
             // Assigning to lists needs to be handled separately, as it can involve destroying the list that was
             // previously there in the variable. This code is moved off of the hot path into ASSIGN_LOCAL_LIST and
             // ASSIGN_GLOBAL_LIST
-            if (expr.synthesized_attrs.info->primitive == Type::LIST ||
-                expr.synthesized_attrs.info->primitive == Type::TUPLE ||
-                expr.synthesized_attrs.info->primitive == Type::CLASS) {
+            if (is_nontrivial_type(expr.synthesized_attrs.info->primitive)) {
                 current_chunk->emit_instruction(expr.target_type == IdentifierType::LOCAL
                                                     ? Instruction::ASSIGN_LOCAL_LIST
                                                     : Instruction::ASSIGN_GLOBAL_LIST,
@@ -546,10 +544,8 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
         auto begin = expr.args.crbegin();
         for (; begin != expr.args.crend(); begin++) {
             auto &arg = std::get<ExprNode>(*begin);
-            if ((arg->synthesized_attrs.info->primitive == Type::LIST ||
-                    arg->synthesized_attrs.info->primitive == Type::TUPLE ||
-                    arg->synthesized_attrs.info->primitive == Type::CLASS) &&
-                not arg->synthesized_attrs.is_lvalue && not arg->synthesized_attrs.info->is_ref) {
+            if (is_nontrivial_type(arg->synthesized_attrs.info->primitive) && not arg->synthesized_attrs.is_lvalue &&
+                not arg->synthesized_attrs.info->is_ref) {
                 current_chunk->emit_instruction(Instruction::POP_LIST, arg->synthesized_attrs.token.line);
             } else if (arg->synthesized_attrs.info->primitive == Type::STRING) {
                 current_chunk->emit_instruction(Instruction::POP_STRING, arg->synthesized_attrs.token.line);
@@ -571,9 +567,7 @@ ExprVisitorType Generator::visit(CommaExpr &expr) {
         compile(it->get());
         if ((*it)->synthesized_attrs.info->primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, (*it)->synthesized_attrs.token.line);
-        } else if (((*it)->synthesized_attrs.info->primitive == Type::LIST ||
-                       (*it)->synthesized_attrs.info->primitive == Type::TUPLE ||
-                       (*it)->synthesized_attrs.info->primitive == Type::CLASS) &&
+        } else if (is_nontrivial_type((*it)->synthesized_attrs.info->primitive) &&
                    not(*it)->synthesized_attrs.is_lvalue) {
             current_chunk->emit_instruction(Instruction::POP_LIST, (*it)->synthesized_attrs.token.line);
         } else {
@@ -962,17 +956,13 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
         case IdentifierType::GLOBAL:
             if (expr.synthesized_attrs.stack_slot < Chunk::const_long_max) {
                 if (expr.type == IdentifierType::LOCAL) {
-                    if (expr.synthesized_attrs.info->primitive == Type::LIST ||
-                        expr.synthesized_attrs.info->primitive == Type::TUPLE ||
-                        expr.synthesized_attrs.info->primitive == Type::CLASS) {
+                    if (is_nontrivial_type(expr.synthesized_attrs.info->primitive)) {
                         current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LIST, expr.name.line);
                     } else {
                         current_chunk->emit_instruction(Instruction::ACCESS_LOCAL, expr.name.line);
                     }
                 } else {
-                    if (expr.synthesized_attrs.info->primitive == Type::LIST ||
-                        expr.synthesized_attrs.info->primitive == Type::TUPLE ||
-                        expr.synthesized_attrs.info->primitive == Type::CLASS) {
+                    if (is_nontrivial_type(expr.synthesized_attrs.info->primitive)) {
                         current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL_LIST, expr.name.line);
                     } else {
                         current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL, expr.name.line);
@@ -1022,9 +1012,7 @@ StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
     compile(stmt.expr.get());
     if (stmt.expr->synthesized_attrs.info->primitive == Type::STRING) {
         current_chunk->emit_instruction(Instruction::POP_STRING, current_chunk->line_numbers.back().first);
-    } else if (stmt.expr->synthesized_attrs.info->primitive == Type::LIST ||
-               stmt.expr->synthesized_attrs.info->primitive == Type::TUPLE ||
-               stmt.expr->synthesized_attrs.info->primitive == Type::CLASS) {
+    } else if (is_nontrivial_type(stmt.expr->synthesized_attrs.info->primitive)) {
         current_chunk->emit_instruction(Instruction::POP_LIST, current_chunk->line_numbers.back().first);
     } else {
         current_chunk->emit_instruction(Instruction::POP, current_chunk->line_numbers.back().first);
@@ -1123,10 +1111,9 @@ StmtVisitorType Generator::visit(IfStmt &stmt) {
 StmtVisitorType Generator::visit(ReturnStmt &stmt) {
     if (stmt.value != nullptr) {
         compile(stmt.value.get());
-        if (auto &return_type = stmt.function->return_type;
-            (return_type->primitive == Type::LIST || return_type->primitive == Type::TUPLE ||
-                return_type->primitive == Type::CLASS) &&
-            not return_type->is_ref && stmt.value->synthesized_attrs.is_lvalue) {
+        if (auto &return_type = stmt.function->return_type; is_nontrivial_type(return_type->primitive) &&
+                                                            not return_type->is_ref &&
+                                                            stmt.value->synthesized_attrs.is_lvalue) {
             current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.keyword.line);
         }
     } else {

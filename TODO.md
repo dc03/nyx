@@ -52,7 +52,7 @@ before everything else
 `ExprInheritedAttrs` data type
 - [ ] Fix tuple assignment in `SetExpr` having no type checking
 - [ ] Implement references to class member variables at runtime
-- [ ] Replace `... == Type::LIST || ... == Type::TUPLE || ... == Type::CLASS` in
+- [x] Replace `... == Type::LIST || ... == Type::TUPLE || ... == Type::CLASS` in
 `CodeGen` with `is_nontrivial_type` call
 - [x] Rename `builtin`/`inbuilt` to `trivial`
 - [ ] Move expressions for list indices, tuple members and class member variables
