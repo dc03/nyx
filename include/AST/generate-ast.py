@@ -162,6 +162,7 @@ if __name__ == '__main__':
         file.write('#include <string>\n')
         file.write('#include <string_view>\n')
         file.write('#include <tuple>\n')
+        file.write('#include <unordered_map>\n')
         file.write('#include <vector>\n\n')
         forward_declare(file, ['Expr', 'Stmt', 'BaseType'])
         file.write('\n')
@@ -331,9 +332,10 @@ if __name__ == '__main__':
 
         declare_stmt_type('Class',
                           'name{std::move(name)}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, methods{'
-                          'std::move(methods)}',
+                          'std::move(methods)}, member_map{std::move(member_map)}, method_map{std::move(method_map)}',
                           'Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<MemberType> members, '
-                          'std::vector<MethodType> methods',
+                          'std::vector<MethodType> methods, std::unordered_map<std::string_view,std::size_t>'
+                          'member_map, std::unordered_map<std::string_view,std::size_t> method_map',
                           ['using MemberType = std::pair<std::unique_ptr<VarStmt>,VisibilityType>',
                            'using MethodType = std::pair<std::unique_ptr<FunctionStmt>,VisibilityType>'])
 

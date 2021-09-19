@@ -627,6 +627,8 @@ StmtNode Parser::class_declaration() {
     FunctionStmt *dtor{nullptr};
     std::vector<ClassStmt::MemberType> members{};
     std::vector<ClassStmt::MethodType> methods{};
+    std::unordered_map<std::string_view, std::size_t> member_map{};
+    std::unordered_map<std::string_view, std::size_t> method_map{};
 
     ScopedManager current_methods_manager{current_methods, &methods};
 
@@ -650,6 +652,7 @@ StmtNode Parser::class_declaration() {
         if (match(TokenType::VAR, TokenType::CONST, TokenType::REF)) {
             try {
                 std::unique_ptr<VarStmt> member{dynamic_cast<VarStmt *>(variable_declaration().release())};
+                member_map[member->name.lexeme] = members.size();
                 members.emplace_back(std::move(member), visibility);
             } catch (...) { synchronize(); }
         } else if (match(TokenType::FN)) {
@@ -677,6 +680,7 @@ StmtNode Parser::class_declaration() {
                         throw ParseException{method_name, message};
                     }
                 }
+                method_map[method->name.lexeme] = methods.size();
                 methods.emplace_back(std::move(method), visibility);
             } catch (...) { synchronize(); }
         } else {
@@ -685,8 +689,8 @@ StmtNode Parser::class_declaration() {
     }
 
     consume("Expected '}' at the end of class declaration", TokenType::RIGHT_BRACE);
-    auto *class_definition =
-        allocate_node(ClassStmt, std::move(name), ctor, dtor, std::move(members), std::move(methods));
+    auto *class_definition = allocate_node(ClassStmt, std::move(name), ctor, dtor, std::move(members),
+        std::move(methods), std::move(member_map), std::move(method_map));
     current_module.classes[class_definition->name.lexeme] = class_definition;
 
     return StmtNode{class_definition};

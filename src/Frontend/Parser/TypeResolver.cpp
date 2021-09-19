@@ -126,22 +126,16 @@ FunctionStmt *TypeResolver::find_function(const std::string &function_name) {
 }
 
 ClassStmt::MemberType *TypeResolver::find_member(ClassStmt *class_, const std::string &name) {
-    auto member = std::find_if(class_->members.begin(), class_->members.end(),
-        [&name](const ClassStmt::MemberType &member) { return member.first->name.lexeme == name; });
-
-    if (member != class_->members.end()) {
-        return &*member;
+    if (class_->member_map.find(name) != class_->member_map.end()) {
+        return &class_->members[class_->member_map.at(name)];
     } else {
         return nullptr;
     }
 }
 
 ClassStmt::MethodType *TypeResolver::find_method(ClassStmt *class_, const std::string &name) {
-    auto method = std::find_if(class_->methods.begin(), class_->methods.end(),
-        [&name](const ClassStmt::MethodType &method) { return method.first->name.lexeme == name; });
-
-    if (method != class_->methods.end()) {
-        return &*method;
+    if (class_->method_map.find(name) != class_->method_map.end()) {
+        return &class_->methods[class_->method_map.at(name)];
     } else {
         return nullptr;
     }

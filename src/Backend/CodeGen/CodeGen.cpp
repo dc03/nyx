@@ -165,9 +165,7 @@ void Generator::make_instance(ClassStmt *class_) {
 }
 
 Value::IntType Generator::get_member_index(ClassStmt *stmt, const std::string &name) {
-    return std::distance(stmt->members.begin(),
-        std::find_if(stmt->members.begin(), stmt->members.end(),
-            [&name](ClassStmt::MemberType &member) { return member.first->name.lexeme == name; }));
+    return stmt->member_map[name];
 }
 
 std::string Generator::mangle_function(FunctionStmt &stmt) {

@@ -57,5 +57,5 @@ before everything else
 - [x] Rename `builtin`/`inbuilt` to `trivial`
 - [ ] Move expressions for list indices, tuple members and class member variables
 - [ ] Destructor calls, including those of member variables
-- [ ] Add `member_map` and `method_map` in `ClassStmt` for `string_view` -> `size_t`
+- [x] Add `member_map` and `method_map` in `ClassStmt` for `string_view` -> `size_t`
 mapping from member/method name to index in `members`/`methods` vectors

@@ -13,6 +13,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <unordered_map>
 #include <vector>
 
 struct Expr;
@@ -566,6 +567,8 @@ struct ClassStmt final : public Stmt {
     FunctionStmt *dtor{};
     std::vector<MemberType> members{};
     std::vector<MethodType> methods{};
+    std::unordered_map<std::string_view, std::size_t> member_map{};
+    std::unordered_map<std::string_view, std::size_t> method_map{};
 
     std::string_view string_tag() override final { return "ClassStmt"; }
 
@@ -573,8 +576,15 @@ struct ClassStmt final : public Stmt {
 
     ClassStmt() = default;
     ClassStmt(Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<MemberType> members,
-        std::vector<MethodType> methods)
-        : name{std::move(name)}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, methods{std::move(methods)} {}
+        std::vector<MethodType> methods, std::unordered_map<std::string_view, std::size_t> member_map,
+        std::unordered_map<std::string_view, std::size_t> method_map)
+        : name{std::move(name)},
+          ctor{ctor},
+          dtor{dtor},
+          members{std::move(members)},
+          methods{std::move(methods)},
+          member_map{std::move(member_map)},
+          method_map{std::move(method_map)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
