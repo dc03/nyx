@@ -26,6 +26,8 @@ class Generator final : Visitor {
     // Similar thing as for break statements
     std::unordered_map<std::string_view, NativeFn> natives{};
 
+    bool variable_tracking_suppressed{};
+
     void begin_scope();
     void end_scope();
     void patch_jump(std::size_t jump_idx, std::size_t jump_amount);
@@ -39,6 +41,9 @@ class Generator final : Visitor {
 
     bool is_ctor_call(ExprNode &node);
     ClassStmt *get_class(ExprNode &node);
+
+    bool suppress_variable_tracking();
+    void restore_variable_tracking(bool previous);
     void make_instance(ClassStmt *class_);
     Value::IntType get_member_index(ClassStmt *stmt, const std::string &name);
 

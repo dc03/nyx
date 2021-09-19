@@ -551,7 +551,8 @@ ExecutionState VirtualMachine::step() {
         case is Instruction::POP_LIST: {
             if (stack[stack_top - 1].tag == Value::Tag::LIST) {
                 destroy_list(stack[--stack_top].w_list);
-            } else if (stack[stack_top - 1].tag == Value::Tag::LIST_REF) {
+            } else if (stack[stack_top - 1].tag == Value::Tag::LIST_REF ||
+                       stack[stack_top - 1].tag == Value::Tag::NULL_) {
                 stack_top--;
             }
             break;

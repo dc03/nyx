@@ -135,7 +135,17 @@ ClassStmt *Generator::get_class(ExprNode &node) {
     return node->synthesized_attrs.class_;
 }
 
+bool Generator::suppress_variable_tracking() {
+    return std::exchange(variable_tracking_suppressed, true);
+}
+
+void Generator::restore_variable_tracking(bool previous) {
+    variable_tracking_suppressed = previous;
+}
+
 void Generator::make_instance(ClassStmt *class_) {
+    bool previous = suppress_variable_tracking();
+
     current_chunk->emit_instruction(Instruction::MAKE_LIST, class_->name.line);
     emit_operand(class_->members.size());
 
@@ -150,6 +160,8 @@ void Generator::make_instance(ClassStmt *class_) {
 
         i++;
     }
+
+    restore_variable_tracking(previous);
 }
 
 Value::IntType Generator::get_member_index(ClassStmt *stmt, const std::string &name) {
@@ -1225,7 +1237,9 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
     if (stmt.requires_copy) {
         current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.name.line);
     }
-    scopes.top().push_back(stmt.type.get());
+    if (not variable_tracking_suppressed) {
+        scopes.top().push_back(stmt.type.get());
+    }
 }
 
 StmtVisitorType Generator::visit(VarTupleStmt &stmt) {
@@ -1235,7 +1249,9 @@ StmtVisitorType Generator::visit(VarTupleStmt &stmt) {
     }
     compile_vartuple(stmt.names.tuple, dynamic_cast<TupleType &>(*stmt.type));
 
-    add_vartuple_to_scope(stmt.names.tuple);
+    if (not variable_tracking_suppressed) {
+        add_vartuple_to_scope(stmt.names.tuple);
+    }
 }
 
 StmtVisitorType Generator::visit(WhileStmt &stmt) {
