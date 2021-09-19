@@ -8,6 +8,7 @@
 
 #include "AST/AST.hpp"
 #include "Backend/VirtualMachine/Module.hpp"
+#include "ScopedManager.hpp"
 
 #include <string_view>
 #include <tuple>

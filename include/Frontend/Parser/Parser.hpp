@@ -9,6 +9,7 @@
 #include "AST/AST.hpp"
 #include "AST/Token.hpp"
 #include "Backend/VirtualMachine/Module.hpp"
+#include "ScopedManager.hpp"
 
 #include <string_view>
 #include <vector>

@@ -16,19 +16,10 @@ struct TypeException : public std::runtime_error {
     explicit TypeException(std::string_view string) : std::runtime_error{std::string{string}} {}
 };
 
-struct ScopedBooleanManager {
-    bool &scoped_bool;
-    bool previous_value{};
-    explicit ScopedBooleanManager(bool &controlled) : scoped_bool{controlled} {
-        previous_value = controlled;
-        controlled = true;
-    }
-
-    ~ScopedBooleanManager() { scoped_bool = previous_value; }
-};
-
-struct ScopedScopeManager {
+class ScopedScopeManager {
     TypeResolver &resolver;
+
+  public:
     explicit ScopedScopeManager(TypeResolver &resolver) : resolver{resolver} { resolver.begin_scope(); }
     ~ScopedScopeManager() { resolver.end_scope(); }
 };
@@ -1247,19 +1238,8 @@ StmtVisitorType TypeResolver::visit(BlockStmt &stmt) {
 StmtVisitorType TypeResolver::visit(BreakStmt &) {}
 
 StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
-    ScopedBooleanManager class_manager{in_class};
-
-    ////////////////////////////////////////////////////////////////////////////
-    struct ScopedClassManager {
-        ClassStmt *&managed_class;
-        ClassStmt *previous_value{nullptr};
-        ScopedClassManager(ClassStmt *(&current_class), ClassStmt *stmt)
-            : managed_class{current_class}, previous_value{current_class} {
-            current_class = stmt;
-        }
-        ~ScopedClassManager() { managed_class = previous_value; }
-    } pointer_manager{current_class, &stmt};
-    ////////////////////////////////////////////////////////////////////////////
+    ScopedManager class_manager{in_class, true};
+    ScopedManager current_class_manager{current_class, &stmt};
 
     // Creation of the implicit constructor
     if (stmt.ctor == nullptr) {
@@ -1302,26 +1282,15 @@ StmtVisitorType TypeResolver::visit(ExpressionStmt &stmt) {
 
 StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     ScopedScopeManager manager{*this};
-    ScopedBooleanManager function_manager{in_function};
-
-    ////////////////////////////////////////////////////////////////////////////
-    struct ScopedFunctionManager {
-        FunctionStmt *&managed_class;
-        FunctionStmt *previous_value{nullptr};
-        ScopedFunctionManager(FunctionStmt *(&current_class), FunctionStmt *stmt)
-            : managed_class{current_class}, previous_value{current_class} {
-            current_class = stmt;
-        }
-        ~ScopedFunctionManager() { managed_class = previous_value; }
-    } pointer_manager{current_function, &stmt};
+    ScopedManager function_manager{in_function, true};
+    ScopedManager current_function_manager{current_function, &stmt};
 
     bool throwaway{};
     bool is_in_ctor = current_class != nullptr && stmt.name == current_class->name;
     bool is_in_dtor = current_class != nullptr && stmt.name.lexeme[0] == '~' &&
                       (stmt.name.lexeme.substr(1) == current_class->name.lexeme);
 
-    ScopedBooleanManager special_func_manager{is_in_ctor ? in_ctor : (is_in_dtor ? in_dtor : throwaway)};
-    ////////////////////////////////////////////////////////////////////////////
+    ScopedManager special_func_manager{is_in_ctor ? in_ctor : (is_in_dtor ? in_dtor : throwaway), true};
 
     if (not values.empty()) {
         stmt.scope_depth = values.crbegin()->scope_depth + 1;
@@ -1437,7 +1406,7 @@ StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(SwitchStmt &stmt) {
-    ScopedBooleanManager switch_manager{in_switch};
+    ScopedManager switch_manager{in_switch, true};
 
     ExprVisitorType condition = resolve(stmt.condition.get());
 
@@ -1575,8 +1544,7 @@ StmtVisitorType TypeResolver::visit(VarTupleStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(WhileStmt &stmt) {
-    // ScopedScopeManager manager{*this};
-    ScopedBooleanManager loop_manager{in_loop};
+    ScopedManager loop_manager{in_loop, true};
 
     ExprVisitorType condition = resolve(stmt.condition.get());
     if (one_of(condition.info->primitive, Type::CLASS, Type::LIST)) {

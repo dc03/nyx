@@ -24,31 +24,6 @@ struct ParseException : public std::invalid_argument {
         : std::invalid_argument(std::string{error.begin(), error.end()}), token{std::move(token)} {}
 };
 
-struct ScopedBooleanManager {
-    bool &scoped_bool;
-    bool previous_value{};
-    explicit ScopedBooleanManager(bool &controlled) : scoped_bool{controlled} {
-        previous_value = controlled;
-        controlled = true;
-    }
-
-    ~ScopedBooleanManager() { scoped_bool = previous_value; }
-};
-
-struct ScopedIntegerManager {
-    std::size_t &scoped_int;
-    explicit ScopedIntegerManager(std::size_t &controlled) : scoped_int{controlled} { controlled++; }
-    ~ScopedIntegerManager() { scoped_int--; }
-};
-
-template <typename T, typename = std::enable_if_t<std::is_pointer_v<T>>>
-struct ScopedPointerManager {
-    T &controlled;
-    T previous;
-    explicit ScopedPointerManager(T &controlled) : controlled{controlled}, previous{controlled} {}
-    ~ScopedPointerManager() { controlled = previous; }
-};
-
 void Parser::add_rule(TokenType type, ParseRule rule) noexcept {
     rules[static_cast<std::size_t>(type)] = rule;
 }
@@ -653,13 +628,11 @@ StmtNode Parser::class_declaration() {
     std::vector<ClassStmt::MemberType> members{};
     std::vector<ClassStmt::MethodType> methods{};
 
-    ScopedPointerManager<std::vector<ClassStmt::MethodType> *> current_methods_manager{current_methods};
-    current_methods = &methods;
-
-    // ScopedIntegerManager depth_manager{scope_depth};
+    ScopedManager current_methods_manager{current_methods, &methods};
 
     consume("Expected '{' after class name", TokenType::LEFT_BRACE);
-    ScopedBooleanManager class_manager{in_class};
+    ScopedManager class_manager{in_class, true};
+
     while (not is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
         consume("Expected 'public', 'private' or 'protected' modifier before member declaration", TokenType::PRIVATE,
             TokenType::PUBLIC, TokenType::PROTECTED);
@@ -736,7 +709,7 @@ StmtNode Parser::function_declaration() {
 
     FunctionStmt *function_definition;
     {
-        ScopedIntegerManager manager{scope_depth};
+        ScopedManager scope_depth_manager{scope_depth, scope_depth + 1};
 
         std::vector<FunctionStmt::ParameterType> params{};
         if (peek().type != TokenType::RIGHT_PAREN) {
@@ -769,7 +742,7 @@ StmtNode Parser::function_declaration() {
         TypeNode return_type = type();
         consume("Expected '{' after function return type", TokenType::LEFT_BRACE);
 
-        ScopedBooleanManager function_manager{in_function};
+        ScopedManager function_manager{in_function, true};
         StmtNode body = block_statement();
 
         function_definition = allocate_node(
@@ -911,7 +884,7 @@ StmtNode Parser::statement() {
 
 StmtNode Parser::block_statement() {
     std::vector<StmtNode> statements{};
-    ScopedIntegerManager manager{scope_depth};
+    ScopedManager scope_depth_manager{scope_depth, scope_depth + 1};
 
     while (not is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
         if (match(TokenType::VAR, TokenType::CONST, TokenType::REF)) {
@@ -956,7 +929,7 @@ StmtNode Parser::expression_statement() {
 StmtNode Parser::for_statement() {
     Token keyword = previous();
     consume("Expected '(' after 'for' keyword", TokenType::LEFT_PAREN);
-    ScopedIntegerManager manager{scope_depth};
+    ScopedManager scope_depth_manager{scope_depth, scope_depth + 1};
 
     StmtNode initializer = nullptr;
     if (match(TokenType::VAR, TokenType::CONST, TokenType::REF)) {
@@ -981,7 +954,7 @@ StmtNode Parser::for_statement() {
         advance();
     }
 
-    ScopedBooleanManager loop_manager{in_loop};
+    ScopedManager loop_manager{in_loop, true};
 
     consume("Expected '{' after for-loop header", TokenType::LEFT_BRACE);
     StmtNode desugared_loop = StmtNode{
@@ -1052,7 +1025,7 @@ StmtNode Parser::switch_statement() {
     StmtNode default_case = nullptr;
     consume("Expected '{' after switch statement condition", TokenType::LEFT_BRACE);
 
-    ScopedBooleanManager switch_manager{in_switch};
+    ScopedManager switch_manager{in_switch, true};
 
     while (not is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
         if (match(TokenType::DEFAULT)) {
@@ -1081,7 +1054,7 @@ StmtNode Parser::while_statement() {
         advance();
     }
 
-    ScopedBooleanManager loop_manager{in_loop};
+    ScopedManager loop_manager{in_loop, true};
     consume("Expected '{' after while-loop header", TokenType::LEFT_BRACE);
     StmtNode body = block_statement();
 
