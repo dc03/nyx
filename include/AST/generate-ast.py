@@ -411,9 +411,9 @@ if __name__ == '__main__':
                           'Type primitive, bool is_const, bool is_ref')
 
         declare_type_type('UserDefined',
-                          'BaseType{primitive, is_const, is_ref}, name{std::move(name)}',
-                          'Token name',
-                          'Type primitive, bool is_const, bool is_ref, Token name')
+                          'BaseType{primitive, is_const, is_ref}, name{std::move(name)}, class_{class_}',
+                          'Token name, ClassStmt *class_',
+                          'Type primitive, bool is_const, bool is_ref, Token name, ClassStmt *class_')
 
         declare_type_type('List',
                           'BaseType{primitive, is_const, is_ref}, contained{std::move(contained)}',
@@ -444,5 +444,9 @@ if __name__ == '__main__':
         file.write('// Determine whether passed type is non-trivial\n')
         file.write('bool is_nontrivial_type(Type type);\n')
         file.write('bool is_nontrivial_type(BaseType *node);\n\n')
+        file.write('// Determine whether given function is a constructor\n')
+        file.write('bool is_constructor(FunctionStmt *stmt);\n\n')
+        file.write('// Determine whether given function is a destructor\n')
+        file.write('bool is_destructor(FunctionStmt *stmt);\n\n')
 
         end_file(file)

@@ -51,7 +51,7 @@ BaseTypeVisitorType copy_type(BaseType *node) {
         return allocate_node(PrimitiveType, node->primitive, node->is_const, node->is_ref);
     } else if (node->type_tag() == NodeType::UserDefinedType) {
         auto *type = dynamic_cast<UserDefinedType *>(node);
-        return allocate_node(UserDefinedType, type->primitive, type->is_const, type->is_ref, type->name);
+        return allocate_node(UserDefinedType, type->primitive, type->is_const, type->is_ref, type->name, type->class_);
     } else if (node->type_tag() == NodeType::ListType) {
         auto *type = dynamic_cast<ListType *>(node);
         return allocate_node(
@@ -105,4 +105,13 @@ bool is_nontrivial_type(Type type) {
 
 bool is_nontrivial_type(BaseType *node) {
     return is_nontrivial_type(node->primitive);
+}
+
+bool is_constructor(FunctionStmt *stmt) {
+    return stmt->class_ != nullptr && stmt->name == stmt->class_->name;
+}
+
+bool is_destructor(FunctionStmt *stmt) {
+    return stmt->class_ != nullptr && stmt->name.lexeme[0] == '~' &&
+           stmt->name.lexeme.substr(1) == stmt->class_->name.lexeme;
 }

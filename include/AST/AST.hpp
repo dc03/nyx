@@ -806,14 +806,15 @@ struct PrimitiveType final : public BaseType {
 
 struct UserDefinedType final : public BaseType {
     Token name{};
+    ClassStmt *class_{};
 
     std::string_view string_tag() override final { return "UserDefinedType"; }
 
     NodeType type_tag() override final { return NodeType::UserDefinedType; }
 
     UserDefinedType() = default;
-    explicit UserDefinedType(Type primitive, bool is_const, bool is_ref, Token name)
-        : BaseType{primitive, is_const, is_ref}, name{std::move(name)} {}
+    UserDefinedType(Type primitive, bool is_const, bool is_ref, Token name, ClassStmt *class_)
+        : BaseType{primitive, is_const, is_ref}, name{std::move(name)}, class_{class_} {}
 
     BaseTypeVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -878,5 +879,11 @@ bool is_trivial_type(BaseType *node);
 // Determine whether passed type is non-trivial
 bool is_nontrivial_type(Type type);
 bool is_nontrivial_type(BaseType *node);
+
+// Determine whether given function is a constructor
+bool is_constructor(FunctionStmt *stmt);
+
+// Determine whether given function is a destructor
+bool is_destructor(FunctionStmt *stmt);
 
 #endif
