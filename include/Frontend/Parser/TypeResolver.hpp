@@ -56,7 +56,7 @@ class TypeResolver final : Visitor {
 
     ExprNode generate_scope_access(ClassStmt *stmt, Token name);
 
-    void replace_if_typeof(TypeNode &type);
+    void resolve_and_replace_if_typeof(TypeNode &type);
     void infer_list_type(ListExpr *of, ListType *from);
     void infer_tuple_type(TupleExpr *of, TupleType *from);
     bool are_equivalent_primitives(QualifiedTypeInfo first, QualifiedTypeInfo second);

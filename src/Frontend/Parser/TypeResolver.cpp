@@ -190,11 +190,13 @@ BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Arg
     return type_scratch_space.back().get();
 }
 
-void TypeResolver::replace_if_typeof(TypeNode &type) {
+void TypeResolver::resolve_and_replace_if_typeof(TypeNode &type) {
     if (type->type_tag() == NodeType::TypeofType) {
         resolve(type.get());
         using std::swap;
         type.swap(type_scratch_space.back());
+    } else {
+        resolve(type.get());
     }
 }
 
@@ -743,7 +745,7 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
         type_scratch_space.emplace_back(type); // Make sure there's no memory leaks
 
         if (member->first->type->type_tag() == NodeType::UserDefinedType) {
-            info.class_ = find_class(dynamic_cast<UserDefinedType *>(member->first->type.get())->name.lexeme);
+            info.class_ = dynamic_cast<UserDefinedType *>(member->first->type.get())->class_;
         }
         return info;
     }
@@ -778,8 +780,7 @@ ExprVisitorType TypeResolver::visit(GetExpr &expr) {
 
         if (tuple->types[index]->primitive == Type::CLASS) {
             return expr.synthesized_attrs = {tuple->types[index].get(),
-                       find_class(dynamic_cast<UserDefinedType *>(tuple->types[index].get())->name.lexeme), expr.name,
-                       object.is_lvalue};
+                       dynamic_cast<UserDefinedType *>(tuple->types[index].get())->class_, expr.name, object.is_lvalue};
         } else {
             return expr.synthesized_attrs = {tuple->types[index].get(), expr.name, object.is_lvalue};
         }
@@ -824,8 +825,8 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
         bool is_lvalue = expr.object->synthesized_attrs.is_lvalue || expr.object->synthesized_attrs.info->is_ref;
         if (contained_type->primitive == Type::CLASS) {
             return expr.synthesized_attrs = {contained_type,
-                       find_class(dynamic_cast<UserDefinedType *>(contained_type)->name.lexeme),
-                       expr.synthesized_attrs.token, is_lvalue};
+                       dynamic_cast<UserDefinedType *>(contained_type)->class_, expr.synthesized_attrs.token,
+                       is_lvalue};
         } else {
             return expr.synthesized_attrs = {contained_type, expr.synthesized_attrs.token, is_lvalue};
         }
@@ -1129,8 +1130,9 @@ ExprVisitorType TypeResolver::visit(ThisExpr &expr) {
         error({"Cannot use 'this' keyword outside a class's constructor or destructor"}, expr.keyword);
         throw TypeException{"Cannot use 'this' keyword outside a class's constructor or destructor"};
     }
-    return expr.synthesized_attrs = {make_new_type<UserDefinedType>(Type::CLASS, false, false, current_class->name),
-               current_class, expr.keyword};
+    return expr.synthesized_attrs = {
+               make_new_type<UserDefinedType>(Type::CLASS, false, false, current_class->name, nullptr), current_class,
+               expr.keyword};
 }
 
 ExprVisitorType TypeResolver::visit(TupleExpr &expr) {
@@ -1216,8 +1218,9 @@ ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
 
     if (ClassStmt *class_ = find_class(expr.name.lexeme); class_ != nullptr) {
         expr.type = IdentifierType::CLASS;
-        return expr.synthesized_attrs = {make_new_type<UserDefinedType>(Type::CLASS, true, false, class_->name),
-                   class_->ctor, class_, expr.synthesized_attrs.token};
+        return expr.synthesized_attrs = {
+                   make_new_type<UserDefinedType>(Type::CLASS, true, false, class_->name, nullptr), class_->ctor,
+                   class_, expr.synthesized_attrs.token};
     }
 
     error({"No such variable/function '", expr.name.lexeme, "' in the current module's scope"}, expr.name);
@@ -1244,7 +1247,7 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
     // Creation of the implicit constructor
     if (stmt.ctor == nullptr) {
         stmt.ctor = allocate_node(FunctionStmt, stmt.name,
-            TypeNode{allocate_node(UserDefinedType, Type::CLASS, false, false, stmt.name)}, {},
+            TypeNode{allocate_node(UserDefinedType, Type::CLASS, false, false, stmt.name, nullptr)}, {},
             StmtNode{allocate_node(BlockStmt, {})}, {}, values.empty() ? 0 : values.crbegin()->scope_depth, &stmt);
         StmtNode return_stmt{allocate_node(ReturnStmt, stmt.name, nullptr, 0, stmt.ctor)};
         dynamic_cast<BlockStmt *>(stmt.ctor->body.get())->stmts.emplace_back(std::move(return_stmt));
@@ -1296,13 +1299,13 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
         stmt.scope_depth = values.crbegin()->scope_depth + 1;
     }
 
-    replace_if_typeof(stmt.return_type);
+    resolve_and_replace_if_typeof(stmt.return_type);
 
     stmt.class_ = current_class;
 
     if (in_class && current_class->ctor == &stmt) {
         if (stmt.return_type->primitive != Type::CLASS || stmt.return_type->is_const || stmt.return_type->is_ref ||
-            current_class != find_class(dynamic_cast<UserDefinedType *>(stmt.return_type.get())->name.lexeme)) {
+            current_class != dynamic_cast<UserDefinedType *>(stmt.return_type.get())->class_) {
             error({"A constructor needs to have a return type of the same name as the class"}, stmt.name);
             note({"The return type is '", stringify(stmt.return_type.get()), "'"});
             if (stmt.return_type->is_const) {
@@ -1324,10 +1327,10 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     std::size_t i = 0;
     for (auto &param : stmt.params) {
         ClassStmt *param_class = nullptr;
-        replace_if_typeof(param.second);
+        resolve_and_replace_if_typeof(param.second);
 
         if (param.second->type_tag() == NodeType::UserDefinedType) {
-            param_class = find_class(dynamic_cast<UserDefinedType &>(*param.second).name.lexeme);
+            param_class = dynamic_cast<UserDefinedType *>(param.second.get())->class_;
             if (param_class == nullptr) {
                 error({"No such module/class exists in the current global scope"}, stmt.name);
                 throw TypeException{"No such module/class exists in the current global scope"};
@@ -1357,7 +1360,7 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     if (auto *body = dynamic_cast<BlockStmt *>(stmt.body.get());
         (not body->stmts.empty() && body->stmts.back()->type_tag() != NodeType::ReturnStmt) || body->stmts.empty()) {
         // TODO: also for constructors and destructors
-        if (stmt.return_type->primitive == Type::NULL_) {
+        if (stmt.return_type->primitive == Type::NULL_ || is_constructor(&stmt) || is_destructor(&stmt)) {
             body->stmts.emplace_back(allocate_node(ReturnStmt, stmt.name, nullptr, 0, nullptr));
         }
     }
@@ -1445,7 +1448,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
         stmt.type = TypeNode{copy_type(initializer.info)};
         type = stmt.type.get();
     } else {
-        replace_if_typeof(stmt.type);
+        resolve_and_replace_if_typeof(stmt.type);
         type = resolve(stmt.type.get());
     }
     switch (stmt.keyword.type) {
@@ -1504,7 +1507,7 @@ StmtVisitorType TypeResolver::visit(VarTupleStmt &stmt) {
         stmt.type = TypeNode{copy_type(initializer.info)};
         type = stmt.type.get();
     } else {
-        replace_if_typeof(stmt.type);
+        resolve_and_replace_if_typeof(stmt.type);
         type = resolve(stmt.type.get());
     }
 
@@ -1563,18 +1566,19 @@ BaseTypeVisitorType TypeResolver::visit(PrimitiveType &type) {
 }
 
 BaseTypeVisitorType TypeResolver::visit(UserDefinedType &type) {
+    type.class_ = find_class(type.name.lexeme);
     return &type;
 }
 
 BaseTypeVisitorType TypeResolver::visit(ListType &type) {
-    replace_if_typeof(type.contained);
+    resolve_and_replace_if_typeof(type.contained);
     resolve(type.contained.get());
     return &type;
 }
 
 BaseTypeVisitorType TypeResolver::visit(TupleType &type) {
     for (TypeNode &elem : type.types) {
-        replace_if_typeof(elem);
+        resolve_and_replace_if_typeof(elem);
         resolve(elem.get());
     }
     return &type;
