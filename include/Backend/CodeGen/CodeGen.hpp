@@ -33,6 +33,7 @@ class Generator final : Visitor {
     void patch_jump(std::size_t jump_idx, std::size_t jump_amount);
     void emit_conversion(NumericConversionType conversion_type, std::size_t line_number);
     void emit_operand(std::size_t value);
+    void emit_stack_slot(std::size_t value);
 
     bool requires_copy(ExprNode &what, TypeNode &type);
 

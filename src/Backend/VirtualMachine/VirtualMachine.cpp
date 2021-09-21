@@ -342,7 +342,7 @@ ExecutionState VirtualMachine::step() {
         }
         case is Instruction::CALL_FUNCTION: {
             RuntimeFunction *called = stack[--stack_top].w_fun;
-            frames[++frame_top] = CallFrame{&stack[stack_top - called->arity], current_chunk, ip};
+            frames[++frame_top] = CallFrame{&stack[stack_top - (called->arity + 1)], current_chunk, ip};
             current_chunk = &called->code;
             ip = &called->code.bytes[0];
             break;

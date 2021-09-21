@@ -51,6 +51,7 @@ RuntimeModule Generator::compile(Module &module) {
     current_module = &module;
     current_compiled = &compiled;
 
+    current_chunk->emit_instruction(Instruction::PUSH_NULL, 0);
     for (auto &stmt : module.statements) {
         if (stmt != nullptr) {
             compile(stmt.get());
@@ -58,6 +59,7 @@ RuntimeModule Generator::compile(Module &module) {
     }
 
     end_scope();
+    current_chunk->emit_instruction(Instruction::POP, 0);
     return compiled;
 }
 
@@ -75,6 +77,10 @@ void Generator::emit_conversion(NumericConversionType conversion_type, std::size
 
 void Generator::emit_operand(std::size_t value) {
     current_chunk->bytes.back() |= value & 0x00ff'ffff;
+}
+
+void Generator::emit_stack_slot(std::size_t value) {
+    emit_operand(value + 1);
 }
 
 bool Generator::requires_copy(ExprNode &what, TypeNode &type) {
@@ -237,7 +243,7 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
             current_chunk->emit_instruction(
                 expr.target_type == IdentifierType::LOCAL ? Instruction::ACCESS_LOCAL : Instruction::ACCESS_GLOBAL,
                 expr.synthesized_attrs.token.line);
-            emit_operand(expr.synthesized_attrs.stack_slot);
+            emit_stack_slot(expr.synthesized_attrs.stack_slot);
             if (expr.synthesized_attrs.info->is_ref) {
                 current_chunk->emit_instruction(Instruction::DEREF, expr.synthesized_attrs.token.line);
             }
@@ -270,7 +276,7 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
         }
     }
 
-    emit_operand(expr.synthesized_attrs.stack_slot);
+    emit_stack_slot(expr.synthesized_attrs.stack_slot);
     return {};
 }
 
@@ -504,7 +510,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
                         current_chunk->emit_instruction(
                             Instruction::MAKE_REF_TO_GLOBAL, value->synthesized_attrs.token.line);
                     }
-                    emit_operand(value->synthesized_attrs.stack_slot);
+                    emit_stack_slot(value->synthesized_attrs.stack_slot);
                 } else if (value->type_tag() == NodeType::IndexExpr) {
                     IndexExpr *list = dynamic_cast<IndexExpr *>(value.get());
                     compile(list->object.get());
@@ -527,7 +533,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
                     current_chunk->emit_instruction(
                         Instruction::MAKE_REF_TO_LOCAL, value->synthesized_attrs.token.line);
                     // This is a fallback, but I don't think it would ever be triggered
-                    emit_operand(value->synthesized_attrs.stack_slot);
+                    emit_stack_slot(value->synthesized_attrs.stack_slot);
                 }
             } else if (not param.second->is_ref && value->synthesized_attrs.info->is_ref) {
                 compile(value.get());
@@ -659,7 +665,7 @@ ExprVisitorType Generator::visit(ListExpr &expr) {
                 } else if (bound_var->type == IdentifierType::GLOBAL) {
                     current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, bound_var->name.line);
                 }
-                emit_operand(bound_var->synthesized_attrs.stack_slot);
+                emit_stack_slot(bound_var->synthesized_attrs.stack_slot);
             }
         } else {
             compile(element_expr.get()); // A reference not binding to an lvalue
@@ -797,7 +803,7 @@ ExprVisitorType Generator::visit(MoveExpr &expr) {
         } else {
             current_chunk->emit_instruction(Instruction::MOVE_GLOBAL, expr.synthesized_attrs.token.line);
         }
-        emit_operand(expr.expr->synthesized_attrs.stack_slot);
+        emit_stack_slot(expr.expr->synthesized_attrs.stack_slot);
     }
     return {};
 }
@@ -894,7 +900,7 @@ ExprVisitorType Generator::visit(TupleExpr &expr) {
                 current_chunk->emit_instruction(var->type == IdentifierType::LOCAL ? Instruction::MAKE_REF_TO_LOCAL
                                                                                    : Instruction::MAKE_REF_TO_GLOBAL,
                     var->name.line);
-                emit_operand(var->synthesized_attrs.stack_slot);
+                emit_stack_slot(var->synthesized_attrs.stack_slot);
             } else if (elem_expr->type_tag() == NodeType::IndexExpr) {
                 auto *list = dynamic_cast<IndexExpr *>(elem_expr.get());
                 compile(list->object.get());
@@ -948,7 +954,7 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
                 current_chunk->emit_instruction(
                     variable->type == IdentifierType::LOCAL ? Instruction::ACCESS_LOCAL : Instruction::ACCESS_GLOBAL,
                     variable->synthesized_attrs.token.line);
-                emit_operand(variable->synthesized_attrs.stack_slot);
+                emit_stack_slot(variable->synthesized_attrs.stack_slot);
 
                 if (variable->synthesized_attrs.info->primitive == Type::FLOAT) {
                     current_chunk->emit_constant(Value{1.0}, expr.oper.line);
@@ -962,7 +968,7 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
                 current_chunk->emit_instruction(
                     variable->type == IdentifierType::LOCAL ? Instruction::ASSIGN_LOCAL : Instruction::ASSIGN_GLOBAL,
                     expr.oper.line);
-                emit_operand(variable->synthesized_attrs.stack_slot);
+                emit_stack_slot(variable->synthesized_attrs.stack_slot);
             }
             break;
         }
@@ -989,7 +995,7 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
                         current_chunk->emit_instruction(Instruction::ACCESS_GLOBAL, expr.name.line);
                     }
                 }
-                emit_operand(expr.synthesized_attrs.stack_slot);
+                emit_stack_slot(expr.synthesized_attrs.stack_slot);
             } else {
                 compile_error({"Too many variables in current scope"});
             }
@@ -1222,7 +1228,7 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
         } else {
             current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, stmt.name.line);
         }
-        emit_operand(stmt.initializer->synthesized_attrs.stack_slot);
+        emit_stack_slot(stmt.initializer->synthesized_attrs.stack_slot);
     } else if (stmt.type->is_ref && not stmt.initializer->synthesized_attrs.info->is_ref) {
         if (stmt.initializer->type_tag() == NodeType::IndexExpr) {
             auto *list = dynamic_cast<IndexExpr *>(stmt.initializer.get());
