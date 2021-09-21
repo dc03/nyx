@@ -355,19 +355,6 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::RETURN: {
-            Value result = stack[--stack_top];
-            std::size_t locals_popped = operand;
-            if (result.tag != Value::Tag::NULL_) {
-                stack[stack_top - locals_popped - 1] = result;
-            }
-            while (locals_popped-- > 0) {
-                stack_top--;
-                if (stack[stack_top].tag == Value::Tag::STRING) {
-                    cache.remove(*stack[stack_top].w_str);
-                } else if (stack[stack_top].tag == Value::Tag::LIST) {
-                    destroy_list(stack[stack_top].w_list);
-                }
-            }
             ip = frames[frame_top].return_ip;
             current_chunk = frames[frame_top--].return_chunk;
             break;
