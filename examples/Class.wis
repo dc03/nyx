@@ -1,22 +1,43 @@
 class Foo {
-    public var x: int
+    public var x = 0
 
     public fn Foo(y: int) -> Foo {
-        x = y
-        print("Constructor called with value " + str(y) + ".")
+        this.x = y
+        print("Constructor Foo called with value " + string(y) + ".\n")
     }
 
     public fn ~Foo() -> null {
-        print("Destructor called.")
+        print("Destructor ~Foo called, value of x = " + string(this.x) + "\n")
     }
 }
 
-fn bar(z: const ref Foo) -> null {
-    print("Value of z.x: " + str(z.x))
+class Bar {
+    public var y = Foo(0)
+
+    public fn Bar(z: int) -> Bar {
+        print("Constructor Bar called\n")
+        this.y = Foo(z)
+    }
+
+    public fn ~Bar() -> null {
+        print("Destructor of Bar called\n")
+    }
+}
+
+fn bar(z: const ref Bar) -> null {
+    print("Value of z.y.x: " + string(z.y.x) + "\n")
 }
 
 fn main() -> int {
-    var x = Foo(5) // Constructor called with value 5.
-    bar(x) // Value of z.x: 5
-    return 0 // Destructor called.
+    var x = Bar(5)
+    // Constructor Foo called with value 0.
+    // Constructor Bar called
+    // Constructor Foo called with value 5.
+    bar(x)
+    // Value of z.x: 5
+    return 0
+    // Destructor of Bar called
+    // Destructor ~Foo called, value of x = 5
 }
+
+main()
