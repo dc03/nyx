@@ -18,22 +18,30 @@ class Generator final : Visitor {
     Chunk *current_chunk{nullptr};
     Module *current_module{nullptr};
     RuntimeModule *current_compiled{nullptr};
-    std::stack<std::vector<const BaseType *>> scopes{};
-    std::stack<std::vector<std::size_t>> break_stmts{};
+
+    std::size_t current_scope_depth{};
+    std::vector<std::pair<const BaseType *, std::size_t>> scopes{};
+
     // Push a new vector for every loop or switch statement encountered within a loop or switch statement, with the
     // vector tracking the indexes of the breaks
     std::stack<std::vector<std::size_t>> continue_stmts{};
     // Similar thing as for break statements
+    std::stack<std::vector<std::size_t>> break_stmts{};
+
     std::unordered_map<std::string_view, NativeFn> natives{};
 
     bool variable_tracking_suppressed{};
 
     void begin_scope();
+    void remove_topmost_scope();
     void end_scope();
+    void destroy_locals(std::size_t until_scope);
+    void add_to_scope(const BaseType *type);
     void patch_jump(std::size_t jump_idx, std::size_t jump_amount);
     void emit_conversion(NumericConversionType conversion_type, std::size_t line_number);
     void emit_operand(std::size_t value);
     void emit_stack_slot(std::size_t value);
+    void emit_destructor_call(ClassStmt *class_, std::size_t line);
 
     bool requires_copy(ExprNode &what, TypeNode &type);
 

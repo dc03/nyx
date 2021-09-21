@@ -17,22 +17,53 @@ Generator::Generator() {
 }
 
 void Generator::begin_scope() {
-    scopes.push({});
+    current_scope_depth++;
+}
+
+void Generator::remove_topmost_scope() {
+    while (not scopes.empty() && scopes.back().second == current_scope_depth) {
+        scopes.pop_back();
+    }
+    current_scope_depth--;
 }
 
 void Generator::end_scope() {
-    for (auto begin = scopes.top().crbegin(); begin != scopes.top().crend(); begin++) {
-        if ((*begin)->primitive == Type::STRING) {
+    destroy_locals(current_scope_depth);
+    remove_topmost_scope();
+}
+
+void Generator::destroy_locals(std::size_t until_scope) {
+    for (auto begin = scopes.crbegin(); begin != scopes.crend() && begin->second >= until_scope; begin++) {
+        if (begin->first->primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, 0);
-        } else if (((*begin)->primitive == Type::LIST || (*begin)->primitive == Type::TUPLE ||
-                       (*begin)->primitive == Type::CLASS) &&
-                   not(*begin)->is_ref) {
+        } else if (is_nontrivial_type(begin->first->primitive) && not begin->first->is_ref) {
+            // Emit the call to the destructor
+            if (begin->first->primitive == Type::CLASS) {
+                auto *class_ = dynamic_cast<const UserDefinedType *>(begin->first)->class_;
+                std::size_t line = class_->dtor->name.line;
+                std::size_t i = class_->members.size() - 1;
+
+                emit_destructor_call(class_, line);
+                for (auto member = class_->members.crbegin(); member != class_->members.crend(); member++) {
+                    if (member->first->type->primitive == Type::CLASS) {
+                        current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, line);
+                        emit_operand(1);
+                        current_chunk->emit_constant(Value{static_cast<Value::IntType>(i)}, line);
+                        current_chunk->emit_instruction(Instruction::INDEX_LIST, line);
+                        emit_destructor_call(dynamic_cast<UserDefinedType *>(member->first->type.get())->class_, line);
+                        current_chunk->emit_instruction(Instruction::POP, line);
+                    }
+                }
+            }
             current_chunk->emit_instruction(Instruction::POP_LIST, 0);
         } else {
             current_chunk->emit_instruction(Instruction::POP, 0);
         }
     }
-    scopes.pop();
+}
+
+void Generator::add_to_scope(const BaseType *type) {
+    scopes.emplace_back(type, current_scope_depth);
 }
 
 void Generator::patch_jump(std::size_t jump_idx, std::size_t jump_amount) {
@@ -83,6 +114,12 @@ void Generator::emit_stack_slot(std::size_t value) {
     emit_operand(value + 1);
 }
 
+void Generator::emit_destructor_call(ClassStmt *class_, std::size_t line) {
+    current_chunk->emit_string(mangle_function(*class_->dtor), line);
+    current_chunk->emit_instruction(Instruction::LOAD_FUNCTION, line);
+    current_chunk->emit_instruction(Instruction::CALL_FUNCTION, line);
+}
+
 bool Generator::requires_copy(ExprNode &what, TypeNode &type) {
     return not type->is_ref && (what->synthesized_attrs.is_lvalue || what->synthesized_attrs.info->is_ref);
 }
@@ -93,7 +130,7 @@ void Generator::add_vartuple_to_scope(IdentifierTuple::TupleType &tuple) {
             add_vartuple_to_scope(std::get<IdentifierTuple>(elem).tuple);
         } else {
             auto &decl = std::get<IdentifierTuple::DeclarationDetails>(elem);
-            scopes.top().push_back(std::get<TypeNode>(decl).get());
+            add_to_scope(std::get<TypeNode>(decl).get());
         }
     }
 }
@@ -879,6 +916,8 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(ThisExpr &expr) {
+    current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LIST, expr.keyword.line);
+    emit_operand(0);
     return {};
 }
 
@@ -1063,7 +1102,7 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
         if (param.first.index() == FunctionStmt::IDENT_TUPLE) {
             add_vartuple_to_scope(std::get<IdentifierTuple>(param.first).tuple);
         } else {
-            scopes.top().push_back(param.second.get());
+            add_to_scope(param.second.get());
         }
     }
 
@@ -1146,6 +1185,14 @@ StmtVisitorType Generator::visit(ReturnStmt &stmt) {
     } else {
         current_chunk->emit_instruction(Instruction::PUSH_NULL, stmt.keyword.line);
     }
+
+    if (not is_constructor(stmt.function) && not is_destructor(stmt.function)) {
+        current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, stmt.keyword.line);
+        emit_operand(0);
+    }
+    current_chunk->emit_instruction(Instruction::POP, stmt.keyword.line);
+
+    destroy_locals(stmt.function->scope_depth);
 
     current_chunk->emit_instruction(Instruction::RETURN, stmt.keyword.line);
     emit_operand(stmt.locals_popped);
@@ -1263,7 +1310,7 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
         current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.name.line);
     }
     if (not variable_tracking_suppressed) {
-        scopes.top().push_back(stmt.type.get());
+        add_to_scope(stmt.type.get());
     }
 }
 
