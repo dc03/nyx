@@ -697,15 +697,22 @@ StmtNode Parser::class_declaration() {
 }
 
 StmtNode Parser::function_declaration() {
+    bool is_not_dtor = previous().type != TokenType::BIT_NOT;
+
     consume("Expected function name after 'fn' keyword", TokenType::IDENTIFIER);
 
     if (not in_class && current_module.functions.find(previous().lexeme) != current_module.functions.end()) {
         throw_parse_error("Function already defined");
-    } else if (in_class && std::find_if(current_methods->cbegin(), current_methods->cend(),
-                               [previous = previous()](const ClassStmt::MethodType &arg) {
-                                   return arg.first->name == previous;
-                               }) != current_methods->end()) {
-        throw_parse_error("Method already defined", previous());
+    } else if (in_class) {
+        bool matches_any = std::any_of(current_methods->cbegin(), current_methods->cend(),
+            [previous = previous()](const ClassStmt::MethodType &arg) { return arg.first->name == previous; });
+        bool matches_dtor = std::any_of(current_methods->cbegin(), current_methods->cend(),
+            [previous = previous()](
+                const ClassStmt::MethodType &arg) { return arg.first->name.lexeme.substr(1) == previous.lexeme; });
+
+        if (matches_any && (is_not_dtor || matches_dtor)) {
+            throw_parse_error("Method already defined", previous());
+        }
     }
 
     Token name = previous();
@@ -1098,7 +1105,7 @@ TypeNode Parser::type() {
 
     if (type == Type::CLASS) {
         Token name = previous();
-        return TypeNode{allocate_node(UserDefinedType, type, is_const, is_ref, std::move(name))};
+        return TypeNode{allocate_node(UserDefinedType, type, is_const, is_ref, std::move(name), nullptr)};
     } else if (type == Type::LIST) {
         return list_type(is_const, is_ref);
     } else if (type == Type::TUPLE) {

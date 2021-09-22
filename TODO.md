@@ -45,4 +45,4 @@ before everything else
 `ExprInheritedAttrs` data type
 - [x] Implement references to class member variables at runtime
 - [ ] Move expressions for list indices, tuple members and class member variables
-- [ ] Destructor calls, including those of member variables
+- [x] Destructor calls, including those of member variables
