@@ -39,7 +39,7 @@
 before everything else
 - [ ] Move some `TypeResolver` functions into `AST.hpp`
 - [ ] Rewrite the Scanner
-- [ ] Redo Native functions interfaces
+- [x] Redo Native functions interfaces
 - [ ] Add pair syntax `x: y`, same as `{x, y}`
 - [ ] Possibly add inherited attributes with `inherited_attrs` members and
 `ExprInheritedAttrs` data type
