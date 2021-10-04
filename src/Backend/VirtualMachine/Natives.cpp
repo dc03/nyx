@@ -6,17 +6,192 @@
 #include "Backend/VirtualMachine/VirtualMachine.hpp"
 #include "Common.hpp"
 
+#include <algorithm>
+#include <array>
 #include <iostream>
 #include <string>
 
+Value native_print(VirtualMachine &vm, Value *args);
+Value native_int(VirtualMachine &vm, Value *args);
+Value native_float(VirtualMachine &vm, Value *args);
+Value native_string(VirtualMachine &vm, Value *args);
+Value native_readline(VirtualMachine &vm, Value *args);
+Value native_size(VirtualMachine &vm, Value *args);
+
+NativeWrappers native_wrappers{};
+
+template <typename T, typename... Args>
+bool is_in(T value, Args &&...args) {
+    std::array arr{args...};
+    return std::find(arr.begin(), arr.end(), value) != arr.end();
+}
+
+NativeWrapper::NativeWrapper(NativeFunctionType native, std::string name, TypeNode return_type, std::size_t arity,
+    ArgumentVerifierType argument_verifier)
+    : native{native},
+      name{std::move(name)},
+      return_type{std::move(return_type)},
+      arity{arity},
+      argument_verifier{argument_verifier} {
+    native_wrappers.add_native(*this);
+}
+
+Native NativeWrapper::get_native() const noexcept {
+    return {native, get_name(), get_arity()};
+}
+
+const std::string &NativeWrapper::get_name() const noexcept {
+    return name;
+}
+
+std::size_t NativeWrapper::get_arity() const noexcept {
+    return arity;
+}
+
+bool NativeWrapper::check_arity(std::size_t num_args) const noexcept {
+    return num_args == arity;
+}
+
+std::pair<bool, std::string_view> NativeWrapper::check_arguments(
+    std::vector<CallExpr::ArgumentType> &arguments) const noexcept {
+    return argument_verifier(arguments);
+}
+
+const TypeNode &NativeWrapper::get_return_type() const noexcept {
+    return return_type;
+}
+
+void NativeWrappers::add_native(NativeWrapper &native) {
+    native_functions[native.get_name()] = &native;
+}
+
+bool NativeWrappers::is_native(std::string_view function) const noexcept {
+    return native_functions.find(function) != native_functions.end();
+}
+
+const NativeWrapper *NativeWrappers::get_native(std::string_view function) const noexcept {
+    if (is_native(function)) {
+        return native_functions.find(function)->second;
+    } else {
+        return nullptr;
+    }
+}
+
+const NativeWrappers::NativeCollectionType &NativeWrappers::get_all_natives() const noexcept {
+    return native_functions;
+}
+
 // clang-format off
-std::vector<NativeFn> native_functions{
-    {native_print,    "print",    Type::NULL_,  {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL, Type::FUNCTION, Type::NULL_, Type::LIST, Type::TUPLE}}, 1},
-    {native_int,      "int",      Type::INT,    {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL}}, 1},
-    {native_float,    "float",    Type::FLOAT,  {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL}}, 1},
-    {native_string,   "string",   Type::STRING, {{Type::INT, Type::FLOAT, Type::STRING, Type::BOOL, Type::LIST}}, 1},
-    {native_readline, "readline", Type::STRING, {{Type::STRING}}, 1},
-    {native_size,     "size",     Type::INT,    {{Type::LIST, Type::STRING, Type::TUPLE}}, 1}
+NativeWrapper print{
+    native_print,
+    "print",
+    TypeNode{allocate_node(PrimitiveType, Type::NULL_, false, false)},
+    1,
+    NATIVE_ARGUMENT_CHECKER_DEFINITION {
+        if (arguments.size() != 1) {
+            return {false, "arity incorrect, should be 1"};
+        }
+
+        if (not is_in(NATIVE_ARGN_PRIMITIVE(0), Type::INT, Type::FLOAT,
+                Type::STRING, Type::BOOL, Type::FUNCTION, Type::NULL_, Type::LIST, Type::TUPLE)) {
+            return {false, "incorrect argument type"};
+        }
+
+        return {true, ""};
+    }
+};
+
+NativeWrapper int_{
+    native_int,
+    "int",
+    TypeNode{allocate_node(PrimitiveType, Type::INT, false, false)},
+    1,
+    NATIVE_ARGUMENT_CHECKER_DEFINITION {
+        if (arguments.size() != 1) {
+            return {false, "arity incorrect, should be 1"};
+        }
+
+        if (not is_in(NATIVE_ARGN_PRIMITIVE(0), Type::INT, Type::FLOAT,
+            Type::STRING, Type::BOOL)) {
+            return {false, "incorrect argument type"};
+        }
+
+        return {true, ""};
+    }
+};
+
+NativeWrapper float_{
+    native_float,
+    "float",
+    TypeNode{allocate_node(PrimitiveType, Type::FLOAT, false, false)},
+    1,
+    NATIVE_ARGUMENT_CHECKER_DEFINITION {
+        if (arguments.size() != 1) {
+            return {false, "arity incorrect, should be 1"};
+        }
+
+        if (not is_in(NATIVE_ARGN_PRIMITIVE(0), Type::INT, Type::FLOAT,
+            Type::STRING, Type::BOOL)) {
+            return {false, "incorrect argument type"};
+        }
+
+        return {true, ""};
+    }
+};
+
+NativeWrapper string_{
+    native_string,
+    "string",
+    TypeNode{allocate_node(PrimitiveType, Type::STRING, false, false)},
+    1,
+    NATIVE_ARGUMENT_CHECKER_DEFINITION {
+        if (arguments.size() != 1) {
+            return {false, "arity incorrect, should be 1"};
+        }
+
+        if (not is_in(NATIVE_ARGN_PRIMITIVE(0), Type::INT, Type::FLOAT,
+            Type::STRING, Type::BOOL, Type::LIST)) {
+            return {false, "incorrect argument type"};
+        }
+
+        return {true, ""};
+    }
+};
+
+NativeWrapper readline{
+    native_readline,
+    "readline",
+    TypeNode{allocate_node(PrimitiveType, Type::STRING, false, false)},
+    1,
+    NATIVE_ARGUMENT_CHECKER_DEFINITION {
+       if (arguments.size() != 1) {
+            return {false, "arity incorrect, should be 1"};
+        }
+
+        if (not is_in(NATIVE_ARGN_PRIMITIVE(0), Type::STRING)) {
+            return {false, "incorrect argument type, can only pass string as prompt"};
+        }
+
+        return {true, ""};
+    }
+};
+
+NativeWrapper size_{
+    native_size,
+    "size",
+    TypeNode{allocate_node(PrimitiveType, Type::INT, false, false)},
+    1,
+    NATIVE_ARGUMENT_CHECKER_DEFINITION {
+        if (arguments.size() != 1) {
+            return {false, "arity incorrect, should be 1"};
+        }
+
+        if (not is_in(NATIVE_ARGN_PRIMITIVE(0), Type::LIST, Type::STRING, Type::TUPLE)) {
+            return {false, "incorrect argument type, can only be list, string or tuple"};
+        }
+
+        return {true, ""};
+    }
 };
 // clang-format on
 
