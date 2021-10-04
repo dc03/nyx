@@ -17,8 +17,8 @@ VirtualMachine::VirtualMachine(bool trace_stack, bool trace_insn)
       frames{std::make_unique<CallFrame[]>(VirtualMachine::frame_size)},
       trace_stack{trace_stack},
       trace_insn{trace_insn} {
-    for (const auto &native : native_functions) {
-        natives[native.name] = native;
+    for (const auto &[name, wrapper] : native_wrappers.get_all_natives()) {
+        natives[name] = wrapper->get_native();
     }
     frames[0] = CallFrame{&stack[0], {}};
 }
@@ -348,7 +348,7 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::CALL_NATIVE: {
-            NativeFn called = natives[stack[--stack_top].w_str->str];
+            Native called = natives[stack[--stack_top].w_str->str];
             cache.remove(*stack[stack_top].w_str);
             Value result = called.code(*this, &stack[stack_top] - called.arity);
             stack[stack_top - called.arity - 1] = result;

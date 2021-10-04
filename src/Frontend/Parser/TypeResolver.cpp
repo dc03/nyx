@@ -372,37 +372,25 @@ void TypeResolver::add_top_level_ref(TypeNode &node) {
 
 #undef TYPE_METHOD_ALL
 
-bool is_builtin_function(VariableExpr *expr) {
-    return std::any_of(native_functions.begin(), native_functions.end(),
-        [&expr](const NativeFn &native) { return native.name == expr->name.lexeme; });
-}
+ExprVisitorType TypeResolver::check_native_function(
+    VariableExpr *function, const Token &oper, std::vector<CallExpr::ArgumentType> &args) {
+    const NativeWrapper *native = native_wrappers.get_native(function->name.lexeme);
 
-ExprVisitorType TypeResolver::check_builtin_function(
-    VariableExpr *function, const Token &oper, std::vector<std::tuple<ExprNode, NumericConversionType, bool>> &args) {
-    auto it = std::find_if(native_functions.begin(), native_functions.end(),
-        [&function](const NativeFn &native) { return native.name == function->name.lexeme; });
-
-    if (args.size() != it->arity) {
-        std::string num_args = args.size() < it->arity ? "less" : "more";
-        error({"Cannot pass ", num_args, " than ", std::to_string(it->arity), " argument(s) to function '", it->name,
-                  "'"},
+    if (not native->check_arity(args.size())) {
+        error({"Cannot pass ", (args.size() < native->get_arity() ? "less" : "more"), " than ",
+                  std::to_string(native->get_arity()), " argument(s) to native function '", native->get_name(), "'"},
             oper);
-        note({"Trying to pass ", std::to_string(args.size()), " arguments"});
-        throw TypeException{"Arity error"};
     }
 
-    for (std::size_t i = 0; i < it->arity; i++) {
-        ExprVisitorType arg = resolve(std::get<ExprNode>(args[i]).get());
-        if (not std::any_of(it->arguments[i].begin(), it->arguments[i].end(),
-                [&arg](const Type &type) { return type == arg.info->primitive; })) {
-            error({"Cannot pass argument of type '", stringify(arg.info), "' as argument number ",
-                      std::to_string(i + 1), " to builtin function '", it->name, "'"},
-                oper);
-            throw TypeException{"Builtin argument type error"};
-        }
+    for (const auto &arg : args) {
+        resolve(std::get<ExprNode>(arg).get());
     }
 
-    return ExprVisitorType{make_new_type<PrimitiveType>(it->return_type, true, false), function->name};
+    if (auto result = native->check_arguments(args); not result.first) {
+        error({"[", native->get_name(), "]: ", std::string{result.second}}, oper);
+    }
+
+    return ExprVisitorType{native->get_return_type().get(), function->name};
 }
 
 bool TypeResolver::match_vartuple_with_type(IdentifierTuple::TupleType &tuple, TupleType &type) {
@@ -644,9 +632,9 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
 ExprVisitorType TypeResolver::visit(CallExpr &expr) {
     if (expr.function->type_tag() == NodeType::VariableExpr) {
         auto *function = dynamic_cast<VariableExpr *>(expr.function.get());
-        if (is_builtin_function(function)) {
+        if (native_wrappers.is_native(function->name.lexeme)) {
             expr.is_native_call = true;
-            return expr.synthesized_attrs = check_builtin_function(function, expr.synthesized_attrs.token, expr.args);
+            return expr.synthesized_attrs = check_native_function(function, expr.synthesized_attrs.token, expr.args);
         }
     }
 
@@ -824,9 +812,8 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
         auto *contained_type = dynamic_cast<ListType *>(list.info)->contained.get();
         bool is_lvalue = expr.object->synthesized_attrs.is_lvalue || expr.object->synthesized_attrs.info->is_ref;
         if (contained_type->primitive == Type::CLASS) {
-            return expr.synthesized_attrs = {contained_type,
-                       dynamic_cast<UserDefinedType *>(contained_type)->class_, expr.synthesized_attrs.token,
-                       is_lvalue};
+            return expr.synthesized_attrs = {contained_type, dynamic_cast<UserDefinedType *>(contained_type)->class_,
+                       expr.synthesized_attrs.token, is_lvalue};
         } else {
             return expr.synthesized_attrs = {contained_type, expr.synthesized_attrs.token, is_lvalue};
         }
@@ -1192,9 +1179,9 @@ ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(VariableExpr &expr) {
-    if (is_builtin_function(&expr)) {
-        error({"Cannot use in-built function as an expression"}, expr.name);
-        throw TypeException{"Cannot use in-built function as an expression"};
+    if (native_wrappers.is_native(expr.name.lexeme)) {
+        error({"Cannot use native function as an expression"}, expr.name);
+        throw TypeException{"Cannot use native function as an expression"};
     }
 
     for (auto it = values.end() - 1; not values.empty() && it >= values.begin(); it--) {

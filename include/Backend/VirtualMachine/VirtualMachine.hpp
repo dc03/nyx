@@ -34,7 +34,7 @@ class VirtualMachine {
     std::size_t frame_top{};
 
     StringCacher cache{};
-    std::unordered_map<std::string_view, NativeFn> natives{};
+    std::unordered_map<std::string_view, Native> natives{};
 
     Chunk *current_chunk{};
     RuntimeModule *current_module{};

@@ -28,7 +28,7 @@ class Generator final : Visitor {
     // Similar thing as for break statements
     std::stack<std::vector<std::size_t>> break_stmts{};
 
-    std::unordered_map<std::string_view, NativeFn> natives{};
+    std::unordered_map<std::string_view, Native> natives{};
 
     bool variable_tracking_suppressed{};
 

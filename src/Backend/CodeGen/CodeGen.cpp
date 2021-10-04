@@ -11,8 +11,8 @@
 std::vector<RuntimeModule> Generator::compiled_modules{};
 
 Generator::Generator() {
-    for (auto &native : native_functions) {
-        natives[native.name] = native;
+    for (auto &[name, wrapper] : native_wrappers.get_all_natives()) {
+        natives[name] = wrapper->get_native();
     }
 }
 
