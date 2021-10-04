@@ -231,8 +231,9 @@ if __name__ == '__main__':
 
         declare_expr_type('Call',
                           'function{std::move(function)}, args{std::move(args)}, is_native_call{is_native_call}',
-                          'ExprNode function, std::vector<std::tuple<ExprNode,NumericConversionType,RequiresCopy>> '
-                          'args, bool is_native_call')
+                          'ExprNode function, std::vector<ArgumentType> '
+                          'args, bool is_native_call',
+                          ['using ArgumentType = std::tuple<ExprNode, NumericConversionType, RequiresCopy>'])
 
         declare_expr_type('Comma',
                           'exprs{std::move(exprs)}',

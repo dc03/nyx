@@ -237,8 +237,10 @@ struct BinaryExpr final : public Expr {
 };
 
 struct CallExpr final : public Expr {
+    using ArgumentType = std::tuple<ExprNode, NumericConversionType, RequiresCopy>;
+
     ExprNode function{};
-    std::vector<std::tuple<ExprNode, NumericConversionType, RequiresCopy>> args{};
+    std::vector<ArgumentType> args{};
     bool is_native_call{};
 
     std::string_view string_tag() override final { return "CallExpr"; }
@@ -246,8 +248,7 @@ struct CallExpr final : public Expr {
     NodeType type_tag() override final { return NodeType::CallExpr; }
 
     CallExpr() = default;
-    CallExpr(ExprNode function, std::vector<std::tuple<ExprNode, NumericConversionType, RequiresCopy>> args,
-        bool is_native_call)
+    CallExpr(ExprNode function, std::vector<ArgumentType> args, bool is_native_call)
         : function{std::move(function)}, args{std::move(args)}, is_native_call{is_native_call} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
