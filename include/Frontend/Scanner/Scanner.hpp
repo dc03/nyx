@@ -11,6 +11,7 @@
 #include "Trie.hpp"
 
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 class Scanner {
@@ -42,6 +43,38 @@ class Scanner {
     void add_token(TokenType type);
     void scan_token();
     const std::vector<Token> &scan();
+};
+
+class ScannerV2 {
+    std::size_t line{1};
+    std::size_t current_token_start{};
+    std::size_t current_token_end{};
+
+    std::size_t paren_depth{};
+    std::vector<Token> tokens{};
+    std::string_view source{};
+
+    std::unordered_map<std::string, TokenType> keyword_map{};
+    Trie keywords{};
+
+    [[nodiscard]] bool is_at_end() const noexcept;
+
+    [[nodiscard]] char advance();
+    [[nodiscard]] char peek() const noexcept;
+    [[nodiscard]] char peek_next() const noexcept;
+    [[nodiscard]] const Token &previous() const noexcept;
+    bool match(char ch);
+
+    void scan_number();
+    void scan_identifier_or_keyword();
+    void scan_string();
+    void skip_multiline_comment();
+
+  public:
+    ScannerV2();
+
+    Token scan_token();
+    std::vector<Token> &scan_all();
 };
 
 #endif
