@@ -118,6 +118,8 @@ class ScannerV2 {
 
     std::string_view current_token_lexeme();
 
+    Token scan_next();
+
   public:
     ScannerV2();
     explicit ScannerV2(std::string_view source);
@@ -125,6 +127,7 @@ class ScannerV2 {
     [[nodiscard]] bool is_at_end() const noexcept;
 
     Token scan_token();
+    const Token &peek_token();
     std::vector<Token> scan_all();
 };
 

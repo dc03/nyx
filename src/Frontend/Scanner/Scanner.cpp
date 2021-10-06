@@ -522,194 +522,209 @@ std::string_view ScannerV2::current_token_lexeme() {
 }
 
 bool ScannerV2::is_at_end() const noexcept {
-    return current_token_end >= source.length();
+    return current_token_start >= source.length();
 }
 
-Token ScannerV2::scan_token() {
-    previous = current;
-
+Token ScannerV2::scan_next() {
     char next = advance();
     switch (next) {
         case '.': {
             if (match('.')) {
                 if (match('=')) {
-                    current = make_token(TokenType::DOT_DOT_EQUAL, current_token_lexeme());
+                    return make_token(TokenType::DOT_DOT_EQUAL, current_token_lexeme());
                 } else {
-                    current = make_token(TokenType::DOT_DOT, current_token_lexeme());
+                    return make_token(TokenType::DOT_DOT, current_token_lexeme());
                 }
             } else {
-                current = make_token(TokenType::DOT, current_token_lexeme());
+                return make_token(TokenType::DOT, current_token_lexeme());
             }
         }
         case ',': {
-            current = make_token(TokenType::COMMA, current_token_lexeme());
+            return make_token(TokenType::COMMA, current_token_lexeme());
         }
         case '?': {
-            current = make_token(TokenType::QUESTION, current_token_lexeme());
+            return make_token(TokenType::QUESTION, current_token_lexeme());
         }
         case ':': {
             if (match(':')) {
-                current = make_token(TokenType::DOUBLE_COLON, current_token_lexeme());
+                return make_token(TokenType::DOUBLE_COLON, current_token_lexeme());
             } else {
-                current = make_token(TokenType::COLON, current_token_lexeme());
+                return make_token(TokenType::COLON, current_token_lexeme());
             }
         }
         case '|': {
             if (match('|')) {
-                current = make_token(TokenType::OR, current_token_lexeme());
+                return make_token(TokenType::OR, current_token_lexeme());
             } else {
-                current = make_token(TokenType::BIT_OR, current_token_lexeme());
+                return make_token(TokenType::BIT_OR, current_token_lexeme());
             }
         }
         case '&': {
             if (match('&')) {
-                current = make_token(TokenType::AND, current_token_lexeme());
+                return make_token(TokenType::AND, current_token_lexeme());
             } else {
-                current = make_token(TokenType::BIT_AND, current_token_lexeme());
+                return make_token(TokenType::BIT_AND, current_token_lexeme());
             }
         }
         case '^': {
-            current = make_token(TokenType::BIT_XOR, current_token_lexeme());
+            return make_token(TokenType::BIT_XOR, current_token_lexeme());
         }
         case '!': {
             if (match('=')) {
-                current = make_token(TokenType::NOT_EQUAL, current_token_lexeme());
+                return make_token(TokenType::NOT_EQUAL, current_token_lexeme());
             } else {
-                current = make_token(TokenType::NOT, current_token_lexeme());
+                return make_token(TokenType::NOT, current_token_lexeme());
             }
         }
         case '=': {
             if (match('=')) {
-                current = make_token(TokenType::EQUAL_EQUAL, current_token_lexeme());
+                return make_token(TokenType::EQUAL_EQUAL, current_token_lexeme());
             } else {
-                current = make_token(TokenType::EQUAL, current_token_lexeme());
+                return make_token(TokenType::EQUAL, current_token_lexeme());
             }
         }
         case '>': {
             if (match('>')) {
-                current = make_token(TokenType::RIGHT_SHIFT, current_token_lexeme());
+                return make_token(TokenType::RIGHT_SHIFT, current_token_lexeme());
             } else if (match('=')) {
-                current = make_token(TokenType::GREATER_EQUAL, current_token_lexeme());
+                return make_token(TokenType::GREATER_EQUAL, current_token_lexeme());
             } else {
-                current = make_token(TokenType::GREATER, current_token_lexeme());
+                return make_token(TokenType::GREATER, current_token_lexeme());
             }
         }
         case '<': {
             if (match('<')) {
-                current = make_token(TokenType::LEFT_SHIFT, current_token_lexeme());
+                return make_token(TokenType::LEFT_SHIFT, current_token_lexeme());
             } else if (match('=')) {
-                current = make_token(TokenType::LESS_EQUAL, current_token_lexeme());
+                return make_token(TokenType::LESS_EQUAL, current_token_lexeme());
             } else {
-                current = make_token(TokenType::LESS, current_token_lexeme());
+                return make_token(TokenType::LESS, current_token_lexeme());
             }
         }
         case '*': {
             if (match('=')) {
-                current = make_token(TokenType::STAR_EQUAL, current_token_lexeme());
+                return make_token(TokenType::STAR_EQUAL, current_token_lexeme());
             } else {
-                current = make_token(TokenType::STAR, current_token_lexeme());
+                return make_token(TokenType::STAR, current_token_lexeme());
             }
         }
         case '-': {
             if (match('-')) {
-                current = make_token(TokenType::MINUS_MINUS, current_token_lexeme());
+                return make_token(TokenType::MINUS_MINUS, current_token_lexeme());
             } else if (match('>')) {
-                current = make_token(TokenType::ARROW, current_token_lexeme());
+                return make_token(TokenType::ARROW, current_token_lexeme());
             } else if (match('=')) {
-                current = make_token(TokenType::MINUS_EQUAL, current_token_lexeme());
+                return make_token(TokenType::MINUS_EQUAL, current_token_lexeme());
             } else {
-                current = make_token(TokenType::MINUS, current_token_lexeme());
+                return make_token(TokenType::MINUS, current_token_lexeme());
             }
         }
         case '+': {
             if (match('+')) {
-                current = make_token(TokenType::PLUS_PLUS, current_token_lexeme());
+                return make_token(TokenType::PLUS_PLUS, current_token_lexeme());
             } else if (match('=')) {
-                current = make_token(TokenType::PLUS_EQUAL, current_token_lexeme());
+                return make_token(TokenType::PLUS_EQUAL, current_token_lexeme());
             } else {
-                current = make_token(TokenType::PLUS, current_token_lexeme());
+                return make_token(TokenType::PLUS, current_token_lexeme());
             }
         }
         case '%': {
-            current = make_token(TokenType::MODULO, current_token_lexeme());
+            return make_token(TokenType::MODULO, current_token_lexeme());
         }
         case '~': {
-            current = make_token(TokenType::BIT_NOT, current_token_lexeme());
+            return make_token(TokenType::BIT_NOT, current_token_lexeme());
         }
 
         case '(': {
             paren_depth++;
-            current = make_token(TokenType::LEFT_PAREN, current_token_lexeme());
+            return make_token(TokenType::LEFT_PAREN, current_token_lexeme());
         }
         case ')': {
             paren_depth--;
-            current = make_token(TokenType::RIGHT_PAREN, current_token_lexeme());
+            return make_token(TokenType::RIGHT_PAREN, current_token_lexeme());
         }
         case '[': {
-            current = make_token(TokenType::LEFT_INDEX, current_token_lexeme());
+            return make_token(TokenType::LEFT_INDEX, current_token_lexeme());
         }
         case ']': {
-            current = make_token(TokenType::RIGHT_INDEX, current_token_lexeme());
+            return make_token(TokenType::RIGHT_INDEX, current_token_lexeme());
         }
         case '{': {
-            current = make_token(TokenType::LEFT_BRACE, current_token_lexeme());
+            return make_token(TokenType::LEFT_BRACE, current_token_lexeme());
         }
         case '}': {
-            current = make_token(TokenType::RIGHT_BRACE, current_token_lexeme());
+            return make_token(TokenType::RIGHT_BRACE, current_token_lexeme());
         }
 
         case '"': {
-            current = scan_string();
+            return scan_string();
         }
 
         case ';': {
-            current = make_token(TokenType::SEMICOLON, current_token_lexeme());
+            return make_token(TokenType::SEMICOLON, current_token_lexeme());
         }
 
         case ' ':
         case '\t':
         case '\r':
         case '\b': {
-            current = scan_token();
+            current_token_start = current_token_end;
+            return scan_next();
         }
 
         case '\n': {
             line++;
             if (paren_depth == 0 && is_valid_eol(previous)) {
-                current = make_token(TokenType::END_OF_LINE, current_token_lexeme());
+                return make_token(TokenType::END_OF_LINE, "<EOL>");
             } else {
-                current = scan_token();
+                current_token_start = current_token_end;
+                return scan_next();
             }
         }
 
         default: {
             if (std::isdigit(next)) {
-                current = scan_number();
+                return scan_number();
             } else if (std::isalpha(next) || next == '_') {
-                current = scan_identifier_or_keyword();
+                return scan_identifier_or_keyword();
             } else if (next == '/') {
                 if (match('/')) {
                     skip_comment();
-                    current = scan_token();
+                    current_token_start = current_token_end;
+                    return scan_next();
                 } else if (match('*')) {
                     skip_multiline_comment();
-                    current = scan_token();
+                    current_token_start = current_token_end;
+                    return scan_next();
                 } else if (match('=')) {
-                    current = make_token(TokenType::SLASH_EQUAL, current_token_lexeme());
+                    return make_token(TokenType::SLASH_EQUAL, current_token_lexeme());
                 } else {
-                    current = make_token(TokenType::SLASH, current_token_lexeme());
+                    return make_token(TokenType::SLASH, current_token_lexeme());
                 }
             } else if (is_at_end()) {
-                current = make_token(TokenType::END_OF_FILE, "<EOF>");
+                if (is_valid_eol(previous)) {
+                    return make_token(TokenType::END_OF_LINE, "<EOL>");
+                } else {
+                    return make_token(TokenType::END_OF_FILE, "<EOF>");
+                }
             }
 
             error({"Unrecognized character '", std::string{next}, "' in input"},
                 make_token(TokenType::INVALID, current_token_lexeme()));
-            current = make_token(TokenType::INVALID, current_token_lexeme());
+            return make_token(TokenType::INVALID, current_token_lexeme());
         }
     }
+}
 
+Token ScannerV2::scan_token() {
+    previous = current;
+    current_token_start = current_token_end;
+    current = scan_next();
     return previous;
+}
+
+const Token &ScannerV2::peek_token() {
+    return current;
 }
 
 std::vector<Token> ScannerV2::scan_all() {
