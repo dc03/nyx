@@ -25,7 +25,7 @@ void run_module(const char *const main_module, cxxopts::ParseResult &result) {
 
     logger.set_module_name(main_name);
     logger.set_source(source);
-    ScannerV2 scanner{source};
+    Scanner scanner{source};
     Module main{main_name, main_dir + "/"};
 
     Parser parser{&scanner, main, 0};

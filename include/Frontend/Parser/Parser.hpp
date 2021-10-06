@@ -48,7 +48,7 @@ class Parser {
         ParsePrecedence::of precedence{};
     };
 
-    ScannerV2 *scanner{};
+    Scanner *scanner{};
     Token current_token{};
     Token next_token{};
 
@@ -92,7 +92,7 @@ class Parser {
   public:
     static std::vector<std::pair<Module, std::size_t>> parsed_modules;
 
-    explicit Parser(ScannerV2 *scanner, Module &module, std::size_t current_depth);
+    explicit Parser(Scanner *scanner, Module &module, std::size_t current_depth);
 
     std::vector<StmtNode> program();
 

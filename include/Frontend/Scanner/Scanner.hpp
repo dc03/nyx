@@ -14,7 +14,7 @@
 #include <unordered_map>
 #include <vector>
 
-class ScannerV2 {
+class Scanner {
     std::size_t line{1};
     std::size_t current_token_start{};
     std::size_t current_token_end{};
@@ -90,8 +90,8 @@ class ScannerV2 {
     Token scan_next();
 
   public:
-    ScannerV2();
-    explicit ScannerV2(std::string_view source);
+    Scanner();
+    explicit Scanner(std::string_view source);
 
     [[nodiscard]] bool is_at_end() const noexcept;
 

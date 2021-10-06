@@ -9,17 +9,17 @@
 #include <cassert>
 #include <cctype>
 
-ScannerV2::ScannerV2() {
+Scanner::Scanner() {
     for (const auto &[lexeme, type] : keywords) {
         keyword_map.insert(lexeme, type);
     }
 }
 
-ScannerV2::ScannerV2(std::string_view source) : ScannerV2() {
+Scanner::Scanner(std::string_view source) : Scanner() {
     this->source = source;
 }
 
-char ScannerV2::advance() {
+char Scanner::advance() {
     if (is_at_end()) {
         return '\0';
     }
@@ -28,7 +28,7 @@ char ScannerV2::advance() {
     return source[current_token_end - 1];
 }
 
-char ScannerV2::peek() const noexcept {
+char Scanner::peek() const noexcept {
     if (is_at_end()) {
         return '\0';
     }
@@ -36,7 +36,7 @@ char ScannerV2::peek() const noexcept {
     return source[current_token_end];
 }
 
-char ScannerV2::peek_next() const noexcept {
+char Scanner::peek_next() const noexcept {
     if (current_token_end + 1 >= source.length()) {
         return '\0';
     }
@@ -44,7 +44,7 @@ char ScannerV2::peek_next() const noexcept {
     return source[current_token_end + 1];
 }
 
-bool ScannerV2::match(char ch) {
+bool Scanner::match(char ch) {
     if (peek() == ch) {
         advance();
         return true;
@@ -53,11 +53,11 @@ bool ScannerV2::match(char ch) {
     return false;
 }
 
-Token ScannerV2::make_token(TokenType type, std::string_view lexeme) const {
+Token Scanner::make_token(TokenType type, std::string_view lexeme) const {
     return Token{type, std::string{lexeme}, line, current_token_start, current_token_end};
 }
 
-Token ScannerV2::scan_number() {
+Token Scanner::scan_number() {
     TokenType type = TokenType::INT_VALUE;
 
     auto scan_digits = [this] {
@@ -83,7 +83,7 @@ Token ScannerV2::scan_number() {
     return make_token(type, current_token_lexeme());
 }
 
-Token ScannerV2::scan_identifier_or_keyword() {
+Token Scanner::scan_identifier_or_keyword() {
     while (not is_at_end() && (std::isalnum(peek()) || peek() == '_')) {
         advance();
     }
@@ -96,7 +96,7 @@ Token ScannerV2::scan_identifier_or_keyword() {
     }
 }
 
-Token ScannerV2::scan_string() {
+Token Scanner::scan_string() {
     std::size_t size = 1;
     while ((current_token_start + size) <= source.length() && source[current_token_start + size] != '"') {
         size++;
@@ -147,13 +147,13 @@ Token ScannerV2::scan_string() {
     return make_token(TokenType::STRING_VALUE, lexeme);
 }
 
-void ScannerV2::skip_comment() {
+void Scanner::skip_comment() {
     while (not is_at_end() && peek() != '\n') {
         advance();
     }
 }
 
-void ScannerV2::skip_multiline_comment() {
+void Scanner::skip_multiline_comment() {
     while (not is_at_end() && (peek() != '*' || peek_next() != '/')) {
         if (match('/')) {
             if (match('*')) {
@@ -178,7 +178,7 @@ void ScannerV2::skip_multiline_comment() {
     advance(); // Skip the '//'
 }
 
-bool ScannerV2::is_valid_eol(const Token &token) {
+bool Scanner::is_valid_eol(const Token &token) {
     switch (token.type) {
         case TokenType::BREAK:
         case TokenType::CONTINUE:
@@ -192,15 +192,15 @@ bool ScannerV2::is_valid_eol(const Token &token) {
     }
 }
 
-std::string_view ScannerV2::current_token_lexeme() {
+std::string_view Scanner::current_token_lexeme() {
     return source.substr(current_token_start, (current_token_end - current_token_start));
 }
 
-bool ScannerV2::is_at_end() const noexcept {
+bool Scanner::is_at_end() const noexcept {
     return current_token_start >= source.length();
 }
 
-Token ScannerV2::scan_next() {
+Token Scanner::scan_next() {
     char next = advance();
     switch (next) {
         case '.': {
@@ -391,18 +391,18 @@ Token ScannerV2::scan_next() {
     }
 }
 
-Token ScannerV2::scan_token() {
+Token Scanner::scan_token() {
     current_token = next_token;
     current_token_start = current_token_end;
     next_token = scan_next();
     return current_token;
 }
 
-const Token &ScannerV2::peek_token() {
+const Token &Scanner::peek_token() {
     return next_token;
 }
 
-std::vector<Token> ScannerV2::scan_all() {
+std::vector<Token> Scanner::scan_all() {
     std::vector<Token> tokens{};
     while (not is_at_end()) {
         tokens.emplace_back(scan_token());

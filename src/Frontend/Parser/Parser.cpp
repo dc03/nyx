@@ -75,7 +75,7 @@ void Parser::synchronize() {
     }
 }
 
-Parser::Parser(ScannerV2 *scanner, Module &module, std::size_t current_depth)
+Parser::Parser(Scanner *scanner, Module &module, std::size_t current_depth)
     : scanner{scanner}, current_module{module}, current_module_depth{current_depth} {
     // clang-format off
     add_rule(TokenType::COMMA,         {nullptr, &Parser::comma, ParsePrecedence::of::COMMA});
@@ -805,7 +805,7 @@ StmtNode Parser::import_statement() {
     try {
         logger.set_source(module_source);
         logger.set_module_name(module_name);
-        ScannerV2 scanner_{module_source};
+        Scanner scanner_{module_source};
         Parser parser{&scanner_, imported_module, current_module_depth + 1};
         imported_module.statements = parser.program();
         TypeResolver resolver{imported_module};
