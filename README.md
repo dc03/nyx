@@ -1,6 +1,6 @@
-## wis
+## nyx
 
-wis is a simple, interpreted language written in C++.
+nyx is a simple, interpreted language written in C++.
 
 ```c++
 fn main() -> int {

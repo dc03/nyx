@@ -35,8 +35,8 @@ cmake-build-debug/**/*
 cmake-build-debug-coverage/**/*
 cmake-build-release/**/*
 cmake-build-release-coverage/**/*
-examples/test.wis
-examples/stress.wis
+examples/test.nyx
+examples/stress.nyx
 build/**/*
 venv/
 .vscode/

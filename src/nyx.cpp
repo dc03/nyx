@@ -65,7 +65,7 @@ void run_module(const char *const main_module, cxxopts::ParseResult &result) {
 }
 
 int main(int argc, char *argv[]) {
-    cxxopts::Options options{"wis", "A small and simple interpreted language"};
+    cxxopts::Options options{"nyx", "A small and simple interpreted language"};
 
     // clang-format off
     options.add_options()

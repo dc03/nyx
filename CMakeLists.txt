@@ -2,45 +2,45 @@
 # See LICENSE at project root for license details
 cmake_minimum_required(VERSION 3.10)
 
-project(wis VERSION 0.0.7)
+project(nyx VERSION 0.0.7)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_executable(wis src/wis.cpp src/ErrorLogger/ErrorLogger.cpp src/Frontend/Parser/TypeResolver.cpp src/AST/VisitorTypes.cpp
+add_executable(nyx src/nyx.cpp src/ErrorLogger/ErrorLogger.cpp src/Frontend/Parser/TypeResolver.cpp src/AST/VisitorTypes.cpp
         src/Frontend/Parser/Parser.cpp src/Frontend/Scanner/Scanner.cpp src/Frontend/Scanner/Trie.cpp src/AST/AST.cpp
         src/Backend/VirtualMachine/Chunk.cpp src/Backend/CodeGen/CodeGen.cpp src/Backend/VirtualMachine/VirtualMachine.cpp
         src/Backend/VirtualMachine/Disassembler.cpp src/Backend/VirtualMachine/Natives.cpp src/AST/ASTPrinter.cpp
         src/Backend/VirtualMachine/Value.cpp src/Backend/VirtualMachine/StringCacher.cpp)
 
-add_executable(wisVM src/Backend/VirtualMachine/Chunk.cpp src/Backend/VirtualMachine/Value.cpp src/Backend/VirtualMachine/VirtualMachine.cpp
+add_executable(nyxVM src/Backend/VirtualMachine/Chunk.cpp src/Backend/VirtualMachine/Value.cpp src/Backend/VirtualMachine/VirtualMachine.cpp
         src/Backend/VirtualMachine/VMMain.cpp src/ErrorLogger/ErrorLogger.cpp src/Backend/VirtualMachine/Disassembler.cpp
         src/Backend/VirtualMachine/Natives.cpp src/Backend/VirtualMachine/StringCacher.cpp)
 
-target_include_directories(wis PUBLIC include)
-target_include_directories(wisVM PUBLIC include)
+target_include_directories(nyx PUBLIC include)
+target_include_directories(nyxVM PUBLIC include)
 
 if (MSVC)
     # warning level 4 and all warnings as errors
-    target_compile_options(wis PUBLIC /W4)
+    target_compile_options(nyx PUBLIC /W4)
 else()
     # lots of warnings and all warnings as errors
-    target_compile_options(wis PUBLIC -Wall -Wextra -pedantic)
+    target_compile_options(nyx PUBLIC -Wall -Wextra -pedantic)
 endif()
 
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
     if (MSVC)
-        target_compile_options(wis PUBLIC /Zi)
+        target_compile_options(nyx PUBLIC /Zi)
     else()
-        target_compile_options(wis PUBLIC -g3)
-        target_link_options(wis PUBLIC -fsanitize=address -fsanitize=leak -fsanitize=undefined)
+        target_compile_options(nyx PUBLIC -g3)
+        target_link_options(nyx PUBLIC -fsanitize=address -fsanitize=leak -fsanitize=undefined)
         set(LD_PRELOAD "/usr/lib/libasan.so")
     endif()
 else(${CMAKE_BUILD_TYPE} MATCHES "Release")
     if (MSVC)
-        target_compile_options(wis PUBLIC /O2 /Ot /GL)
+        target_compile_options(nyx PUBLIC /O2 /Ot /GL)
     else()
-        target_compile_options(wis PUBLIC -O2 -flto)
+        target_compile_options(nyx PUBLIC -O2 -flto)
     endif()
 endif()
 
@@ -54,5 +54,5 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(CXXOPTS)
 FetchContent_GetProperties(CXXOPTS)
 
-target_link_libraries(wis PUBLIC cxxopts)
-target_link_libraries(wisVM PUBLIC m cxxopts)
+target_link_libraries(nyx PUBLIC cxxopts)
+target_link_libraries(nyxVM PUBLIC m cxxopts)
