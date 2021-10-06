@@ -100,8 +100,6 @@ class ScannerV2 {
 
     Trie keyword_map{};
 
-    [[nodiscard]] bool is_at_end() const noexcept;
-
     char advance();
     [[nodiscard]] char peek() const noexcept;
     [[nodiscard]] char peek_next() const noexcept;
@@ -123,6 +121,8 @@ class ScannerV2 {
   public:
     ScannerV2();
     explicit ScannerV2(std::string_view source);
+
+    [[nodiscard]] bool is_at_end() const noexcept;
 
     Token scan_token();
     std::vector<Token> scan_all();

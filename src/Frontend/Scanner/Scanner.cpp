@@ -344,10 +344,6 @@ ScannerV2::ScannerV2(std::string_view source) : ScannerV2() {
     this->source = source;
 }
 
-bool ScannerV2::is_at_end() const noexcept {
-    return current_token_end >= source.length();
-}
-
 char ScannerV2::advance() {
     if (is_at_end()) {
         return '\0';
@@ -523,6 +519,10 @@ bool ScannerV2::is_valid_eol(const Token &token) {
 
 std::string_view ScannerV2::current_token_lexeme() {
     return source.substr(current_token_start, (current_token_end - current_token_start));
+}
+
+bool ScannerV2::is_at_end() const noexcept {
+    return current_token_end >= source.length();
 }
 
 Token ScannerV2::scan_token() {
