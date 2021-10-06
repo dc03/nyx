@@ -14,8 +14,7 @@ TYPE           ::= BUILTIN
                  | CONST? REF? "{" TYPE ("," TYPE)* ","? "}"
                  | "typeof" logic_or
 
-STRING         ::= "\'" (NUM|ALPHA|UNDER|ESCAPE)*  "\'"
-                 | "\"" (NUM|ALPHA|UNDER|ESCAPE)*  "\""
+STRING         ::= "\"" (NUM|ALPHA|UNDER|ESCAPE)*  "\""
                  | STRING+
 NUMBER         ::= NUM+ "."? NUM+ ("e" NUM+)? ;
 LITERAL        ::= "false"|"true"|"null"|STRING|NUMBER
