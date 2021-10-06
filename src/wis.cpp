@@ -2,12 +2,12 @@
 /* See LICENSE at project root for license details */
 #include "AST/ASTPrinter.hpp"
 #include "Backend/CodeGen/CodeGen.hpp"
+#include "Backend/VirtualMachine/Disassembler.hpp"
+#include "Backend/VirtualMachine/VirtualMachine.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
 #include "Frontend/Parser/Parser.hpp"
 #include "Frontend/Parser/TypeResolver.hpp"
 #include "Frontend/Scanner/Scanner.hpp"
-#include "Backend/VirtualMachine/Disassembler.hpp"
-#include "Backend/VirtualMachine/VirtualMachine.hpp"
 
 #include <algorithm>
 #include <cxxopts.hpp>
@@ -25,11 +25,10 @@ void run_module(const char *const main_module, cxxopts::ParseResult &result) {
 
     logger.set_module_name(main_name);
     logger.set_source(source);
-    Scanner scanner{source};
-
+    ScannerV2 scanner{source};
     Module main{main_name, main_dir + "/"};
 
-    Parser parser{scanner.scan(), main, 0};
+    Parser parser{&scanner, main, 0};
     TypeResolver resolver{main};
     main.statements = parser.program();
     resolver.check(main.statements);

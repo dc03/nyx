@@ -157,10 +157,11 @@ Parser::Parser(ScannerV2 *scanner, Module &module, std::size_t current_depth)
     add_rule(TokenType::END_OF_LINE,   {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::END_OF_FILE,   {nullptr, nullptr, ParsePrecedence::of::NONE});
     // clang-format on
+    advance();
 }
 
 [[nodiscard]] bool Parser::is_at_end() const noexcept {
-//    return current >= tokens.size();
+    return previous.type == TokenType::END_OF_FILE;
 }
 
 const Token &Parser::advance() {
@@ -169,16 +170,17 @@ const Token &Parser::advance() {
         throw ParseException{previous, "Found unexpected EOF while parsing"};
     }
 
-//    current++;
-//    return tokens[current - 1];
+    previous = scanner->scan_token();
+    current = scanner->peek_token();
+    return previous;
 }
 
 [[nodiscard]] const Token &Parser::peek() const noexcept {
-//    return tokens[current];
+    return current;
 }
 
 [[nodiscard]] bool Parser::check(TokenType type) const noexcept {
-//    return peek().type == type;
+    return peek().type == type;
 }
 
 template <typename... Args>
@@ -803,8 +805,8 @@ StmtNode Parser::import_statement() {
     try {
         logger.set_source(module_source);
         logger.set_module_name(module_name);
-        ScannerV2 scanner{module_source};
-        Parser parser{&scanner, imported_module, current_module_depth + 1};
+        ScannerV2 scanner_{module_source};
+        Parser parser{&scanner_, imported_module, current_module_depth + 1};
         imported_module.statements = parser.program();
         TypeResolver resolver{imported_module};
         resolver.check(imported_module.statements);
