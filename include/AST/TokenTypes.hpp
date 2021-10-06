@@ -108,6 +108,7 @@ enum class TokenType {
     WHILE,
 
     NONE,
+    INVALID,
     END_OF_LINE,
     END_OF_FILE
 };
