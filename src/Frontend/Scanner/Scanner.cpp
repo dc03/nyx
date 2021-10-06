@@ -456,7 +456,7 @@ Token ScannerV2::scan_string() {
                 lexeme += '\"';
             } else {
                 char invalid = advance();
-                warning({"Unrecognized escape sequence: '\\", std::string{invalid}, "'"}, previous);
+                warning({"Unrecognized escape sequence: '\\", std::string{invalid}, "'"}, current_token);
             }
         } else {
             lexeme += advance();
@@ -674,7 +674,7 @@ Token ScannerV2::scan_next() {
 
         case '\n': {
             line++;
-            if (paren_depth == 0 && is_valid_eol(previous)) {
+            if (paren_depth == 0 && is_valid_eol(current_token)) {
                 return make_token(TokenType::END_OF_LINE, "<EOL>");
             } else {
                 current_token_start = current_token_end;
@@ -702,7 +702,7 @@ Token ScannerV2::scan_next() {
                     return make_token(TokenType::SLASH, current_token_lexeme());
                 }
             } else if (is_at_end()) {
-                if (is_valid_eol(previous)) {
+                if (is_valid_eol(current_token)) {
                     return make_token(TokenType::END_OF_LINE, "<EOL>");
                 } else {
                     return make_token(TokenType::END_OF_FILE, "<EOF>");
@@ -717,14 +717,14 @@ Token ScannerV2::scan_next() {
 }
 
 Token ScannerV2::scan_token() {
-    previous = current;
+    current_token = next_token;
     current_token_start = current_token_end;
-    current = scan_next();
-    return previous;
+    next_token = scan_next();
+    return current_token;
 }
 
 const Token &ScannerV2::peek_token() {
-    return current;
+    return next_token;
 }
 
 std::vector<Token> ScannerV2::scan_all() {

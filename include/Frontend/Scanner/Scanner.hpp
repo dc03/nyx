@@ -51,8 +51,8 @@ class ScannerV2 {
     std::size_t current_token_end{};
 
     std::size_t paren_depth{};
-    Token previous{};
-    Token current{};
+    Token current_token{};
+    Token next_token{};
     std::string_view source{};
 
     struct KeywordTypePair {

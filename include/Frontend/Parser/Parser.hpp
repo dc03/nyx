@@ -49,8 +49,8 @@ class Parser {
     };
 
     ScannerV2 *scanner{};
-    Token previous{};
-    Token current{};
+    Token current_token{};
+    Token next_token{};
 
     ParseRule rules[static_cast<std::size_t>(TokenType::END_OF_FILE) + 1];
 
