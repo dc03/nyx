@@ -47,8 +47,8 @@ void Parser::synchronize() {
     advance();
 
     while (not is_at_end()) {
-        if (previous().type == TokenType::SEMICOLON || previous().type == TokenType::END_OF_LINE ||
-            previous().type == TokenType::RIGHT_BRACE) {
+        if (previous.type == TokenType::SEMICOLON || previous.type == TokenType::END_OF_LINE ||
+            previous.type == TokenType::RIGHT_BRACE) {
             return;
         }
 
@@ -75,8 +75,8 @@ void Parser::synchronize() {
     }
 }
 
-Parser::Parser(const std::vector<Token> &tokens, Module &module, std::size_t current_depth)
-    : tokens{tokens}, current_module{module}, current_module_depth{current_depth} {
+Parser::Parser(ScannerV2 *scanner, Module &module, std::size_t current_depth)
+    : scanner{scanner}, current_module{module}, current_module_depth{current_depth} {
     // clang-format off
     add_rule(TokenType::COMMA,         {nullptr, &Parser::comma, ParsePrecedence::of::COMMA});
     add_rule(TokenType::EQUAL,         {nullptr, nullptr, ParsePrecedence::of::NONE});
@@ -160,29 +160,25 @@ Parser::Parser(const std::vector<Token> &tokens, Module &module, std::size_t cur
 }
 
 [[nodiscard]] bool Parser::is_at_end() const noexcept {
-    return current >= tokens.size();
-}
-
-[[nodiscard]] const Token &Parser::previous() const noexcept {
-    return tokens[current - 1];
+//    return current >= tokens.size();
 }
 
 const Token &Parser::advance() {
     if (is_at_end()) {
-        error({"Found unexpected EOF while parsing"}, previous());
-        throw ParseException{previous(), "Found unexpected EOF while parsing"};
+        error({"Found unexpected EOF while parsing"}, previous);
+        throw ParseException{previous, "Found unexpected EOF while parsing"};
     }
 
-    current++;
-    return tokens[current - 1];
+//    current++;
+//    return tokens[current - 1];
 }
 
 [[nodiscard]] const Token &Parser::peek() const noexcept {
-    return tokens[current];
+//    return tokens[current];
 }
 
 [[nodiscard]] bool Parser::check(TokenType type) const noexcept {
-    return peek().type == type;
+//    return peek().type == type;
 }
 
 template <typename... Args>
@@ -224,9 +220,9 @@ IdentifierTuple Parser::ident_tuple() {
     IdentifierTuple::TupleType result{};
     while (peek().type != TokenType::RIGHT_BRACE) {
         consume("Expected either identifier or '{' in identifier tuple", TokenType::IDENTIFIER, TokenType::LEFT_BRACE);
-        if (previous().type == TokenType::IDENTIFIER) {
+        if (previous.type == TokenType::IDENTIFIER) {
             result.emplace_back(
-                IdentifierTuple::DeclarationDetails{previous(), NumericConversionType::NONE, false, nullptr});
+                IdentifierTuple::DeclarationDetails{previous, NumericConversionType::NONE, false, nullptr});
         } else {
             result.emplace_back(ident_tuple());
         }
@@ -259,22 +255,22 @@ ExprNode Parser::parse_precedence(ParsePrecedence::of precedence) {
     using namespace std::string_literals;
     advance();
 
-    ExprPrefixParseFn prefix = get_rule(previous().type).prefix;
+    ExprPrefixParseFn prefix = get_rule(previous.type).prefix;
     if (prefix == nullptr) {
         std::string message = "Unexpected token in expression '";
         message += [this]() {
-            if (previous().type == TokenType::END_OF_LINE) {
+            if (previous.type == TokenType::END_OF_LINE) {
                 return "\\n' (newline)"s;
             } else {
-                return previous().lexeme + "'";
+                return previous.lexeme + "'";
             }
         }();
         bool had_error_before = logger.had_error;
-        error({message}, previous());
+        error({message}, previous);
         if (had_error_before) {
             note({"This may occur because of previous errors leading to the parser being confused"});
         }
-        throw ParseException{previous(), message};
+        throw ParseException{previous, message};
     }
 
     bool can_assign = precedence <= ParsePrecedence::of::ASSIGNMENT;
@@ -283,21 +279,21 @@ ExprNode Parser::parse_precedence(ParsePrecedence::of precedence) {
     while (precedence <= get_rule(peek().type).precedence) {
         ExprInfixParseFn infix = get_rule(advance().type).infix;
         if (infix == nullptr) {
-            error({"'", previous().lexeme, "' cannot occur in an infix/postfix expression"}, previous());
-            if (previous().type == TokenType::PLUS_PLUS) {
+            error({"'", previous.lexeme, "' cannot occur in an infix/postfix expression"}, previous);
+            if (previous.type == TokenType::PLUS_PLUS) {
                 note({"Postfix increment is not supported"});
-            } else if (previous().type == TokenType::MINUS_MINUS) {
+            } else if (previous.type == TokenType::MINUS_MINUS) {
                 note({"Postfix decrement is not supported"});
             }
-            throw ParseException{previous(), "Incorrect infix/postfix expression"};
+            throw ParseException{previous, "Incorrect infix/postfix expression"};
         }
         left = std::invoke(infix, this, can_assign, std::move(left));
     }
 
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
-        error({"Invalid assignment target"}, previous());
-        throw ParseException{previous(), "Invalid assignment target"};
+        error({"Invalid assignment target"}, previous);
+        throw ParseException{previous, "Invalid assignment target"};
     }
 
     return left;
@@ -312,7 +308,7 @@ ExprNode Parser::assignment() {
 }
 
 ExprNode Parser::and_(bool, ExprNode left) {
-    Token oper = previous();
+    Token oper = previous;
     ExprNode right = parse_precedence(ParsePrecedence::of::LOGIC_AND);
     auto *node = allocate_node(LogicalExpr, std::move(left), std::move(right));
     node->synthesized_attrs.token = std::move(oper);
@@ -320,16 +316,16 @@ ExprNode Parser::and_(bool, ExprNode left) {
 }
 
 ExprNode Parser::binary(bool, ExprNode left) {
-    Token oper = previous();
+    Token oper = previous;
     ExprNode right = parse_precedence(
-        ParsePrecedence::of{static_cast<int>(ParsePrecedence::of(get_rule(previous().type).precedence)) + 1});
+        ParsePrecedence::of{static_cast<int>(ParsePrecedence::of(get_rule(previous.type).precedence)) + 1});
     auto *node = allocate_node(BinaryExpr, std::move(left), std::move(right));
     node->synthesized_attrs.token = std::move(oper);
     return ExprNode{node};
 }
 
 ExprNode Parser::call(bool, ExprNode function) {
-    Token paren = previous();
+    Token paren = previous;
     std::vector<std::tuple<ExprNode, NumericConversionType, bool>> args{};
     if (peek().type != TokenType::RIGHT_PAREN) {
         do {
@@ -364,7 +360,7 @@ ExprNode Parser::dot(bool can_assign, ExprNode left) {
         if (num.find('.') == std::string::npos) {
             error({"Use of float literal in member access"}, peek());
             advance();
-            throw_parse_error("Use of float literal in member access", previous());
+            throw_parse_error("Use of float literal in member access", previous);
         }
         std::size_t cursor = 0;
         while (num[cursor] != '.') {
@@ -389,7 +385,7 @@ ExprNode Parser::dot(bool can_assign, ExprNode left) {
         left = ExprNode{allocate_node(GetExpr, std::move(left), components[0])};
     }
 
-    Token name = previous();
+    Token name = previous;
 
     // A floating literal was used as an access
     if (not components.empty()) {
@@ -398,7 +394,7 @@ ExprNode Parser::dot(bool can_assign, ExprNode left) {
 
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
-        Token oper = previous();
+        Token oper = previous;
         ExprNode value = assignment();
 
         auto *node = allocate_node(
@@ -411,7 +407,7 @@ ExprNode Parser::dot(bool can_assign, ExprNode left) {
 }
 
 ExprNode Parser::index(bool can_assign, ExprNode object) {
-    Token oper = previous();
+    Token oper = previous;
     ExprNode index = expression();
     consume("Expected ']' after array subscript index", TokenType::RIGHT_INDEX);
     auto ind = IndexExpr{std::move(object), std::move(index)};
@@ -419,7 +415,7 @@ ExprNode Parser::index(bool can_assign, ExprNode object) {
 
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
-        Token equals = previous();
+        Token equals = previous;
         ExprNode value = assignment();
         auto *assignment =
             allocate_node(ListAssignExpr, std::move(ind), std::move(value), NumericConversionType::NONE, false);
@@ -430,7 +426,7 @@ ExprNode Parser::index(bool can_assign, ExprNode object) {
 }
 
 ExprNode Parser::or_(bool, ExprNode left) {
-    Token oper = previous();
+    Token oper = previous;
     ExprNode right = parse_precedence(ParsePrecedence::of::LOGIC_OR);
     auto *node = allocate_node(LogicalExpr, std::move(left), std::move(right));
     node->synthesized_attrs.token = std::move(oper);
@@ -444,7 +440,7 @@ ExprNode Parser::grouping(bool) {
 }
 
 ExprNode Parser::list(bool) {
-    Token bracket = previous();
+    Token bracket = previous;
     std::vector<ListExpr::ElementType> elements{};
     if (peek().type != TokenType::RIGHT_INDEX) {
         do {
@@ -459,22 +455,22 @@ ExprNode Parser::list(bool) {
 ExprNode Parser::literal(bool) {
     auto *type = allocate_node(PrimitiveType, Type::INT, true, false);
     auto *node = allocate_node(LiteralExpr, LiteralValue{nullptr}, TypeNode{type});
-    node->synthesized_attrs.token = previous();
-    switch (previous().type) {
+    node->synthesized_attrs.token = previous;
+    switch (previous.type) {
         case TokenType::INT_VALUE: {
-            node->value = LiteralValue{std::stoi(previous().lexeme)};
+            node->value = LiteralValue{std::stoi(previous.lexeme)};
             break;
         }
         case TokenType::FLOAT_VALUE: {
-            node->value = LiteralValue{std::stod(previous().lexeme)};
+            node->value = LiteralValue{std::stod(previous.lexeme)};
             node->type->primitive = Type::FLOAT;
             break;
         }
         case TokenType::STRING_VALUE: {
             node->type->primitive = Type::STRING;
-            node->value = LiteralValue{previous().lexeme};
+            node->value = LiteralValue{previous.lexeme};
             while (match(TokenType::STRING_VALUE)) {
-                node->value.to_string() += previous().lexeme;
+                node->value.to_string() += previous.lexeme;
             }
             break;
         }
@@ -494,16 +490,16 @@ ExprNode Parser::literal(bool) {
             break;
         }
 
-        default: throw ParseException{previous(), "Unexpected TokenType passed to literal parser"};
+        default: throw ParseException{previous, "Unexpected TokenType passed to literal parser"};
     }
 
     return ExprNode{node};
 }
 
 ExprNode Parser::move(bool) {
-    Token op = previous();
+    Token op = previous;
     consume("Expected identifier after 'move' keyword", TokenType::IDENTIFIER);
-    auto *var = allocate_node(VariableExpr, previous(), IdentifierType::LOCAL);
+    auto *var = allocate_node(VariableExpr, previous, IdentifierType::LOCAL);
     var->synthesized_attrs.token = var->name;
     auto *expr = allocate_node(MoveExpr, ExprNode{var});
     expr->synthesized_attrs.token = op;
@@ -511,9 +507,9 @@ ExprNode Parser::move(bool) {
 }
 
 ExprNode Parser::scope_access(bool, ExprNode left) {
-    Token colon_colon = previous();
+    Token colon_colon = previous;
     consume("Expected identifier to be accessed after scope name", TokenType::IDENTIFIER);
-    Token name = previous();
+    Token name = previous;
     auto *node = allocate_node(ScopeAccessExpr, std::move(left), std::move(name));
     node->synthesized_attrs.token = std::move(colon_colon);
     return ExprNode{node};
@@ -523,15 +519,15 @@ ExprNode Parser::super(bool) {
     if (not(in_class && in_function)) {
         throw_parse_error("Cannot use super expression outside a class");
     }
-    Token super = previous();
+    Token super = previous;
     consume("Expected '.' after 'super' keyword", TokenType::DOT);
     consume("Expected name after '.' in super expression", TokenType::IDENTIFIER);
-    Token name = previous();
+    Token name = previous;
     return ExprNode{allocate_node(SuperExpr, std::move(super), std::move(name))};
 }
 
 ExprNode Parser::ternary(bool, ExprNode left) {
-    Token question = previous();
+    Token question = previous;
     ExprNode middle = parse_precedence(ParsePrecedence::of::LOGIC_OR);
     consume("Expected colon in ternary expression", TokenType::COLON);
     ExprNode right = parse_precedence(ParsePrecedence::of::TERNARY);
@@ -544,12 +540,12 @@ ExprNode Parser::this_expr(bool) {
     if (not(in_class && in_function)) {
         throw_parse_error("Cannot use 'this' keyword outside a class's constructor or destructor");
     }
-    Token keyword = previous();
+    Token keyword = previous;
     return ExprNode{allocate_node(ThisExpr, std::move(keyword))};
 }
 
 ExprNode Parser::tuple(bool) {
-    Token brace = previous();
+    Token brace = previous;
     std::vector<TupleExpr::ElementType> elements{};
     while (peek().type != TokenType::RIGHT_BRACE) {
         elements.emplace_back(std::make_tuple(ExprNode{assignment()}, NumericConversionType::NONE, false));
@@ -560,18 +556,18 @@ ExprNode Parser::tuple(bool) {
 }
 
 ExprNode Parser::unary(bool) {
-    Token oper = previous();
-    ExprNode expr = parse_precedence(get_rule(previous().type).precedence);
+    Token oper = previous;
+    ExprNode expr = parse_precedence(get_rule(previous.type).precedence);
     auto *node = allocate_node(UnaryExpr, std::move(oper), std::move(expr));
     node->synthesized_attrs.token = node->oper;
     return ExprNode{node};
 }
 
 ExprNode Parser::variable(bool can_assign) {
-    Token name = previous();
+    Token name = previous;
     if (can_assign && match(TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
                           TokenType::SLASH_EQUAL)) {
-        Token oper = previous();
+        Token oper = previous;
         ExprNode value = assignment();
         auto *node = allocate_node(
             AssignExpr, std::move(name), std::move(value), NumericConversionType::NONE, false, IdentifierType::LOCAL);
@@ -618,11 +614,11 @@ StmtNode Parser::declaration() {
 StmtNode Parser::class_declaration() {
     consume("Expected class name after 'class' keyword", TokenType::IDENTIFIER);
 
-    if (current_module.classes.find(previous().lexeme) != current_module.classes.end()) {
+    if (current_module.classes.find(previous.lexeme) != current_module.classes.end()) {
         throw_parse_error("Class already defined");
     }
 
-    Token name = previous();
+    Token name = previous;
     FunctionStmt *ctor{nullptr};
     FunctionStmt *dtor{nullptr};
     std::vector<ClassStmt::MemberType> members{};
@@ -640,9 +636,9 @@ StmtNode Parser::class_declaration() {
             TokenType::PUBLIC, TokenType::PROTECTED);
 
         VisibilityType visibility = [this]() {
-            if (previous().type == TokenType::PUBLIC) {
+            if (previous.type == TokenType::PUBLIC) {
                 return VisibilityType::PUBLIC;
-            } else if (previous().type == TokenType::PRIVATE) {
+            } else if (previous.type == TokenType::PRIVATE) {
                 return VisibilityType::PRIVATE;
             } else {
                 return VisibilityType::PROTECTED;
@@ -697,25 +693,25 @@ StmtNode Parser::class_declaration() {
 }
 
 StmtNode Parser::function_declaration() {
-    bool is_not_dtor = previous().type != TokenType::BIT_NOT;
+    bool is_not_dtor = previous.type != TokenType::BIT_NOT;
 
     consume("Expected function name after 'fn' keyword", TokenType::IDENTIFIER);
 
-    if (not in_class && current_module.functions.find(previous().lexeme) != current_module.functions.end()) {
+    if (not in_class && current_module.functions.find(previous.lexeme) != current_module.functions.end()) {
         throw_parse_error("Function already defined");
     } else if (in_class) {
         bool matches_any = std::any_of(current_methods->cbegin(), current_methods->cend(),
-            [previous = previous()](const ClassStmt::MethodType &arg) { return arg.first->name == previous; });
+            [previous = previous](const ClassStmt::MethodType &arg) { return arg.first->name == previous; });
         bool matches_dtor = std::any_of(current_methods->cbegin(), current_methods->cend(),
-            [previous = previous()](
+            [previous = previous](
                 const ClassStmt::MethodType &arg) { return arg.first->name.lexeme.substr(1) == previous.lexeme; });
 
         if (matches_any && (is_not_dtor || matches_dtor)) {
-            throw_parse_error("Method already defined", previous());
+            throw_parse_error("Method already defined", previous);
         }
     }
 
-    Token name = previous();
+    Token name = previous;
     consume("Expected '(' after function name", TokenType::LEFT_PAREN);
 
     FunctionStmt *function_definition;
@@ -732,7 +728,7 @@ StmtNode Parser::function_declaration() {
                     params.emplace_back(std::move(tuple), std::move(parameter_type));
                 } else {
                     advance();
-                    Token parameter_name = previous();
+                    Token parameter_name = previous;
                     consume("Expected ':' after function parameter name", TokenType::COLON);
                     TypeNode parameter_type = type();
                     params.emplace_back(std::move(parameter_name), std::move(parameter_type));
@@ -768,10 +764,10 @@ StmtNode Parser::function_declaration() {
 }
 
 StmtNode Parser::import_statement() {
-    Token keyword = previous();
+    Token keyword = previous;
     consume("Expected path to module after 'import' keyword", TokenType::STRING_VALUE);
-    Token imported = previous();
-    consume("Expected ';' or newline after imported file", previous(), TokenType::SEMICOLON, TokenType::END_OF_LINE);
+    Token imported = previous;
+    consume("Expected ';' or newline after imported file", previous, TokenType::SEMICOLON, TokenType::END_OF_LINE);
 
     std::string imported_dir = imported.lexeme[0] == '/' ? "" : current_module.module_directory;
 
@@ -807,8 +803,8 @@ StmtNode Parser::import_statement() {
     try {
         logger.set_source(module_source);
         logger.set_module_name(module_name);
-        Scanner scanner{module_source};
-        Parser parser{scanner.scan(), imported_module, current_module_depth + 1};
+        ScannerV2 scanner{module_source};
+        Parser parser{&scanner, imported_module, current_module_depth + 1};
         imported_module.statements = parser.program();
         TypeResolver resolver{imported_module};
         resolver.check(imported_module.statements);
@@ -822,8 +818,8 @@ StmtNode Parser::import_statement() {
 }
 
 StmtNode Parser::type_declaration() {
-    consume("Expected type name after 'type' keyword", previous(), TokenType::IDENTIFIER);
-    Token name = previous();
+    consume("Expected type name after 'type' keyword", previous, TokenType::IDENTIFIER);
+    Token name = previous;
     consume("Expected '=' after type name", TokenType::EQUAL);
     TypeNode aliased = type();
     consume("Expected ';' or newline after type alias", TokenType::SEMICOLON, TokenType::END_OF_LINE);
@@ -832,16 +828,16 @@ StmtNode Parser::type_declaration() {
 
 StmtNode Parser::variable_declaration() {
     std::string message = "Expected variable name after '";
-    switch (previous().type) {
+    switch (previous.type) {
         case TokenType::VAR: message += "var"; break;
         case TokenType::CONST: message += "const"; break;
         case TokenType::REF: message += "ref"; break;
         default: break;
     }
     message += "' keyword";
-    Token keyword = previous();
+    Token keyword = previous;
     consume(message, peek(), TokenType::IDENTIFIER);
-    Token name = previous();
+    Token name = previous;
 
     TypeNode var_type = match(TokenType::COLON) ? type() : nullptr;
     consume("Expected initializer after variable name", TokenType::EQUAL);
@@ -854,7 +850,7 @@ StmtNode Parser::variable_declaration() {
 }
 
 StmtNode Parser::vartuple_declaration() {
-    Token keyword = previous();
+    Token keyword = previous;
     advance();
 
     IdentifierTuple tuple = ident_tuple();
@@ -862,7 +858,7 @@ StmtNode Parser::vartuple_declaration() {
     TypeNode var_types = match(TokenType::COLON) ? type() : nullptr;
 
     consume("Expected initializer after var-tuple", TokenType::EQUAL);
-    Token token = previous();
+    Token token = previous;
     ExprNode initializer = expression();
 
     consume("Expected ';' or newline after var-tuple initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
@@ -915,7 +911,7 @@ StmtNode Parser::single_token_statement(
     if (not condition) {
         throw_parse_error(error_message);
     }
-    Token keyword = previous();
+    Token keyword = previous;
     using namespace std::string_literals;
     const std::string consume_message = "Expected ';' or newline after "s + &token[0] + " keyword";
     consume(consume_message, TokenType::SEMICOLON, TokenType::END_OF_LINE);
@@ -938,7 +934,7 @@ StmtNode Parser::expression_statement() {
 }
 
 StmtNode Parser::for_statement() {
-    Token keyword = previous();
+    Token keyword = previous;
     consume("Expected '(' after 'for' keyword", TokenType::LEFT_PAREN);
     ScopedManager scope_depth_manager{scope_depth, scope_depth + 1};
 
@@ -980,7 +976,7 @@ StmtNode Parser::for_statement() {
 }
 
 StmtNode Parser::if_statement() {
-    Token keyword = previous();
+    Token keyword = previous;
     ExprNode condition = expression();
 
     while (peek().type == TokenType::END_OF_LINE) {
@@ -1011,7 +1007,7 @@ StmtNode Parser::return_statement() {
         throw_parse_error("Cannot use 'return' keyword outside a function");
     }
 
-    Token keyword = previous();
+    Token keyword = previous;
 
     ExprNode return_value = [this]() {
         if (peek().type != TokenType::SEMICOLON && peek().type != TokenType::END_OF_LINE) {
@@ -1058,7 +1054,7 @@ StmtNode Parser::switch_statement() {
 }
 
 StmtNode Parser::while_statement() {
-    Token keyword = previous();
+    Token keyword = previous;
     ExprNode condition = expression();
 
     while (peek().type == TokenType::END_OF_LINE) {
@@ -1104,7 +1100,7 @@ TypeNode Parser::type() {
     }();
 
     if (type == Type::CLASS) {
-        Token name = previous();
+        Token name = previous;
         return TypeNode{allocate_node(UserDefinedType, type, is_const, is_ref, std::move(name), nullptr)};
     } else if (type == Type::LIST) {
         return list_type(is_const, is_ref);

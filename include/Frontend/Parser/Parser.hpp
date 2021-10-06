@@ -9,6 +9,7 @@
 #include "AST/AST.hpp"
 #include "AST/Token.hpp"
 #include "Backend/VirtualMachine/Module.hpp"
+#include "Frontend/Scanner/Scanner.hpp"
 #include "ScopedManager.hpp"
 
 #include <string_view>
@@ -48,7 +49,10 @@ class Parser {
     };
 
     std::size_t current{};
-    const std::vector<Token> &tokens{};
+
+    ScannerV2 *scanner{};
+    Token previous{};
+
     ParseRule rules[static_cast<std::size_t>(TokenType::END_OF_FILE) + 1];
 
     Module &current_module;
@@ -71,7 +75,6 @@ class Parser {
 
     [[nodiscard]] bool is_at_end() const noexcept;
 
-    [[nodiscard]] const Token &previous() const noexcept;
     const Token &advance();
     [[nodiscard]] const Token &peek() const noexcept;
 
@@ -90,7 +93,7 @@ class Parser {
   public:
     static std::vector<std::pair<Module, std::size_t>> parsed_modules;
 
-    explicit Parser(const std::vector<Token> &tokens, Module &module, std::size_t current_depth);
+    explicit Parser(ScannerV2 *scanner, Module &module, std::size_t current_depth);
 
     std::vector<StmtNode> program();
 
