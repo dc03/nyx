@@ -333,3 +333,396 @@ const std::vector<Token> &Scanner::scan() {
     tokens.emplace_back(TokenType::END_OF_FILE, "", line, 0, 0);
     return tokens;
 }
+
+ScannerV2::ScannerV2() {
+    for (const auto &[lexeme, type] : keywords) {
+        keyword_map.insert(lexeme, type);
+    }
+}
+
+ScannerV2::ScannerV2(std::string_view source) : ScannerV2() {
+    this->source = source;
+}
+
+bool ScannerV2::is_at_end() const noexcept {
+    return current_token_end >= source.length();
+}
+
+char ScannerV2::advance() {
+    if (is_at_end()) {
+        return '\0';
+    }
+
+    current_token_end++;
+    return source[current_token_end - 1];
+}
+
+char ScannerV2::peek() const noexcept {
+    if (is_at_end()) {
+        return '\0';
+    }
+
+    return source[current_token_end];
+}
+
+char ScannerV2::peek_next() const noexcept {
+    if (current_token_end + 1 >= source.length()) {
+        return '\0';
+    }
+
+    return source[current_token_end + 1];
+}
+
+bool ScannerV2::match(char ch) {
+    if (peek() == ch) {
+        advance();
+        return true;
+    }
+
+    return false;
+}
+
+Token ScannerV2::make_token(TokenType type, std::string_view lexeme) const {
+    return Token{type, std::string{lexeme}, line, current_token_start, current_token_end};
+}
+
+Token ScannerV2::scan_number() {
+    TokenType type = TokenType::INT_VALUE;
+
+    auto scan_digits = [this] {
+        while (not is_at_end() && std::isdigit(peek())) {
+            advance();
+        }
+    };
+
+    scan_digits();
+
+    if (peek() == '.' && std::isdigit(peek_next())) {
+        type = TokenType::FLOAT_VALUE;
+        advance();
+        scan_digits();
+    }
+
+    if (peek() == 'e' && std::isdigit(peek_next())) {
+        type = TokenType::FLOAT_VALUE;
+        advance();
+        scan_digits();
+    }
+
+    return make_token(type, current_token_lexeme());
+}
+
+Token ScannerV2::scan_identifier_or_keyword() {
+    while (not is_at_end() && (std::isalnum(peek()) || peek() == '_')) {
+        advance();
+    }
+
+    std::string_view lexeme = current_token_lexeme();
+    if (TokenType type = keyword_map.search(lexeme); type != TokenType::NONE) {
+        return make_token(type, lexeme);
+    } else {
+        return make_token(TokenType::IDENTIFIER, lexeme);
+    }
+}
+
+Token ScannerV2::scan_string() {
+    std::size_t size = 1;
+    while ((current_token_start + size) <= source.length() && source[current_token_start + size] != '"') {
+        size++;
+        if (source[current_token_start + size] == '\\') {
+            size++;
+            size++;
+        }
+    }
+
+    std::string lexeme{};
+    lexeme.reserve(size);
+
+    while (not is_at_end() && peek() != '"') {
+        if (peek() == '\n') {
+            line++;
+            advance();
+            lexeme += '\n';
+        } else if (match('\\')) {
+            if (match('b')) {
+                lexeme += '\b';
+            } else if (match('n')) {
+                lexeme += '\n';
+            } else if (match('r')) {
+                lexeme += '\r';
+            } else if (match('t')) {
+                lexeme += '\t';
+            } else if (match('\\')) {
+                lexeme += '\\';
+            } else if (match('\'')) {
+                lexeme += '\'';
+            } else if (match('\"')) {
+                lexeme += '\"';
+            } else {
+                char invalid = advance();
+                warning({"Unrecognized escape sequence: '\\", std::string{invalid}, "'"}, previous);
+            }
+        } else {
+            lexeme += advance();
+        }
+    }
+
+    if (is_at_end()) {
+        error({"Unexpected end of file while reading string, did you forget the closing '\"'?"},
+            make_token(TokenType::STRING_VALUE, current_token_lexeme()));
+    }
+
+    advance(); // Consume the closing '"'
+    return make_token(TokenType::STRING_VALUE, lexeme);
+}
+
+void ScannerV2::skip_comment() {
+    while (not is_at_end() && peek() != '\n') {
+        advance();
+    }
+}
+
+void ScannerV2::skip_multiline_comment() {
+    while (not is_at_end() && (peek() != '*' || peek_next() != '/')) {
+        if (match('/')) {
+            if (match('*')) {
+                skip_multiline_comment(); // Skip the nested comment
+            } else if (match('/')) {
+                skip_comment();
+            }
+        } else {
+            if (peek() == '\n') {
+                line++;
+            }
+            advance();
+        }
+    }
+
+    if (is_at_end()) {
+        error({"Unexpected end of file while skipping multiline comment, did you forget the closing '*/'"},
+            make_token(TokenType::NONE, current_token_lexeme()));
+    }
+
+    advance(); // Skip the '*'
+    advance(); // Skip the '//'
+}
+
+bool ScannerV2::is_valid_eol(const Token &token) {
+    switch (token.type) {
+        case TokenType::BREAK:
+        case TokenType::CONTINUE:
+        case TokenType::FLOAT_VALUE:
+        case TokenType::INT_VALUE:
+        case TokenType::STRING_VALUE:
+        case TokenType::IDENTIFIER:
+        case TokenType::RIGHT_PAREN:
+        case TokenType::RIGHT_INDEX: return true;
+        default: return false;
+    }
+}
+
+std::string_view ScannerV2::current_token_lexeme() {
+    return source.substr(current_token_start, (current_token_end - current_token_start));
+}
+
+Token ScannerV2::scan_token() {
+    previous = current;
+
+    char next = advance();
+    switch (next) {
+        case '.': {
+            if (match('.')) {
+                if (match('=')) {
+                    current = make_token(TokenType::DOT_DOT_EQUAL, current_token_lexeme());
+                } else {
+                    current = make_token(TokenType::DOT_DOT, current_token_lexeme());
+                }
+            } else {
+                current = make_token(TokenType::DOT, current_token_lexeme());
+            }
+        }
+        case ',': {
+            current = make_token(TokenType::COMMA, current_token_lexeme());
+        }
+        case '?': {
+            current = make_token(TokenType::QUESTION, current_token_lexeme());
+        }
+        case ':': {
+            if (match(':')) {
+                current = make_token(TokenType::DOUBLE_COLON, current_token_lexeme());
+            } else {
+                current = make_token(TokenType::COLON, current_token_lexeme());
+            }
+        }
+        case '|': {
+            if (match('|')) {
+                current = make_token(TokenType::OR, current_token_lexeme());
+            } else {
+                current = make_token(TokenType::BIT_OR, current_token_lexeme());
+            }
+        }
+        case '&': {
+            if (match('&')) {
+                current = make_token(TokenType::AND, current_token_lexeme());
+            } else {
+                current = make_token(TokenType::BIT_AND, current_token_lexeme());
+            }
+        }
+        case '^': {
+            current = make_token(TokenType::BIT_XOR, current_token_lexeme());
+        }
+        case '!': {
+            if (match('=')) {
+                current = make_token(TokenType::NOT_EQUAL, current_token_lexeme());
+            } else {
+                current = make_token(TokenType::NOT, current_token_lexeme());
+            }
+        }
+        case '=': {
+            if (match('=')) {
+                current = make_token(TokenType::EQUAL_EQUAL, current_token_lexeme());
+            } else {
+                current = make_token(TokenType::EQUAL, current_token_lexeme());
+            }
+        }
+        case '>': {
+            if (match('>')) {
+                current = make_token(TokenType::RIGHT_SHIFT, current_token_lexeme());
+            } else if (match('=')) {
+                current = make_token(TokenType::GREATER_EQUAL, current_token_lexeme());
+            } else {
+                current = make_token(TokenType::GREATER, current_token_lexeme());
+            }
+        }
+        case '<': {
+            if (match('<')) {
+                current = make_token(TokenType::LEFT_SHIFT, current_token_lexeme());
+            } else if (match('=')) {
+                current = make_token(TokenType::LESS_EQUAL, current_token_lexeme());
+            } else {
+                current = make_token(TokenType::LESS, current_token_lexeme());
+            }
+        }
+        case '*': {
+            if (match('=')) {
+                current = make_token(TokenType::STAR_EQUAL, current_token_lexeme());
+            } else {
+                current = make_token(TokenType::STAR, current_token_lexeme());
+            }
+        }
+        case '-': {
+            if (match('-')) {
+                current = make_token(TokenType::MINUS_MINUS, current_token_lexeme());
+            } else if (match('>')) {
+                current = make_token(TokenType::ARROW, current_token_lexeme());
+            } else if (match('=')) {
+                current = make_token(TokenType::MINUS_EQUAL, current_token_lexeme());
+            } else {
+                current = make_token(TokenType::MINUS, current_token_lexeme());
+            }
+        }
+        case '+': {
+            if (match('+')) {
+                current = make_token(TokenType::PLUS_PLUS, current_token_lexeme());
+            } else if (match('=')) {
+                current = make_token(TokenType::PLUS_EQUAL, current_token_lexeme());
+            } else {
+                current = make_token(TokenType::PLUS, current_token_lexeme());
+            }
+        }
+        case '%': {
+            current = make_token(TokenType::MODULO, current_token_lexeme());
+        }
+        case '~': {
+            current = make_token(TokenType::BIT_NOT, current_token_lexeme());
+        }
+
+        case '(': {
+            paren_depth++;
+            current = make_token(TokenType::LEFT_PAREN, current_token_lexeme());
+        }
+        case ')': {
+            paren_depth--;
+            current = make_token(TokenType::RIGHT_PAREN, current_token_lexeme());
+        }
+        case '[': {
+            current = make_token(TokenType::LEFT_INDEX, current_token_lexeme());
+        }
+        case ']': {
+            current = make_token(TokenType::RIGHT_INDEX, current_token_lexeme());
+        }
+        case '{': {
+            current = make_token(TokenType::LEFT_BRACE, current_token_lexeme());
+        }
+        case '}': {
+            current = make_token(TokenType::RIGHT_BRACE, current_token_lexeme());
+        }
+
+        case '"': {
+            current = scan_string();
+        }
+
+        case ';': {
+            current = make_token(TokenType::SEMICOLON, current_token_lexeme());
+        }
+
+        case ' ':
+        case '\t':
+        case '\r':
+        case '\b': {
+            current = scan_token();
+        }
+
+        case '\n': {
+            line++;
+            if (paren_depth == 0 && is_valid_eol(previous)) {
+                current = make_token(TokenType::END_OF_LINE, current_token_lexeme());
+            } else {
+                current = scan_token();
+            }
+        }
+
+        default: {
+            if (std::isdigit(next)) {
+                current = scan_number();
+            } else if (std::isalpha(next) || next == '_') {
+                current = scan_identifier_or_keyword();
+            } else if (next == '/') {
+                if (match('/')) {
+                    skip_comment();
+                    current = scan_token();
+                } else if (match('*')) {
+                    skip_multiline_comment();
+                    current = scan_token();
+                } else if (match('=')) {
+                    current = make_token(TokenType::SLASH_EQUAL, current_token_lexeme());
+                } else {
+                    current = make_token(TokenType::SLASH, current_token_lexeme());
+                }
+            } else if (is_at_end()) {
+                current = make_token(TokenType::END_OF_FILE, "<EOF>");
+            }
+
+            error({"Unrecognized character '", std::string{next}, "' in input"},
+                make_token(TokenType::INVALID, current_token_lexeme()));
+            current = make_token(TokenType::INVALID, current_token_lexeme());
+        }
+    }
+
+    return previous;
+}
+
+std::vector<Token> ScannerV2::scan_all() {
+    std::vector<Token> tokens{};
+    while (not is_at_end()) {
+        tokens.emplace_back(scan_token());
+    }
+
+    if (not tokens.empty() && tokens.back().type != TokenType::END_OF_LINE &&
+        tokens.back().type != TokenType::SEMICOLON) {
+        tokens.emplace_back(make_token(TokenType::END_OF_LINE, "\\n"));
+    }
+
+    tokens.emplace_back(make_token(TokenType::END_OF_FILE, "<EOF>"));
+    return tokens;
+}
