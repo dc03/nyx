@@ -20,8 +20,9 @@ struct Module {
     std::unordered_map<std::string_view, ClassStmt *> classes{};
     std::unordered_map<std::string_view, FunctionStmt *> functions{};
     std::vector<StmtNode> statements{};
-    std::vector<std::size_t> imported{}; // Indexes into Parser::parsed_modules (better than pointers)
+    std::vector<std::size_t> imported{}; // Indexes into `parsed_modules` in the current `CompilerContext`
 
+    Module() noexcept = default;
     explicit Module(std::string_view name, std::string_view dir) : name{name}, module_directory{dir} {}
 
     Module(const Module &) = default;
