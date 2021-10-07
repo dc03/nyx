@@ -9,6 +9,7 @@
 #include "AST/AST.hpp"
 #include "AST/Token.hpp"
 #include "Backend/VirtualMachine/Module.hpp"
+#include "Frontend/CompileContext.hpp"
 #include "Frontend/Scanner/Scanner.hpp"
 #include "ScopedManager.hpp"
 
@@ -48,11 +49,14 @@ class Parser {
         ParsePrecedence::of precedence{};
     };
 
+    CompileContext *ctx{};
+
     Scanner *scanner{};
     Token current_token{};
     Token next_token{};
 
     ParseRule rules[static_cast<std::size_t>(TokenType::END_OF_FILE) + 1];
+    void setup_rules() noexcept;
 
     Module &current_module;
     std::size_t current_module_depth{}; // The depth in the import tree where the parser is currently at
@@ -91,6 +95,8 @@ class Parser {
 
   public:
     static std::vector<std::pair<Module, std::size_t>> parsed_modules;
+
+    Parser(CompileContext *ctx, Scanner *scanner, Module *module, std::size_t current_depth);
 
     explicit Parser(Scanner *scanner, Module &module, std::size_t current_depth);
 

@@ -8,6 +8,7 @@
 
 #include "AST/AST.hpp"
 #include "Backend/VirtualMachine/Module.hpp"
+#include "Frontend/CompileContext.hpp"
 #include "ScopedManager.hpp"
 
 #include <string_view>
@@ -23,6 +24,8 @@ class TypeResolver final : Visitor {
         ClassStmt *class_{nullptr};
         std::size_t stack_slot{};
     };
+
+    CompileContext *ctx{};
 
     Module &current_module;
     const std::unordered_map<std::string_view, ClassStmt *> &classes;
