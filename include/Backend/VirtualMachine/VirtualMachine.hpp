@@ -6,6 +6,7 @@
 #ifndef VIRTUAL_MACHINE_HPP
 #define VIRTUAL_MACHINE_HPP
 
+#include "Backend/RuntimeContext.hpp"
 #include "Module.hpp"
 #include "Natives.hpp"
 #include "Value.hpp"
@@ -38,6 +39,8 @@ class VirtualMachine {
 
     Chunk *current_chunk{};
     RuntimeModule *current_module{};
+
+    RuntimeContext *ctx{};
 
     Chunk::InstructionSizeType read_next();
 

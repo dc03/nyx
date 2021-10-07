@@ -7,14 +7,19 @@
 #define CODE_GEN_HPP
 
 #include "AST/AST.hpp"
+#include "Backend/RuntimeContext.hpp"
 #include "Backend/VirtualMachine/Chunk.hpp"
 #include "Backend/VirtualMachine/Module.hpp"
 #include "Backend/VirtualMachine/Natives.hpp"
+#include "Frontend/CompileContext.hpp"
 
 #include <stack>
 #include <string_view>
 
 class Generator final : Visitor {
+    CompileContext *compile_ctx{};
+    RuntimeContext *runtime_ctx{};
+
     Chunk *current_chunk{nullptr};
     Module *current_module{nullptr};
     RuntimeModule *current_compiled{nullptr};
