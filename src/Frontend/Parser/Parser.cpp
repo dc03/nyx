@@ -5,6 +5,7 @@
 #include "Backend/VirtualMachine/Value.hpp"
 #include "Common.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
+#include "Frontend/CompileManager.hpp"
 #include "Frontend/Parser/TypeResolver.hpp"
 #include "Frontend/Scanner/Scanner.hpp"
 
@@ -75,8 +76,7 @@ void Parser::synchronize() {
     }
 }
 
-Parser::Parser(Scanner *scanner, Module &module, std::size_t current_depth)
-    : scanner{scanner}, current_module{module}, current_module_depth{current_depth} {
+void Parser::setup_rules() noexcept {
     // clang-format off
     add_rule(TokenType::COMMA,         {nullptr, &Parser::comma, ParsePrecedence::of::COMMA});
     add_rule(TokenType::EQUAL,         {nullptr, nullptr, ParsePrecedence::of::NONE});
@@ -157,6 +157,17 @@ Parser::Parser(Scanner *scanner, Module &module, std::size_t current_depth)
     add_rule(TokenType::END_OF_LINE,   {nullptr, nullptr, ParsePrecedence::of::NONE});
     add_rule(TokenType::END_OF_FILE,   {nullptr, nullptr, ParsePrecedence::of::NONE});
     // clang-format on
+}
+
+Parser::Parser(CompileContext *ctx, Scanner *scanner, Module *module, std::size_t current_depth)
+    : ctx{ctx}, scanner{scanner}, current_module{*module}, current_module_depth{current_depth} {
+    setup_rules();
+    advance();
+}
+
+Parser::Parser(Scanner *scanner, Module &module, std::size_t current_depth)
+    : scanner{scanner}, current_module{module}, current_module_depth{current_depth} {
+    setup_rules();
     advance();
 }
 
