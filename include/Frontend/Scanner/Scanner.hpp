@@ -91,7 +91,8 @@ class Scanner {
 
   public:
     Scanner();
-    explicit Scanner(std::string_view source);
+    void set_source(std::string_view source_);
+    void reset();
 
     [[nodiscard]] bool is_at_end() const noexcept;
 

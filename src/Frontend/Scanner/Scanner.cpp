@@ -15,8 +15,17 @@ Scanner::Scanner() {
     }
 }
 
-Scanner::Scanner(std::string_view source) : Scanner() {
-    this->source = source;
+void Scanner::set_source(std::string_view source_) {
+    source = source_;
+}
+
+void Scanner::reset() {
+    line = 1;
+    current_token_start = 0;
+    current_token_end = 0;
+    paren_depth = 0;
+    current_token = Token{};
+    next_token = Token{};
 }
 
 char Scanner::advance() {
