@@ -17,8 +17,6 @@
 #include <type_traits>
 #include <utility>
 
-std::vector<std::pair<Module, std::size_t>> Parser::parsed_modules{};
-
 struct ParseException : public std::invalid_argument {
     Token token{};
     explicit ParseException(Token token, const std::string_view error)
@@ -160,13 +158,7 @@ void Parser::setup_rules() noexcept {
 }
 
 Parser::Parser(CompileContext *ctx, Scanner *scanner, Module *module, std::size_t current_depth)
-    : ctx{ctx}, scanner{scanner}, current_module{*module}, current_module_depth{current_depth} {
-    setup_rules();
-    advance();
-}
-
-Parser::Parser(Scanner *scanner, Module &module, std::size_t current_depth)
-    : scanner{scanner}, current_module{module}, current_module_depth{current_depth} {
+    : ctx{ctx}, scanner{scanner}, current_module{module}, current_module_depth{current_depth} {
     setup_rules();
     advance();
 }
@@ -222,10 +214,10 @@ void Parser::consume(std::string_view message, const Token &where, Args... args)
     }
 }
 
-void recursively_change_module_depth(std::pair<Module, std::size_t> &module, std::size_t value) {
+void Parser::recursively_change_module_depth(std::pair<Module, std::size_t> &module, std::size_t value) {
     module.second = value;
     for (std::size_t imported : module.first.imported) {
-        recursively_change_module_depth(Parser::parsed_modules[imported], value + 1);
+        recursively_change_module_depth(ctx->parsed_modules[imported], value + 1);
     }
 }
 
@@ -627,7 +619,7 @@ StmtNode Parser::declaration() {
 StmtNode Parser::class_declaration() {
     consume("Expected class name after 'class' keyword", TokenType::IDENTIFIER);
 
-    if (current_module.classes.find(current_token.lexeme) != current_module.classes.end()) {
+    if (current_module->classes.find(current_token.lexeme) != current_module->classes.end()) {
         throw_parse_error("Class already defined");
     }
 
@@ -700,7 +692,7 @@ StmtNode Parser::class_declaration() {
     consume("Expected '}' at the end of class declaration", TokenType::RIGHT_BRACE);
     auto *class_definition = allocate_node(ClassStmt, std::move(name), ctor, dtor, std::move(members),
         std::move(methods), std::move(member_map), std::move(method_map));
-    current_module.classes[class_definition->name.lexeme] = class_definition;
+    current_module->classes[class_definition->name.lexeme] = class_definition;
 
     return StmtNode{class_definition};
 }
@@ -710,7 +702,7 @@ StmtNode Parser::function_declaration() {
 
     consume("Expected function name after 'fn' keyword", TokenType::IDENTIFIER);
 
-    if (not in_class && current_module.functions.find(current_token.lexeme) != current_module.functions.end()) {
+    if (not in_class && current_module->functions.find(current_token.lexeme) != current_module->functions.end()) {
         throw_parse_error("Function already defined");
     } else if (in_class) {
         bool matches_any = std::any_of(current_methods->cbegin(), current_methods->cend(),
@@ -770,7 +762,7 @@ StmtNode Parser::function_declaration() {
     }
 
     if (not in_class && scope_depth == 0) {
-        current_module.functions[function_definition->name.lexeme] = function_definition;
+        current_module->functions[function_definition->name.lexeme] = function_definition;
     }
 
     return StmtNode{function_definition};
@@ -782,51 +774,57 @@ StmtNode Parser::import_statement() {
     Token imported = current_token;
     consume("Expected ';' or newline after imported file", current_token, TokenType::SEMICOLON, TokenType::END_OF_LINE);
 
-    std::string imported_dir = imported.lexeme[0] == '/' ? "" : current_module.module_directory;
+    //    std::string imported_dir = imported.lexeme[0] == '/' ? "" : current_module->module_directory;
+    //
+    //    std::ifstream module{imported_dir + imported.lexeme, std::ios::in};
+    //    std::size_t name_index = imported.lexeme.find_last_of('/');
+    //    std::string module_name = imported.lexeme.substr(name_index != std::string::npos ? name_index + 1 : 0);
+    //    if (not module.is_open()) {
+    //        error({"Unable to open module '", module_name, "'"}, imported);
+    //        return {nullptr};
+    //    }
+    //
+    //    if (module_name == current_module->name) {
+    //        error({"Cannot import module with the same name as the current one"}, imported);
+    //    }
+    //
+    //    std::string module_source{std::istreambuf_iterator<char>{module}, std::istreambuf_iterator<char>{}};
+    //    Module imported_module{module_name, imported_dir};
+    CompileManager manager{ctx, imported.lexeme, false, current_module_depth + 1};
 
-    std::ifstream module{imported_dir + imported.lexeme, std::ios::in};
-    std::size_t name_index = imported.lexeme.find_last_of('/');
-    std::string module_name = imported.lexeme.substr(name_index != std::string::npos ? name_index + 1 : 0);
-    if (not module.is_open()) {
-        error({"Unable to open module '", module_name, "'"}, imported);
-        return {nullptr};
-    }
-
-    if (module_name == current_module.name) {
-        error({"Cannot import module with the same name as the current one"}, imported);
-    }
-
-    std::string module_source{std::istreambuf_iterator<char>{module}, std::istreambuf_iterator<char>{}};
-    Module imported_module{module_name, imported_dir};
     std::string_view logger_source{logger.source};
     std::string_view logger_module_name{logger.module_name};
 
-    auto it = std::find_if(parsed_modules.begin(), parsed_modules.end(),
-        [&module_name](const std::pair<Module, std::size_t> &pair) { return module_name == pair.first.name; });
+    auto it = std::find_if(ctx->parsed_modules.begin(), ctx->parsed_modules.end(),
+        [&manager](const std::pair<Module, std::size_t> &pair) { return manager.module_name() == pair.first.name; });
 
     // Avoid parsing a module if its already imported
-    if (it != parsed_modules.end()) {
+    if (it != ctx->parsed_modules.end()) {
         if (it->second < (current_module_depth + 1)) {
             recursively_change_module_depth(*it, current_module_depth + 1);
         }
-        current_module.imported.push_back(it - parsed_modules.begin());
+        current_module->imported.push_back(it - ctx->parsed_modules.begin());
+
         return {nullptr};
     }
 
     try {
-        logger.set_source(module_source);
-        logger.set_module_name(module_name);
-        Scanner scanner_{module_source};
-        Parser parser{&scanner_, imported_module, current_module_depth + 1};
-        imported_module.statements = parser.program();
-        TypeResolver resolver{imported_module};
-        resolver.check(imported_module.statements);
+        manager.parse_module();
+        manager.check_module();
+
+        logger.set_source(logger_source);
+        logger.set_module_name(logger_module_name);
+        ctx->parsed_modules.emplace_back(manager.move_module(), current_module_depth + 1);
+        current_module->imported.push_back(ctx->parsed_modules.size() - 1);
+        //        logger.set_source(module_source);
+        //        logger.set_module_name(module_name);
+        //        Scanner scanner_{module_source};
+        //        Parser parser{&scanner_, imported_module, current_module_depth + 1};
+        //        imported_module.statements = parser.program();
+        //        TypeResolver resolver{&imported_module};
+        //        resolver.check(imported_module.statements);
     } catch (const ParseException &) {}
 
-    logger.set_source(logger_source);
-    logger.set_module_name(logger_module_name);
-    parsed_modules.emplace_back(std::move(imported_module), current_module_depth + 1);
-    current_module.imported.push_back(parsed_modules.size() - 1);
     return {nullptr};
 }
 

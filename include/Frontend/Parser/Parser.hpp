@@ -58,7 +58,7 @@ class Parser {
     ParseRule rules[static_cast<std::size_t>(TokenType::END_OF_FILE) + 1];
     void setup_rules() noexcept;
 
-    Module &current_module;
+    Module *current_module{};
     std::size_t current_module_depth{}; // The depth in the import tree where the parser is currently at
     std::size_t scope_depth{};
 
@@ -93,12 +93,11 @@ class Parser {
     StmtNode single_token_statement(std::string_view token, bool condition, std::string_view error_message);
     IdentifierTuple ident_tuple();
 
+    void recursively_change_module_depth(std::pair<Module, std::size_t> &module, std::size_t value);
+
   public:
-    static std::vector<std::pair<Module, std::size_t>> parsed_modules;
-
+    Parser() noexcept = default;
     Parser(CompileContext *ctx, Scanner *scanner, Module *module, std::size_t current_depth);
-
-    explicit Parser(Scanner *scanner, Module &module, std::size_t current_depth);
 
     std::vector<StmtNode> program();
 
