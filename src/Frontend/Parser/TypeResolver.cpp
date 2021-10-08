@@ -24,8 +24,7 @@ class ScopedScopeManager {
     ~ScopedScopeManager() { resolver.end_scope(); }
 };
 
-TypeResolver::TypeResolver(Module &module)
-    : current_module{module}, classes{module.classes}, functions{module.functions} {}
+TypeResolver::TypeResolver(CompileContext *ctx, Module *module) : ctx{ctx}, current_module{module} {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -110,7 +109,7 @@ ExprNode TypeResolver::generate_scope_access(ClassStmt *stmt, Token name) {
 }
 
 ClassStmt *TypeResolver::find_class(const std::string &class_name) {
-    if (auto class_ = classes.find(class_name); class_ != classes.end()) {
+    if (auto class_ = current_module->classes.find(class_name); class_ != current_module->classes.end()) {
         return class_->second;
     }
 
@@ -118,7 +117,7 @@ ClassStmt *TypeResolver::find_class(const std::string &class_name) {
 }
 
 FunctionStmt *TypeResolver::find_function(const std::string &function_name) {
-    if (auto func = functions.find(function_name); func != functions.end()) {
+    if (auto func = current_module->functions.find(function_name); func != current_module->functions.end()) {
         return func->second;
     }
 
@@ -973,7 +972,7 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
         }
 
         case ExprSynthesizedAttrs::ScopeType::MODULE: {
-            auto &module = Parser::parsed_modules[left.module_index].first;
+            auto &module = ctx->parsed_modules[left.module_index].first;
             if (auto class_ = module.classes.find(expr.name.lexeme); class_ != module.classes.end()) {
                 return expr.synthesized_attrs = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_->second,
                            expr.synthesized_attrs.token};
@@ -995,8 +994,8 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(ScopeNameExpr &expr) {
-    for (std::size_t i{0}; i < Parser::parsed_modules.size(); i++) {
-        if (Parser::parsed_modules[i].first.name.substr(0, Parser::parsed_modules[i].first.name.find_last_of('.')) ==
+    for (std::size_t i{0}; i < ctx->parsed_modules.size(); i++) {
+        if (ctx->parsed_modules[i].first.name.substr(0, ctx->parsed_modules[i].first.name.find_last_of('.')) ==
             expr.name.lexeme) {
             return expr.synthesized_attrs = {
                        make_new_type<PrimitiveType>(Type::MODULE, true, false), i, expr.synthesized_attrs.token};

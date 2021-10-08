@@ -27,9 +27,7 @@ class TypeResolver final : Visitor {
 
     CompileContext *ctx{};
 
-    Module &current_module;
-    const std::unordered_map<std::string_view, ClassStmt *> &classes;
-    const std::unordered_map<std::string_view, FunctionStmt *> &functions;
+    Module *current_module{};
     std::vector<TypeNode> type_scratch_space{};
     std::vector<Value> values{};
 
@@ -90,7 +88,8 @@ class TypeResolver final : Visitor {
     BaseTypeVisitorType resolve(BaseType *type);
 
   public:
-    explicit TypeResolver(Module &module);
+    TypeResolver() noexcept = default;
+    TypeResolver(CompileContext *ctx, Module *module);
 
     void check(std::vector<StmtNode> &program);
 
