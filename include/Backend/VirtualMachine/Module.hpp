@@ -9,21 +9,25 @@
 #include "AST/AST.hpp"
 #include "Chunk.hpp"
 
+#include <filesystem>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 struct Module {
     std::string name{};
-    std::string module_directory{};
+    std::filesystem::path module_directory{};
+    std::string source{};
     std::unordered_map<std::string_view, ClassStmt *> classes{};
     std::unordered_map<std::string_view, FunctionStmt *> functions{};
     std::vector<StmtNode> statements{};
     std::vector<std::size_t> imported{}; // Indexes into `parsed_modules` in the current `CompilerContext`
 
     Module() noexcept = default;
-    explicit Module(std::string_view name, std::string_view dir) : name{name}, module_directory{dir} {}
+    explicit Module(std::string_view name, std::filesystem::path dir, std::string source)
+        : name{name}, module_directory{std::move(dir)}, source{std::move(source)} {}
 
     Module(const Module &) = default;
     Module &operator=(const Module &) = default;
