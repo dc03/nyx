@@ -8,12 +8,18 @@
 
 #include <algorithm>
 
-std::vector<RuntimeModule> Generator::compiled_modules{};
-
 Generator::Generator() {
     for (auto &[name, wrapper] : native_wrappers.get_all_natives()) {
         natives[name] = wrapper->get_native();
     }
+}
+
+void Generator::set_compile_ctx(CompileContext *compile_ctx_) {
+    compile_ctx = compile_ctx_;
+}
+
+void Generator::set_runtime_ctx(RuntimeContext *runtime_ctx_) {
+    runtime_ctx = runtime_ctx_;
 }
 
 void Generator::begin_scope() {
@@ -78,6 +84,7 @@ void Generator::patch_jump(std::size_t jump_idx, std::size_t jump_amount) {
 RuntimeModule Generator::compile(Module &module) {
     begin_scope();
     RuntimeModule compiled{};
+    compiled.name = module.name;
     current_chunk = &compiled.top_level_code;
     current_module = &module;
     current_compiled = &compiled;

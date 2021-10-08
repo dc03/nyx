@@ -69,9 +69,11 @@ class Generator final : Visitor {
     BaseTypeVisitorType compile(BaseType *type);
 
   public:
-    static std::vector<RuntimeModule> compiled_modules;
-
     Generator();
+
+    void set_compile_ctx(CompileContext *compile_ctx_);
+    void set_runtime_ctx(RuntimeContext *runtime_ctx_);
+
     RuntimeModule compile(Module &module);
 
     ExprVisitorType visit(AssignExpr &expr) override final;

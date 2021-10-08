@@ -57,11 +57,15 @@ class VirtualMachine {
     void copy_into(Value::ListType *list, Value::ListType *what);
 
   public:
+    // TODO: add proper config for this
+    VirtualMachine() : VirtualMachine(false, false) {}
     VirtualMachine(bool trace_stack, bool trace_insn);
     ~VirtualMachine() = default;
 
     VirtualMachine(const VirtualMachine &) = delete;
     VirtualMachine &operator=(const VirtualMachine &) = delete;
+
+    void set_runtime_ctx(RuntimeContext *ctx_);
 
     void run(RuntimeModule &module);
     ExecutionState step();

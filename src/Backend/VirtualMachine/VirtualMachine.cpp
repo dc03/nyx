@@ -23,6 +23,10 @@ VirtualMachine::VirtualMachine(bool trace_stack, bool trace_insn)
     frames[0] = CallFrame{&stack[0], {}};
 }
 
+void VirtualMachine::set_runtime_ctx(RuntimeContext *ctx_) {
+    ctx = ctx_;
+}
+
 Chunk::InstructionSizeType VirtualMachine::read_next() {
     return *(ip++);
 }
