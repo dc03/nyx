@@ -15,8 +15,27 @@ std::ostream &print_tab(std::size_t quantity, std::size_t tab_size = 8) {
     return std::cout;
 }
 
-void disassemble(Chunk &chunk, std::string_view name) {
-    std::cout << '\n' << "==== " << name << " ====\n";
+void disassemble_ctx(RuntimeContext *ctx) {
+    if (ctx->main != nullptr) {
+        std::cout << "\n--<==== Main Module ====>--";
+        disassemble_module(ctx->main);
+    }
+
+    for (RuntimeModule &module : ctx->compiled_modules) {
+        disassemble_module(&module);
+    }
+}
+
+void disassemble_module(RuntimeModule *module) {
+    std::cout << "\n -<==== Module : " << module->name << " ====>-\n";
+    disassemble_chunk(module->top_level_code, module->name, "<top-level-code>");
+    for (auto &[name, function] : module->functions) {
+        disassemble_chunk(function.code, module->name, name);
+    }
+}
+
+void disassemble_chunk(Chunk &chunk, std::string_view module_name, std::string_view name) {
+    std::cout << '\n' << "==== " << module_name << "$" << name << " ====\n";
     std::cout << "Line    Hexa  ";
     print_tab(1, 4) << "  Byte  ";
     print_tab(1, 4) << "Instruction (For multi byte instructions: hex first, then decimal)\n";
