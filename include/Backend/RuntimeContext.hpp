@@ -12,6 +12,8 @@
 #include <vector>
 
 struct RuntimeContext {
+    RuntimeModule *main{};
+
     std::vector<RuntimeModule> compiled_modules{};
 };
 

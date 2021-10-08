@@ -6,15 +6,25 @@
 #ifndef RUNTIME_MANAGER_HPP
 #define RUNTIME_MANAGER_HPP
 
+#include "Backend/CodeGen/CodeGen.hpp"
 #include "Backend/RuntimeContext.hpp"
 #include "Backend/VirtualMachine/VirtualMachine.hpp"
-#include "Backend/CodeGen/CodeGen.hpp"
 
 class RuntimeManager {
     RuntimeContext *ctx{};
 
+    RuntimeModule main{};
+
     Generator generator{};
     VirtualMachine vm{};
+
+  public:
+    RuntimeManager() = default;
+    explicit RuntimeManager(RuntimeContext *ctx);
+
+    void compile(CompileContext *compile_ctx);
+    void disassemble();
+    void run();
 };
 
 #endif
