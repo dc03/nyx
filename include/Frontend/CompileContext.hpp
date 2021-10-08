@@ -9,10 +9,13 @@
 #include "Backend/VirtualMachine/Module.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
 
+#include <filesystem>
 #include <vector>
 
 struct CompileContext {
-    std::size_t main_module{};
+    Module *main{};
+    std::filesystem::path main_parent_path{};
+
     std::vector<std::pair<Module, std::size_t>> parsed_modules{};
 };
 
