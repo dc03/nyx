@@ -1,66 +1,52 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 #include "AST/ASTPrinter.hpp"
-#include "Backend/CodeGen/CodeGen.hpp"
-#include "Backend/VirtualMachine/Disassembler.hpp"
-#include "Backend/VirtualMachine/VirtualMachine.hpp"
+#include "Backend/RuntimeManager.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
-#include "Frontend/Parser/Parser.hpp"
-#include "Frontend/Parser/TypeResolver.hpp"
-#include "Frontend/Scanner/Scanner.hpp"
+#include "Frontend/CompileManager.hpp"
 
-#include <algorithm>
 #include <cxxopts.hpp>
-#include <fstream>
 #include <iostream>
 
 void run_module(const char *const main_module, cxxopts::ParseResult &result) {
-    std::string main_path{main_module};
-    std::ifstream file(main_path, std::ios::in);
-    std::string source{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
+    CompileContext compile_ctx{};
+    CompileManager compile_manager{&compile_ctx, main_module, true, 0};
 
-    std::size_t path_index = main_path.find_last_of('/');
-    std::string main_dir = main_path.substr(0, path_index);
-    std::string main_name = main_path.substr(path_index + 1);
+    compile_manager.parse_module();
+    compile_manager.check_module();
 
-    logger.set_module_name(main_name);
-    logger.set_source(source);
-    Scanner scanner{source};
-    Module main{main_name, main_dir + "/"};
-
-    Parser parser{&scanner, main, 0};
-    TypeResolver resolver{main};
-    main.statements = parser.program();
-    resolver.check(main.statements);
     if (result.count("dump-ast")) {
-        ASTPrinter{}.print_stmts(main.statements);
+        ASTPrinter{}.print_stmts(compile_manager.get_module().statements);
     }
 
     if (not result.count("check") && not logger.had_error) {
-        std::sort(Parser::parsed_modules.begin(), Parser::parsed_modules.end(),
-            [](const auto &x1, const auto &x2) { return x1.second > x2.second; });
+        RuntimeContext runtime_ctx{};
+        RuntimeManager runtime_manager{&runtime_ctx};
 
-        for (auto &module : Parser::parsed_modules) {
+        for (auto &module : compile_ctx.parsed_modules) {
             std::cout << module.first.name << " -> depth: " << module.second << "\n";
         }
 
-        Generator generator{};
-        for (auto &module : Parser::parsed_modules) {
-            Generator::compiled_modules.emplace_back(generator.compile(module.first));
-        }
-        RuntimeModule main_compiled = generator.compile(main);
-        main_compiled.top_level_code.emit_instruction(Instruction::HALT, 0);
+        runtime_manager.compile(&compile_ctx);
+//        Generator generator{};
+//        for (auto &module : compile_ctx.parsed_modules) {
+//            Generator::compiled_modules.emplace_back(generator.compile(module.first));
+//        }
+//        RuntimeModule main_compiled = generator.compile(compile_manager.get_module());
+//        main_compiled.top_level_code.emit_instruction(Instruction::HALT, 0);
 
         if (result.count("disassemble-code")) {
-            disassemble(main_compiled.top_level_code, main_name);
-            std::cout << '\n';
-            for (auto &[function_name, function] : main_compiled.functions) {
-                disassemble(function.code, function_name);
-            }
+//            disassemble_chunk(main_compiled.top_level_code, compile_manager.get_module().name);
+//            std::cout << '\n';
+//            for (auto &[function_name, function] : main_compiled.functions) {
+//                disassemble_chunk(function.code, function_name);
+//            }
+            runtime_manager.disassemble();
         }
 
-        VirtualMachine vm{!!result.count("trace-exec-stack"), !!result.count("trace-exec-insn")};
-        vm.run(main_compiled);
+//        VirtualMachine vm{!!result.count("trace-exec-stack"), !!result.count("trace-exec-insn")};
+//        vm.run(main_compiled);
+        runtime_manager.run();
     }
 }
 
