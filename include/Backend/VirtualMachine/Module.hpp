@@ -36,6 +36,8 @@ struct Module {
     ~Module() = default;
 };
 
+struct RuntimeModule;
+
 struct RuntimeFunction {
     Chunk code{};
     std::size_t arity{};
@@ -46,6 +48,24 @@ struct RuntimeModule {
     Chunk top_level_code{};
     std::unordered_map<std::string, RuntimeFunction> functions{};
     std::string name{};
+
+    RuntimeModule() noexcept = default;
+
+    RuntimeModule(RuntimeModule &&other) noexcept
+        : top_level_code{std::move(other.top_level_code)},
+          functions{std::move(other.functions)},
+          name{std::move(other.name)} {}
+
+    RuntimeModule &operator=(RuntimeModule &&other) noexcept {
+        top_level_code = std::move(other.top_level_code);
+        functions = std::move(other.functions);
+        name = std::move(other.name);
+        return *this;
+    }
+
+    RuntimeModule(const RuntimeModule &other) = delete;
+
+    RuntimeModule &operator=(const RuntimeModule &other) = delete;
 };
 
 #endif
