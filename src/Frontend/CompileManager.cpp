@@ -15,10 +15,10 @@ CompileManager::CompileManager(CompileContext *ctx, fs::path path, bool is_main,
     }
 
     if (fs::is_directory(path)) {
-        ctx->logger.compile_error({"'", std::string{path}, "' represents a directory, not a file"});
+        ctx->logger.fatal_error({"'", std::string{path}, "' represents a directory, not a file"});
         return;
     } else if (not fs::exists(path)) {
-        ctx->logger.compile_error({"No such file: '", std::string{path}, "'"});
+        ctx->logger.fatal_error({"No such file: '", std::string{path}, "'"});
         return;
     }
 
@@ -33,7 +33,7 @@ CompileManager::CompileManager(CompileContext *ctx, fs::path path, bool is_main,
 
     std::ifstream file(module_path, std::ios::in);
     if (not file.is_open()) {
-        ctx->logger.compile_error({"Unable to open module '", module_name.c_str(), "'"});
+        ctx->logger.fatal_error({"Unable to open module '", module_name.c_str(), "'"});
     }
 
     std::string source{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};

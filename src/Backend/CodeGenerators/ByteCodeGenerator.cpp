@@ -74,7 +74,7 @@ void ByteCodeGenerator::add_to_scope(const BaseType *type) {
 
 void ByteCodeGenerator::patch_jump(std::size_t jump_idx, std::size_t jump_amount) {
     if (jump_amount >= Chunk::const_long_max) {
-        compile_ctx->logger.compile_error({"Size of jump is greater than that allowed by the instruction set"});
+        compile_ctx->logger.fatal_error({"Size of jump is greater than that allowed by the instruction set"});
         return;
     }
 
@@ -1096,7 +1096,7 @@ ExprVisitorType ByteCodeGenerator::visit(VariableExpr &expr) {
                 }
                 emit_stack_slot(expr.synthesized_attrs.stack_slot);
             } else {
-                compile_ctx->logger.compile_error({"Too many variables in current scope"});
+                compile_ctx->logger.fatal_error({"Too many variables in current scope"});
             }
             return {};
         case IdentifierType::FUNCTION:

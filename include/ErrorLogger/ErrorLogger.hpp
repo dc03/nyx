@@ -26,7 +26,7 @@ class ErrorLogger {
     void error(Module *module, const std::vector<std::string> &message, const Token &where);
     void runtime_error(std::string_view message, std::size_t line_number);
     void note(Module *module, const std::vector<std::string> &message);
-    void compile_error(std::vector<std::string> message);
+    void fatal_error(std::vector<std::string> message);
 
     [[nodiscard]] bool had_error() const noexcept;
     [[nodiscard]] bool had_runtime_error() const noexcept;

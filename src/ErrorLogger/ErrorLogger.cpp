@@ -80,7 +80,7 @@ void ErrorLogger::note(Module *module, const std::vector<std::string> &message) 
     std::cerr << '\n';
 }
 
-void ErrorLogger::compile_error(std::vector<std::string> message) {
+void ErrorLogger::fatal_error(std::vector<std::string> message) {
     std::cerr << "\n!-| Compile error: ";
     for (const std::string &str : message) {
         std::cerr << str;
