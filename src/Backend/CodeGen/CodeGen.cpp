@@ -85,6 +85,7 @@ RuntimeModule Generator::compile(Module &module) {
     begin_scope();
     RuntimeModule compiled{};
     compiled.name = module.name;
+    compiled.path = module.full_path;
     current_chunk = &compiled.top_level_code;
     current_module = &module;
     current_compiled = &compiled;
@@ -123,7 +124,13 @@ void Generator::emit_stack_slot(std::size_t value) {
 
 void Generator::emit_destructor_call(ClassStmt *class_, std::size_t line) {
     current_chunk->emit_string(mangle_function(*class_->dtor), line);
-    current_chunk->emit_instruction(Instruction::LOAD_FUNCTION, line);
+    if (current_module == compile_ctx->get_module_path(class_->module_path)) {
+        current_chunk->emit_instruction(Instruction::LOAD_FUNCTION_SAME_MODULE, line);
+    } else {
+        current_chunk->emit_instruction(Instruction::LOAD_FUNCTION_MODULE_INDEX, line);
+        assert(runtime_ctx->get_module_path(class_->module_path) != nullptr);
+        emit_operand(runtime_ctx->get_module_index_path(class_->module_path));
+    }
     current_chunk->emit_instruction(Instruction::CALL_FUNCTION, line);
 }
 
@@ -234,6 +241,10 @@ std::string Generator::mangle_scope_access(ScopeAccessExpr &expr) {
     }
 
     unreachable();
+}
+
+std::string Generator::mangle_member_access(ClassStmt *class_, std::string &name) {
+    return class_->name.lexeme + "@" + name;
 }
 
 ExprVisitorType Generator::compile(Expr *expr) {
@@ -853,8 +864,43 @@ ExprVisitorType Generator::visit(MoveExpr &expr) {
 }
 
 ExprVisitorType Generator::visit(ScopeAccessExpr &expr) {
-    current_chunk->emit_string(mangle_scope_access(expr), expr.synthesized_attrs.token.line);
-    current_chunk->emit_instruction(Instruction::LOAD_FUNCTION, expr.synthesized_attrs.token.line);
+    if (expr.scope->synthesized_attrs.scope_type == ExprSynthesizedAttrs::ScopeAccessType::MODULE_CLASS) {
+        assert(expr.scope->type_tag() == NodeType::ScopeAccessExpr);
+        auto *access = dynamic_cast<ScopeAccessExpr *>(expr.scope.get());
+        assert(access->scope->type_tag() == NodeType::ScopeNameExpr && "Only X::Y::Z allowed for now");
+        auto *module = dynamic_cast<ScopeNameExpr *>(access->scope.get());
+        ClassStmt *class_ = access->synthesized_attrs.class_;
+
+        current_chunk->emit_string(mangle_member_access(class_, expr.name.lexeme), expr.synthesized_attrs.token.line);
+        current_chunk->emit_instruction(
+            Instruction::LOAD_FUNCTION_MODULE_INDEX, expr.scope->synthesized_attrs.token.line);
+
+        assert(runtime_ctx->get_module_path(module->module_path) != nullptr);
+
+        emit_operand(runtime_ctx->get_module_index_path(module->module_path));
+    } else if (expr.scope->synthesized_attrs.scope_type == ExprSynthesizedAttrs::ScopeAccessType::MODULE) {
+        current_chunk->emit_string(expr.name.lexeme, expr.name.line);
+        current_chunk->emit_instruction(
+            Instruction::LOAD_FUNCTION_MODULE_INDEX, expr.scope->synthesized_attrs.token.line);
+
+        assert(expr.scope->type_tag() == NodeType::ScopeNameExpr);
+        auto *module = dynamic_cast<ScopeNameExpr *>(expr.scope.get());
+
+        assert(runtime_ctx->get_module_path(module->module_path) != nullptr);
+
+        emit_operand(runtime_ctx->get_module_index_path(module->module_path));
+    } else if (expr.scope->synthesized_attrs.scope_type == ExprSynthesizedAttrs::ScopeAccessType::CLASS) {
+        assert(expr.scope->type_tag() == NodeType::ScopeNameExpr);
+        current_chunk->emit_string(mangle_scope_access(expr), expr.synthesized_attrs.token.line);
+        if (expr.synthesized_attrs.class_->module_path == current_module->full_path) {
+            current_chunk->emit_instruction(Instruction::LOAD_FUNCTION_SAME_MODULE, expr.synthesized_attrs.token.line);
+        } else {
+            current_chunk->emit_instruction(Instruction::LOAD_FUNCTION_MODULE_INDEX, expr.synthesized_attrs.token.line);
+            emit_operand(runtime_ctx->get_module_index_path(expr.synthesized_attrs.class_->module_path));
+        }
+    } else {
+        unreachable();
+    }
     return {};
 }
 
@@ -1048,7 +1094,7 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
             return {};
         case IdentifierType::FUNCTION:
             current_chunk->emit_string(expr.name.lexeme, expr.name.line);
-            current_chunk->emit_instruction(Instruction::LOAD_FUNCTION, expr.name.line);
+            current_chunk->emit_instruction(Instruction::LOAD_FUNCTION_SAME_MODULE, expr.name.line);
             return {};
         case IdentifierType::CLASS: break;
     }

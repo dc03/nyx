@@ -63,6 +63,7 @@ class Generator final : Visitor {
 
     std::string mangle_function(FunctionStmt &stmt);
     std::string mangle_scope_access(ScopeAccessExpr &expr);
+    std::string mangle_member_access(ClassStmt *class_, std::string &name);
 
     ExprVisitorType compile(Expr *expr);
     StmtVisitorType compile(Stmt *stmt);
