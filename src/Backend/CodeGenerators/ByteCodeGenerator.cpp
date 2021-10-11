@@ -124,7 +124,10 @@ void ByteCodeGenerator::emit_stack_slot(std::size_t value) {
 
 void ByteCodeGenerator::emit_destructor_call(ClassStmt *class_, std::size_t line) {
     current_chunk->emit_string(mangle_function(*class_->dtor), line);
-    if (current_module == compile_ctx->get_module_path(class_->module_path)) {
+
+    // A class can either be compiled in an imported module or within the main module
+    // These checks have to be distinct because the main module is tracked separately from imported modules
+    if (current_module->full_path == class_->module_path || compile_ctx->main->full_path == class_->module_path) {
         current_chunk->emit_instruction(Instruction::LOAD_FUNCTION_SAME_MODULE, line);
     } else {
         current_chunk->emit_instruction(Instruction::LOAD_FUNCTION_MODULE_INDEX, line);
