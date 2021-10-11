@@ -6,7 +6,7 @@
 #ifndef RUNTIME_MANAGER_HPP
 #define RUNTIME_MANAGER_HPP
 
-#include "Backend/CodeGen/CodeGen.hpp"
+#include "Backend/CodeGenerators/ByteCodeGenerator.hpp"
 #include "Backend/RuntimeContext.hpp"
 #include "Backend/VirtualMachine/VirtualMachine.hpp"
 
@@ -15,7 +15,7 @@ class RuntimeManager {
 
     RuntimeModule main{};
 
-    Generator generator{};
+    ByteCodeGenerator generator{};
     VirtualMachine vm{};
 
   public:

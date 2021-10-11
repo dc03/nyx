@@ -6,7 +6,7 @@
 #ifndef COMPILE_MANAGER_HPP
 #define COMPILE_MANAGER_HPP
 
-#include "Backend/CodeGen/CodeGen.hpp"
+#include "Backend/CodeGenerators/ByteCodeGenerator.hpp"
 #include "Frontend/CompileContext.hpp"
 #include "Frontend/Parser/Parser.hpp"
 #include "Frontend/Parser/TypeResolver.hpp"

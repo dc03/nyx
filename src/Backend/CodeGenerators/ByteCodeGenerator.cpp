@@ -1,6 +1,6 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Backend/CodeGen/CodeGen.hpp"
+#include "Backend/CodeGenerators/ByteCodeGenerator.hpp"
 
 #include "Backend/VirtualMachine/Value.hpp"
 #include "Common.hpp"
@@ -8,37 +8,37 @@
 
 #include <algorithm>
 
-Generator::Generator() {
+ByteCodeGenerator::ByteCodeGenerator() {
     for (auto &[name, wrapper] : native_wrappers.get_all_natives()) {
         natives[name] = wrapper->get_native();
     }
 }
 
-void Generator::set_compile_ctx(CompileContext *compile_ctx_) {
+void ByteCodeGenerator::set_compile_ctx(CompileContext *compile_ctx_) {
     compile_ctx = compile_ctx_;
 }
 
-void Generator::set_runtime_ctx(RuntimeContext *runtime_ctx_) {
+void ByteCodeGenerator::set_runtime_ctx(RuntimeContext *runtime_ctx_) {
     runtime_ctx = runtime_ctx_;
 }
 
-void Generator::begin_scope() {
+void ByteCodeGenerator::begin_scope() {
     current_scope_depth++;
 }
 
-void Generator::remove_topmost_scope() {
+void ByteCodeGenerator::remove_topmost_scope() {
     while (not scopes.empty() && scopes.back().second == current_scope_depth) {
         scopes.pop_back();
     }
     current_scope_depth--;
 }
 
-void Generator::end_scope() {
+void ByteCodeGenerator::end_scope() {
     destroy_locals(current_scope_depth);
     remove_topmost_scope();
 }
 
-void Generator::destroy_locals(std::size_t until_scope) {
+void ByteCodeGenerator::destroy_locals(std::size_t until_scope) {
     for (auto begin = scopes.crbegin(); begin != scopes.crend() && begin->second >= until_scope; begin++) {
         if (begin->first->primitive == Type::STRING) {
             current_chunk->emit_instruction(Instruction::POP_STRING, 0);
@@ -68,11 +68,11 @@ void Generator::destroy_locals(std::size_t until_scope) {
     }
 }
 
-void Generator::add_to_scope(const BaseType *type) {
+void ByteCodeGenerator::add_to_scope(const BaseType *type) {
     scopes.emplace_back(type, current_scope_depth);
 }
 
-void Generator::patch_jump(std::size_t jump_idx, std::size_t jump_amount) {
+void ByteCodeGenerator::patch_jump(std::size_t jump_idx, std::size_t jump_amount) {
     if (jump_amount >= Chunk::const_long_max) {
         compile_error({"Size of jump is greater than that allowed by the instruction set"});
         return;
@@ -81,7 +81,7 @@ void Generator::patch_jump(std::size_t jump_idx, std::size_t jump_amount) {
     current_chunk->bytes[jump_idx] |= jump_amount & 0x00ff'ffff;
 }
 
-RuntimeModule Generator::compile(Module &module) {
+RuntimeModule ByteCodeGenerator::compile(Module &module) {
     begin_scope();
     RuntimeModule compiled{};
     compiled.name = module.name;
@@ -102,7 +102,7 @@ RuntimeModule Generator::compile(Module &module) {
     return compiled;
 }
 
-void Generator::emit_conversion(NumericConversionType conversion_type, std::size_t line_number) {
+void ByteCodeGenerator::emit_conversion(NumericConversionType conversion_type, std::size_t line_number) {
     switch (conversion_type) {
         case NumericConversionType::FLOAT_TO_INT:
             current_chunk->emit_instruction(Instruction::FLOAT_TO_INT, line_number);
@@ -114,15 +114,15 @@ void Generator::emit_conversion(NumericConversionType conversion_type, std::size
     }
 }
 
-void Generator::emit_operand(std::size_t value) {
+void ByteCodeGenerator::emit_operand(std::size_t value) {
     current_chunk->bytes.back() |= value & 0x00ff'ffff;
 }
 
-void Generator::emit_stack_slot(std::size_t value) {
+void ByteCodeGenerator::emit_stack_slot(std::size_t value) {
     emit_operand(value + 1);
 }
 
-void Generator::emit_destructor_call(ClassStmt *class_, std::size_t line) {
+void ByteCodeGenerator::emit_destructor_call(ClassStmt *class_, std::size_t line) {
     current_chunk->emit_string(mangle_function(*class_->dtor), line);
     if (current_module == compile_ctx->get_module_path(class_->module_path)) {
         current_chunk->emit_instruction(Instruction::LOAD_FUNCTION_SAME_MODULE, line);
@@ -134,11 +134,11 @@ void Generator::emit_destructor_call(ClassStmt *class_, std::size_t line) {
     current_chunk->emit_instruction(Instruction::CALL_FUNCTION, line);
 }
 
-bool Generator::requires_copy(ExprNode &what, TypeNode &type) {
+bool ByteCodeGenerator::requires_copy(ExprNode &what, TypeNode &type) {
     return not type->is_ref && (what->synthesized_attrs.is_lvalue || what->synthesized_attrs.info->is_ref);
 }
 
-void Generator::add_vartuple_to_scope(IdentifierTuple::TupleType &tuple) {
+void ByteCodeGenerator::add_vartuple_to_scope(IdentifierTuple::TupleType &tuple) {
     for (auto &elem : tuple) {
         if (elem.index() == IdentifierTuple::IDENT_TUPLE) {
             add_vartuple_to_scope(std::get<IdentifierTuple>(elem).tuple);
@@ -149,7 +149,7 @@ void Generator::add_vartuple_to_scope(IdentifierTuple::TupleType &tuple) {
     }
 }
 
-std::size_t Generator::compile_vartuple(IdentifierTuple::TupleType &tuple, TupleType &type) {
+std::size_t ByteCodeGenerator::compile_vartuple(IdentifierTuple::TupleType &tuple, TupleType &type) {
     std::size_t count = 0;
     for (std::size_t i = 0; i < tuple.size(); i++) {
         current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, current_chunk->line_numbers.back().first);
@@ -179,7 +179,7 @@ std::size_t Generator::compile_vartuple(IdentifierTuple::TupleType &tuple, Tuple
     return count;
 }
 
-bool Generator::is_ctor_call(ExprNode &node) {
+bool ByteCodeGenerator::is_ctor_call(ExprNode &node) {
     if (node->synthesized_attrs.class_ != nullptr) {
         if (node->type_tag() == NodeType::ScopeAccessExpr) {
             return dynamic_cast<ScopeAccessExpr *>(node.get())->name == node->synthesized_attrs.class_->name;
@@ -188,19 +188,19 @@ bool Generator::is_ctor_call(ExprNode &node) {
     return false;
 }
 
-ClassStmt *Generator::get_class(ExprNode &node) {
+ClassStmt *ByteCodeGenerator::get_class(ExprNode &node) {
     return node->synthesized_attrs.class_;
 }
 
-bool Generator::suppress_variable_tracking() {
+bool ByteCodeGenerator::suppress_variable_tracking() {
     return std::exchange(variable_tracking_suppressed, true);
 }
 
-void Generator::restore_variable_tracking(bool previous) {
+void ByteCodeGenerator::restore_variable_tracking(bool previous) {
     variable_tracking_suppressed = previous;
 }
 
-void Generator::make_instance(ClassStmt *class_) {
+void ByteCodeGenerator::make_instance(ClassStmt *class_) {
     bool previous = suppress_variable_tracking();
 
     current_chunk->emit_instruction(Instruction::MAKE_LIST, class_->name.line);
@@ -221,11 +221,11 @@ void Generator::make_instance(ClassStmt *class_) {
     restore_variable_tracking(previous);
 }
 
-Value::IntType Generator::get_member_index(ClassStmt *stmt, const std::string &name) {
+Value::IntType ByteCodeGenerator::get_member_index(ClassStmt *stmt, const std::string &name) {
     return stmt->member_map[name];
 }
 
-std::string Generator::mangle_function(FunctionStmt &stmt) {
+std::string ByteCodeGenerator::mangle_function(FunctionStmt &stmt) {
     if (stmt.class_ != nullptr) {
         return stmt.class_->name.lexeme + "@" + stmt.name.lexeme;
     } else {
@@ -233,7 +233,7 @@ std::string Generator::mangle_function(FunctionStmt &stmt) {
     }
 }
 
-std::string Generator::mangle_scope_access(ScopeAccessExpr &expr) {
+std::string ByteCodeGenerator::mangle_scope_access(ScopeAccessExpr &expr) {
     if (expr.scope->type_tag() == NodeType::ScopeAccessExpr) {
         return mangle_scope_access(*dynamic_cast<ScopeAccessExpr *>(expr.scope.get())) + "@" + expr.name.lexeme;
     } else if (expr.scope->type_tag() == NodeType::ScopeNameExpr) {
@@ -243,23 +243,23 @@ std::string Generator::mangle_scope_access(ScopeAccessExpr &expr) {
     unreachable();
 }
 
-std::string Generator::mangle_member_access(ClassStmt *class_, std::string &name) {
+std::string ByteCodeGenerator::mangle_member_access(ClassStmt *class_, std::string &name) {
     return class_->name.lexeme + "@" + name;
 }
 
-ExprVisitorType Generator::compile(Expr *expr) {
+ExprVisitorType ByteCodeGenerator::compile(Expr *expr) {
     return expr->accept(*this);
 }
 
-StmtVisitorType Generator::compile(Stmt *stmt) {
+StmtVisitorType ByteCodeGenerator::compile(Stmt *stmt) {
     stmt->accept(*this);
 }
 
-BaseTypeVisitorType Generator::compile(BaseType *type) {
+BaseTypeVisitorType ByteCodeGenerator::compile(BaseType *type) {
     return type->accept(*this);
 }
 
-ExprVisitorType Generator::visit(AssignExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(AssignExpr &expr) {
     auto compile_right = [&expr, this] {
         compile(expr.value.get());
         if (expr.value->synthesized_attrs.info->is_ref && expr.value->synthesized_attrs.info->primitive != Type::LIST &&
@@ -335,7 +335,7 @@ ExprVisitorType Generator::visit(AssignExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(BinaryExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(BinaryExpr &expr) {
     bool requires_floating = expr.left->synthesized_attrs.info->primitive == Type::FLOAT ||
                              expr.right->synthesized_attrs.info->primitive == Type::FLOAT;
 
@@ -534,7 +534,7 @@ ExprVisitorType Generator::visit(BinaryExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(CallExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(CallExpr &expr) {
     if (is_ctor_call(expr.function)) {
         ClassStmt *class_ = get_class(expr.function);
         make_instance(class_);
@@ -631,7 +631,7 @@ ExprVisitorType Generator::visit(CallExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(CommaExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(CommaExpr &expr) {
     auto it = begin(expr.exprs);
 
     for (auto next = std::next(it); next != end(expr.exprs); it = next, ++next) {
@@ -650,7 +650,7 @@ ExprVisitorType Generator::visit(CommaExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(GetExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(GetExpr &expr) {
     if (expr.object->synthesized_attrs.info->primitive == Type::TUPLE && expr.name.type == TokenType::INT_VALUE) {
         compile(expr.object.get());
         current_chunk->emit_constant(Value{std::stoi(expr.name.lexeme)}, expr.name.line);
@@ -665,7 +665,7 @@ ExprVisitorType Generator::visit(GetExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(GroupingExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(GroupingExpr &expr) {
     compile(expr.expr.get());
     if (expr.expr->synthesized_attrs.info->is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.synthesized_attrs.token.line);
@@ -673,7 +673,7 @@ ExprVisitorType Generator::visit(GroupingExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(IndexExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(IndexExpr &expr) {
     compile(expr.object.get());
     compile(expr.index.get());
     if (expr.index->synthesized_attrs.info->is_ref) {
@@ -689,7 +689,7 @@ ExprVisitorType Generator::visit(IndexExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(ListExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(ListExpr &expr) {
     current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.bracket.line);
     emit_operand(expr.elements.size());
 
@@ -738,7 +738,7 @@ ExprVisitorType Generator::visit(ListExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(ListAssignExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(ListAssignExpr &expr) {
     compile(expr.list.object.get());
     compile(expr.list.index.get());
     if (expr.list.index->synthesized_attrs.info->is_ref) {
@@ -807,7 +807,7 @@ ExprVisitorType Generator::visit(ListAssignExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(LiteralExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(LiteralExpr &expr) {
     switch (expr.value.index()) {
         case LiteralValue::tag::INT:
             current_chunk->emit_constant(Value{expr.value.to_int()}, expr.synthesized_attrs.token.line);
@@ -832,7 +832,7 @@ ExprVisitorType Generator::visit(LiteralExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(LogicalExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(LogicalExpr &expr) {
     compile(expr.left.get());
     if (expr.left->synthesized_attrs.info->is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.left->synthesized_attrs.token.line);
@@ -851,7 +851,7 @@ ExprVisitorType Generator::visit(LogicalExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(MoveExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(MoveExpr &expr) {
     if (expr.expr->type_tag() == NodeType::VariableExpr) {
         if (dynamic_cast<VariableExpr *>(expr.expr.get())->type == IdentifierType::LOCAL) {
             current_chunk->emit_instruction(Instruction::MOVE_LOCAL, expr.synthesized_attrs.token.line);
@@ -863,7 +863,7 @@ ExprVisitorType Generator::visit(MoveExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(ScopeAccessExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(ScopeAccessExpr &expr) {
     if (expr.scope->synthesized_attrs.scope_type == ExprSynthesizedAttrs::ScopeAccessType::MODULE_CLASS) {
         assert(expr.scope->type_tag() == NodeType::ScopeAccessExpr);
         auto *access = dynamic_cast<ScopeAccessExpr *>(expr.scope.get());
@@ -904,11 +904,11 @@ ExprVisitorType Generator::visit(ScopeAccessExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(ScopeNameExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(ScopeNameExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(SetExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(SetExpr &expr) {
     if (expr.object->synthesized_attrs.info->primitive == Type::TUPLE && expr.name.type == TokenType::INT_VALUE) {
         compile(expr.object.get());
         current_chunk->emit_constant(Value{std::stoi(expr.name.lexeme)}, expr.name.line);
@@ -925,11 +925,11 @@ ExprVisitorType Generator::visit(SetExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(SuperExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(SuperExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(TernaryExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(TernaryExpr &expr) {
     /*
      * Consider `false ? 1 : 2`
      *
@@ -968,13 +968,13 @@ ExprVisitorType Generator::visit(TernaryExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(ThisExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(ThisExpr &expr) {
     current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LIST, expr.keyword.line);
     emit_operand(0);
     return {};
 }
 
-ExprVisitorType Generator::visit(TupleExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(TupleExpr &expr) {
     current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.synthesized_attrs.token.line);
     emit_operand(expr.elements.size());
 
@@ -1027,7 +1027,7 @@ ExprVisitorType Generator::visit(TupleExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(UnaryExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(UnaryExpr &expr) {
     if (expr.oper.type != TokenType::PLUS_PLUS && expr.oper.type != TokenType::MINUS_MINUS) {
         compile(expr.right.get());
     }
@@ -1069,7 +1069,7 @@ ExprVisitorType Generator::visit(UnaryExpr &expr) {
     return {};
 }
 
-ExprVisitorType Generator::visit(VariableExpr &expr) {
+ExprVisitorType ByteCodeGenerator::visit(VariableExpr &expr) {
     switch (expr.type) {
         case IdentifierType::LOCAL:
         case IdentifierType::GLOBAL:
@@ -1101,7 +1101,7 @@ ExprVisitorType Generator::visit(VariableExpr &expr) {
     unreachable();
 }
 
-StmtVisitorType Generator::visit(BlockStmt &stmt) {
+StmtVisitorType ByteCodeGenerator::visit(BlockStmt &stmt) {
     begin_scope();
     for (auto &statement : stmt.stmts) {
         compile(statement.get());
@@ -1109,25 +1109,25 @@ StmtVisitorType Generator::visit(BlockStmt &stmt) {
     end_scope();
 }
 
-StmtVisitorType Generator::visit(BreakStmt &stmt) {
+StmtVisitorType ByteCodeGenerator::visit(BreakStmt &stmt) {
     std::size_t break_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
     emit_operand(0);
     break_stmts.top().push_back(break_idx);
 }
 
-StmtVisitorType Generator::visit(ClassStmt &stmt) {
+StmtVisitorType ByteCodeGenerator::visit(ClassStmt &stmt) {
     for (auto &method : stmt.methods) {
         compile(method.first.get());
     }
 }
 
-StmtVisitorType Generator::visit(ContinueStmt &stmt) {
+StmtVisitorType ByteCodeGenerator::visit(ContinueStmt &stmt) {
     std::size_t continue_idx = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, stmt.keyword.line);
     emit_operand(0);
     continue_stmts.top().push_back(continue_idx);
 }
 
-StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
+StmtVisitorType ByteCodeGenerator::visit(ExpressionStmt &stmt) {
     compile(stmt.expr.get());
     if (stmt.expr->synthesized_attrs.info->primitive == Type::STRING) {
         current_chunk->emit_instruction(Instruction::POP_STRING, current_chunk->line_numbers.back().first);
@@ -1138,7 +1138,7 @@ StmtVisitorType Generator::visit(ExpressionStmt &stmt) {
     }
 }
 
-StmtVisitorType Generator::visit(FunctionStmt &stmt) {
+StmtVisitorType ByteCodeGenerator::visit(FunctionStmt &stmt) {
     begin_scope();
     RuntimeFunction function{};
     for (FunctionStmt::ParameterType &param : stmt.params) {
@@ -1185,7 +1185,7 @@ StmtVisitorType Generator::visit(FunctionStmt &stmt) {
     current_chunk = &current_compiled->top_level_code;
 }
 
-StmtVisitorType Generator::visit(IfStmt &stmt) {
+StmtVisitorType ByteCodeGenerator::visit(IfStmt &stmt) {
     compile(stmt.condition.get());
     if (stmt.condition->synthesized_attrs.info->is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, stmt.condition->synthesized_attrs.token.line);
@@ -1227,7 +1227,7 @@ StmtVisitorType Generator::visit(IfStmt &stmt) {
     }
 }
 
-StmtVisitorType Generator::visit(ReturnStmt &stmt) {
+StmtVisitorType ByteCodeGenerator::visit(ReturnStmt &stmt) {
     if (stmt.value != nullptr) {
         compile(stmt.value.get());
         if (auto &return_type = stmt.function->return_type; is_nontrivial_type(return_type->primitive) &&
@@ -1251,7 +1251,7 @@ StmtVisitorType Generator::visit(ReturnStmt &stmt) {
     emit_operand(stmt.locals_popped);
 }
 
-StmtVisitorType Generator::visit(SwitchStmt &stmt) {
+StmtVisitorType ByteCodeGenerator::visit(SwitchStmt &stmt) {
     /*
      * Consider the following code:
      *
@@ -1318,9 +1318,9 @@ StmtVisitorType Generator::visit(SwitchStmt &stmt) {
     break_stmts.pop();
 }
 
-StmtVisitorType Generator::visit(TypeStmt &stmt) {}
+StmtVisitorType ByteCodeGenerator::visit(TypeStmt &stmt) {}
 
-StmtVisitorType Generator::visit(VarStmt &stmt) {
+StmtVisitorType ByteCodeGenerator::visit(VarStmt &stmt) {
     if (stmt.type->is_ref && not stmt.initializer->synthesized_attrs.info->is_ref &&
         stmt.initializer->type_tag() == NodeType::VariableExpr) {
         if (dynamic_cast<VariableExpr *>(stmt.initializer.get())->type == IdentifierType::LOCAL) {
@@ -1367,7 +1367,7 @@ StmtVisitorType Generator::visit(VarStmt &stmt) {
     }
 }
 
-StmtVisitorType Generator::visit(VarTupleStmt &stmt) {
+StmtVisitorType ByteCodeGenerator::visit(VarTupleStmt &stmt) {
     compile(stmt.initializer.get());
     if (requires_copy(stmt.initializer, stmt.type)) {
         current_chunk->emit_instruction(Instruction::COPY_LIST, stmt.token.line);
@@ -1379,7 +1379,7 @@ StmtVisitorType Generator::visit(VarTupleStmt &stmt) {
     }
 }
 
-StmtVisitorType Generator::visit(WhileStmt &stmt) {
+StmtVisitorType ByteCodeGenerator::visit(WhileStmt &stmt) {
     /*
      * Taking an example of
      * for (var i = 0; i < 5; i = i + 1) {
@@ -1455,22 +1455,22 @@ StmtVisitorType Generator::visit(WhileStmt &stmt) {
     break_stmts.pop();
 }
 
-BaseTypeVisitorType Generator::visit(PrimitiveType &type) {
+BaseTypeVisitorType ByteCodeGenerator::visit(PrimitiveType &type) {
     return {};
 }
 
-BaseTypeVisitorType Generator::visit(UserDefinedType &type) {
+BaseTypeVisitorType ByteCodeGenerator::visit(UserDefinedType &type) {
     return {};
 }
 
-BaseTypeVisitorType Generator::visit(ListType &type) {
+BaseTypeVisitorType ByteCodeGenerator::visit(ListType &type) {
     return {};
 }
 
-BaseTypeVisitorType Generator::visit(TupleType &type) {
+BaseTypeVisitorType ByteCodeGenerator::visit(TupleType &type) {
     return {};
 }
 
-BaseTypeVisitorType Generator::visit(TypeofType &type) {
+BaseTypeVisitorType ByteCodeGenerator::visit(TypeofType &type) {
     return {};
 }

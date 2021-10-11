@@ -3,8 +3,8 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 
-#ifndef CODE_GEN_HPP
-#define CODE_GEN_HPP
+#ifndef BYTE_CODE_GENERATOR_HPP
+#define BYTE_CODE_GENERATOR_HPP
 
 #include "AST/AST.hpp"
 #include "Backend/RuntimeContext.hpp"
@@ -17,7 +17,7 @@
 #include <stack>
 #include <string_view>
 
-class Generator final : Visitor {
+class ByteCodeGenerator final : Visitor {
     CompileContext *compile_ctx{};
     RuntimeContext *runtime_ctx{};
 
@@ -71,7 +71,7 @@ class Generator final : Visitor {
     BaseTypeVisitorType compile(BaseType *type);
 
   public:
-    Generator();
+    ByteCodeGenerator();
 
     void set_compile_ctx(CompileContext *compile_ctx_);
     void set_runtime_ctx(RuntimeContext *runtime_ctx_);
