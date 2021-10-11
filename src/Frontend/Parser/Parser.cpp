@@ -579,7 +579,7 @@ ExprNode Parser::variable(bool can_assign) {
         node->synthesized_attrs.token = std::move(oper);
         return ExprNode{node};
     } else if (peek().type == TokenType::DOUBLE_COLON) {
-        auto *node = allocate_node(ScopeNameExpr, name);
+        auto *node = allocate_node(ScopeNameExpr, name, {}, nullptr);
         node->synthesized_attrs.token = std::move(name);
         return ExprNode{node};
     } else {
@@ -691,7 +691,7 @@ StmtNode Parser::class_declaration() {
 
     consume("Expected '}' at the end of class declaration", TokenType::RIGHT_BRACE);
     auto *class_definition = allocate_node(ClassStmt, std::move(name), ctor, dtor, std::move(members),
-        std::move(methods), std::move(member_map), std::move(method_map));
+        std::move(methods), std::move(member_map), std::move(method_map), current_module->full_path);
     current_module->classes[class_definition->name.lexeme] = class_definition;
 
     return StmtNode{class_definition};
