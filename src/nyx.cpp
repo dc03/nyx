@@ -16,7 +16,14 @@ void run_module(const char *const main_module, cxxopts::ParseResult &result) {
     compile_manager.check_module();
 
     if (result.count("dump-ast")) {
-        ASTPrinter{}.print_stmts(compile_manager.get_module().statements);
+        ASTPrinter printer{};
+        for (auto &[module, depth] : compile_ctx.parsed_modules) {
+            std::cout << "-<=== Module " << module.name << " ===>-\n\n";
+            printer.print_stmts(module.statements);
+        }
+        std::cout << "-<=== Main Module ===>-\n";
+        std::cout << "-<=== Module " << compile_manager.get_module().name << " ===>-\n\n";
+        printer.print_stmts(compile_manager.get_module().statements);
     }
 
     if (not result.count("check") && not logger.had_error) {
@@ -28,24 +35,9 @@ void run_module(const char *const main_module, cxxopts::ParseResult &result) {
         }
 
         runtime_manager.compile(&compile_ctx);
-//        Generator generator{};
-//        for (auto &module : compile_ctx.parsed_modules) {
-//            Generator::compiled_modules.emplace_back(generator.compile(module.first));
-//        }
-//        RuntimeModule main_compiled = generator.compile(compile_manager.get_module());
-//        main_compiled.top_level_code.emit_instruction(Instruction::HALT, 0);
-
         if (result.count("disassemble-code")) {
-//            disassemble_chunk(main_compiled.top_level_code, compile_manager.get_module().name);
-//            std::cout << '\n';
-//            for (auto &[function_name, function] : main_compiled.functions) {
-//                disassemble_chunk(function.code, function_name);
-//            }
             runtime_manager.disassemble();
         }
-
-//        VirtualMachine vm{!!result.count("trace-exec-stack"), !!result.count("trace-exec-insn")};
-//        vm.run(main_compiled);
         runtime_manager.run();
     }
 }
