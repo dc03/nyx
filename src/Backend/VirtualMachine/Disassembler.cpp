@@ -124,6 +124,9 @@ void instruction(Chunk &chunk, std::string_view name, std::size_t where) {
     } else if (name == "MAKE_LIST") {
         std::cout << "\t\t| size " << next_bytes << "\n";
         print_trailing_bytes();
+    } else if (name == "LOAD_FUNCTION_MODULE_INDEX") {
+        std::cout << "\t\t| module index " << next_bytes << "\n";
+        print_trailing_bytes();
     } else {
         std::cout << '\n';
     }
@@ -175,7 +178,9 @@ void disassemble_instruction(Chunk &chunk, Instruction insn, std::size_t where) 
         case Instruction::ASSIGN_GLOBAL: instruction(chunk, "ASSIGN_GLOBAL", where); return;
         case Instruction::ACCESS_GLOBAL: instruction(chunk, "ACCESS_GLOBAL", where); return;
         case Instruction::MAKE_REF_TO_GLOBAL: instruction(chunk, "MAKE_REF_TO_GLOBAL", where); return;
-        case Instruction::LOAD_FUNCTION: instruction(chunk, "LOAD_FUNCTION", where); return;
+        case Instruction::LOAD_FUNCTION_SAME_MODULE: instruction(chunk, "LOAD_FUNCTION_SAME_MODULE", where); return;
+        case Instruction::LOAD_FUNCTION_MODULE_INDEX: instruction(chunk, "LOAD_FUNCTION_MODULE_INDEX", where); return;
+        case Instruction::LOAD_FUNCTION_MODULE_PATH: instruction(chunk, "LOAD_FUNCTION_MODULE_PATH", where); return;
         case Instruction::CALL_FUNCTION: instruction(chunk, "CALL_FUNCTION", where); return;
         case Instruction::CALL_NATIVE: instruction(chunk, "CALL_NATIVE", where); return;
         case Instruction::RETURN: instruction(chunk, "RETURN", where); return;
