@@ -8,10 +8,11 @@
 
 #include "AST/AST.hpp"
 #include "Backend/RuntimeContext.hpp"
+#include "Backend/RuntimeModule.hpp"
 #include "Backend/VirtualMachine/Chunk.hpp"
-#include "Backend/VirtualMachine/Module.hpp"
 #include "Backend/VirtualMachine/Natives.hpp"
 #include "Frontend/CompileContext.hpp"
+#include "Frontend/Module.hpp"
 
 #include <stack>
 #include <string_view>

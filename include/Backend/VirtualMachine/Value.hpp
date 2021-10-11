@@ -6,7 +6,7 @@
 #ifndef VALUE_HPP
 #define VALUE_HPP
 
-#include "Module.hpp"
+#include "Backend/RuntimeModule.hpp"
 #include "StringCacher.hpp"
 
 #include <cstdint>

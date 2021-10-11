@@ -7,7 +7,7 @@
 #define VIRTUAL_MACHINE_HPP
 
 #include "Backend/RuntimeContext.hpp"
-#include "Module.hpp"
+#include "Backend/RuntimeModule.hpp"
 #include "Natives.hpp"
 #include "Value.hpp"
 

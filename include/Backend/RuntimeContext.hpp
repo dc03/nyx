@@ -6,8 +6,8 @@
 #ifndef COMPILER_CONTEXT_HPP
 #define COMPILER_CONTEXT_HPP
 
-#include "Backend/VirtualMachine/Module.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
+#include "RuntimeModule.hpp"
 
 #include <filesystem>
 #include <string_view>

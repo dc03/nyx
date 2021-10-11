@@ -6,10 +6,11 @@
 #ifndef COMPILE_CONTEXT_HPP
 #define COMPILE_CONTEXT_HPP
 
-#include "Backend/VirtualMachine/Module.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
+#include "Frontend/Module.hpp"
 
 #include <filesystem>
+#include <unordered_map>
 #include <vector>
 
 struct CompileContext {

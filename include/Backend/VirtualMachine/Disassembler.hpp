@@ -7,7 +7,7 @@
 #define DISASSEMBLER_HPP
 
 #include "Backend/RuntimeContext.hpp"
-#include "Backend/VirtualMachine/Module.hpp"
+#include "Backend/RuntimeModule.hpp"
 #include "Chunk.hpp"
 #include "Instructions.hpp"
 

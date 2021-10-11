@@ -2,7 +2,7 @@
 /* See LICENSE at project root for license details */
 #include "Backend/VirtualMachine/Natives.hpp"
 
-#include "Backend/VirtualMachine/Module.hpp"
+#include "Backend/RuntimeModule.hpp"
 #include "Backend/VirtualMachine/VirtualMachine.hpp"
 #include "Common.hpp"
 

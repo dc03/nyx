@@ -8,8 +8,8 @@
 
 #include "AST/AST.hpp"
 #include "AST/Token.hpp"
-#include "Backend/VirtualMachine/Module.hpp"
 #include "Frontend/CompileContext.hpp"
+#include "Frontend/Module.hpp"
 #include "Frontend/Scanner/Scanner.hpp"
 #include "ScopedManager.hpp"
 

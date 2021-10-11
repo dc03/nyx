@@ -7,8 +7,8 @@
 #define TYPE_RESOLVER_HPP
 
 #include "AST/AST.hpp"
-#include "Backend/VirtualMachine/Module.hpp"
 #include "Frontend/CompileContext.hpp"
+#include "Frontend/Module.hpp"
 #include "ScopedManager.hpp"
 
 #include <string_view>
