@@ -20,11 +20,16 @@ VirtualMachine::VirtualMachine(bool trace_stack, bool trace_insn)
     for (const auto &[name, wrapper] : native_wrappers.get_all_natives()) {
         natives[name] = wrapper->get_native();
     }
-    frames[0] = CallFrame{&stack[0], {}};
 }
 
 void VirtualMachine::set_runtime_ctx(RuntimeContext *ctx_) {
     ctx = ctx_;
+}
+
+void VirtualMachine::set_function_module_pointers(RuntimeModule *module) {
+    for (auto &[name, function] : module->functions) {
+        function.module = module;
+    }
 }
 
 Chunk::InstructionSizeType VirtualMachine::read_next() {
@@ -85,6 +90,9 @@ void VirtualMachine::run(RuntimeModule &module) {
     current_module = &module;
     current_chunk = &module.top_level_code;
     ip = &current_chunk->bytes[0];
+
+    frames[0] = CallFrame{&stack[0], nullptr, nullptr, current_module};
+
     while (step() != ExecutionState::FINISHED)
         ;
 }
@@ -338,15 +346,15 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         /* Function calls */
-        case is Instruction::LOAD_FUNCTION: {
-            RuntimeFunction *function = &current_module->functions[stack[stack_top - 1].w_str->str];
+        case is Instruction::LOAD_FUNCTION_SAME_MODULE: {
+            RuntimeFunction *function = &frames[frame_top].module->functions[stack[stack_top - 1].w_str->str];
             stack[stack_top - 1].w_fun = function;
             stack[stack_top - 1].tag = Value::Tag::FUNCTION;
             break;
         }
         case is Instruction::CALL_FUNCTION: {
             RuntimeFunction *called = stack[--stack_top].w_fun;
-            frames[++frame_top] = CallFrame{&stack[stack_top - (called->arity + 1)], current_chunk, ip};
+            frames[++frame_top] = CallFrame{&stack[stack_top - (called->arity + 1)], current_chunk, ip, called->module};
             current_chunk = &called->code;
             ip = &called->code.bytes[0];
             break;

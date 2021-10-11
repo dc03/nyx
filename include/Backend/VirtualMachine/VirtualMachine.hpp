@@ -18,6 +18,7 @@ struct CallFrame {
     Value *stack{};
     Chunk *return_chunk{};
     Chunk::InstructionSizeType *return_ip{};
+    RuntimeModule *module{};
 };
 
 enum class ExecutionState { RUNNING = 0, FINISHED = 1 };
@@ -66,6 +67,7 @@ class VirtualMachine {
     VirtualMachine &operator=(const VirtualMachine &) = delete;
 
     void set_runtime_ctx(RuntimeContext *ctx_);
+    void set_function_module_pointers(RuntimeModule *module);
 
     void run(RuntimeModule &module);
     ExecutionState step();
