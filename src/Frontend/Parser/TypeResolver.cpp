@@ -104,8 +104,32 @@ bool TypeResolver::convertible_to(
 }
 
 ExprNode TypeResolver::generate_scope_access(ClassStmt *stmt, Token name) {
-    ExprNode class_{allocate_node(ScopeNameExpr, stmt->name)};
-    return ExprNode{allocate_node(ScopeAccessExpr, std::move(class_), std::move(name))};
+    if (stmt->module_path != current_module->full_path) {
+        ExprNode module{allocate_node(ScopeNameExpr,
+            Token{TokenType::STRING_VALUE, stmt->module_path.stem(), stmt->name.line, stmt->name.start, stmt->name.end},
+            stmt->module_path, stmt)};
+        module->synthesized_attrs.scope_type = ExprSynthesizedAttrs::ScopeAccessType::MODULE;
+
+        ExprNode class_{allocate_node(ScopeAccessExpr, std::move(module), stmt->name)};
+        class_->synthesized_attrs.scope_type = ExprSynthesizedAttrs::ScopeAccessType::MODULE_CLASS;
+        class_->synthesized_attrs.class_ = stmt;
+
+        ExprNode result{allocate_node(ScopeAccessExpr, std::move(class_), name)};
+        result->synthesized_attrs.scope_type = ExprSynthesizedAttrs::ScopeAccessType::CLASS_METHOD;
+        result->synthesized_attrs.class_ = stmt;
+
+        return result;
+    } else {
+        ExprNode class_{allocate_node(ScopeNameExpr, stmt->name, stmt->module_path, stmt)};
+        class_->synthesized_attrs.scope_type = ExprSynthesizedAttrs::ScopeAccessType::CLASS;
+        class_->synthesized_attrs.class_ = stmt;
+
+        ExprNode result{allocate_node(ScopeAccessExpr, std::move(class_), std::move(name))};
+        result->synthesized_attrs.scope_type = ExprSynthesizedAttrs::ScopeAccessType::CLASS_METHOD;
+        result->synthesized_attrs.class_ = stmt;
+
+        return result;
+    }
 }
 
 ClassStmt *TypeResolver::find_class(const std::string &class_name) {
@@ -669,6 +693,15 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
         }
     }
 
+    if (function.scope_type == ExprSynthesizedAttrs::ScopeAccessType::MODULE_CLASS) {
+        assert(expr.function->type_tag() == NodeType::ScopeAccessExpr);
+        expr.function = generate_scope_access(class_, class_->name);
+        expr.function->synthesized_attrs.func = class_->ctor;
+        expr.function->synthesized_attrs.class_ = class_;
+        expr.function->synthesized_attrs.scope_type = ExprSynthesizedAttrs::ScopeAccessType::MODULE_CLASS;
+        called = class_->ctor;
+    }
+
     if (called->params.size() != expr.args.size()) {
         error({"Number of arguments passed to function must match the number of parameters"},
             expr.synthesized_attrs.token);
@@ -960,33 +993,38 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
     ExprVisitorType left = resolve(expr.scope.get());
 
     switch (left.scope_type) {
-        case ExprSynthesizedAttrs::ScopeType::CLASS: {
+        case ExprSynthesizedAttrs::ScopeAccessType::CLASS:
+        case ExprSynthesizedAttrs::ScopeAccessType::MODULE_CLASS: {
             auto *method = find_method(left.class_, expr.name.lexeme);
             if (method != nullptr) {
                 return expr.synthesized_attrs = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
-                           method->first.get(), left.class_, expr.synthesized_attrs.token};
+                           method->first.get(), left.class_, expr.synthesized_attrs.token, false,
+                           ExprSynthesizedAttrs::ScopeAccessType::CLASS_METHOD};
             }
 
             error({"No such method exists in the class"}, expr.name);
             throw TypeException{"No such method exists in the class"};
         }
 
-        case ExprSynthesizedAttrs::ScopeType::MODULE: {
+        case ExprSynthesizedAttrs::ScopeAccessType::MODULE: {
             auto &module = ctx->parsed_modules[left.module_index].first;
             if (auto class_ = module.classes.find(expr.name.lexeme); class_ != module.classes.end()) {
-                return expr.synthesized_attrs = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_->second,
-                           expr.synthesized_attrs.token};
+                return expr.synthesized_attrs = {make_new_type<PrimitiveType>(Type::CLASS, true, false),
+                           class_->second->ctor, class_->second, expr.synthesized_attrs.token, false,
+                           ExprSynthesizedAttrs::ScopeAccessType::MODULE_CLASS};
             }
 
             if (auto func = module.functions.find(expr.name.lexeme); func != module.functions.end()) {
                 return expr.synthesized_attrs = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
-                           func->second, expr.synthesized_attrs.token};
+                           func->second, expr.synthesized_attrs.token, false,
+                           ExprSynthesizedAttrs::ScopeAccessType::MODULE_FUNCTION};
             }
         }
             error({"No such function/class exists in the module"}, expr.name);
             throw TypeException{"No such function/class exists in the module"};
 
-        case ExprSynthesizedAttrs::ScopeType::NONE:
+        case ExprSynthesizedAttrs::ScopeAccessType::NONE:
+        case ExprSynthesizedAttrs::ScopeAccessType::MODULE_FUNCTION:
         default:
             error({"No such module/class exists in the current global scope"}, expr.name);
             throw TypeException{"No such module/class exists in the current global scope"};
@@ -995,16 +1033,18 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
 
 ExprVisitorType TypeResolver::visit(ScopeNameExpr &expr) {
     for (std::size_t i{0}; i < ctx->parsed_modules.size(); i++) {
-        if (ctx->parsed_modules[i].first.name.substr(0, ctx->parsed_modules[i].first.name.find_last_of('.')) ==
-            expr.name.lexeme) {
-            return expr.synthesized_attrs = {
-                       make_new_type<PrimitiveType>(Type::MODULE, true, false), i, expr.synthesized_attrs.token};
+        if (ctx->parsed_modules[i].first.name == expr.name.lexeme) {
+            expr.module_path = ctx->parsed_modules[i].first.full_path;
+            return expr.synthesized_attrs = {make_new_type<PrimitiveType>(Type::MODULE, true, false), i,
+                       expr.synthesized_attrs.token, ExprSynthesizedAttrs::ScopeAccessType::MODULE};
         }
     }
 
     if (ClassStmt *class_ = find_class(expr.name.lexeme); class_ != nullptr) {
-        return expr.synthesized_attrs = {
-                   make_new_type<PrimitiveType>(Type::CLASS, true, false), class_, expr.synthesized_attrs.token};
+        expr.module_path = current_module->full_path;
+        expr.class_ = class_;
+        return expr.synthesized_attrs = {make_new_type<PrimitiveType>(Type::CLASS, true, false), class_->ctor, class_,
+                   expr.synthesized_attrs.token, false, ExprSynthesizedAttrs::ScopeAccessType::CLASS};
     }
 
     error({"No such scope exists with the given name"}, expr.name);
