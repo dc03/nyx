@@ -9,6 +9,7 @@
 #include "Token.hpp"
 #include "VisitorTypes.hpp"
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -404,13 +405,16 @@ struct ScopeAccessExpr final : public Expr {
 
 struct ScopeNameExpr final : public Expr {
     Token name{};
+    std::filesystem::path module_path{};
+    ClassStmt *class_{};
 
     std::string_view string_tag() override final { return "ScopeNameExpr"; }
 
     NodeType type_tag() override final { return NodeType::ScopeNameExpr; }
 
     ScopeNameExpr() = default;
-    explicit ScopeNameExpr(Token name) : name{std::move(name)} {}
+    ScopeNameExpr(Token name, std::filesystem::path module_path, ClassStmt *class_)
+        : name{std::move(name)}, module_path{std::move(module_path)}, class_{class_} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -570,6 +574,7 @@ struct ClassStmt final : public Stmt {
     std::vector<MethodType> methods{};
     std::unordered_map<std::string_view, std::size_t> member_map{};
     std::unordered_map<std::string_view, std::size_t> method_map{};
+    std::filesystem::path module_path{};
 
     std::string_view string_tag() override final { return "ClassStmt"; }
 
@@ -578,14 +583,15 @@ struct ClassStmt final : public Stmt {
     ClassStmt() = default;
     ClassStmt(Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<MemberType> members,
         std::vector<MethodType> methods, std::unordered_map<std::string_view, std::size_t> member_map,
-        std::unordered_map<std::string_view, std::size_t> method_map)
+        std::unordered_map<std::string_view, std::size_t> method_map, std::filesystem::path module_path)
         : name{std::move(name)},
           ctor{ctor},
           dtor{dtor},
           members{std::move(members)},
           methods{std::move(methods)},
           member_map{std::move(member_map)},
-          method_map{std::move(method_map)} {}
+          method_map{std::move(method_map)},
+          module_path{std::move(module_path)} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

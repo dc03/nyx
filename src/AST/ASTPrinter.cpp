@@ -323,6 +323,14 @@ ExprVisitorType ASTPrinter::visit(ScopeAccessExpr &expr) {
 ExprVisitorType ASTPrinter::visit(ScopeNameExpr &expr) {
     print_tabs(current_depth);
     print_token(expr.name) << '\n';
+    if (expr.module_path != std::filesystem::path{}) {
+        print_tabs(current_depth + 1);
+        std::cout << "module path: " << expr.module_path.c_str() << '\n';
+    }
+    if (expr.class_ != nullptr) {
+        print_tabs(current_depth + 1);
+        std::cout << "class: " << expr.class_->name.lexeme << '\n';
+    }
     return {};
 }
 
@@ -419,6 +427,10 @@ StmtVisitorType ASTPrinter::visit(BreakStmt &stmt) {
 StmtVisitorType ASTPrinter::visit(ClassStmt &stmt) {
     print_tabs(current_depth);
     print_token(stmt.name) << '\n';
+    if (stmt.module_path != std::filesystem::path{}) {
+        print_tabs(current_depth);
+        std::cout << "module path: " << stmt.module_path.c_str() << '\n';
+    }
     current_depth++;
     for (auto &member : stmt.members) {
         print_tabs(current_depth);

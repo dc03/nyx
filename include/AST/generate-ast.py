@@ -158,6 +158,7 @@ if __name__ == '__main__':
         file.write('#include "Token.hpp"\n')
         file.write('#include "VisitorTypes.hpp"\n\n')
 
+        file.write('#include <filesystem>\n')
         file.write('#include <memory>\n')
         file.write('#include <string>\n')
         file.write('#include <string_view>\n')
@@ -279,8 +280,8 @@ if __name__ == '__main__':
                           'ExprNode scope, Token name')
 
         declare_expr_type('ScopeName',
-                          'name{std::move(name)}',
-                          'Token name')
+                          'name{std::move(name)}, module_path{std::move(module_path)}, class_{class_}',
+                          'Token name, std::filesystem::path module_path, ClassStmt *class_')
 
         declare_expr_type('Set',
                           'object{std::move(object)}, name{std::move(name)}, value{std::move(value)}, '
@@ -333,10 +334,12 @@ if __name__ == '__main__':
 
         declare_stmt_type('Class',
                           'name{std::move(name)}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, methods{'
-                          'std::move(methods)}, member_map{std::move(member_map)}, method_map{std::move(method_map)}',
+                          'std::move(methods)}, member_map{std::move(member_map)}, method_map{std::move(method_map)}, '
+                          'module_path{std::move(module_path)}',
                           'Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<MemberType> members, '
                           'std::vector<MethodType> methods, std::unordered_map<std::string_view,std::size_t>'
-                          'member_map, std::unordered_map<std::string_view,std::size_t> method_map',
+                          'member_map, std::unordered_map<std::string_view,std::size_t> method_map, '
+                          'std::filesystem::path module_path',
                           ['using MemberType = std::pair<std::unique_ptr<VarStmt>,VisibilityType>',
                            'using MethodType = std::pair<std::unique_ptr<FunctionStmt>,VisibilityType>'])
 
