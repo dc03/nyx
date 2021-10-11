@@ -28,21 +28,25 @@ struct ExprSynthesizedAttrs {
     // I'm using unions here to make different names for things with the same type which are used exclusively to each
     // other
     union {
-        std::size_t module_index;
+        std::size_t module_index{};
         std::size_t stack_slot;
     };
     Token token{};
-    bool is_lvalue;
-    enum class ScopeType { CLASS, MODULE, NONE } scope_type{};
+    bool is_lvalue{};
+    enum class ScopeAccessType { CLASS, MODULE, CLASS_METHOD, MODULE_CLASS, MODULE_FUNCTION, NONE } scope_type{};
 
     ExprSynthesizedAttrs() = default;
     ExprSynthesizedAttrs(const ExprSynthesizedAttrs &) = default;
-    ExprSynthesizedAttrs(QualifiedTypeInfo info, Token token, bool is_lvalue = false);
-    ExprSynthesizedAttrs(QualifiedTypeInfo info, FunctionStmt *func, Token token, bool is_lvalue = false);
-    ExprSynthesizedAttrs(QualifiedTypeInfo info, ClassStmt *class_, Token token, bool is_lvalue = false);
-    ExprSynthesizedAttrs(QualifiedTypeInfo info, std::size_t module_index, Token token);
-    ExprSynthesizedAttrs(
-        QualifiedTypeInfo info, FunctionStmt *func, ClassStmt *class_, Token token, bool is_lvalue = false);
+    ExprSynthesizedAttrs(QualifiedTypeInfo info, Token token, bool is_lvalue = false,
+        ScopeAccessType scope_type = ScopeAccessType::NONE);
+    ExprSynthesizedAttrs(QualifiedTypeInfo info, FunctionStmt *func, Token token, bool is_lvalue = false,
+        ScopeAccessType scope_type = ScopeAccessType::NONE);
+    ExprSynthesizedAttrs(QualifiedTypeInfo info, ClassStmt *class_, Token token, bool is_lvalue = false,
+        ScopeAccessType scope_type = ScopeAccessType::CLASS);
+    ExprSynthesizedAttrs(QualifiedTypeInfo info, std::size_t module_index, Token token,
+        ScopeAccessType scope_type = ScopeAccessType::MODULE);
+    ExprSynthesizedAttrs(QualifiedTypeInfo info, FunctionStmt *func, ClassStmt *class_, Token token,
+        bool is_lvalue = false, ScopeAccessType scope_type = ScopeAccessType::CLASS_METHOD);
 };
 
 struct LiteralValue {
