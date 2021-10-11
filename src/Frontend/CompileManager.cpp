@@ -11,7 +11,7 @@ CompileManager::CompileManager(CompileContext *ctx, fs::path path, bool is_main,
     if (is_main) {
         ctx->main_parent_path = fs::absolute(path).parent_path();
     } else {
-        path = ctx->main_parent_path.append(path.c_str());
+        path = ctx->main_parent_path / path.c_str();
     }
 
     if (fs::is_directory(path)) {
@@ -24,7 +24,7 @@ CompileManager::CompileManager(CompileContext *ctx, fs::path path, bool is_main,
 
     fs::path module_path = fs::absolute(path);
 
-    fs::path module_name = module_path.filename();
+    fs::path module_name = module_path.filename().stem();
     fs::path module_parent = module_path.parent_path();
 
     if (is_main) {
@@ -41,7 +41,7 @@ CompileManager::CompileManager(CompileContext *ctx, fs::path path, bool is_main,
     logger.set_module_name(module_name.native());
     logger.set_source(source);
 
-    module = Module{module_name.c_str(), module_parent, source};
+    module = Module{module_name.c_str(), module_path, source};
     if (is_main) {
         ctx->main = &module;
     }
@@ -64,7 +64,7 @@ std::string &CompileManager::module_name() {
 }
 
 fs::path CompileManager::module_path() const {
-    return module.module_directory;
+    return module.full_path.parent_path();
 }
 
 Module &CompileManager::get_module() {
