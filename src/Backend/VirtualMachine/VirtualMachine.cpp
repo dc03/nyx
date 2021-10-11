@@ -144,14 +144,14 @@ ExecutionState VirtualMachine::step() {
         case is Instruction::IMUL: arith_binary_op(*, IntType, w_int);
         case is Instruction::IMOD: {
             if (stack[stack_top - 1].w_int == 0) {
-                runtime_error("Cannot modulo by zero", get_current_line());
+                ctx->logger.runtime_error("Cannot modulo by zero", get_current_line());
                 return ExecutionState::FINISHED;
             }
             arith_binary_op(%, IntType, w_int);
         }
         case is Instruction::IDIV: {
             if (stack[stack_top - 1].w_int == 0) {
-                runtime_error("Cannot divide by zero", get_current_line());
+                ctx->logger.runtime_error("Cannot divide by zero", get_current_line());
                 return ExecutionState::FINISHED;
             }
             arith_binary_op(/, IntType, w_int);
@@ -166,7 +166,7 @@ ExecutionState VirtualMachine::step() {
         case is Instruction::FMUL: arith_binary_op(*, FloatType, w_float);
         case is Instruction::FMOD: {
             if (stack[stack_top - 1].w_float == 0.0) {
-                runtime_error("Cannot modulo by zero", get_current_line());
+                ctx->logger.runtime_error("Cannot modulo by zero", get_current_line());
                 return ExecutionState::FINISHED;
             }
             Value::FloatType val2 = stack[--stack_top].w_float;
@@ -176,7 +176,7 @@ ExecutionState VirtualMachine::step() {
         }
         case is Instruction::FDIV: {
             if (stack[stack_top - 1].w_float == 0.0) {
-                runtime_error("Cannot divide by zero", get_current_line());
+                ctx->logger.runtime_error("Cannot divide by zero", get_current_line());
                 return ExecutionState::FINISHED;
             }
             arith_binary_op(/, FloatType, w_float);
@@ -199,13 +199,13 @@ ExecutionState VirtualMachine::step() {
         /* Bitwise operations */
         case is Instruction::SHIFT_LEFT: {
             if (stack[stack_top - 1].w_int < 0) {
-                runtime_error("Cannot bitshift with value less than zero", get_current_line());
+                ctx->logger.runtime_error("Cannot bitshift with value less than zero", get_current_line());
             }
             arith_binary_op(<<, IntType, w_int);
         }
         case is Instruction::SHIFT_RIGHT: {
             if (stack[stack_top - 1].w_int < 0) {
-                runtime_error("Cannot bitshift with value less than zero", get_current_line());
+                ctx->logger.runtime_error("Cannot bitshift with value less than zero", get_current_line());
             }
             arith_binary_op(>>, IntType, w_int);
         }
@@ -386,7 +386,7 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::TRAP_RETURN: {
-            runtime_error("Reached end of non-null function", get_current_line());
+            ctx->logger.runtime_error("Reached end of non-null function", get_current_line());
             return ExecutionState::FINISHED;
         }
         /* String instructions */
@@ -415,7 +415,7 @@ ExecutionState VirtualMachine::step() {
                 string = string->w_ref;
             }
             if (index.w_int > static_cast<int>(string->w_str->str.size())) {
-                runtime_error("String index out of range", get_current_line());
+                ctx->logger.runtime_error("String index out of range", get_current_line());
                 return ExecutionState::FINISHED;
             }
             break;
@@ -458,7 +458,7 @@ ExecutionState VirtualMachine::step() {
             Value &how_many = stack[--stack_top];
             Value &list = stack[stack_top - 1];
             if (static_cast<Value::IntType>(list.w_list->size()) < how_many.w_int) {
-                runtime_error("Trying to pop from empty list", get_current_line());
+                ctx->logger.runtime_error("Trying to pop from empty list", get_current_line());
                 return ExecutionState::FINISHED;
             }
             for (Value::IntType i = 0; i < how_many.w_int; i++) {
@@ -520,7 +520,7 @@ ExecutionState VirtualMachine::step() {
             Value &index = stack[stack_top - 1];
             Value &list = stack[stack_top - 2];
             if (index.w_int > static_cast<int>(list.w_list->size())) {
-                runtime_error("List index out of range", get_current_line());
+                ctx->logger.runtime_error("List index out of range", get_current_line());
                 return ExecutionState::FINISHED;
             }
             break;

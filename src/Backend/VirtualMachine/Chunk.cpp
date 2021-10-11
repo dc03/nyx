@@ -6,6 +6,7 @@
 #include "Common.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
 
+#include <iostream>
 #include <limits>
 #include <utility>
 
@@ -49,7 +50,7 @@ std::size_t Chunk::emit_constant(Value value, std::size_t line_number) {
         emit_byte(constant & 0xff);
         return bytes.size() - 4;
     } else {
-        compile_error({"Too many constants in chunk"});
+        std::cerr << "\n!-| Compile error: Too many constants in chunk\n";
         return 0;
     }
 }
@@ -62,7 +63,7 @@ std::size_t Chunk::emit_string(std::string value, std::size_t line_number) {
         emit_byte(constant & 0xff);
         return bytes.size() - 4;
     } else {
-        compile_error({"Too many constants in chunk"});
+        std::cerr << "\n!-| Compile error: Too many constants in chunk\n";
         return 0;
     }
 }

@@ -28,6 +28,18 @@ TypeResolver::TypeResolver(CompileContext *ctx, Module *module) : ctx{ctx}, curr
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void TypeResolver::warning(const std::vector<std::string> &message, const Token &where) const noexcept {
+    ctx->logger.warning(current_module, message, where);
+}
+
+void TypeResolver::error(const std::vector<std::string> &message, const Token &where) const noexcept {
+    ctx->logger.error(current_module, message, where);
+}
+
+void TypeResolver::note(const std::vector<std::string> &message) const noexcept {
+    ctx->logger.note(current_module, message);
+}
+
 bool TypeResolver::convertible_to(
     QualifiedTypeInfo to, QualifiedTypeInfo from, bool from_lvalue, const Token &where, bool in_initializer) {
     bool class_condition = [&to, &from]() {

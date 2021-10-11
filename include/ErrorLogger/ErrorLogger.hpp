@@ -12,21 +12,24 @@
 #include <string_view>
 #include <vector>
 
-struct ErrorLogger {
-    bool had_error{false};
-    bool had_runtime_error{false};
-    std::string_view source{};
-    std::string_view module_name{};
-    void set_module_name(std::string_view name);
-    void set_source(std::string_view file_source);
+class Module;
+
+class ErrorLogger {
+    bool error_occurred{false};
+    bool runtime_error_occurred{false};
+
+    void print_message(
+        Module *module, const std::vector<std::string> &message, const Token &where, const std::string_view prefix);
+
+  public:
+    void warning(Module *module, const std::vector<std::string> &message, const Token &where);
+    void error(Module *module, const std::vector<std::string> &message, const Token &where);
+    void runtime_error(std::string_view message, std::size_t line_number);
+    void note(Module *module, const std::vector<std::string> &message);
+    void compile_error(std::vector<std::string> message);
+
+    [[nodiscard]] bool had_error() const noexcept;
+    [[nodiscard]] bool had_runtime_error() const noexcept;
 };
-
-extern ErrorLogger logger;
-
-void warning(std::vector<std::string> message, const Token &where);
-void error(std::vector<std::string> message, const Token &where);
-void runtime_error(std::string_view message, std::size_t line_number);
-void note(std::vector<std::string> message);
-void compile_error(std::vector<std::string> message);
 
 #endif

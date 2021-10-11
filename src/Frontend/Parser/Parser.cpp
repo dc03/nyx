@@ -23,6 +23,18 @@ struct ParseException : public std::invalid_argument {
         : std::invalid_argument(std::string{error.begin(), error.end()}), token{std::move(token)} {}
 };
 
+void Parser::warning(const std::vector<std::string> &message, const Token &where) const noexcept {
+    ctx->logger.warning(current_module, message, where);
+}
+
+void Parser::error(const std::vector<std::string> &message, const Token &where) const noexcept {
+    ctx->logger.error(current_module, message, where);
+}
+
+void Parser::note(const std::vector<std::string> &message) const noexcept {
+    ctx->logger.note(current_module, message);
+}
+
 void Parser::add_rule(TokenType type, ParseRule rule) noexcept {
     rules[static_cast<std::size_t>(type)] = rule;
 }
@@ -270,7 +282,7 @@ ExprNode Parser::parse_precedence(ParsePrecedence::of precedence) {
                 return current_token.lexeme + "'";
             }
         }();
-        bool had_error_before = logger.had_error;
+        bool had_error_before = ctx->logger.had_error();
         error({message}, current_token);
         if (had_error_before) {
             note({"This may occur because of previous errors leading to the parser being confused"});
@@ -774,26 +786,7 @@ StmtNode Parser::import_statement() {
     Token imported = current_token;
     consume("Expected ';' or newline after imported file", current_token, TokenType::SEMICOLON, TokenType::END_OF_LINE);
 
-    //    std::string imported_dir = imported.lexeme[0] == '/' ? "" : current_module->module_directory;
-    //
-    //    std::ifstream module{imported_dir + imported.lexeme, std::ios::in};
-    //    std::size_t name_index = imported.lexeme.find_last_of('/');
-    //    std::string module_name = imported.lexeme.substr(name_index != std::string::npos ? name_index + 1 : 0);
-    //    if (not module.is_open()) {
-    //        error({"Unable to open module '", module_name, "'"}, imported);
-    //        return {nullptr};
-    //    }
-    //
-    //    if (module_name == current_module->name) {
-    //        error({"Cannot import module with the same name as the current one"}, imported);
-    //    }
-    //
-    //    std::string module_source{std::istreambuf_iterator<char>{module}, std::istreambuf_iterator<char>{}};
-    //    Module imported_module{module_name, imported_dir};
     CompileManager manager{ctx, imported.lexeme, false, current_module_depth + 1};
-
-    std::string_view logger_source{logger.source};
-    std::string_view logger_module_name{logger.module_name};
 
     auto it = std::find_if(ctx->parsed_modules.begin(), ctx->parsed_modules.end(),
         [&manager](const std::pair<Module, std::size_t> &pair) { return manager.module_name() == pair.first.name; });
@@ -811,19 +804,11 @@ StmtNode Parser::import_statement() {
     try {
         manager.parse_module();
         manager.check_module();
-
-        logger.set_source(logger_source);
-        logger.set_module_name(logger_module_name);
-        ctx->parsed_modules.emplace_back(manager.move_module(), current_module_depth + 1);
-        current_module->imported.push_back(ctx->parsed_modules.size() - 1);
-        //        logger.set_source(module_source);
-        //        logger.set_module_name(module_name);
-        //        Scanner scanner_{module_source};
-        //        Parser parser{&scanner_, imported_module, current_module_depth + 1};
-        //        imported_module.statements = parser.program();
-        //        TypeResolver resolver{&imported_module};
-        //        resolver.check(imported_module.statements);
     } catch (const ParseException &) {}
+
+    ctx->module_path_map[manager.get_module().full_path.c_str()] = ctx->parsed_modules.size();
+    ctx->parsed_modules.emplace_back(manager.move_module(), current_module_depth + 1);
+    current_module->imported.push_back(ctx->parsed_modules.size() - 1);
 
     return {nullptr};
 }

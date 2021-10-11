@@ -26,7 +26,7 @@ void run_module(const char *const main_module, cxxopts::ParseResult &result) {
         printer.print_stmts(compile_manager.get_module().statements);
     }
 
-    if (not result.count("check") && not logger.had_error) {
+    if (not result.count("check") && not compile_ctx.logger.had_error()) {
         RuntimeContext runtime_ctx{};
         RuntimeManager runtime_manager{&runtime_ctx};
 

@@ -15,10 +15,10 @@ CompileManager::CompileManager(CompileContext *ctx, fs::path path, bool is_main,
     }
 
     if (fs::is_directory(path)) {
-        compile_error({"'", std::string{path}, "' represents a directory, not a file"});
+        ctx->logger.compile_error({"'", std::string{path}, "' represents a directory, not a file"});
         return;
     } else if (not fs::exists(path)) {
-        compile_error({"No such file: '", std::string{path}, "'"});
+        ctx->logger.compile_error({"No such file: '", std::string{path}, "'"});
         return;
     }
 
@@ -33,19 +33,16 @@ CompileManager::CompileManager(CompileContext *ctx, fs::path path, bool is_main,
 
     std::ifstream file(module_path, std::ios::in);
     if (not file.is_open()) {
-        compile_error({"Unable to open module '", module_name.c_str(), "'"});
+        ctx->logger.compile_error({"Unable to open module '", module_name.c_str(), "'"});
     }
 
     std::string source{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
-
-    logger.set_module_name(module_name.native());
-    logger.set_source(source);
 
     module = Module{module_name.c_str(), module_path, source};
     if (is_main) {
         ctx->main = &module;
     }
-    scanner.set_source(module.source);
+    scanner = Scanner{ctx, &module, module.source};
 
     parser = Parser{ctx, &scanner, &module, module_depth};
     resolver = TypeResolver{ctx, &module};

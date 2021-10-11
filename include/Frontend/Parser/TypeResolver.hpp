@@ -83,6 +83,10 @@ class TypeResolver final : Visitor {
     void end_scope();
     friend class ScopedScopeManager;
 
+    void warning(const std::vector<std::string> &message, const Token &where) const noexcept;
+    void error(const std::vector<std::string> &message, const Token &where) const noexcept;
+    void note(const std::vector<std::string> &message) const noexcept;
+
     ExprVisitorType resolve(Expr *expr);
     StmtVisitorType resolve(Stmt *stmt);
     BaseTypeVisitorType resolve(BaseType *type);

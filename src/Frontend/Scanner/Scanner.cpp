@@ -15,7 +15,9 @@ Scanner::Scanner() {
     }
 }
 
-void Scanner::set_source(std::string_view source_) {
+Scanner::Scanner(CompileContext *ctx_, Module *module_, std::string_view source_) : Scanner() {
+    ctx = ctx_;
+    module = module_;
     source = source_;
 }
 
@@ -140,7 +142,8 @@ Token Scanner::scan_string() {
                 lexeme += '\"';
             } else {
                 char invalid = advance();
-                warning({"Unrecognized escape sequence: '\\", std::string{invalid}, "'"}, current_token);
+                ctx->logger.warning(
+                    module, {"Unrecognized escape sequence: '\\", std::string{invalid}, "'"}, current_token);
             }
         } else {
             lexeme += advance();
@@ -148,7 +151,7 @@ Token Scanner::scan_string() {
     }
 
     if (is_at_end()) {
-        error({"Unexpected end of file while reading string, did you forget the closing '\"'?"},
+        ctx->logger.error(module, {"Unexpected end of file while reading string, did you forget the closing '\"'?"},
             make_token(TokenType::STRING_VALUE, current_token_lexeme()));
     }
 
@@ -179,7 +182,8 @@ void Scanner::skip_multiline_comment() {
     }
 
     if (is_at_end()) {
-        error({"Unexpected end of file while skipping multiline comment, did you forget the closing '*/'"},
+        ctx->logger.error(module,
+            {"Unexpected end of file while skipping multiline comment, did you forget the closing '*/'"},
             make_token(TokenType::NONE, current_token_lexeme()));
     }
 
@@ -393,7 +397,7 @@ Token Scanner::scan_next() {
                 }
             }
 
-            error({"Unrecognized character '", std::string{next}, "' in input"},
+            ctx->logger.error(module, {"Unrecognized character '", std::string{next}, "' in input"},
                 make_token(TokenType::INVALID, current_token_lexeme()));
             return make_token(TokenType::INVALID, current_token_lexeme());
         }

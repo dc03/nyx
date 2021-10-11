@@ -74,7 +74,7 @@ void ByteCodeGenerator::add_to_scope(const BaseType *type) {
 
 void ByteCodeGenerator::patch_jump(std::size_t jump_idx, std::size_t jump_amount) {
     if (jump_amount >= Chunk::const_long_max) {
-        compile_error({"Size of jump is greater than that allowed by the instruction set"});
+        compile_ctx->logger.compile_error({"Size of jump is greater than that allowed by the instruction set"});
         return;
     }
 
@@ -530,7 +530,8 @@ ExprVisitorType ByteCodeGenerator::visit(BinaryExpr &expr) {
         }
 
         default:
-            error({"Bug in parser with illegal token type of expression's operator"}, expr.synthesized_attrs.token);
+            compile_ctx->logger.error(current_module,
+                {"Bug in parser with illegal token type of expression's operator"}, expr.synthesized_attrs.token);
             break;
     }
 
@@ -1067,7 +1068,10 @@ ExprVisitorType ByteCodeGenerator::visit(UnaryExpr &expr) {
             }
             break;
         }
-        default: error({"Bug in parser with illegal type for unary expression"}, expr.oper); break;
+        default:
+            compile_ctx->logger.error(
+                current_module, {"Bug in parser with illegal type for unary expression"}, expr.oper);
+            break;
     }
     return {};
 }
@@ -1092,7 +1096,7 @@ ExprVisitorType ByteCodeGenerator::visit(VariableExpr &expr) {
                 }
                 emit_stack_slot(expr.synthesized_attrs.stack_slot);
             } else {
-                compile_error({"Too many variables in current scope"});
+                compile_ctx->logger.compile_error({"Too many variables in current scope"});
             }
             return {};
         case IdentifierType::FUNCTION:

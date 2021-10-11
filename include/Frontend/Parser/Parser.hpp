@@ -95,6 +95,10 @@ class Parser {
 
     void recursively_change_module_depth(std::pair<Module, std::size_t> &module, std::size_t value);
 
+    void warning(const std::vector<std::string> &message, const Token &where) const noexcept;
+    void error(const std::vector<std::string> &message, const Token &where) const noexcept;
+    void note(const std::vector<std::string> &message) const noexcept;
+
   public:
     Parser() noexcept = default;
     Parser(CompileContext *ctx, Scanner *scanner, Module *module, std::size_t current_depth);

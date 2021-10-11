@@ -8,6 +8,7 @@
 
 #include "AST/Token.hpp"
 #include "AST/TokenTypes.hpp"
+#include "Frontend/CompileContext.hpp"
 #include "Trie.hpp"
 
 #include <string_view>
@@ -69,6 +70,9 @@ class Scanner {
 
     Trie keyword_map{};
 
+    CompileContext *ctx{};
+    Module *module{};
+
     char advance();
     [[nodiscard]] char peek() const noexcept;
     [[nodiscard]] char peek_next() const noexcept;
@@ -91,7 +95,7 @@ class Scanner {
 
   public:
     Scanner();
-    void set_source(std::string_view source_);
+    Scanner(CompileContext *ctx_, Module *module_, std::string_view source_);
     void reset();
 
     [[nodiscard]] bool is_at_end() const noexcept;

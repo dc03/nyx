@@ -20,6 +20,8 @@ struct RuntimeContext {
     std::vector<RuntimeModule> compiled_modules{};
     std::unordered_map<std::string, std::size_t> module_path_map{};
 
+    ErrorLogger logger{};
+
     RuntimeModule *get_module_string(const std::string &module) noexcept;
     RuntimeModule *get_module_path(const std::filesystem::path &path) noexcept;
     std::size_t get_module_index_string(const std::string &module) noexcept;
