@@ -352,6 +352,20 @@ ExecutionState VirtualMachine::step() {
             stack[stack_top - 1].tag = Value::Tag::FUNCTION;
             break;
         }
+        case is Instruction::LOAD_FUNCTION_MODULE_INDEX: {
+            RuntimeFunction *function = &ctx->compiled_modules[operand].functions[stack[stack_top - 1].w_str->str];
+            stack[stack_top - 1].w_fun = function;
+            stack[stack_top - 1].tag = Value::Tag::FUNCTION;
+            break;
+        }
+        case is Instruction::LOAD_FUNCTION_MODULE_PATH: {
+            Value::StringType path = stack[--stack_top].w_str;
+            RuntimeFunction *function = &ctx->get_module_string(path->str)->functions[stack[stack_top - 1].w_str->str];
+            cache.remove(*path);
+            stack[stack_top - 1].w_fun = function;
+            stack[stack_top - 1].tag = Value::Tag::FUNCTION;
+            break;
+        }
         case is Instruction::CALL_FUNCTION: {
             RuntimeFunction *called = stack[--stack_top].w_fun;
             frames[++frame_top] = CallFrame{&stack[stack_top - (called->arity + 1)], current_chunk, ip, called->module};
