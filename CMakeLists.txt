@@ -58,5 +58,14 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(CXXOPTS)
 FetchContent_GetProperties(CXXOPTS)
 
-target_link_libraries(nyx PUBLIC cxxopts)
-target_link_libraries(nyxVM PUBLIC cxxopts)
+FetchContent_Declare(
+        TERMCOLOR
+        GIT_REPOSITORY https://github.com/ikalnytskyi/termcolor.git
+        GIT_TAG        v2.0.0
+)
+
+FetchContent_MakeAvailable(TERMCOLOR)
+FetchContent_GetProperties(TERMCOLOR)
+
+target_link_libraries(nyx PRIVATE cxxopts termcolor)
+target_link_libraries(nyxVM PRIVATE cxxopts termcolor)

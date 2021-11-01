@@ -7,16 +7,25 @@
 
 #include <iostream>
 
+// Disable min/max macros on windows
+#if defined(_WIN32) || defined(_WIN64)
+#define NOMINMAX
+#endif
+
+#include <termcolor/termcolor.hpp>
+
 ErrorLogger logger{};
 
-void ErrorLogger::print_message(
-    Module *module, const std::vector<std::string> &message, const Token &where, const std::string_view prefix) {
-    std::cerr << "\n  | In module '" << module->name << "',";
-    std::cerr << "\n!-| line " << where.line << " | " << prefix << ": ";
+void ErrorLogger::print_message(Module *module, const std::vector<std::string> &message, const Token &where,
+    std::string_view prefix, TermColorModifier color) {
+    std::cerr << termcolor::reset << "\n!-| ";
+    std::cerr << termcolor::blue << termcolor::bold << module->full_path.c_str() << ":" << where.line
+              << termcolor::reset << ":";
+    std::cerr << "\n  | " << termcolor::bold << color << prefix << termcolor::reset << color << ": ";
     for (const std::string &str : message) {
         std::cerr << str;
     }
-    std::cerr << '\n';
+    std::cerr << termcolor::reset << '\n';
     std::size_t line_start = where.start;
     std::size_t line_end = where.end;
     while (line_start > 0 && module->source[line_start] != '\n') {
@@ -47,17 +56,18 @@ void ErrorLogger::print_message(
 }
 
 void ErrorLogger::warning(Module *module, const std::vector<std::string> &message, const Token &where) {
-    print_message(module, message, where, "Warning");
+    print_message(module, message, where, "Warning", termcolor::yellow);
 }
 
 void ErrorLogger::error(Module *module, const std::vector<std::string> &message, const Token &where) {
     error_occurred = true;
-    print_message(module, message, where, "Error");
+    print_message(module, message, where, "Error", termcolor::red);
 }
 
 void ErrorLogger::runtime_error(const std::string_view message, std::size_t line_number) {
     runtime_error_occurred = true;
-    std::cerr << "\n!-| line " << line_number << " | Error: " << message << '\n';
+    std::cerr << "\n!-| line " << line_number << " | " << termcolor::red << "Error: " << message << termcolor::reset
+              << '\n';
     //    std::size_t line_count = 1;
     //    std::size_t i = 0;
     //    for (; line_count < line_number; i++) {
@@ -73,19 +83,20 @@ void ErrorLogger::runtime_error(const std::string_view message, std::size_t line
 }
 
 void ErrorLogger::note(Module *module, const std::vector<std::string> &message) {
-    std::cerr << "->| note: ";
+    std::cerr << "->| " << termcolor::bold << termcolor::green << "note: " << termcolor::reset << termcolor::green;
     for (const std::string &str : message) {
         std::cerr << str;
     }
-    std::cerr << '\n';
+    std::cerr << termcolor::reset << '\n';
 }
 
 void ErrorLogger::fatal_error(std::vector<std::string> message) {
-    std::cerr << "\n!-| Compile error: ";
+    std::cerr << "\n!-| " << termcolor::red << termcolor::bold << "Compile error: " << termcolor::reset
+              << termcolor::red;
     for (const std::string &str : message) {
         std::cerr << str;
     }
-    std::cerr << '\n';
+    std::cerr << termcolor::reset << '\n';
 }
 
 bool ErrorLogger::had_error() const noexcept {

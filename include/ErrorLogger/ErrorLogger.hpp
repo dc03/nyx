@@ -15,11 +15,13 @@
 class Module;
 
 class ErrorLogger {
+    using TermColorModifier = std::ostream &(*)(std::ostream &out);
+
     bool error_occurred{false};
     bool runtime_error_occurred{false};
 
-    void print_message(
-        Module *module, const std::vector<std::string> &message, const Token &where, const std::string_view prefix);
+    void print_message(Module *module, const std::vector<std::string> &message, const Token &where,
+        std::string_view prefix, TermColorModifier color);
 
   public:
     void warning(Module *module, const std::vector<std::string> &message, const Token &where);
