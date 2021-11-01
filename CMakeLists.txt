@@ -16,32 +16,35 @@ add_executable(nyx src/nyx.cpp src/ErrorLogger/ErrorLogger.cpp src/Frontend/Pars
 
 add_executable(nyxVM src/Backend/VirtualMachine/Chunk.cpp src/Backend/VirtualMachine/Value.cpp src/Backend/VirtualMachine/VirtualMachine.cpp
         src/Backend/VirtualMachine/VMMain.cpp src/ErrorLogger/ErrorLogger.cpp src/Backend/VirtualMachine/Disassembler.cpp
-        src/Backend/VirtualMachine/Natives.cpp src/Backend/VirtualMachine/StringCacher.cpp)
+        src/Backend/VirtualMachine/Natives.cpp src/Backend/VirtualMachine/StringCacher.cpp src/Backend/RuntimeContext.cpp)
 
 target_include_directories(nyx PUBLIC include)
 target_include_directories(nyxVM PUBLIC include)
 
 if (MSVC)
-    # warning level 4 and all warnings as errors
-    target_compile_options(nyx PUBLIC /W4)
+    target_compile_options(nyx PRIVATE /W4)
+    target_compile_options(nyxVM PRIVATE /W4)
 else()
-    # lots of warnings and all warnings as errors
-    target_compile_options(nyx PUBLIC -Wall -Wextra -pedantic)
+    target_compile_options(nyx PRIVATE -Wall -Wextra -pedantic)
+    target_compile_options(nyxVM PRIVATE -Wall -Wextra -pedantic)
 endif()
 
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
-    if (MSVC)
-        target_compile_options(nyx PUBLIC /Zi)
-    else()
-        target_compile_options(nyx PUBLIC -g3)
+    if(NOT MSVC)
+        # Enable sanitizers
         target_link_options(nyx PUBLIC -fsanitize=address -fsanitize=leak -fsanitize=undefined)
         set(LD_PRELOAD "/usr/lib/libasan.so")
     endif()
 else(${CMAKE_BUILD_TYPE} MATCHES "Release")
-    if (MSVC)
-        target_compile_options(nyx PUBLIC /O2 /Ot /GL)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT supported OUTPUT error)
+
+    if(supported)
+        message(STATUS "IPO / LTO enabled")
+        set_property(TARGET nyx PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+        set_property(TARGET nyxVM PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     else()
-        target_compile_options(nyx PUBLIC -O2 -flto)
+        message(STATUS "IPO / LTO not supported: <${error}>")
     endif()
 endif()
 
@@ -56,4 +59,4 @@ FetchContent_MakeAvailable(CXXOPTS)
 FetchContent_GetProperties(CXXOPTS)
 
 target_link_libraries(nyx PUBLIC cxxopts)
-target_link_libraries(nyxVM PUBLIC m cxxopts)
+target_link_libraries(nyxVM PUBLIC cxxopts)
