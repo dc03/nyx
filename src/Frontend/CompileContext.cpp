@@ -2,11 +2,6 @@
 /* See LICENSE at project root for license details */
 #include "Frontend/CompileContext.hpp"
 
-#include "Backend/VirtualMachine/Value.hpp"
-// Really weird compile errors without this include
-// Basically, `Chunk` in `RuntimeModule` only forward declares `Value`, but does not include `Value` header file, so
-// trying to access the `std::vector<RuntimeModule>` in any manner fails because it is made up of an incomplete type
-
 #include <algorithm>
 
 Module *CompileContext::get_module_string(const std::string &module) noexcept {
