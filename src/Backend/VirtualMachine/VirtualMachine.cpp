@@ -15,6 +15,7 @@
 VirtualMachine::VirtualMachine(bool trace_stack, bool trace_insn)
     : stack{std::make_unique<Value[]>(VirtualMachine::stack_size)},
       frames{std::make_unique<CallFrame[]>(VirtualMachine::frame_size)},
+      modules{std::make_unique<ModuleFrame[]>(VirtualMachine::module_size)},
       trace_stack{trace_stack},
       trace_insn{trace_insn} {
     for (const auto &[name, wrapper] : native_wrappers.get_all_natives()) {
@@ -26,9 +27,10 @@ void VirtualMachine::set_runtime_ctx(RuntimeContext *ctx_) {
     ctx = ctx_;
 }
 
-void VirtualMachine::set_function_module_pointers(RuntimeModule *module) {
+void VirtualMachine::set_function_module_info(RuntimeModule *module, std::size_t index) {
     for (auto &[name, function] : module->functions) {
         function.module = module;
+        function.module_index = index;
     }
 }
 
@@ -86,15 +88,59 @@ void VirtualMachine::copy_into(Value::ListType *list, Value::ListType *what) {
     }
 }
 
+void VirtualMachine::initialize_modules() {
+    std::size_t i = 0;
+    for (auto &module : ctx->compiled_modules) {
+        modules[module_top++] = {&stack[stack_top], module.name};
+        current_module = &module;
+        current_chunk = &module.top_level_code;
+        ip = &current_chunk->bytes[0];
+
+        frames[frame_top++] =
+            CallFrame{&stack[stack_top], nullptr, nullptr, current_module, i++, "<" + current_module->name + ":tlc>"};
+
+        while (step() != ExecutionState::FINISHED)
+            ;
+    }
+}
+
+void VirtualMachine::teardown_modules() {
+    while (module_top > 0) {
+        current_module = &ctx->compiled_modules[module_top - 1];
+        current_chunk = &current_module->teardown_code;
+        ip = &current_chunk->bytes[0];
+
+        while (step() != ExecutionState::FINISHED)
+            ;
+
+        frame_top--;
+        module_top--;
+    }
+}
+
 void VirtualMachine::run(RuntimeModule &module) {
+    initialize_modules();
+
+    modules[module_top++] = {&stack[stack_top], module.name};
     current_module = &module;
     current_chunk = &module.top_level_code;
     ip = &current_chunk->bytes[0];
 
-    frames[0] = CallFrame{&stack[0], nullptr, nullptr, current_module};
+    frames[frame_top++] = CallFrame{
+        &stack[stack_top], nullptr, nullptr, current_module, ctx->compiled_modules.size(), "<" + module.name + ":tlc>"};
 
     while (step() != ExecutionState::FINISHED)
         ;
+
+    current_module = &module;
+    current_chunk = &current_module->teardown_code;
+    ip = &current_chunk->bytes[0];
+
+    while (step() != ExecutionState::FINISHED)
+        ;
+
+    module_top--;
+    teardown_modules();
 }
 
 #define arith_binary_op(op, type, member)                                                                              \
@@ -281,7 +327,7 @@ ExecutionState VirtualMachine::step() {
         }
         /* Local variable operations */
         case is Instruction::ASSIGN_LOCAL: {
-            Value *assigned = &frames[frame_top].stack[operand];
+            Value *assigned = &frames[frame_top - 1].stack[operand];
             if (assigned->tag == Value::Tag::REF) {
                 assigned = assigned->w_ref;
             }
@@ -294,14 +340,14 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::ACCESS_LOCAL: {
-            push(frames[frame_top].stack[operand]);
+            push(frames[frame_top - 1].stack[operand]);
             if (stack[stack_top - 1].tag == Value::Tag::STRING) {
                 (void)cache.insert(*stack[stack_top - 1].w_str);
             }
             break;
         }
         case is Instruction::MAKE_REF_TO_LOCAL: {
-            Value &value = frames[frame_top].stack[operand];
+            Value &value = frames[frame_top - 1].stack[operand];
             if (value.tag == Value::Tag::LIST) {
                 push(Value{value.w_list});
                 stack[stack_top - 1].tag = Value::Tag::LIST_REF;
@@ -316,7 +362,7 @@ ExecutionState VirtualMachine::step() {
         }
         /* Global variable operations */
         case is Instruction::ASSIGN_GLOBAL: {
-            Value *assigned = &stack[operand];
+            Value *assigned = &modules[frames[frame_top - 1].module_index].stack[operand];
             if (assigned->tag == Value::Tag::REF) {
                 assigned = assigned->w_ref;
             }
@@ -329,14 +375,14 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::ACCESS_GLOBAL: {
-            push(Value{stack[operand]});
+            push(Value{modules[frames[frame_top - 1].module_index].stack[operand]});
             if (stack[stack_top - 1].tag == Value::Tag::STRING) {
                 (void)cache.insert(*stack[stack_top - 1].w_str);
             }
             break;
         }
         case is Instruction::MAKE_REF_TO_GLOBAL: {
-            Value &value = stack[operand];
+            Value &value = modules[frames[frame_top - 1].module_index].stack[operand];
             if (value.tag == Value::Tag::LIST) {
                 push(Value{value.w_list});
                 stack[stack_top - 1].tag = Value::Tag::LIST_REF;
@@ -347,7 +393,7 @@ ExecutionState VirtualMachine::step() {
         }
         /* Function calls */
         case is Instruction::LOAD_FUNCTION_SAME_MODULE: {
-            RuntimeFunction *function = &frames[frame_top].module->functions[stack[stack_top - 1].w_str->str];
+            RuntimeFunction *function = &frames[frame_top - 1].module->functions[stack[stack_top - 1].w_str->str];
             stack[stack_top - 1].w_fun = function;
             stack[stack_top - 1].tag = Value::Tag::FUNCTION;
             break;
@@ -368,7 +414,8 @@ ExecutionState VirtualMachine::step() {
         }
         case is Instruction::CALL_FUNCTION: {
             RuntimeFunction *called = stack[--stack_top].w_fun;
-            frames[++frame_top] = CallFrame{&stack[stack_top - (called->arity + 1)], current_chunk, ip, called->module};
+            frames[frame_top++] = CallFrame{&stack[stack_top - (called->arity + 1)], current_chunk, ip, called->module,
+                called->module_index, called->name};
             current_chunk = &called->code;
             ip = &called->code.bytes[0];
             break;
@@ -381,8 +428,8 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::RETURN: {
-            ip = frames[frame_top].return_ip;
-            current_chunk = frames[frame_top--].return_chunk;
+            ip = frames[frame_top - 1].return_ip;
+            current_chunk = frames[--frame_top].return_chunk;
             break;
         }
         case is Instruction::TRAP_RETURN: {
@@ -526,17 +573,17 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::ACCESS_LOCAL_LIST: {
-            push(frames[frame_top].stack[operand]);
+            push(frames[frame_top - 1].stack[operand]);
             stack[stack_top - 1].tag = Value::Tag::LIST_REF;
             break;
         }
         case is Instruction::ACCESS_GLOBAL_LIST: {
-            push(stack[operand]);
+            push(modules[frames[frame_top - 1].module_index].stack[operand]);
             stack[stack_top - 1].tag = Value::Tag::LIST_REF;
             break;
         }
         case is Instruction::ASSIGN_LOCAL_LIST: {
-            Value &assigned = frames[frame_top].stack[operand];
+            Value &assigned = frames[frame_top - 1].stack[operand];
             if (assigned.w_list != nullptr) {
                 destroy_list(assigned.w_list);
             }
@@ -549,7 +596,7 @@ ExecutionState VirtualMachine::step() {
             break;
         }
         case is Instruction::ASSIGN_GLOBAL_LIST: {
-            Value &assigned = stack[operand];
+            Value &assigned = modules[frames[frame_top - 1].module_index].stack[operand];
             if (assigned.w_list != nullptr) {
                 destroy_list(assigned.w_list);
             }
@@ -607,14 +654,14 @@ ExecutionState VirtualMachine::step() {
         }
         /* Move instructions */
         case is Instruction::MOVE_LOCAL: {
-            Value &moved = frames[frame_top].stack[operand];
+            Value &moved = frames[frame_top - 1].stack[operand];
             stack[stack_top] = moved;
             stack[stack_top++].tag = Value::Tag::LIST;
             moved = Value{Value::NullType{}};
             break;
         }
         case is Instruction::MOVE_GLOBAL: {
-            Value &moved = stack[operand];
+            Value &moved = modules[frames[frame_top - 1].module_index].stack[operand];
             stack[stack_top++] = moved;
             moved = Value{Value::NullType{}};
             break;

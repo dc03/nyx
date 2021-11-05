@@ -19,6 +19,13 @@ struct CallFrame {
     Chunk *return_chunk{};
     Chunk::InstructionSizeType *return_ip{};
     RuntimeModule *module{};
+    std::size_t module_index{};
+    std::string name{};
+};
+
+struct ModuleFrame {
+    Value *stack{};
+    std::string name{};
 };
 
 enum class ExecutionState { RUNNING = 0, FINISHED = 1 };
@@ -26,6 +33,7 @@ enum class ExecutionState { RUNNING = 0, FINISHED = 1 };
 class VirtualMachine {
     constexpr static std::size_t stack_size = 32768;
     constexpr static std::size_t frame_size = 1024;
+    constexpr static std::size_t module_size = 1024;
 
     Chunk::InstructionSizeType *ip{};
 
@@ -34,6 +42,9 @@ class VirtualMachine {
 
     std::unique_ptr<CallFrame[]> frames{};
     std::size_t frame_top{};
+
+    std::unique_ptr<ModuleFrame[]> modules{};
+    std::size_t module_top{};
 
     StringCacher cache{};
     std::unordered_map<std::string_view, Native> natives{};
@@ -57,6 +68,9 @@ class VirtualMachine {
     Value copy(Value &value);
     void copy_into(Value::ListType *list, Value::ListType *what);
 
+    void initialize_modules();
+    void teardown_modules();
+
   public:
     // TODO: add proper config for this
     VirtualMachine() : VirtualMachine(false, false) {}
@@ -67,7 +81,7 @@ class VirtualMachine {
     VirtualMachine &operator=(const VirtualMachine &) = delete;
 
     void set_runtime_ctx(RuntimeContext *ctx_);
-    void set_function_module_pointers(RuntimeModule *module);
+    void set_function_module_info(RuntimeModule *module, std::size_t index);
 
     void run(RuntimeModule &module);
     ExecutionState step();
