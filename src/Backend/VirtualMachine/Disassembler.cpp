@@ -29,6 +29,7 @@ void disassemble_ctx(RuntimeContext *ctx) {
 void disassemble_module(RuntimeModule *module) {
     std::cout << "\n -<==== Module : " << module->name << " ====>-\n";
     disassemble_chunk(module->top_level_code, module->name, "<top-level-code>");
+    disassemble_chunk(module->teardown_code, module->name, "<tear-down-code>");
     for (auto &[name, function] : module->functions) {
         disassemble_chunk(function.code, module->name, name);
     }
