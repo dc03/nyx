@@ -97,6 +97,8 @@ RuntimeModule ByteCodeGenerator::compile(Module &module) {
         }
     }
 
+    assert(current_scope_depth == 1 && "Need to be at outermost scope to emit teardown code");
+    current_chunk = &compiled.teardown_code;
     end_scope();
     current_chunk->emit_instruction(Instruction::POP, 0);
     return compiled;
@@ -1252,7 +1254,7 @@ StmtVisitorType ByteCodeGenerator::visit(ReturnStmt &stmt) {
     }
     current_chunk->emit_instruction(Instruction::POP, stmt.keyword.line);
 
-    destroy_locals(stmt.function->scope_depth);
+    destroy_locals(stmt.function->scope_depth + 1);
 
     current_chunk->emit_instruction(Instruction::RETURN, stmt.keyword.line);
     emit_operand(stmt.locals_popped);
