@@ -50,5 +50,8 @@ void RuntimeManager::run() {
 
     if (ctx->main != nullptr) {
         vm.run(main);
+        if (ctx->main->functions.find("main") != ctx->main->functions.end()) {
+            vm.run_function(ctx->main->functions["main"]);
+        }
     }
 }

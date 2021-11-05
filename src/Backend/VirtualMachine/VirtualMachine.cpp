@@ -118,6 +118,23 @@ void VirtualMachine::teardown_modules() {
     }
 }
 
+void VirtualMachine::run_function(RuntimeFunction &function) {
+    std::size_t function_frame = frame_top;
+
+    push(Value{nullptr});
+
+    frames[frame_top++] = CallFrame{&stack[stack_top - (function.arity + 1)], current_chunk, ip, function.module,
+        function.module_index, function.name};
+    current_chunk = &function.code;
+    ip = &function.code.bytes[0];
+
+    while (frame_top > function_frame) {
+        step();
+    }
+
+    pop();
+}
+
 void VirtualMachine::run(RuntimeModule &module) {
     initialize_modules();
 

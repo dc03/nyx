@@ -83,6 +83,7 @@ class VirtualMachine {
     void set_runtime_ctx(RuntimeContext *ctx_);
     void set_function_module_info(RuntimeModule *module, std::size_t index);
 
+    void run_function(RuntimeFunction &function);
     void run(RuntimeModule &module);
     ExecutionState step();
     [[nodiscard]] const HashedString &store_string(std::string str);
