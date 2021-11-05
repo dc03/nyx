@@ -39,5 +39,3 @@ fn main() -> int {
     // Destructor of Bar called
     // Destructor ~Foo called, value of x = 5
 }
-
-main()

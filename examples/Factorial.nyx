@@ -15,5 +15,3 @@ fn main() -> int {
     print("The factorial of " + string(x) + " is: " + string(factorial(x)))
     return 0
 }
-
-main()

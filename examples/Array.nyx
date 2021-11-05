@@ -3,7 +3,7 @@
  */
 fn main() -> int {
     var y: const int = 5 // This is a normal comment
-    var x: [int, y]
+    var x = 0..y
     for (var i = 0; i < size(x); ++i) {
         x[i] = i
         print(string(i) + " ")
@@ -11,5 +11,3 @@ fn main() -> int {
 
     return 0
 }
-
-main()

@@ -17,5 +17,3 @@ fn main() -> int {
     print("The fibonacci number at " + string(x) + " is: " + string(fibonacci(x)))
     return 0
 }
-
-main()
