@@ -487,12 +487,12 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
     auto it = values.end() - 1;
     for (; it >= values.begin(); it--) {
         if (it->lexeme == expr.target.lexeme) {
+            if (it->scope_depth == 0) {
+                expr.target_type = IdentifierType::GLOBAL;
+            } else {
+                expr.target_type = IdentifierType::LOCAL;
+            }
             break;
-        }
-        if (it->scope_depth == 0) {
-            expr.target_type = IdentifierType::GLOBAL;
-        } else {
-            expr.target_type = IdentifierType::LOCAL;
         }
     }
 
@@ -1335,6 +1335,8 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
 
     if (not values.empty()) {
         stmt.scope_depth = values.crbegin()->scope_depth + 1;
+    } else {
+        stmt.scope_depth = 1;
     }
 
     resolve_and_replace_if_typeof(stmt.return_type);
