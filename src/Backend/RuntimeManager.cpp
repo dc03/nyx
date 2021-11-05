@@ -22,11 +22,14 @@ void RuntimeManager::compile(CompileContext *compile_ctx) {
 
     for (auto &[module, depth] : compile_ctx->parsed_modules) {
         ctx->compiled_modules.emplace_back(generator.compile(module));
+        ctx->compiled_modules.back().top_level_code.emit_instruction(Instruction::HALT, 0);
+        ctx->compiled_modules.back().teardown_code.emit_instruction(Instruction::HALT, 0);
     }
 
     if (compile_ctx->main != nullptr) {
         main = generator.compile(*compile_ctx->main);
         main.top_level_code.emit_instruction(Instruction::HALT, 0);
+        main.teardown_code.emit_instruction(Instruction::HALT, 0);
         ctx->main = &main;
     }
 }
@@ -37,11 +40,12 @@ void RuntimeManager::disassemble() {
 
 void RuntimeManager::run() {
     if (ctx->main != nullptr) {
-        vm.set_function_module_pointers(ctx->main);
+        vm.set_function_module_info(ctx->main, ctx->compiled_modules.size());
     }
 
+    std::size_t i = 0;
     for (auto &module : ctx->compiled_modules) {
-        vm.set_function_module_pointers(&module);
+        vm.set_function_module_info(&module, i++);
     }
 
     if (ctx->main != nullptr) {
