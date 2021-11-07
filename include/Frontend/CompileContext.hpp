@@ -13,6 +13,8 @@
 #include <unordered_map>
 #include <vector>
 
+class CLIConfig;
+
 struct CompileContext {
     Module *main{};
     std::filesystem::path main_parent_path{};
@@ -20,6 +22,7 @@ struct CompileContext {
     std::vector<std::pair<Module, std::size_t>> parsed_modules{};
     std::unordered_map<std::string, std::size_t> module_path_map{};
 
+    const CLIConfig *config{};
     ErrorLogger logger{};
 
     Module *get_module_string(const std::string &module) noexcept;

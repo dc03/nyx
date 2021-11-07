@@ -12,11 +12,11 @@ add_executable(nyx src/nyx.cpp src/ErrorLogger/ErrorLogger.cpp src/Frontend/Pars
         src/Backend/VirtualMachine/Chunk.cpp src/Backend/CodeGenerators/ByteCodeGenerator.cpp src/Backend/VirtualMachine/VirtualMachine.cpp
         src/Backend/VirtualMachine/Disassembler.cpp src/Backend/VirtualMachine/Natives.cpp src/AST/ASTPrinter.cpp
         src/Backend/VirtualMachine/Value.cpp src/Backend/VirtualMachine/StringCacher.cpp src/Frontend/CompileManager.cpp
-        src/Backend/RuntimeManager.cpp src/Frontend/CompileContext.cpp src/Backend/RuntimeContext.cpp)
+        src/Backend/RuntimeManager.cpp src/Frontend/CompileContext.cpp src/Backend/RuntimeContext.cpp src/CLIConfigParser.cpp)
 
 add_executable(nyxVM src/Backend/VirtualMachine/Chunk.cpp src/Backend/VirtualMachine/Value.cpp src/Backend/VirtualMachine/VirtualMachine.cpp
         src/Backend/VirtualMachine/VMMain.cpp src/ErrorLogger/ErrorLogger.cpp src/Backend/VirtualMachine/Disassembler.cpp
-        src/Backend/VirtualMachine/Natives.cpp src/Backend/VirtualMachine/StringCacher.cpp src/Backend/RuntimeContext.cpp)
+        src/Backend/VirtualMachine/Natives.cpp src/Backend/VirtualMachine/StringCacher.cpp src/Backend/RuntimeContext.cpp src/CLIConfigParser.cpp)
 
 target_include_directories(nyx PUBLIC include)
 target_include_directories(nyxVM PUBLIC include)

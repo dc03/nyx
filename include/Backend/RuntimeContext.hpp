@@ -14,12 +14,15 @@
 #include <unordered_map>
 #include <vector>
 
+class CLIConfig;
+
 struct RuntimeContext {
     RuntimeModule *main{};
 
     std::vector<RuntimeModule> compiled_modules{};
     std::unordered_map<std::string, std::size_t> module_path_map{};
 
+    const CLIConfig *config{};
     ErrorLogger logger{};
 
     RuntimeModule *get_module_string(const std::string &module) noexcept;

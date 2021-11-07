@@ -2,20 +2,23 @@
 /* See LICENSE at project root for license details */
 #include "AST/ASTPrinter.hpp"
 #include "Backend/RuntimeManager.hpp"
+#include "CLIConfigParser.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
 #include "Frontend/CompileManager.hpp"
 
 #include <cxxopts.hpp>
 #include <iostream>
 
-void run_module(const char *const main_module, cxxopts::ParseResult &result) {
+void run(const char *const main_module, const CLIConfig *compile_config, const CLIConfig *runtime_config) {
     CompileContext compile_ctx{};
+    compile_ctx.config = compile_config;
+
     CompileManager compile_manager{&compile_ctx, main_module, true, 0};
 
     compile_manager.parse_module();
     compile_manager.check_module();
 
-    if (result.count("dump-ast")) {
+    if (compile_config->contains("dump-ast")) {
         ASTPrinter printer{};
         for (auto &[module, depth] : compile_ctx.parsed_modules) {
             std::cout << "-<=== Module " << module.name << " ===>-\n\n";
@@ -26,8 +29,10 @@ void run_module(const char *const main_module, cxxopts::ParseResult &result) {
         printer.print_stmts(compile_manager.get_module().statements);
     }
 
-    if (not result.count("check") && not compile_ctx.logger.had_error()) {
+    if (not compile_config->contains("check") && not compile_ctx.logger.had_error()) {
         RuntimeContext runtime_ctx{};
+        runtime_ctx.config = runtime_config;
+
         RuntimeManager runtime_manager{&runtime_ctx};
 
         for (auto &module : compile_ctx.parsed_modules) {
@@ -35,7 +40,7 @@ void run_module(const char *const main_module, cxxopts::ParseResult &result) {
         }
 
         runtime_manager.compile(&compile_ctx);
-        if (result.count("disassemble-code")) {
+        if (runtime_config->contains("disassemble-code")) {
             runtime_manager.disassemble();
         }
         runtime_manager.run();
@@ -43,27 +48,19 @@ void run_module(const char *const main_module, cxxopts::ParseResult &result) {
 }
 
 int main(int argc, char *argv[]) {
-    cxxopts::Options options{"nyx", "A small and simple interpreted language"};
-
-    // clang-format off
-    options.add_options()
-        ("check", "Do not run the code, only parse and type check it")
-        ("dump-ast", "Dump the contents of the AST after parsing and typechecking", cxxopts::value<bool>()->default_value("false"))
-        ("disassemble-code", "Disassemble the byte code produced for the VM", cxxopts::value<bool>()->default_value("false"))
-        ("main", "The module from which to start execution", cxxopts::value<std::string>())
-        ("trace-exec-stack", "Print the contents of the stack as the VM executes code", cxxopts::value<bool>()->default_value("false"))
-        ("trace-exec-insn", "Print the instructions as they are executed by the VM", cxxopts::value<bool>()->default_value("false"))
-        ("h,help", "Print usage");
-    // clang-format on
-
     try {
-        cxxopts::ParseResult result = options.parse(argc, argv);
-        if (result.arguments().empty() || result.count("help")) {
-            std::cout << options.help() << '\n';
+        CLIConfigParser parser{argc, argv};
+
+        const CLIConfig *compile_config = parser.get_compile_config();
+        const CLIConfig *runtime_config = parser.get_runtime_config();
+
+        if (parser.is_empty() || parser.is_help()) {
+            std::cout << parser.get_help() << '\n';
             return 0;
-        } else if (result.count("main")) {
-            run_module(result["main"].as<std::string>().c_str(), result);
+        } else if (compile_config->contains("main")) {
+            run(compile_config->get<std::string>("main").c_str(), compile_config, runtime_config);
         }
-    } catch (cxxopts::OptionException &ex) { std::cout << ex.what() << '\n'; }
+    } catch (const std::invalid_argument &e) { std::cout << e.what() << '\n'; }
+
     return 0;
 }
