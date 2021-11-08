@@ -13,9 +13,9 @@
 
 #include <string_view>
 
-void disassemble_ctx(RuntimeContext *ctx);
-void disassemble_module(RuntimeModule *module);
-void disassemble_chunk(Chunk &chunk, std::string_view module_name, std::string_view name);
-void disassemble_instruction(Chunk &chunk, Instruction instruction, std::size_t where);
+void disassemble_ctx(RuntimeContext *ctx, bool colors_enabled);
+void disassemble_module(RuntimeModule *module, bool colors_enabled);
+void disassemble_chunk(Chunk &chunk, std::string_view module_name, std::string_view name, bool colors_enabled);
+void disassemble_instruction(Chunk &chunk, Instruction instruction, std::size_t where, bool colors_enabled);
 
 #endif
