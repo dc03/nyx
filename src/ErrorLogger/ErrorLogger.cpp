@@ -14,18 +14,22 @@
 
 #include <termcolor/termcolor.hpp>
 
-ErrorLogger logger{};
+ColoredPrintHelper ErrorLogger::pcife(ColoredPrintHelper::StreamColorModifier colorizer) {
+    return ColoredPrintHelper{colors_enabled, colorizer};
+}
 
 void ErrorLogger::print_message(Module *module, const std::vector<std::string> &message, const Token &where,
-    std::string_view prefix, TermColorModifier color) {
-    std::cerr << termcolor::reset << "\n!-| ";
-    std::cerr << termcolor::blue << termcolor::bold << module->full_path.c_str() << ":" << where.line
-              << termcolor::reset << ":";
-    std::cerr << "\n  | " << termcolor::bold << color << prefix << termcolor::reset << color << ": ";
+    std::string_view prefix, ColoredPrintHelper::StreamColorModifier color) {
+    std::cerr << pcife(termcolor::reset) << "\n!-| ";
+    std::cerr << pcife(termcolor::blue) << pcife(termcolor::bold) << module->full_path.c_str() << ":" << where.line
+              << pcife(termcolor::reset) << ":";
+    std::cerr << "\n  | " << pcife(termcolor::bold) << pcife(color) << prefix << pcife(termcolor::reset) << pcife(color)
+              << ": ";
     for (const std::string &str : message) {
         std::cerr << str;
     }
-    std::cerr << termcolor::reset << '\n';
+    std::cerr << pcife(termcolor::reset) << '\n';
+
     std::size_t line_start = where.start;
     std::size_t line_end = where.end;
     while (line_start > 0 && module->source[line_start] != '\n') {
@@ -66,8 +70,8 @@ void ErrorLogger::error(Module *module, const std::vector<std::string> &message,
 
 void ErrorLogger::runtime_error(const std::string_view message, std::size_t line_number) {
     runtime_error_occurred = true;
-    std::cerr << "\n!-| line " << line_number << " | " << termcolor::red << "Error: " << message << termcolor::reset
-              << '\n';
+    std::cerr << "\n!-| line " << line_number << " | " << pcife(termcolor::red) << "Error: " << message
+              << pcife(termcolor::reset) << '\n';
     //    std::size_t line_count = 1;
     //    std::size_t i = 0;
     //    for (; line_count < line_number; i++) {
@@ -83,20 +87,21 @@ void ErrorLogger::runtime_error(const std::string_view message, std::size_t line
 }
 
 void ErrorLogger::note(Module *module, const std::vector<std::string> &message) {
-    std::cerr << "->| " << termcolor::bold << termcolor::green << "note: " << termcolor::reset << termcolor::green;
+    std::cerr << "->| " << pcife(termcolor::bold) << pcife(termcolor::green) << "note: " << pcife(termcolor::reset)
+              << pcife(termcolor::green);
     for (const std::string &str : message) {
         std::cerr << str;
     }
-    std::cerr << termcolor::reset << '\n';
+    std::cerr << pcife(termcolor::reset) << '\n';
 }
 
 void ErrorLogger::fatal_error(std::vector<std::string> message) {
-    std::cerr << "\n!-| " << termcolor::red << termcolor::bold << "Compile error: " << termcolor::reset
-              << termcolor::red;
+    std::cerr << "\n!-| " << pcife(termcolor::red) << pcife(termcolor::bold)
+              << "Compile error: " << pcife(termcolor::reset) << pcife(termcolor::red);
     for (const std::string &str : message) {
         std::cerr << str;
     }
-    std::cerr << termcolor::reset << '\n';
+    std::cerr << pcife(termcolor::reset) << '\n';
 }
 
 bool ErrorLogger::had_error() const noexcept {
@@ -105,4 +110,8 @@ bool ErrorLogger::had_error() const noexcept {
 
 bool ErrorLogger::had_runtime_error() const noexcept {
     return runtime_error_occurred;
+}
+
+void ErrorLogger::set_color(bool value) noexcept {
+    colors_enabled = value;
 }
