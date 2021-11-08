@@ -91,6 +91,13 @@ void VirtualMachine::copy_into(Value::ListType *list, Value::ListType *what) {
 void VirtualMachine::initialize_modules() {
     std::size_t i = 0;
     for (auto &module : ctx->compiled_modules) {
+#if !NO_TRACE_VM
+        if (debug_print_module_init) {
+            std::cout << pcife(termcolor::red) << "\n!-- Begin initialization of '" << module.name << "' --!\n\n"
+                      << pcife(termcolor::reset);
+        }
+#endif
+
         modules[module_top++] = {&stack[stack_top], module.name};
         current_module = &module;
         current_chunk = &module.top_level_code;
@@ -101,11 +108,26 @@ void VirtualMachine::initialize_modules() {
 
         while (step() != ExecutionState::FINISHED)
             ;
+
+#if !NO_TRACE_VM
+        if (debug_print_module_init) {
+            std::cout << pcife(termcolor::red) << "\n!-- End initialization of '" << module.name << "' --!\n"
+                      << pcife(termcolor::reset);
+        }
+#endif
     }
 }
 
 void VirtualMachine::teardown_modules() {
     while (module_top > 0) {
+#if !NO_TRACE_VM
+        if (debug_print_module_init) {
+            std::cout << pcife(termcolor::red) << "\n!-- Begin teardown of '" << modules[module_top - 1].name
+                      << "' --!\n\n"
+                      << pcife(termcolor::reset);
+        }
+#endif
+
         current_module = &ctx->compiled_modules[module_top - 1];
         current_chunk = &current_module->teardown_code;
         ip = &current_chunk->bytes[0];
@@ -115,14 +137,30 @@ void VirtualMachine::teardown_modules() {
 
         frame_top--;
         module_top--;
+
+#if !NO_TRACE_VM
+        if (debug_print_module_init) {
+            std::cout << pcife(termcolor::red) << "\n!-- End teardown of '" << modules[module_top].name << "' --!\n"
+                      << pcife(termcolor::reset);
+        }
+#endif
     }
 }
 
+#if !NO_TRACE_VM
 ColoredPrintHelper VirtualMachine::pcife(ColoredPrintHelper::StreamColorModifier colorizer) {
     return ColoredPrintHelper{colors_enabled, colorizer};
 }
+#endif
 
 void VirtualMachine::run_function(RuntimeFunction &function) {
+#if !NO_TRACE_VM
+    if (debug_print_module_init) {
+        std::cout << pcife(termcolor::yellow) << "\n!-- Begin execution of function '" << function.name << "' --!\n\n"
+                  << pcife(termcolor::reset);
+    }
+#endif
+
     std::size_t function_frame = frame_top;
 
     push(Value{nullptr});
@@ -135,6 +173,13 @@ void VirtualMachine::run_function(RuntimeFunction &function) {
     while (frame_top > function_frame) {
         step();
     }
+
+#if !NO_TRACE_VM
+    if (debug_print_module_init) {
+        std::cout << pcife(termcolor::yellow) << "\n!-- End execution of function '" << function.name << "' --!\n"
+                  << pcife(termcolor::reset);
+    }
+#endif
 
     pop();
 }
@@ -150,15 +195,47 @@ void VirtualMachine::run(RuntimeModule &module) {
     frames[frame_top++] = CallFrame{
         &stack[stack_top], nullptr, nullptr, current_module, ctx->compiled_modules.size(), "<" + module.name + ":tlc>"};
 
+#if !NO_TRACE_VM
+    if (debug_print_module_init) {
+        std::cout << pcife(termcolor::yellow) << "\n!-- Begin execution of main module '" << module.name << "' --!\n\n"
+                  << pcife(termcolor::reset);
+    }
+#endif
+
     while (step() != ExecutionState::FINISHED)
         ;
+
+#if !NO_TRACE_VM
+    if (debug_print_module_init) {
+        std::cout << pcife(termcolor::yellow) << "\n!-- End execution of main module '" << module.name << "' --!\n"
+                  << pcife(termcolor::reset);
+    }
+#endif
+
+    if (ctx->main->functions.find("main") != ctx->main->functions.end()) {
+        run_function(ctx->main->functions["main"]);
+    }
 
     current_module = &module;
     current_chunk = &current_module->teardown_code;
     ip = &current_chunk->bytes[0];
 
+#if !NO_TRACE_VM
+    if (debug_print_module_init) {
+        std::cout << pcife(termcolor::yellow) << "\n!-- Begin teardown of main module '" << module.name << "' --!\n\n"
+                  << pcife(termcolor::reset);
+    }
+#endif
+
     while (step() != ExecutionState::FINISHED)
         ;
+
+#if !NO_TRACE_VM
+    if (debug_print_module_init) {
+        std::cout << pcife(termcolor::yellow) << "\n!-- End teardown of main module '" << module.name << "' --!\n"
+                  << pcife(termcolor::reset);
+    }
+#endif
 
     module_top--;
     teardown_modules();
@@ -182,6 +259,7 @@ void VirtualMachine::run(RuntimeModule &module) {
     break
 
 ExecutionState VirtualMachine::step() {
+#if !NO_TRACE_VM
     if (debug_print_stack) {
         std::cout << pcife(termcolor::green) << "Stack   : ";
         for (Value *begin{&stack[0]}; begin < &stack[stack_top]; begin++) {
@@ -213,6 +291,8 @@ ExecutionState VirtualMachine::step() {
         disassemble_instruction(
             *current_chunk, static_cast<Instruction>(*ip >> 24), (ip - &current_chunk->bytes[0]), colors_enabled);
     }
+#endif
+
     Chunk::InstructionSizeType next = read_next();
     Chunk::InstructionSizeType instruction = next & 0xff00'0000;
     Chunk::InstructionSizeType operand = next & 0x00ff'ffff;

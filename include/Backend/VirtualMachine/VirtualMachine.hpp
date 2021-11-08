@@ -55,11 +55,17 @@ class VirtualMachine {
 
     RuntimeContext *ctx{};
 
+#if !NO_TRACE_VM
     bool colors_enabled{};
     bool debug_print_stack{};
     bool debug_print_frames{};
     bool debug_print_modules{};
     bool debug_print_instructions{};
+    bool debug_print_module_init{};
+
+    // print_color_if_enabled
+    ColoredPrintHelper pcife(ColoredPrintHelper::StreamColorModifier colorizer);
+#endif
 
     Chunk::InstructionSizeType read_next();
 
@@ -74,9 +80,6 @@ class VirtualMachine {
 
     void initialize_modules();
     void teardown_modules();
-
-    // print_color_if_enabled
-    ColoredPrintHelper pcife(ColoredPrintHelper::StreamColorModifier colorizer);
 
     friend class RuntimeManager;
 

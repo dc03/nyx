@@ -29,7 +29,7 @@ const CLIConfigParser::Options CLIConfigParser::runtime_options{
     {"disassemble-code", {}, "Disassemble the byte code produced for the VM",
         OptionType::QuantityTag::SINGLE_VALUE,
         OptionType::ValueTypeTag::BOOLEAN_VALUE},
-    {"trace-exec", {"stack", "frame", "module", "insn"}, "Print information during execution (supported: stack, frame, module, insn)",
+    {"trace-exec", {"stack", "frame", "module", "insn", "module_init"}, "Print information during execution (supported: stack, frame, module, insn, module_init)",
         OptionType::QuantityTag::MULTI_VALUE,
         OptionType::ValueTypeTag::STRING_VALUE},
 };

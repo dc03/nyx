@@ -4,6 +4,7 @@
 
 #include "Backend/VirtualMachine/Disassembler.hpp"
 #include "CLIConfigParser.hpp"
+#include "Common.hpp"
 
 #include <algorithm>
 
@@ -11,20 +12,19 @@ RuntimeManager::RuntimeManager(RuntimeContext *ctx) : ctx{ctx} {
     generator.set_runtime_ctx(ctx);
     vm.set_runtime_ctx(ctx);
 
+#if !NO_TRACE_VM
+#define HAS_OPT(value) std::find(opts.begin(), opts.end(), value) != opts.end()
     vm.colors_enabled = not ctx->config->contains("no-colorize-output");
-
     if (ctx->config->contains("trace-exec")) {
         const auto &opts = ctx->config->get<std::vector<std::string>>("trace-exec");
-
-#define HAS_OPT(value) std::find(opts.begin(), opts.end(), value) != opts.end()
-
         vm.debug_print_stack = HAS_OPT("stack");
         vm.debug_print_frames = HAS_OPT("frame");
         vm.debug_print_modules = HAS_OPT("module");
         vm.debug_print_instructions = HAS_OPT("insn");
-
-#undef HAS_OPT
+        vm.debug_print_module_init = HAS_OPT("module_init");
     }
+#undef HAS_OPT
+#endif
 }
 
 void RuntimeManager::compile(CompileContext *compile_ctx) {
@@ -66,8 +66,5 @@ void RuntimeManager::run() {
 
     if (ctx->main != nullptr) {
         vm.run(main);
-        if (ctx->main->functions.find("main") != ctx->main->functions.end()) {
-            vm.run_function(ctx->main->functions["main"]);
-        }
     }
 }

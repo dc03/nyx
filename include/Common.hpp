@@ -34,4 +34,11 @@
 #define allocate_node(T, ...)                                                                                          \
     new T { __VA_ARGS__ }
 
+// Disable VirtualMachine's tracing at compile time
+#ifndef NO_TRACE_VM
+#define NO_TRACE_VM 0
+#else
+#define NO_TRACE_VM 1
+#endif
+
 #endif
