@@ -2,6 +2,8 @@
 /* See LICENSE at project root for license details */
 #include "Frontend/CompileContext.hpp"
 
+#include "CLIConfigParser.hpp"
+
 #include <algorithm>
 
 Module *CompileContext::get_module_string(const std::string &module) noexcept {
@@ -28,6 +30,14 @@ std::size_t CompileContext::get_module_index_string(const std::string &module) c
 
 std::size_t CompileContext::get_module_index_path(const std::filesystem::path &path) const noexcept {
     return get_module_index_string(path.c_str());
+}
+
+void CompileContext::set_config(const CLIConfig *config) {
+    this->config = config;
+
+    if (config->contains("no-colorize-output")) {
+        logger.set_color(false);
+    }
 }
 
 void CompileContext::sort_modules() {

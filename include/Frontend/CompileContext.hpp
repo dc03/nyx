@@ -30,6 +30,7 @@ struct CompileContext {
     std::size_t get_module_index_string(const std::string &module) const noexcept;
     std::size_t get_module_index_path(const std::filesystem::path &path) const noexcept;
 
+    void set_config(const CLIConfig *config);
     void sort_modules();
 };
 

@@ -29,6 +29,8 @@ struct RuntimeContext {
     RuntimeModule *get_module_path(const std::filesystem::path &path) noexcept;
     std::size_t get_module_index_string(const std::string &module) noexcept;
     std::size_t get_module_index_path(const std::filesystem::path &path) noexcept;
+
+    void set_config(const CLIConfig *config);
 };
 
 #endif
