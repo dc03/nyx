@@ -11,7 +11,7 @@
 
 void run(const char *const main_module, const CLIConfig *compile_config, const CLIConfig *runtime_config) {
     CompileContext compile_ctx{};
-    compile_ctx.config = compile_config;
+    compile_ctx.set_config(compile_config);
 
     CompileManager compile_manager{&compile_ctx, main_module, true, 0};
 
@@ -31,7 +31,7 @@ void run(const char *const main_module, const CLIConfig *compile_config, const C
 
     if (not compile_config->contains("check") && not compile_ctx.logger.had_error()) {
         RuntimeContext runtime_ctx{};
-        runtime_ctx.config = runtime_config;
+        runtime_ctx.set_config(runtime_config);
 
         RuntimeManager runtime_manager{&runtime_ctx};
 
