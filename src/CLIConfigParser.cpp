@@ -21,7 +21,7 @@ const CLIConfigParser::Options CLIConfigParser::compile_options{
     {"dump-ast", {}, "Dump the contents of the AST after parsing and typechecking",
         OptionType::QuantityTag::SINGLE_VALUE,
         OptionType::ValueTypeTag::BOOLEAN_VALUE},
-    {"implicit-float-int", {"warn", "error", "none"}, "Warning/error about implicit conversion between float and int",
+    {"implicit-float-int", {"warn", "error", "none"}, "Warning/error about implicit conversion between float and int (supported: warn, error, none; default: warn)",
         OptionType::QuantityTag::MULTI_VALUE,
         OptionType::ValueTypeTag::STRING_VALUE}};
 
@@ -29,7 +29,7 @@ const CLIConfigParser::Options CLIConfigParser::runtime_options{
     {"disassemble-code", {}, "Disassemble the byte code produced for the VM",
         OptionType::QuantityTag::SINGLE_VALUE,
         OptionType::ValueTypeTag::BOOLEAN_VALUE},
-    {"trace-exec", {"insn", "module", "stack"}, "Print information during execution",
+    {"trace-exec", {"stack", "frame", "module", "insn"}, "Print information during execution (supported: stack, frame, module, insn)",
         OptionType::QuantityTag::MULTI_VALUE,
         OptionType::ValueTypeTag::STRING_VALUE},
 };
