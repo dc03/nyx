@@ -39,6 +39,9 @@ else(${CMAKE_BUILD_TYPE} MATCHES "Release")
     include(CheckIPOSupported)
     check_ipo_supported(RESULT supported OUTPUT error)
 
+    target_compile_definitions(nyx PRIVATE NO_TRACE_VM)
+    target_compile_definitions(nyxVM PRIVATE NO_TRACE_VM)
+
     if(supported)
         message(STATUS "IPO / LTO enabled")
         set_property(TARGET nyx PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
