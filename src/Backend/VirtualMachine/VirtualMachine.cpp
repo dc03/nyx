@@ -5,19 +5,19 @@
 #include "Backend/VirtualMachine/Disassembler.hpp"
 #include "Backend/VirtualMachine/Instructions.hpp"
 #include "Backend/VirtualMachine/StringCacher.hpp"
+#include "CLIConfigParser.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
 
 #include <cmath>
 #include <iostream>
+#include <termcolor/termcolor.hpp>
 
 #define is (Chunk::InstructionSizeType)
 
-VirtualMachine::VirtualMachine(bool trace_stack, bool trace_insn)
+VirtualMachine::VirtualMachine()
     : stack{std::make_unique<Value[]>(VirtualMachine::stack_size)},
       frames{std::make_unique<CallFrame[]>(VirtualMachine::frame_size)},
-      modules{std::make_unique<ModuleFrame[]>(VirtualMachine::module_size)},
-      trace_stack{trace_stack},
-      trace_insn{trace_insn} {
+      modules{std::make_unique<ModuleFrame[]>(VirtualMachine::module_size)} {
     for (const auto &[name, wrapper] : native_wrappers.get_all_natives()) {
         natives[name] = wrapper->get_native();
     }
@@ -118,6 +118,10 @@ void VirtualMachine::teardown_modules() {
     }
 }
 
+ColoredPrintHelper VirtualMachine::pcife(ColoredPrintHelper::StreamColorModifier colorizer) {
+    return ColoredPrintHelper{colors_enabled, colorizer};
+}
+
 void VirtualMachine::run_function(RuntimeFunction &function) {
     std::size_t function_frame = frame_top;
 
@@ -178,14 +182,36 @@ void VirtualMachine::run(RuntimeModule &module) {
     break
 
 ExecutionState VirtualMachine::step() {
-    if (trace_stack) {
+    if (debug_print_stack) {
+        std::cout << pcife(termcolor::green) << "Stack   : ";
         for (Value *begin{&stack[0]}; begin < &stack[stack_top]; begin++) {
-            std::cout << "[ " << begin->repr() << " ] ";
+            std::cout << pcife(termcolor::blue) << "[ " << pcife(termcolor::cyan) << begin->repr()
+                      << pcife(termcolor::blue) << " ] ";
         }
-        std::cout << '\n';
     }
-    if (trace_insn) {
-        disassemble_instruction(*current_chunk, static_cast<Instruction>(*ip >> 24), (ip - &current_chunk->bytes[0]));
+    if (debug_print_frames) {
+        std::cout << pcife(termcolor::green) << "\nFrames  : ";
+        for (CallFrame *begin{&frames[0]}; begin < &frames[frame_top]; begin++) {
+            std::cout << pcife(termcolor::blue) << "[ " << pcife(termcolor::red) << begin->name
+                      << pcife(termcolor::reset) << " : " << pcife(termcolor::cyan) << begin->stack
+                      << pcife(termcolor::blue) << " ] ";
+        }
+    }
+    if (debug_print_modules) {
+        std::cout << pcife(termcolor::green) << "\nModules : ";
+        for (ModuleFrame *begin{&modules[0]}; begin < &modules[module_top]; begin++) {
+            std::cout << pcife(termcolor::blue) << "[ " << pcife(termcolor::red) << begin->name
+                      << pcife(termcolor::reset) << " : " << pcife(termcolor::cyan) << begin->stack
+                      << pcife(termcolor::blue) << " ] ";
+        }
+    }
+    if (debug_print_stack || debug_print_frames || debug_print_modules) {
+        std::cout << pcife(termcolor::reset) << '\n';
+    }
+
+    if (debug_print_instructions) {
+        disassemble_instruction(
+            *current_chunk, static_cast<Instruction>(*ip >> 24), (ip - &current_chunk->bytes[0]), colors_enabled);
     }
     Chunk::InstructionSizeType next = read_next();
     Chunk::InstructionSizeType instruction = next & 0xff00'0000;

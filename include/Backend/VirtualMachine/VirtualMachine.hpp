@@ -8,6 +8,7 @@
 
 #include "Backend/RuntimeContext.hpp"
 #include "Backend/RuntimeModule.hpp"
+#include "ColoredPrintHelper.hpp"
 #include "Natives.hpp"
 #include "Value.hpp"
 
@@ -54,10 +55,13 @@ class VirtualMachine {
 
     RuntimeContext *ctx{};
 
-    Chunk::InstructionSizeType read_next();
+    bool colors_enabled{};
+    bool debug_print_stack{};
+    bool debug_print_frames{};
+    bool debug_print_modules{};
+    bool debug_print_instructions{};
 
-    bool trace_stack{false};
-    bool trace_insn{false};
+    Chunk::InstructionSizeType read_next();
 
     void push(Value value) noexcept;
     void pop() noexcept;
@@ -71,10 +75,14 @@ class VirtualMachine {
     void initialize_modules();
     void teardown_modules();
 
+    // print_color_if_enabled
+    ColoredPrintHelper pcife(ColoredPrintHelper::StreamColorModifier colorizer);
+
+    friend class RuntimeManager;
+
   public:
     // TODO: add proper config for this
-    VirtualMachine() : VirtualMachine(false, false) {}
-    VirtualMachine(bool trace_stack, bool trace_insn);
+    VirtualMachine();
     ~VirtualMachine() = default;
 
     VirtualMachine(const VirtualMachine &) = delete;
