@@ -28,7 +28,7 @@ class TypeResolver final : Visitor {
     CompileContext *ctx{};
 
     Module *current_module{};
-    std::vector<TypeNode> type_scratch_space{};
+    std::vector<TypeNode> *type_scratch_space{};
     std::vector<Value> values{};
 
     bool in_ctor{false};

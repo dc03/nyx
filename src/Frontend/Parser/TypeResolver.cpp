@@ -24,7 +24,8 @@ class ScopedScopeManager {
     ~ScopedScopeManager() { resolver.end_scope(); }
 };
 
-TypeResolver::TypeResolver(CompileContext *ctx, Module *module) : ctx{ctx}, current_module{module} {}
+TypeResolver::TypeResolver(CompileContext *ctx, Module *module)
+    : ctx{ctx}, current_module{module}, type_scratch_space{&module->type_scratch_space} {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -212,24 +213,24 @@ BaseTypeVisitorType TypeResolver::resolve(BaseType *type) {
 template <typename T, typename... Args>
 BaseType *TypeResolver::make_new_type(Type type, bool is_const, bool is_ref, Args &&...args) {
     if constexpr (sizeof...(args) > 0) {
-        type_scratch_space.emplace_back(allocate_node(T, type, is_const, is_ref, std::forward<Args>(args)...));
+        type_scratch_space->emplace_back(allocate_node(T, type, is_const, is_ref, std::forward<Args>(args)...));
     } else {
-        for (TypeNode &existing_type : type_scratch_space) {
+        for (TypeNode &existing_type : *type_scratch_space) {
             if (existing_type->primitive == type && existing_type->is_const == is_const &&
                 existing_type->is_ref == is_ref) {
                 return existing_type.get();
             }
         }
-        type_scratch_space.emplace_back(allocate_node(T, type, is_const, is_ref));
+        type_scratch_space->emplace_back(allocate_node(T, type, is_const, is_ref));
     }
-    return type_scratch_space.back().get();
+    return type_scratch_space->back().get();
 }
 
 void TypeResolver::resolve_and_replace_if_typeof(TypeNode &type) {
     if (type->type_tag() == NodeType::TypeofType) {
         resolve(type.get());
         using std::swap;
-        type.swap(type_scratch_space.back());
+        type.swap(type_scratch_space->back());
     } else {
         resolve(type.get());
     }
@@ -774,7 +775,7 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
         type->is_const = type->is_const || object.info->is_const;
         ExprVisitorType info{type, name, object.is_lvalue};
 
-        type_scratch_space.emplace_back(type); // Make sure there's no memory leaks
+        type_scratch_space->emplace_back(type); // Make sure there's no memory leaks
 
         if (member->first->type->type_tag() == NodeType::UserDefinedType) {
             info.class_ = dynamic_cast<UserDefinedType *>(member->first->type.get())->class_;
@@ -1628,6 +1629,7 @@ BaseTypeVisitorType TypeResolver::visit(TypeofType &type) {
     BaseTypeVisitorType typeof_expr = copy_type(resolve(type.expr.get()).info);
     typeof_expr->is_const = typeof_expr->is_const || type.is_const;
     typeof_expr->is_ref = typeof_expr->is_ref || type.is_ref;
-    type_scratch_space.emplace_back(typeof_expr); // This is to make sure the newly synthesized type is managed properly
+    type_scratch_space->emplace_back(
+        typeof_expr); // This is to make sure the newly synthesized type is managed properly
     return typeof_expr;
 }

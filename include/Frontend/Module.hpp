@@ -20,7 +20,8 @@ struct Module {
     std::unordered_map<std::string_view, ClassStmt *> classes{};
     std::unordered_map<std::string_view, FunctionStmt *> functions{};
     std::vector<StmtNode> statements{};
-    std::vector<std::size_t> imported{}; // Indexes into `parsed_modules` in the current `CompilerContext`
+    std::vector<std::size_t> imported{};        // Indexes into `parsed_modules` in the current `CompilerContext`
+    std::vector<TypeNode> type_scratch_space{}; // Stores temporary types allocated in TypeResolver
 
     Module() noexcept = default;
     explicit Module(std::string_view name, std::filesystem::path full_path, std::string source)
