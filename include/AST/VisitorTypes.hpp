@@ -15,6 +15,7 @@
 enum class Type { BOOL, INT, FLOAT, STRING, CLASS, LIST, TYPEOF, NULL_, FUNCTION, MODULE, TUPLE };
 
 struct Expr;
+struct Stmt;
 struct BaseType;
 struct ClassStmt;
 struct FunctionStmt;
@@ -47,6 +48,11 @@ struct ExprSynthesizedAttrs {
         ScopeAccessType scope_type = ScopeAccessType::MODULE);
     ExprSynthesizedAttrs(QualifiedTypeInfo info, FunctionStmt *func, ClassStmt *class_, Token token,
         bool is_lvalue = false, ScopeAccessType scope_type = ScopeAccessType::CLASS_METHOD);
+};
+
+struct ExprInheritedAttrs {
+    enum { EXPRESSION, STATEMENT, TYPE };
+    std::variant<Expr *, Stmt *, BaseType *> parent{};
 };
 
 struct LiteralValue {

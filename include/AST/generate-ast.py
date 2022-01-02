@@ -199,7 +199,7 @@ if __name__ == '__main__':
         # Visitor declaration complete
 
         declare_base(file, 'Expr',
-                     'ExprSynthesizedAttrs synthesized_attrs')
+                     'ExprSynthesizedAttrs synthesized_attrs, ExprInheritedAttrs inherited_attrs')
         declare_base(file, 'Stmt')
         declare_base(file, 'BaseType',
                      'Type primitive, bool is_const, bool is_ref',

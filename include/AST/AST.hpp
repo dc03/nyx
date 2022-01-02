@@ -165,6 +165,7 @@ enum class NodeType {
 
 struct Expr {
     ExprSynthesizedAttrs synthesized_attrs{};
+    ExprInheritedAttrs inherited_attrs{};
 
     Expr() = default;
     virtual std::string_view string_tag() = 0;
