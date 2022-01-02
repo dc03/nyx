@@ -485,6 +485,8 @@ bool one_of(T type, Args... args) {
 }
 
 ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
+    expr.value->inherited_attrs.parent = &expr;
+
     auto it = values.end() - 1;
     for (; it >= values.begin(); it--) {
         if (it->lexeme == expr.target.lexeme) {
@@ -534,6 +536,9 @@ ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
+    expr.left->inherited_attrs.parent = &expr;
+    expr.right->inherited_attrs.parent = &expr;
+
     ExprVisitorType left_expr = resolve(expr.left.get());
     ExprVisitorType right_expr = resolve(expr.right.get());
     switch (expr.synthesized_attrs.token.type) {
@@ -666,6 +671,11 @@ ExprVisitorType TypeResolver::visit(BinaryExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(CallExpr &expr) {
+    expr.function->inherited_attrs.parent = &expr;
+    for (auto &arg : expr.args) {
+        std::get<ExprNode>(arg)->inherited_attrs.parent = &expr;
+    }
+
     if (expr.function->type_tag() == NodeType::VariableExpr) {
         auto *function = dynamic_cast<VariableExpr *>(expr.function.get());
         if (native_wrappers.is_native(function->name.lexeme)) {
@@ -754,6 +764,10 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(CommaExpr &expr) {
+    for (auto &expr_ : expr.exprs) {
+        expr_->inherited_attrs.parent = &expr;
+    }
+
     auto it = begin(expr.exprs);
 
     for (auto next = std::next(it); next != end(expr.exprs); it = next, ++next)
@@ -804,6 +818,8 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
 }
 
 ExprVisitorType TypeResolver::visit(GetExpr &expr) {
+    expr.object->inherited_attrs.parent = &expr;
+
     ExprVisitorType object = resolve(expr.object.get());
     if (expr.object->synthesized_attrs.info->primitive == Type::TUPLE && expr.name.type == TokenType::INT_VALUE) {
         int index = std::stoi(expr.name.lexeme); // Get the 0 in x.0
@@ -838,6 +854,8 @@ ExprVisitorType TypeResolver::visit(GetExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(GroupingExpr &expr) {
+    expr.expr->inherited_attrs.parent = &expr;
+
     expr.synthesized_attrs = resolve(expr.expr.get());
     expr.type.reset(copy_type(expr.synthesized_attrs.info));
     expr.type->is_ref = false;
@@ -847,6 +865,9 @@ ExprVisitorType TypeResolver::visit(GroupingExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
+    expr.object->inherited_attrs.parent = &expr;
+    expr.index->inherited_attrs.parent = &expr;
+
     ExprVisitorType list = resolve(expr.object.get());
     // I think calling a string a list is fair since its technically just a list of chars
 
@@ -877,6 +898,10 @@ ExprVisitorType TypeResolver::visit(IndexExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(ListExpr &expr) {
+    for (auto &element : expr.elements) {
+        std::get<ExprNode>(element)->inherited_attrs.parent = &expr;
+    }
+
     if (expr.elements.empty()) {
         error({"Cannot have empty list expression"}, expr.bracket);
         throw TypeException{"Cannot have empty list expression"};
@@ -917,6 +942,9 @@ ExprVisitorType TypeResolver::visit(ListExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
+    expr.list.inherited_attrs.parent = &expr;
+    expr.value->inherited_attrs.parent = &expr;
+
     ExprVisitorType contained = resolve(&expr.list);
     ExprVisitorType value = resolve(expr.value.get());
 
@@ -980,6 +1008,9 @@ ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(LogicalExpr &expr) {
+    expr.left->inherited_attrs.parent = &expr;
+    expr.right->inherited_attrs.parent = &expr;
+
     resolve(expr.left.get());
     resolve(expr.right.get());
     return expr.synthesized_attrs = {
@@ -987,6 +1018,8 @@ ExprVisitorType TypeResolver::visit(LogicalExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(MoveExpr &expr) {
+    expr.expr->inherited_attrs.parent = &expr;
+
     ExprVisitorType right = resolve(expr.expr.get());
     if (not one_of(right.info->primitive, Type::CLASS, Type::LIST, Type::TUPLE)) {
         error({"Can only move classes, lists or tuples"}, right.token);
@@ -1007,6 +1040,8 @@ ExprVisitorType TypeResolver::visit(MoveExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
+    expr.scope->inherited_attrs.parent = &expr;
+
     ExprVisitorType left = resolve(expr.scope.get());
 
     switch (left.scope_type) {
@@ -1069,6 +1104,9 @@ ExprVisitorType TypeResolver::visit(ScopeNameExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(SetExpr &expr) {
+    expr.object->inherited_attrs.parent = &expr;
+    expr.value->inherited_attrs.parent = &expr;
+
     ExprVisitorType object = resolve(expr.object.get());
     ExprVisitorType value_type = resolve(expr.value.get());
 
@@ -1153,6 +1191,10 @@ ExprVisitorType TypeResolver::visit(SuperExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(TernaryExpr &expr) {
+    expr.left->inherited_attrs.parent = &expr;
+    expr.middle->inherited_attrs.parent = &expr;
+    expr.right->inherited_attrs.parent = &expr;
+
     ExprVisitorType left = resolve(expr.left.get());
     ExprVisitorType middle = resolve(expr.middle.get());
     ExprVisitorType right = resolve(expr.right.get());
@@ -1179,6 +1221,10 @@ ExprVisitorType TypeResolver::visit(ThisExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(TupleExpr &expr) {
+    for (auto &element : expr.elements) {
+        std::get<ExprNode>(element)->inherited_attrs.parent = &expr;
+    }
+
     expr.type.reset(allocate_node(TupleType, Type::TUPLE, false, false, {}));
 
     for (auto &element : expr.elements) {
@@ -1190,6 +1236,8 @@ ExprVisitorType TypeResolver::visit(TupleExpr &expr) {
 }
 
 ExprVisitorType TypeResolver::visit(UnaryExpr &expr) {
+    expr.right->inherited_attrs.parent = &expr;
+
     ExprVisitorType right = resolve(expr.right.get());
     switch (expr.oper.type) {
         case TokenType::BIT_NOT:
@@ -1323,6 +1371,8 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
 StmtVisitorType TypeResolver::visit(ContinueStmt &) {}
 
 StmtVisitorType TypeResolver::visit(ExpressionStmt &stmt) {
+    stmt.expr->inherited_attrs.parent = &stmt;
+
     resolve(stmt.expr.get());
 }
 
@@ -1414,6 +1464,8 @@ StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
+    stmt.condition->inherited_attrs.parent = &stmt;
+
     ExprVisitorType condition = resolve(stmt.condition.get());
     if (one_of(condition.info->primitive, Type::CLASS, Type::LIST)) {
         error({"Class or list types are not implicitly convertible to bool"}, stmt.keyword);
@@ -1427,6 +1479,8 @@ StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
+    stmt.value->inherited_attrs.parent = &stmt;
+
     if ((in_ctor || in_dtor) && stmt.value != nullptr) {
         error({"Cannot have non-trivial return statement in ", in_ctor ? "constructor" : "destructor"}, stmt.keyword);
         note({"Returned value's type is '", stringify(stmt.value->synthesized_attrs.info), "'"});
@@ -1454,6 +1508,11 @@ StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(SwitchStmt &stmt) {
+    stmt.condition->inherited_attrs.parent = &stmt;
+    for (auto &case_ : stmt.cases) {
+        case_.first->inherited_attrs.parent = &stmt;
+    }
+
     ScopedManager switch_manager{in_switch, true};
 
     ExprVisitorType condition = resolve(stmt.condition.get());
@@ -1479,6 +1538,8 @@ StmtVisitorType TypeResolver::visit(TypeStmt &) {
 }
 
 StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
+    stmt.initializer->inherited_attrs.parent = &stmt;
+
     if (not in_class && std::any_of(values.crbegin(), values.crend(), [this, &stmt](const Value &value) {
             return value.scope_depth == scope_depth && value.lexeme == stmt.name.lexeme;
         })) {
@@ -1545,6 +1606,8 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(VarTupleStmt &stmt) {
+    stmt.initializer->inherited_attrs.parent = &stmt;
+
     ExprVisitorType initializer = resolve(stmt.initializer.get());
     QualifiedTypeInfo type = nullptr;
     bool originally_typeless = stmt.type == nullptr;
@@ -1592,6 +1655,8 @@ StmtVisitorType TypeResolver::visit(VarTupleStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(WhileStmt &stmt) {
+    stmt.condition->inherited_attrs.parent = &stmt;
+
     ScopedManager loop_manager{in_loop, true};
 
     ExprVisitorType condition = resolve(stmt.condition.get());
@@ -1630,6 +1695,8 @@ BaseTypeVisitorType TypeResolver::visit(TupleType &type) {
 }
 
 BaseTypeVisitorType TypeResolver::visit(TypeofType &type) {
+    type.expr->inherited_attrs.parent = &type;
+
     BaseTypeVisitorType typeof_expr = copy_type(resolve(type.expr.get()).info);
     typeof_expr->is_const = typeof_expr->is_const || type.is_const;
     typeof_expr->is_ref = typeof_expr->is_ref || type.is_ref;
