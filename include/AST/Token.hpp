@@ -22,8 +22,8 @@ struct Token {
     Token(TokenType type, std::string lexeme, std::size_t line, std::size_t start, std::size_t end)
         : type{type}, lexeme{std::move(lexeme)}, line{line}, start{start}, end{end} {}
 
-    bool operator==(const Token &other) { return lexeme == other.lexeme; }
-    bool operator!=(const Token &other) { return lexeme != other.lexeme; }
+    bool operator==(const Token &other) const { return lexeme == other.lexeme; }
+    bool operator!=(const Token &other) const { return lexeme != other.lexeme; }
 };
 
 #endif
