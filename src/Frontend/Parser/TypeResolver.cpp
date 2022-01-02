@@ -693,7 +693,9 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
                 expr.args.insert(expr.args.begin(), {std::move(object), NumericConversionType::NONE, false});
                 expr.function = generate_scope_access(class_, get->name);
                 expr.function->synthesized_attrs.func = called;
-                expr.function->synthesized_attrs.class_ = function.class_;
+                if (function.class_ != nullptr) {
+                    expr.function->synthesized_attrs.class_ = function.class_;
+                }
             }
         }
     } else if (expr.function->type_tag() == NodeType::VariableExpr) {
@@ -702,7 +704,9 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
             // Constructors of type `X(...)` need to be converted into `X::X(...)`
             expr.function = generate_scope_access(function.class_, called->name);
             expr.function->synthesized_attrs.func = called;
-            expr.function->synthesized_attrs.class_ = function.class_;
+            if (function.class_ != nullptr) {
+                expr.function->synthesized_attrs.class_ = function.class_;
+            }
         }
     }
 
