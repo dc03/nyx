@@ -22,7 +22,7 @@ const CLIConfigParser::Options CLIConfigParser::compile_options{
         OptionType::QuantityTag::SINGLE_VALUE,
         OptionType::ValueTypeTag::BOOLEAN_VALUE},
     {"implicit-float-int", {"warn", "error", "none"}, "Warning/error about implicit conversion between float and int (supported: warn, error, none; default: warn)",
-        OptionType::QuantityTag::MULTI_VALUE,
+        OptionType::QuantityTag::SINGLE_VALUE,
         OptionType::ValueTypeTag::STRING_VALUE}};
 
 const CLIConfigParser::Options CLIConfigParser::runtime_options{
