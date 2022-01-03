@@ -237,10 +237,12 @@ void TypeResolver::resolve_and_replace_if_typeof(TypeNode &type) {
 }
 
 void TypeResolver::infer_list_type(ListExpr *of, ListType *from) {
-    if (not are_equivalent_primitives(of->type.get(), from)) {
+    if (of->elements.empty()) {
+        of->type = std::unique_ptr<ListType>{dynamic_cast<ListType *>(copy_type(from))};
+        of->synthesized_attrs = {of->type.get(), of->bracket, false};
+    } else if (not are_equivalent_primitives(of->type.get(), from)) {
         return; // Need to have exact same primitives, i.e. same dimension lists storing the same type of elements
-    }
-    if (from->is_ref) {
+    } else if (from->is_ref) {
         return; // Cannot make reference to a ListExpr
     }
     if (from->contained->is_ref &&
@@ -902,7 +904,16 @@ ExprVisitorType TypeResolver::visit(ListExpr &expr) {
         std::get<ExprNode>(element)->inherited_attrs.parent = &expr;
     }
 
-    if (expr.elements.empty()) {
+    if (expr.inherited_attrs.type_tag() == NodeType::VarStmt && expr.elements.empty()) {
+        auto *parent = dynamic_cast<VarStmt *>(std::get<ExprInheritedAttrs::STATEMENT>(expr.inherited_attrs.parent));
+        if (parent->type == nullptr) {
+            error({"Cannot derive type for empty list expression without variable type"}, expr.bracket);
+            note({"Either provide one or more elements in the list expression, or add a type to the variable "
+                  "declaration"});
+            throw TypeException{"Cannot derive type for empty list expression without variable type"};
+        }
+        return expr.synthesized_attrs = {expr.type.get(), expr.bracket, false};
+    } else if (expr.elements.empty()) {
         error({"Cannot have empty list expression"}, expr.bracket);
         throw TypeException{"Cannot have empty list expression"};
     } else if (expr.elements.size() > 255) {
@@ -1479,7 +1490,9 @@ StmtVisitorType TypeResolver::visit(IfStmt &stmt) {
 }
 
 StmtVisitorType TypeResolver::visit(ReturnStmt &stmt) {
-    stmt.value->inherited_attrs.parent = &stmt;
+    if (stmt.value != nullptr) {
+        stmt.value->inherited_attrs.parent = &stmt;
+    }
 
     if ((in_ctor || in_dtor) && stmt.value != nullptr) {
         error({"Cannot have non-trivial return statement in ", in_ctor ? "constructor" : "destructor"}, stmt.keyword);
@@ -1576,6 +1589,7 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
     //  [ref int], not as [int]
     if (stmt.initializer->type_tag() == NodeType::ListExpr && stmt.type->primitive == Type::LIST) {
         infer_list_type(dynamic_cast<ListExpr *>(stmt.initializer.get()), dynamic_cast<ListType *>(stmt.type.get()));
+        initializer = stmt.initializer->synthesized_attrs;
     } else if (stmt.initializer->type_tag() == NodeType::TupleExpr && stmt.type->primitive == Type::TUPLE) {
         infer_tuple_type(dynamic_cast<TupleExpr *>(stmt.initializer.get()), dynamic_cast<TupleType *>(stmt.type.get()));
     }

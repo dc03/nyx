@@ -25,3 +25,11 @@ ExprSynthesizedAttrs::ExprSynthesizedAttrs(
 ExprSynthesizedAttrs::ExprSynthesizedAttrs(QualifiedTypeInfo info, FunctionStmt *func, ClassStmt *class_, Token token,
     bool is_lvalue, ScopeAccessType scope_type)
     : info{info}, func{func}, class_{class_}, token{std::move(token)}, is_lvalue{is_lvalue}, scope_type{scope_type} {}
+
+NodeType ExprInheritedAttrs::type_tag() {
+    switch (parent.index()) {
+        case EXPRESSION: return std::get<EXPRESSION>(parent)->type_tag();
+        case STATEMENT: return std::get<STATEMENT>(parent)->type_tag();
+        case TYPE: return std::get<TYPE>(parent)->type_tag();
+    }
+}

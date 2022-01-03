@@ -20,6 +20,8 @@ struct BaseType;
 struct ClassStmt;
 struct FunctionStmt;
 
+enum class NodeType;
+
 using QualifiedTypeInfo = BaseType *;
 
 struct ExprSynthesizedAttrs {
@@ -53,6 +55,8 @@ struct ExprSynthesizedAttrs {
 struct ExprInheritedAttrs {
     enum { EXPRESSION, STATEMENT, TYPE };
     std::variant<Expr *, Stmt *, BaseType *> parent{};
+
+    NodeType type_tag();
 };
 
 struct LiteralValue {
