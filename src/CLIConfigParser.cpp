@@ -23,7 +23,8 @@ const CLIConfigParser::Options CLIConfigParser::compile_options{
         OptionType::ValueTypeTag::BOOLEAN_VALUE, "Compile"},
     LANGUAGE_FEATURE_FLAG(IMPLICIT_FLOAT_INT, "Warning/error about implicit conversion between float and int", "warn"),
     LANGUAGE_FEATURE_FLAG(COMMA_OPERATOR, "Warning/error about the usage of comma operator", "error"),
-    LANGUAGE_FEATURE_FLAG(TERNARY_OPERATOR, "Warning/error about the usage of ternary operator", "error")
+    LANGUAGE_FEATURE_FLAG(TERNARY_OPERATOR, "Warning/error about the usage of ternary operator", "error"),
+    LANGUAGE_FEATURE_FLAG(ASSIGNMENT_EXPRESSION, "Warning/error for when variable assignments not used as standalone statements ", "error")
 };
 
 const CLIConfigParser::Options CLIConfigParser::runtime_options{

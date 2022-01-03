@@ -491,6 +491,12 @@ bool one_of(T type, Args... args) {
 ExprVisitorType TypeResolver::visit(AssignExpr &expr) {
     expr.value->inherited_attrs.parent = &expr;
 
+    if (expr.inherited_attrs.type_tag() != NodeType::ExpressionStmt &&
+        expr.inherited_attrs.type_tag() != NodeType::AssignExpr) {
+        FEATURE_FLAG_DEFAULT_ERROR_SINGLE_MSG(ASSIGNMENT_EXPRESSION,
+            "Assignment done as expression and not as a standalone statement", expr.synthesized_attrs.token);
+    }
+
     auto it = values.end() - 1;
     for (; it >= values.begin(); it--) {
         if (it->lexeme == expr.target.lexeme) {

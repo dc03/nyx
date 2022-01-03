@@ -23,9 +23,10 @@ class ParseResult;
 #define CHECK    "check"
 #define DUMP_AST "dump-ast"
 
-#define IMPLICIT_FLOAT_INT "implicit-float-int"
-#define COMMA_OPERATOR     "comma-operator"
-#define TERNARY_OPERATOR   "ternary-operator"
+#define IMPLICIT_FLOAT_INT    "implicit-float-int"
+#define COMMA_OPERATOR        "comma-operator"
+#define TERNARY_OPERATOR      "ternary-operator"
+#define ASSIGNMENT_EXPRESSION "assignment-expr"
 
 #define LANGUAGE_FEATURE_FLAG(name, description, default_)                                                             \
     {                                                                                                                  \
