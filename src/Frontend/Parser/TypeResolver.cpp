@@ -3,6 +3,7 @@
 #include "Frontend/Parser/TypeResolver.hpp"
 
 #include "Backend/VirtualMachine/Natives.hpp"
+#include "CLIConfigParser.hpp"
 #include "Common.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
 #include "Frontend/Parser/Parser.hpp"
@@ -104,7 +105,16 @@ bool TypeResolver::convertible_to(
         return from->primitive == to->primitive && class_condition;
     } else if ((from->primitive == Type::FLOAT && to->primitive == Type::INT) ||
                (from->primitive == Type::INT && to->primitive == Type::FLOAT)) {
-        warning({"Implicit conversion between float and int"}, where);
+        if (ctx->config->contains(IMPLICIT_FLOAT_INT)) {
+            std::string_view config = ctx->config->get<std::string>(IMPLICIT_FLOAT_INT);
+            if (config == "warn") {
+                warning({"Implicit conversion between float and int [[ " IMPLICIT_FLOAT_INT " = warn ]]"}, where);
+            } else if (config == "error") {
+                error({"Implicit conversion between float and int [[ " IMPLICIT_FLOAT_INT " = error ]]"}, where);
+            }
+        } else {
+            warning({"Implicit conversion between float and int [[ " IMPLICIT_FLOAT_INT " = warn (default) ]]"}, where);
+        }
         return true;
     } else if (from->primitive == Type::LIST && to->primitive == Type::LIST) {
         return are_equivalent_types(
