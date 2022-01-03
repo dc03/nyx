@@ -18,6 +18,16 @@ class Options;
 class ParseResult;
 } // namespace cxxopts
 
+// Options
+#define MAIN               "main"
+#define CHECK              "check"
+#define DUMP_AST           "dump-ast"
+#define IMPLICIT_FLOAT_INT "implicit-float-int"
+#define NO_COLORIZE_OUTPUT "no-colorize-output"
+
+#define DISASSEMBLE_CODE "disassemble-code"
+#define TRACE_EXEC       "trace-exec"
+
 class CLIConfig {
   public:
     enum ValueTag { STRING, STRING_SET, BOOL, BOOL_SET };

@@ -37,7 +37,7 @@ std::size_t RuntimeContext::get_module_index_path(const std::filesystem::path &p
 void RuntimeContext::set_config(const CLIConfig *config) {
     this->config = config;
 
-    if (config->contains("no-colorize-output")) {
+    if (config->contains(NO_COLORIZE_OUTPUT)) {
         logger.set_color(false);
     }
 }

@@ -14,9 +14,9 @@ RuntimeManager::RuntimeManager(RuntimeContext *ctx) : ctx{ctx} {
 
 #if !NO_TRACE_VM
 #define HAS_OPT(value) std::find(opts.begin(), opts.end(), value) != opts.end()
-    vm.colors_enabled = not ctx->config->contains("no-colorize-output");
-    if (ctx->config->contains("trace-exec")) {
-        const auto &opts = ctx->config->get<std::vector<std::string>>("trace-exec");
+    vm.colors_enabled = not ctx->config->contains(NO_COLORIZE_OUTPUT);
+    if (ctx->config->contains(TRACE_EXEC)) {
+        const auto &opts = ctx->config->get<std::vector<std::string>>(TRACE_EXEC);
         vm.debug_print_stack = HAS_OPT("stack");
         vm.debug_print_frames = HAS_OPT("frame");
         vm.debug_print_modules = HAS_OPT("module");
@@ -51,7 +51,7 @@ void RuntimeManager::compile(CompileContext *compile_ctx) {
 }
 
 void RuntimeManager::disassemble() {
-    disassemble_ctx(ctx, not ctx->config->contains("no-colorize-output"));
+    disassemble_ctx(ctx, not ctx->config->contains(NO_COLORIZE_OUTPUT));
 }
 
 void RuntimeManager::run() {

@@ -18,7 +18,7 @@ void run(const char *const main_module, const CLIConfig *compile_config, const C
     compile_manager.parse_module();
     compile_manager.check_module();
 
-    if (compile_config->contains("dump-ast")) {
+    if (compile_config->contains(DUMP_AST)) {
         ASTPrinter printer{};
         for (auto &[module, depth] : compile_ctx.parsed_modules) {
             std::cout << "-<=== Module " << module.name << " ===>-\n\n";
@@ -29,7 +29,7 @@ void run(const char *const main_module, const CLIConfig *compile_config, const C
         printer.print_stmts(compile_manager.get_module().statements);
     }
 
-    if (not compile_config->contains("check") && not compile_ctx.logger.had_error()) {
+    if (not compile_config->contains(CHECK) && not compile_ctx.logger.had_error()) {
         RuntimeContext runtime_ctx{};
         runtime_ctx.set_config(runtime_config);
 
@@ -40,7 +40,7 @@ void run(const char *const main_module, const CLIConfig *compile_config, const C
         }
 
         runtime_manager.compile(&compile_ctx);
-        if (runtime_config->contains("disassemble-code")) {
+        if (runtime_config->contains(DISASSEMBLE_CODE)) {
             runtime_manager.disassemble();
         }
         runtime_manager.run();
@@ -57,8 +57,8 @@ int main(int argc, char *argv[]) {
         if (parser.is_empty() || parser.is_help()) {
             std::cout << parser.get_help() << '\n';
             return 0;
-        } else if (compile_config->contains("main")) {
-            run(compile_config->get<std::string>("main").c_str(), compile_config, runtime_config);
+        } else if (compile_config->contains(MAIN)) {
+            run(compile_config->get<std::string>(MAIN).c_str(), compile_config, runtime_config);
         }
     } catch (const std::invalid_argument &e) { std::cout << e.what() << '\n'; }
 

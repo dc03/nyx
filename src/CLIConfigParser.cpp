@@ -12,24 +12,24 @@ bool CLIConfig::contains(const std::string &key) const noexcept {
 
 // clang-format off
 const CLIConfigParser::Options CLIConfigParser::compile_options{
-    {"main", {}, "The module from which to start execution",
+    {MAIN, {}, "The module from which to start execution",
         OptionType::QuantityTag::SINGLE_VALUE,
         OptionType::ValueTypeTag::STRING_VALUE},
-    {"check", {}, "Do not run the code, only parse and type check it",
+    {CHECK, {}, "Do not run the code, only parse and type check it",
         OptionType::QuantityTag::SINGLE_VALUE,
         OptionType::ValueTypeTag::BOOLEAN_VALUE},
-    {"dump-ast", {}, "Dump the contents of the AST after parsing and typechecking",
+    {DUMP_AST, {}, "Dump the contents of the AST after parsing and typechecking",
         OptionType::QuantityTag::SINGLE_VALUE,
         OptionType::ValueTypeTag::BOOLEAN_VALUE},
-    {"implicit-float-int", {"warn", "error", "none"}, "Warning/error about implicit conversion between float and int (supported: warn, error, none; default: warn)",
+    {IMPLICIT_FLOAT_INT, {"warn", "error", "none"}, "Warning/error about implicit conversion between float and int (supported: warn, error, none; default: warn)",
         OptionType::QuantityTag::SINGLE_VALUE,
         OptionType::ValueTypeTag::STRING_VALUE}};
 
 const CLIConfigParser::Options CLIConfigParser::runtime_options{
-    {"disassemble-code", {}, "Disassemble the byte code produced for the VM",
+    {DISASSEMBLE_CODE, {}, "Disassemble the byte code produced for the VM",
         OptionType::QuantityTag::SINGLE_VALUE,
         OptionType::ValueTypeTag::BOOLEAN_VALUE},
-    {"trace-exec", {"stack", "frame", "module", "insn", "module_init"}, "Print information during execution (supported: stack, frame, module, insn, module_init)",
+    {TRACE_EXEC, {"stack", "frame", "module", "insn", "module_init"}, "Print information during execution (supported: stack, frame, module, insn, module_init)",
         OptionType::QuantityTag::MULTI_VALUE,
         OptionType::ValueTypeTag::STRING_VALUE},
 };
@@ -91,7 +91,7 @@ CLIConfigParser::CLIConfigParser(int argc, char **argv) : argc{argc}, argv{argv}
     add_options(options, compile_options, "Compile");
     add_options(options, runtime_options, "Runtime");
 
-    options.add_options()("no-colorize-output", "Do not colorize output");
+    options.add_options()(NO_COLORIZE_OUTPUT, "Do not colorize output");
     options.add_options()("h,help", "Print usage");
 
     try {
@@ -110,9 +110,9 @@ CLIConfigParser::CLIConfigParser(int argc, char **argv) : argc{argc}, argv{argv}
             store_options(result, compile_options, compile_config);
             store_options(result, runtime_options, runtime_config);
 
-            if (result.count("no-colorize-output")) {
-                compile_config.config["no-colorize-output"] = true;
-                runtime_config.config["no-colorize-output"] = true;
+            if (result.count(NO_COLORIZE_OUTPUT)) {
+                compile_config.config[NO_COLORIZE_OUTPUT] = true;
+                runtime_config.config[NO_COLORIZE_OUTPUT] = true;
             }
         }
     } catch (const cxxopts::OptionException &e) {
