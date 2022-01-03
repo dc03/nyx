@@ -3,9 +3,11 @@
 #include "Frontend/Parser/Parser.hpp"
 
 #include "Backend/VirtualMachine/Value.hpp"
+#include "CLIConfigParser.hpp"
 #include "Common.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
 #include "Frontend/CompileManager.hpp"
+#include "Frontend/Parser/FeatureFlagError.hpp"
 #include "Frontend/Parser/TypeResolver.hpp"
 #include "Frontend/Scanner/Scanner.hpp"
 
@@ -356,6 +358,8 @@ ExprNode Parser::call(bool, ExprNode function) {
 }
 
 ExprNode Parser::comma(bool, ExprNode left) {
+    FEATURE_FLAG_DEFAULT_ERROR_SINGLE_MSG(COMMA_OPERATOR, "Usage of comma operator", current_token)
+
     std::vector<ExprNode> exprs{};
     exprs.emplace_back(std::move(left));
     do {
@@ -544,6 +548,8 @@ ExprNode Parser::super(bool) {
 }
 
 ExprNode Parser::ternary(bool, ExprNode left) {
+    FEATURE_FLAG_DEFAULT_ERROR_SINGLE_MSG(TERNARY_OPERATOR, "Usage of ternary operator", current_token)
+
     Token question = current_token;
     ExprNode middle = parse_precedence(ParsePrecedence::of::LOGIC_OR);
     consume("Expected colon in ternary expression", TokenType::COLON);
