@@ -19,10 +19,20 @@ class ParseResult;
 } // namespace cxxopts
 
 // Options
-#define MAIN               "main"
-#define CHECK              "check"
-#define DUMP_AST           "dump-ast"
+#define MAIN     "main"
+#define CHECK    "check"
+#define DUMP_AST "dump-ast"
+
 #define IMPLICIT_FLOAT_INT "implicit-float-int"
+#define COMMA_OPERATOR     "comma-operator"
+#define TERNARY_OPERATOR   "ternary-operator"
+
+#define LANGUAGE_FEATURE_FLAG(name, description, default_)                                                             \
+    {                                                                                                                  \
+        name, {"warn", "error", "none"}, description " (supported: warn, error, none; default: " default_ ")",         \
+            OptionType::QuantityTag::SINGLE_VALUE, OptionType::ValueTypeTag::STRING_VALUE, "Syntax features"           \
+    }
+
 #define NO_COLORIZE_OUTPUT "no-colorize-output"
 
 #define DISASSEMBLE_CODE "disassemble-code"
@@ -67,6 +77,8 @@ class CLIConfigParser {
 
         QuantityTag quantity{};
         ValueTypeTag value{};
+
+        std::string group{};
     };
 
     using Options = std::vector<OptionType>;
@@ -85,7 +97,7 @@ class CLIConfigParser {
     static const Options compile_options;
     static const Options runtime_options;
 
-    void add_options(cxxopts::Options &options, const Options &values, const std::string &group);
+    void add_options(cxxopts::Options &options, const Options &values);
     void validate_args(cxxopts::ParseResult &result, const Options &values);
     void store_options(cxxopts::ParseResult &result, const Options &values, CLIConfig &into);
 

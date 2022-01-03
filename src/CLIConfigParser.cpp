@@ -14,35 +14,36 @@ bool CLIConfig::contains(const std::string &key) const noexcept {
 const CLIConfigParser::Options CLIConfigParser::compile_options{
     {MAIN, {}, "The module from which to start execution",
         OptionType::QuantityTag::SINGLE_VALUE,
-        OptionType::ValueTypeTag::STRING_VALUE},
+        OptionType::ValueTypeTag::STRING_VALUE, "Compile"},
     {CHECK, {}, "Do not run the code, only parse and type check it",
         OptionType::QuantityTag::SINGLE_VALUE,
-        OptionType::ValueTypeTag::BOOLEAN_VALUE},
+        OptionType::ValueTypeTag::BOOLEAN_VALUE, "Compile"},
     {DUMP_AST, {}, "Dump the contents of the AST after parsing and typechecking",
         OptionType::QuantityTag::SINGLE_VALUE,
-        OptionType::ValueTypeTag::BOOLEAN_VALUE},
-    {IMPLICIT_FLOAT_INT, {"warn", "error", "none"}, "Warning/error about implicit conversion between float and int (supported: warn, error, none; default: warn)",
-        OptionType::QuantityTag::SINGLE_VALUE,
-        OptionType::ValueTypeTag::STRING_VALUE}};
+        OptionType::ValueTypeTag::BOOLEAN_VALUE, "Compile"},
+    LANGUAGE_FEATURE_FLAG(IMPLICIT_FLOAT_INT, "Warning/error about implicit conversion between float and int", "warn"),
+    LANGUAGE_FEATURE_FLAG(COMMA_OPERATOR, "Warning/error about the usage of comma operator", "error"),
+    LANGUAGE_FEATURE_FLAG(TERNARY_OPERATOR, "Warning/error about the usage of ternary operator", "error")
+};
 
 const CLIConfigParser::Options CLIConfigParser::runtime_options{
     {DISASSEMBLE_CODE, {}, "Disassemble the byte code produced for the VM",
         OptionType::QuantityTag::SINGLE_VALUE,
-        OptionType::ValueTypeTag::BOOLEAN_VALUE},
+        OptionType::ValueTypeTag::BOOLEAN_VALUE, "Runtime"},
     {TRACE_EXEC, {"stack", "frame", "module", "insn", "module_init"}, "Print information during execution (supported: stack, frame, module, insn, module_init)",
         OptionType::QuantityTag::MULTI_VALUE,
-        OptionType::ValueTypeTag::STRING_VALUE},
+        OptionType::ValueTypeTag::STRING_VALUE, "Runtime"},
 };
 // clang-format on
 
-void CLIConfigParser::add_options(cxxopts::Options &options, const Options &values, const std::string &group) {
+void CLIConfigParser::add_options(cxxopts::Options &options, const Options &values) {
     for (auto &option : values) {
         if (option.quantity == OptionType::QuantityTag::SINGLE_VALUE) {
-            options.add_options(group)(option.name, option.description,
+            options.add_options(option.group)(option.name, option.description,
                 option.value == OptionType::ValueTypeTag::BOOLEAN_VALUE ? cxxopts::value<bool>()->default_value("false")
                                                                         : cxxopts::value<std::string>());
         } else if (option.quantity == OptionType::QuantityTag::MULTI_VALUE) {
-            options.add_options(group)(option.name, option.description,
+            options.add_options(option.group)(option.name, option.description,
                 option.value == OptionType::ValueTypeTag::BOOLEAN_VALUE ? cxxopts::value<std::vector<bool>>()
                                                                         : cxxopts::value<std::vector<std::string>>());
         }
@@ -88,8 +89,8 @@ void CLIConfigParser::store_options(cxxopts::ParseResult &result, const Options 
 CLIConfigParser::CLIConfigParser(int argc, char **argv) : argc{argc}, argv{argv} {
     cxxopts::Options options{argv[0], "A small and simple interpreted language"};
 
-    add_options(options, compile_options, "Compile");
-    add_options(options, runtime_options, "Runtime");
+    add_options(options, compile_options);
+    add_options(options, runtime_options);
 
     options.add_options()(NO_COLORIZE_OUTPUT, "Do not colorize output");
     options.add_options()("h,help", "Print usage");
