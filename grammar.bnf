@@ -40,7 +40,7 @@ unary          ::= ("!"|"-"|"~"|"++"|"--") unary
 
 arguments      ::= assignment     ("," assignment)*
 call           ::= list           (("(" arguments? ")")|("." IDENTIFIER))*
-list           ::= "[" assignment ("," assignment)* ","? "]"
+list           ::= "[" (assignment ("," assignment)* ","?)? "]"
                  | tuple
 tuple          ::= "{" assignment ("," assignment)* ","? "}"
                  | get
