@@ -659,14 +659,39 @@ ExprVisitorType ByteCodeGenerator::visit(CommaExpr &expr) {
 ExprVisitorType ByteCodeGenerator::visit(GetExpr &expr) {
     if (expr.object->synthesized_attrs.info->primitive == Type::TUPLE && expr.name.type == TokenType::INT_VALUE) {
         compile(expr.object.get());
+
+        if (not expr.object->synthesized_attrs.is_lvalue) {
+            current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.name.line);
+            emit_operand(1);
+        }
+
         current_chunk->emit_constant(Value{std::stoi(expr.name.lexeme)}, expr.name.line);
         current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.synthesized_attrs.token.line);
+
+        if (not expr.object->synthesized_attrs.is_lvalue) {
+            current_chunk->emit_instruction(Instruction::SWAP, expr.name.line);
+            emit_operand(1);
+            current_chunk->emit_instruction(Instruction::POP_LIST, expr.name.line);
+        }
     } else if (expr.object->synthesized_attrs.info->primitive == Type::CLASS &&
                expr.name.type == TokenType::IDENTIFIER) {
         compile(expr.object.get());
+
+        if (not expr.object->synthesized_attrs.is_lvalue) {
+            current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.name.line);
+            emit_operand(1);
+        }
+
         current_chunk->emit_constant(
             Value{get_member_index(expr.object->synthesized_attrs.class_, expr.name.lexeme)}, expr.name.line);
         current_chunk->emit_instruction(Instruction::INDEX_LIST, expr.synthesized_attrs.token.line);
+
+        if (not expr.object->synthesized_attrs.is_lvalue) {
+            current_chunk->emit_instruction(Instruction::SWAP, expr.name.line);
+            emit_operand(1);
+            emit_destructor_call(expr.object->synthesized_attrs.class_, expr.name.line);
+            current_chunk->emit_instruction(Instruction::POP_LIST, expr.name.line);
+        }
     }
     return {};
 }
@@ -681,6 +706,12 @@ ExprVisitorType ByteCodeGenerator::visit(GroupingExpr &expr) {
 
 ExprVisitorType ByteCodeGenerator::visit(IndexExpr &expr) {
     compile(expr.object.get());
+
+    if (not expr.object->synthesized_attrs.is_lvalue) {
+        current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, expr.synthesized_attrs.token.line);
+        emit_operand(1);
+    }
+
     compile(expr.index.get());
     if (expr.index->synthesized_attrs.info->is_ref) {
         current_chunk->emit_instruction(Instruction::DEREF, expr.index->synthesized_attrs.token.line);
@@ -691,6 +722,12 @@ ExprVisitorType ByteCodeGenerator::visit(IndexExpr &expr) {
     } else if (expr.object->synthesized_attrs.info->primitive == Type::STRING) {
         current_chunk->emit_instruction(Instruction::CHECK_STRING_INDEX, expr.synthesized_attrs.token.line);
         current_chunk->emit_instruction(Instruction::INDEX_STRING, expr.synthesized_attrs.token.line);
+    }
+
+    if (not expr.object->synthesized_attrs.is_lvalue) {
+        current_chunk->emit_instruction(Instruction::SWAP, expr.synthesized_attrs.token.line);
+        emit_operand(1);
+        current_chunk->emit_instruction(Instruction::POP_LIST, expr.synthesized_attrs.token.line);
     }
     return {};
 }
