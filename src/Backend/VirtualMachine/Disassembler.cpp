@@ -144,7 +144,7 @@ void instruction(Chunk &chunk, std::string_view name, std::size_t where, bool co
         std::cout << PYEL << "\t\t| pop " << PBLU << next_bytes << PYEL << " local(s)\n" << PRES;
         print_trailing_bytes();
     } else if (name == "SWAP") {
-        std::cout << PYEL << "\t\t| swap " << PBLU << next_bytes << PYEL << " and " << next_bytes + 1 << PYEL
+        std::cout << PYEL << "\t\t| swap " << PBLU << next_bytes << PYEL << " and " << PBLU << next_bytes + 1 << PYEL
                   << " from top\n"
                   << PRES;
         print_trailing_bytes();
