@@ -1236,7 +1236,7 @@ ExprVisitorType TypeResolver::visit(ThisExpr &expr) {
     }
     return expr.synthesized_attrs = {
                make_new_type<UserDefinedType>(Type::CLASS, false, false, current_class->name, nullptr), current_class,
-               expr.keyword};
+               expr.keyword, true};
 }
 
 ExprVisitorType TypeResolver::visit(TupleExpr &expr) {
