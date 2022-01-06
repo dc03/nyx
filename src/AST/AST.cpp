@@ -63,18 +63,18 @@ std::string stringify_short(const BaseType *node, bool consider_const, bool cons
         case Type::NULL_: result += "n"; break;
         case Type::FLOAT: result += "f"; break;
         case Type::CLASS: {
-            auto type = dynamic_cast<UserDefinedType *>(node);
+            auto type = dynamic_cast<const UserDefinedType *>(node);
             result += type->name.lexeme;
             break;
         }
         case Type::LIST: {
             using namespace std::string_literals;
-            auto type = dynamic_cast<ListType *>(node);
+            auto type = dynamic_cast<const ListType *>(node);
             result += "["s + stringify_short(type->contained.get(), consider_const, consider_ref) + "]";
             break;
         }
         case Type::TUPLE: {
-            auto *tuple = dynamic_cast<TupleType *>(node);
+            auto *tuple = dynamic_cast<const TupleType *>(node);
             result += "{";
             auto begin = tuple->types.begin();
             for (; begin != tuple->types.end() - 1; begin++) {
