@@ -22,6 +22,170 @@ void ByteCodeGenerator::set_runtime_ctx(RuntimeContext *runtime_ctx_) {
     runtime_ctx = runtime_ctx_;
 }
 
+[[nodiscard]] bool ByteCodeGenerator::contains_destructible_type(const BaseType *type) const noexcept {
+    if (type->primitive == Type::LIST) {
+        auto *list = dynamic_cast<const ListType *>(type);
+        if (list->contained->primitive == Type::LIST || list->contained->primitive == Type::TUPLE) {
+            return contains_destructible_type(list->contained.get());
+        } else {
+            return list->contained->primitive == Type::CLASS;
+        }
+    } else if (type->primitive == Type::TUPLE) {
+        auto *tuple = dynamic_cast<const TupleType *>(type);
+
+        bool has_destructible = false;
+        for (auto &type_ : tuple->types) {
+            if (type_->primitive == Type::CLASS) {
+                has_destructible = true;
+            } else if (type_->primitive == Type::LIST || type_->primitive == Type::TUPLE) {
+                has_destructible = has_destructible || contains_destructible_type(type_.get());
+            }
+        }
+
+        return has_destructible;
+    } else {
+        return false;
+    }
+}
+
+[[nodiscard]] bool ByteCodeGenerator::aggregate_destructor_already_exists(const BaseType *type) const noexcept {
+    assert((type->primitive == Type::LIST || type->primitive == Type::TUPLE) &&
+           "Only lists or tuples allowed as aggregate types");
+
+    // Here we do not consider const. This is because regardless of const or not, we need to destroy the list and this
+    // also allows reducing the number of functions generated.
+    std::string destructor_name = aggregate_destructor_prefix + stringify_short(type, false, true);
+    return current_module->functions.find(destructor_name) != current_module->functions.end();
+}
+
+void ByteCodeGenerator::generate_list_destructor_loop(const ListType *list) {
+    /*
+     * Consider that the list has type [Foo]:
+     * var x: [Foo] = ...
+     * This function effectively generates this while loop:
+     *
+     * var i = 0
+     * var j = size(x)
+     * while (i < j) {
+     *     x[i].~Foo()
+     *     deallocate(x[i])
+     *     ++i
+     * }
+     */
+    if (list->contained->primitive == Type::LIST || list->contained->primitive == Type::TUPLE) {
+        if (not aggregate_destructor_already_exists(list->contained.get())) {
+            generate_aggregate_destructor(list->contained.get());
+        }
+    }
+
+    std::size_t line = 1;
+    current_chunk->emit_constant(Value{0}, line);
+
+    current_chunk->emit_instruction(Instruction::PUSH_NULL, ++line);
+    current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LIST, line);
+    emit_operand(0);
+    current_chunk->emit_string("size", ++line);
+    current_chunk->emit_instruction(Instruction::CALL_NATIVE, line);
+    current_chunk->emit_instruction(Instruction::POP, line);
+
+    std::size_t jump_begin = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, line);
+    emit_operand(0);
+
+    std::size_t loop_begin = current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LIST, ++line);
+    emit_operand(0);
+    current_chunk->emit_instruction(Instruction::ACCESS_LOCAL, line);
+    emit_operand(1);
+
+    current_chunk->emit_instruction(Instruction::MOVE_INDEX, line);
+    if (list->contained->primitive == Type::LIST || list->contained->primitive == Type::TUPLE) {
+        emit_aggregate_destructor_call(list->contained.get());
+    } else {
+        assert(list->contained->primitive == Type::CLASS && "Expected class");
+        auto *contained = dynamic_cast<UserDefinedType *>(list->contained.get());
+        emit_destructor_call(contained->class_, ++line);
+    }
+    current_chunk->emit_instruction(Instruction::POP_LIST, line);
+
+    current_chunk->emit_instruction(Instruction::ACCESS_LOCAL, ++line);
+    emit_operand(1);
+    current_chunk->emit_constant(Value{1}, line);
+    current_chunk->emit_instruction(Instruction::IADD, line);
+    current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, line);
+    emit_operand(1);
+    current_chunk->emit_instruction(Instruction::POP, line);
+
+    std::size_t condition = current_chunk->emit_instruction(Instruction::ACCESS_LOCAL, ++line);
+    emit_operand(1);
+    current_chunk->emit_instruction(Instruction::ACCESS_LOCAL, line);
+    emit_operand(2);
+    current_chunk->emit_instruction(Instruction::LESSER, line);
+    std::size_t jump_back = current_chunk->emit_instruction(Instruction::POP_JUMP_BACK_IF_TRUE, line);
+    emit_operand(0);
+
+    current_chunk->emit_instruction(Instruction::POP, line);
+    current_chunk->emit_instruction(Instruction::POP, line);
+    current_chunk->emit_instruction(Instruction::RETURN, ++line);
+
+    patch_jump(jump_back, jump_back - loop_begin + 1);
+    patch_jump(jump_begin, condition - jump_begin - 1);
+}
+
+void ByteCodeGenerator::generate_aggregate_destructor(const BaseType *type) {
+    assert((type->primitive == Type::LIST || type->primitive == Type::TUPLE) &&
+           "Only lists or tuples allowed as aggregate types");
+
+    RuntimeFunction destructor{};
+    std::string destructor_name = aggregate_destructor_prefix + stringify_short(type, false, true);
+    destructor.name = destructor_name;
+
+    Chunk *previous = std::exchange(current_chunk, &destructor.code);
+    if (type->primitive == Type::LIST) {
+        auto *list = dynamic_cast<const ListType *>(type);
+        generate_list_destructor_loop(list);
+    } else if (type->primitive == Type::TUPLE) {
+        auto *tuple = dynamic_cast<const TupleType *>(type);
+
+        std::size_t i = 1;
+        for (auto &type_ : tuple->types) {
+            if (is_trivial_type(type_->primitive)) {
+                ++i;
+                continue;
+            }
+
+            current_chunk->emit_instruction(Instruction::ACCESS_LOCAL_LIST, i);
+            emit_operand(0);
+            current_chunk->emit_constant(Value{static_cast<int>(i) - 1}, i);
+            current_chunk->emit_instruction(Instruction::MOVE_INDEX, i);
+            if (type_->primitive == Type::CLASS) {
+                emit_destructor_call(dynamic_cast<const UserDefinedType *>(type_.get())->class_, i);
+            } else if ((type_->primitive == Type::TUPLE || type_->primitive == Type::LIST) &&
+                       contains_destructible_type(type_.get())) {
+                if (not aggregate_destructor_already_exists(type_.get())) {
+                    generate_aggregate_destructor(type_.get());
+                }
+                emit_aggregate_destructor_call(type_.get());
+            }
+            current_chunk->emit_instruction(Instruction::POP_LIST, i);
+            ++i;
+        }
+
+        current_chunk->emit_instruction(Instruction::RETURN, i);
+    }
+    current_chunk = previous;
+
+    current_compiled->functions[destructor_name] = std::move(destructor);
+}
+
+void ByteCodeGenerator::emit_aggregate_destructor_call(const BaseType *type) {
+    assert((type->primitive == Type::LIST || type->primitive == Type::TUPLE) &&
+           "Only lists or tuples allowed as aggregate types");
+
+    std::size_t line = current_chunk->line_numbers.back().first;
+    current_chunk->emit_string(aggregate_destructor_prefix + stringify_short(type, false, true), line);
+    current_chunk->emit_instruction(Instruction::LOAD_FUNCTION_SAME_MODULE, line);
+    current_chunk->emit_instruction(Instruction::CALL_FUNCTION, line);
+}
+
 void ByteCodeGenerator::begin_scope() {
     current_scope_depth++;
 }
@@ -59,6 +223,13 @@ void ByteCodeGenerator::destroy_locals(std::size_t until_scope) {
                         emit_destructor_call(dynamic_cast<UserDefinedType *>(member->first->type.get())->class_, line);
                         current_chunk->emit_instruction(Instruction::POP, line);
                     }
+                }
+            } else if (begin->first->primitive == Type::LIST || begin->first->primitive == Type::TUPLE) {
+                if (contains_destructible_type(begin->first)) {
+                    if (not aggregate_destructor_already_exists(begin->first)) {
+                        generate_aggregate_destructor(begin->first);
+                    }
+                    emit_aggregate_destructor_call(begin->first);
                 }
             }
             current_chunk->emit_instruction(Instruction::POP_LIST, 0);

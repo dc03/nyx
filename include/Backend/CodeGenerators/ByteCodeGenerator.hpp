@@ -18,6 +18,8 @@
 #include <string_view>
 
 class ByteCodeGenerator final : Visitor {
+    static constexpr const char *aggregate_destructor_prefix = "__destruct_";
+
     CompileContext *compile_ctx{};
     RuntimeContext *runtime_ctx{};
 
@@ -37,6 +39,12 @@ class ByteCodeGenerator final : Visitor {
     std::unordered_map<std::string_view, Native> natives{};
 
     bool variable_tracking_suppressed{};
+
+    [[nodiscard]] bool contains_destructible_type(const BaseType *type) const noexcept;
+    [[nodiscard]] bool aggregate_destructor_already_exists(const BaseType *type) const noexcept;
+    void generate_list_destructor_loop(const ListType *list);
+    void generate_aggregate_destructor(const BaseType *type);
+    void emit_aggregate_destructor_call(const BaseType *type);
 
     void begin_scope();
     void remove_topmost_scope();
