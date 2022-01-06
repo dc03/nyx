@@ -152,6 +152,10 @@ def declare_stmt_type(name: str, ctor_args: str, members: str, typedefs: List[st
     return None
 
 
+def declare_helper(name: str, return_: str, params: str, description: str = '') -> None:
+    file.write(('// ' + description + '\n' if description != '' else '') + return_ + ' ' + name + '(' + params + ');\n')
+
+
 if __name__ == '__main__':
     with open('AST.hpp', 'wt') as file:
         make_header(file, 'AST_HPP')
@@ -436,21 +440,34 @@ if __name__ == '__main__':
 
         file.write('// End of type node definitions\n\n')
 
-        file.write('// Helper function to turn a given type node into a string\n')
-        file.write('std::string stringify(BaseType *node);\n\n')
-        file.write('// Helper function to copy a given type node (list size expressions are not copied however)\n')
-        file.write('BaseTypeVisitorType copy_type(BaseType *node);\n\n')
-        file.write('// Helper function to get the size of a given vartuple\n')
-        file.write('std::size_t vartuple_size(IdentifierTuple::TupleType &tuple);\n\n')
-        file.write('// Determine whether passed type is trivial\n')
-        file.write('bool is_trivial_type(Type type);\n')
-        file.write('bool is_trivial_type(BaseType *node);\n\n')
-        file.write('// Determine whether passed type is non-trivial\n')
-        file.write('bool is_nontrivial_type(Type type);\n')
-        file.write('bool is_nontrivial_type(BaseType *node);\n\n')
-        file.write('// Determine whether given function is a constructor\n')
-        file.write('bool is_constructor(FunctionStmt *stmt);\n\n')
-        file.write('// Determine whether given function is a destructor\n')
-        file.write('bool is_destructor(FunctionStmt *stmt);\n\n')
+        declare_helper('stringify', 'std::string', 'BaseType *node',
+                       'Helper function to turn a given type node into a string')
+        file.write('\n')
+
+        declare_helper('copy_type', 'BaseTypeVisitorType', 'BaseType *node',
+                       'Helper function to copy a given type node (list size expressions are not copied however)')
+        file.write('\n')
+
+        declare_helper('vartuple_size', 'std::size_t', 'IdentifierTuple::TupleType &tuple',
+                       'Helper function to get the size of a given vartuple')
+        file.write('\n')
+
+        declare_helper('is_trivial_type', 'bool', 'Type type',
+                       'Determine whether passed type is trivial')
+        declare_helper('is_trivial_type', 'bool', 'BaseType *node')
+        file.write('\n')
+
+        declare_helper('is_nontrivial_type', 'bool', 'Type type',
+                       'Determine whether passed type is non-trivial')
+        declare_helper('is_nontrivial_type', 'bool', 'BaseType *node')
+        file.write('\n')
+
+        declare_helper('is_constructor', 'bool', 'FunctionStmt *stmt',
+                       'Determine whether given function is a constructor')
+        file.write('\n')
+
+        declare_helper('is_destructor', 'bool', 'FunctionStmt *stmt',
+                       'Determine whether given function is a destructor')
+        file.write('\n')
 
         end_file(file)
