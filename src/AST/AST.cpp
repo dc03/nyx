@@ -46,6 +46,48 @@ std::string stringify(BaseType *node) {
     return result;
 }
 
+std::string stringify_short(const BaseType *node, bool consider_const, bool consider_ref) {
+    std::string result{};
+    if (node->is_const && consider_const) {
+        result += "c%";
+    }
+
+    if (node->is_ref && consider_ref) {
+        result += "r%";
+    }
+
+    switch (node->primitive) {
+        case Type::INT: result += "i"; break;
+        case Type::BOOL: result += "b"; break;
+        case Type::STRING: result += "s"; break;
+        case Type::NULL_: result += "n"; break;
+        case Type::FLOAT: result += "f"; break;
+        case Type::CLASS: {
+            auto type = dynamic_cast<UserDefinedType *>(node);
+            result += type->name.lexeme;
+            break;
+        }
+        case Type::LIST: {
+            using namespace std::string_literals;
+            auto type = dynamic_cast<ListType *>(node);
+            result += "["s + stringify_short(type->contained.get(), consider_const, consider_ref) + "]";
+            break;
+        }
+        case Type::TUPLE: {
+            auto *tuple = dynamic_cast<TupleType *>(node);
+            result += "{";
+            auto begin = tuple->types.begin();
+            for (; begin != tuple->types.end() - 1; begin++) {
+                result += stringify_short(begin->get(), consider_const, consider_ref) + ",";
+            }
+            result += stringify_short(begin->get(), consider_const, consider_ref) + "}";
+            break;
+        }
+        default: unreachable();
+    }
+    return result;
+}
+
 BaseTypeVisitorType copy_type(BaseType *node) {
     if (node->type_tag() == NodeType::PrimitiveType) {
         return allocate_node(PrimitiveType, node->primitive, node->is_const, node->is_ref);

@@ -873,6 +873,8 @@ struct TypeofType final : public BaseType {
 
 // Helper function to turn a given type node into a string
 std::string stringify(BaseType *node);
+// Helper function to turn the type of a given node into a shortened form
+std::string stringify_short(const BaseType *node, bool consider_const, bool consider_ref);
 
 // Helper function to copy a given type node (list size expressions are not copied however)
 BaseTypeVisitorType copy_type(BaseType *node);

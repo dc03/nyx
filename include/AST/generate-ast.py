@@ -442,6 +442,8 @@ if __name__ == '__main__':
 
         declare_helper('stringify', 'std::string', 'BaseType *node',
                        'Helper function to turn a given type node into a string')
+        declare_helper('stringify_short', 'std::string', 'const BaseType *node, bool consider_const, bool consider_ref',
+                       'Helper function to turn the type of a given node into a shortened form')
         file.write('\n')
 
         declare_helper('copy_type', 'BaseTypeVisitorType', 'BaseType *node',
