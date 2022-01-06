@@ -95,8 +95,15 @@ void ByteCodeGenerator::generate_list_destructor_loop(const ListType *list) {
     emit_operand(0);
     current_chunk->emit_instruction(Instruction::ACCESS_LOCAL, line);
     emit_operand(1);
-
     current_chunk->emit_instruction(Instruction::MOVE_INDEX, line);
+
+    current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, ++line);
+    emit_operand(1);
+    current_chunk->emit_instruction(Instruction::PUSH_NULL, line);
+    current_chunk->emit_instruction(Instruction::EQUAL, line);
+    current_chunk->emit_instruction(Instruction::NOT, line);
+    std::size_t jump = current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, line);
+
     if (list->contained->primitive == Type::LIST || list->contained->primitive == Type::TUPLE) {
         emit_aggregate_destructor_call(list->contained.get());
     } else {
@@ -104,7 +111,7 @@ void ByteCodeGenerator::generate_list_destructor_loop(const ListType *list) {
         auto *contained = dynamic_cast<UserDefinedType *>(list->contained.get());
         emit_destructor_call(contained->class_, ++line);
     }
-    current_chunk->emit_instruction(Instruction::POP_LIST, line);
+    std::size_t after = current_chunk->emit_instruction(Instruction::POP_LIST, line);
 
     current_chunk->emit_instruction(Instruction::ACCESS_LOCAL, ++line);
     emit_operand(1);
@@ -126,6 +133,7 @@ void ByteCodeGenerator::generate_list_destructor_loop(const ListType *list) {
     current_chunk->emit_instruction(Instruction::POP, line);
     current_chunk->emit_instruction(Instruction::RETURN, ++line);
 
+    patch_jump(jump, after - jump - 1);
     patch_jump(jump_back, jump_back - loop_begin + 1);
     patch_jump(jump_begin, condition - jump_begin - 1);
 }
@@ -156,6 +164,14 @@ void ByteCodeGenerator::generate_aggregate_destructor(const BaseType *type) {
             emit_operand(0);
             current_chunk->emit_constant(Value{static_cast<int>(i) - 1}, i);
             current_chunk->emit_instruction(Instruction::MOVE_INDEX, i);
+
+            current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, i);
+            emit_operand(1);
+            current_chunk->emit_instruction(Instruction::PUSH_NULL, i);
+            current_chunk->emit_instruction(Instruction::EQUAL, i);
+            current_chunk->emit_instruction(Instruction::NOT, i);
+            std::size_t jump = current_chunk->emit_instruction(Instruction::POP_JUMP_IF_FALSE, i);
+
             if (type_->primitive == Type::CLASS) {
                 emit_destructor_call(dynamic_cast<const UserDefinedType *>(type_.get())->class_, i);
             } else if ((type_->primitive == Type::TUPLE || type_->primitive == Type::LIST) &&
@@ -165,7 +181,9 @@ void ByteCodeGenerator::generate_aggregate_destructor(const BaseType *type) {
                 }
                 emit_aggregate_destructor_call(type_.get());
             }
-            current_chunk->emit_instruction(Instruction::POP_LIST, i);
+
+            std::size_t after = current_chunk->emit_instruction(Instruction::POP_LIST, i);
+            patch_jump(jump, after - jump - 1);
             ++i;
         }
 
