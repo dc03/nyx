@@ -520,7 +520,9 @@ ExprVisitorType ByteCodeGenerator::visit(AssignExpr &expr) {
                     break;
                 default: break;
             }
-            current_chunk->emit_instruction(Instruction::ASSIGN_LOCAL, expr.synthesized_attrs.token.line);
+            current_chunk->emit_instruction(
+                expr.target_type == IdentifierType::LOCAL ? Instruction::ASSIGN_LOCAL : Instruction::ASSIGN_GLOBAL,
+                expr.synthesized_attrs.token.line);
             break;
         }
     }
