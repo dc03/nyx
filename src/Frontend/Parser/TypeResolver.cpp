@@ -933,7 +933,7 @@ ExprVisitorType TypeResolver::visit(ListExpr &expr) {
         TypeNode{copy_type(resolve(std::get<ExprNode>(*expr.elements.begin()).get()).info)}));
 
     for (std::size_t i = 1; i < expr.elements.size(); i++) {
-        resolve(std::get<ExprNode>(expr.elements[i]).get()); // Will store the type info in the 'resolved' class member
+        resolve(std::get<ExprNode>(expr.elements[i]).get());
     }
 
     if (std::none_of(expr.elements.begin(), expr.elements.end(),
@@ -955,6 +955,16 @@ ExprVisitorType TypeResolver::visit(ListExpr &expr) {
         if (not expr.type->contained->is_ref && is_nontrivial_type(expr.type->contained->primitive) &&
             std::get<ExprNode>(element)->synthesized_attrs.is_lvalue) {
             std::get<RequiresCopy>(element) = true;
+        }
+    }
+
+    for (auto &element : expr.elements) {
+        auto &as_expr = std::get<ExprNode>(element);
+        if (not convertible_to(expr.type->contained.get(), as_expr->synthesized_attrs.info,
+                as_expr->synthesized_attrs.is_lvalue, as_expr->synthesized_attrs.token, false)) {
+            error({"Cannot convert from type of element to type of list"}, as_expr->synthesized_attrs.token);
+            note({"The type of the list expression is '", stringify(expr.type.get()), "' and the type of element is '",
+                stringify(as_expr->synthesized_attrs.info), "'"});
         }
     }
     return expr.synthesized_attrs = {expr.type.get(), expr.bracket, false};
