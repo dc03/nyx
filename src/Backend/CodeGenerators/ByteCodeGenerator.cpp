@@ -1342,6 +1342,14 @@ StmtVisitorType ByteCodeGenerator::visit(BlockStmt &stmt) {
     begin_scope();
     for (auto &statement : stmt.stmts) {
         compile(statement.get());
+        // Statements written after a return statement will never execute anyway, so it's better to not emit anything
+        // after one
+        if (statement->type_tag() == NodeType::ReturnStmt) {
+            // Note that a ReturnStmt automatically destroys the locals on the stack, so there's no need to call
+            // destroy_locals() through end_scope() and instead just directly call remove_topmost_scope() and return
+            remove_topmost_scope();
+            return;
+        }
     }
     end_scope();
 }
@@ -1399,16 +1407,7 @@ StmtVisitorType ByteCodeGenerator::visit(FunctionStmt &stmt) {
     current_chunk = &function.code;
     compile(stmt.body.get());
 
-    end_scope();
-    for (auto begin = stmt.params.crbegin(); begin != stmt.params.crend(); begin++) {
-        if (begin->second->primitive == Type::STRING) {
-            current_chunk->emit_instruction(Instruction::POP_STRING, 0);
-        } else if (begin->second->primitive == Type::LIST && not begin->second->is_ref) {
-            current_chunk->emit_instruction(Instruction::POP_LIST, 0);
-        } else {
-            current_chunk->emit_instruction(Instruction::POP, 0);
-        }
-    }
+    remove_topmost_scope();
 
     if (stmt.return_type->primitive != Type::NULL_) {
         if (auto *body = dynamic_cast<BlockStmt *>(stmt.body.get());
