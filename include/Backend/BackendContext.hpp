@@ -3,8 +3,8 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 
-#ifndef COMPILER_CONTEXT_HPP
-#define COMPILER_CONTEXT_HPP
+#ifndef BACKEND_CONTEXT_HPP
+#define BACKEND_CONTEXT_HPP
 
 #include "ErrorLogger/ErrorLogger.hpp"
 #include "RuntimeModule.hpp"

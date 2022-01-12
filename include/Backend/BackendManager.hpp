@@ -3,8 +3,8 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 
-#ifndef RUNTIME_MANAGER_HPP
-#define RUNTIME_MANAGER_HPP
+#ifndef BACKEND_MANAGER_HPP
+#define BACKEND_MANAGER_HPP
 
 #include "Backend/BackendContext.hpp"
 #include "Backend/CodeGenerators/ByteCodeGenerator.hpp"

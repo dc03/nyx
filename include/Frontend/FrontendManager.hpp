@@ -3,8 +3,8 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 
-#ifndef COMPILE_MANAGER_HPP
-#define COMPILE_MANAGER_HPP
+#ifndef FRONTEND_MANAGER_HPP
+#define FRONTEND_MANAGER_HPP
 
 #include "Backend/CodeGenerators/ByteCodeGenerator.hpp"
 #include "Frontend/FrontendContext.hpp"
