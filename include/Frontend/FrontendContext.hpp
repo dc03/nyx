@@ -15,7 +15,7 @@
 
 class CLIConfig;
 
-struct CompileContext {
+struct FrontendContext {
     Module *main{};
     std::filesystem::path main_parent_path{};
 

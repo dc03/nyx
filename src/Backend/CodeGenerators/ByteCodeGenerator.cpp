@@ -14,11 +14,11 @@ ByteCodeGenerator::ByteCodeGenerator() {
     }
 }
 
-void ByteCodeGenerator::set_compile_ctx(CompileContext *compile_ctx_) {
+void ByteCodeGenerator::set_compile_ctx(FrontendContext *compile_ctx_) {
     compile_ctx = compile_ctx_;
 }
 
-void ByteCodeGenerator::set_runtime_ctx(RuntimeContext *runtime_ctx_) {
+void ByteCodeGenerator::set_runtime_ctx(BackendContext *runtime_ctx_) {
     runtime_ctx = runtime_ctx_;
 }
 

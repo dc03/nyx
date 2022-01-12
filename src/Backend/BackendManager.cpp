@@ -1,6 +1,6 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Backend/RuntimeManager.hpp"
+#include "Backend/BackendManager.hpp"
 
 #include "Backend/VirtualMachine/Disassembler.hpp"
 #include "CLIConfigParser.hpp"
@@ -8,7 +8,7 @@
 
 #include <algorithm>
 
-RuntimeManager::RuntimeManager(RuntimeContext *ctx) : ctx{ctx} {
+BackendManager::BackendManager(BackendContext *ctx) : ctx{ctx} {
     generator.set_runtime_ctx(ctx);
     vm.set_runtime_ctx(ctx);
 
@@ -27,7 +27,7 @@ RuntimeManager::RuntimeManager(RuntimeContext *ctx) : ctx{ctx} {
 #endif
 }
 
-void RuntimeManager::compile(CompileContext *compile_ctx) {
+void BackendManager::compile(FrontendContext *compile_ctx) {
     compile_ctx->sort_modules();
 
     for (std::size_t i = 0; i < compile_ctx->parsed_modules.size(); i++) {
@@ -50,11 +50,11 @@ void RuntimeManager::compile(CompileContext *compile_ctx) {
     }
 }
 
-void RuntimeManager::disassemble() {
+void BackendManager::disassemble() {
     disassemble_ctx(ctx, not ctx->config->contains(NO_COLORIZE_OUTPUT));
 }
 
-void RuntimeManager::run() {
+void BackendManager::run() {
     if (ctx->main != nullptr) {
         vm.set_function_module_info(ctx->main, ctx->compiled_modules.size());
     }

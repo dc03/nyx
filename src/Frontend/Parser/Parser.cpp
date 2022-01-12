@@ -6,7 +6,7 @@
 #include "CLIConfigParser.hpp"
 #include "Common.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
-#include "Frontend/CompileManager.hpp"
+#include "Frontend/FrontendManager.hpp"
 #include "Frontend/Parser/FeatureFlagError.hpp"
 #include "Frontend/Parser/TypeResolver.hpp"
 #include "Frontend/Scanner/Scanner.hpp"
@@ -171,7 +171,7 @@ void Parser::setup_rules() noexcept {
     // clang-format on
 }
 
-Parser::Parser(CompileContext *ctx, Scanner *scanner, Module *module, std::size_t current_depth)
+Parser::Parser(FrontendContext *ctx, Scanner *scanner, Module *module, std::size_t current_depth)
     : ctx{ctx}, scanner{scanner}, current_module{module}, current_module_depth{current_depth} {
     setup_rules();
     advance();
@@ -792,7 +792,7 @@ StmtNode Parser::import_statement() {
     Token imported = current_token;
     consume("Expected ';' or newline after imported file", current_token, TokenType::SEMICOLON, TokenType::END_OF_LINE);
 
-    CompileManager manager{ctx, imported.lexeme, false, current_module_depth + 1};
+    FrontendManager manager{ctx, imported.lexeme, false, current_module_depth + 1};
 
     auto it = std::find_if(ctx->parsed_modules.begin(), ctx->parsed_modules.end(),
         [&manager](const std::pair<Module, std::size_t> &pair) { return manager.module_name() == pair.first.name; });

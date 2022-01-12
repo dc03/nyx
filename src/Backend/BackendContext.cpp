@@ -1,6 +1,6 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Backend/RuntimeContext.hpp"
+#include "Backend/BackendContext.hpp"
 
 #include "Backend/VirtualMachine/Value.hpp"
 #include "CLIConfigParser.hpp"
@@ -8,7 +8,7 @@
 // Basically, `Chunk` in `RuntimeModule` only forward declares `Value`, but does not include `Value` header file, so
 // trying to access the `std::vector<RuntimeModule>` in any manner fails because it is made up of an incomplete type
 
-RuntimeModule *RuntimeContext::get_module_string(const std::string &module) noexcept {
+RuntimeModule *BackendContext::get_module_string(const std::string &module) noexcept {
     auto it = module_path_map.find(module);
     if (it != module_path_map.end()) {
         return &compiled_modules[it->second];
@@ -17,11 +17,11 @@ RuntimeModule *RuntimeContext::get_module_string(const std::string &module) noex
     }
 }
 
-RuntimeModule *RuntimeContext::get_module_path(const std::filesystem::path &path) noexcept {
+RuntimeModule *BackendContext::get_module_path(const std::filesystem::path &path) noexcept {
     return get_module_string(path.c_str());
 }
 
-std::size_t RuntimeContext::get_module_index_string(const std::string &module) noexcept {
+std::size_t BackendContext::get_module_index_string(const std::string &module) noexcept {
     auto it = module_path_map.find(module);
     if (it != module_path_map.end()) {
         return it->second;
@@ -30,11 +30,11 @@ std::size_t RuntimeContext::get_module_index_string(const std::string &module) n
     }
 }
 
-std::size_t RuntimeContext::get_module_index_path(const std::filesystem::path &path) noexcept {
+std::size_t BackendContext::get_module_index_path(const std::filesystem::path &path) noexcept {
     return get_module_index_string(path.c_str());
 }
 
-void RuntimeContext::set_config(const CLIConfig *config) {
+void BackendContext::set_config(const CLIConfig *config) {
     this->config = config;
 
     if (config->contains(NO_COLORIZE_OUTPUT)) {

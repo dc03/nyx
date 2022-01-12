@@ -26,7 +26,7 @@ class ScopedScopeManager {
     ~ScopedScopeManager() { resolver.end_scope(); }
 };
 
-TypeResolver::TypeResolver(CompileContext *ctx, Module *module)
+TypeResolver::TypeResolver(FrontendContext *ctx, Module *module)
     : ctx{ctx}, current_module{module}, type_scratch_space{&module->type_scratch_space} {}
 
 ////////////////////////////////////////////////////////////////////////////////

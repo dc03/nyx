@@ -21,7 +21,7 @@ ColoredPrintHelper pcife(bool colors_enabled, ColoredPrintHelper::StreamColorMod
     return ColoredPrintHelper{colors_enabled, colorizer};
 }
 
-void disassemble_ctx(RuntimeContext *ctx, bool colors_enabled) {
+void disassemble_ctx(BackendContext *ctx, bool colors_enabled) {
     if (ctx->main != nullptr) {
         std::cout << pcife(colors_enabled, termcolor::bold) << pcife(colors_enabled, termcolor::blue)
                   << "\n--<==== Main Module ====>--" << pcife(colors_enabled, termcolor::reset);

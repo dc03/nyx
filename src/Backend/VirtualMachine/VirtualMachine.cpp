@@ -23,7 +23,7 @@ VirtualMachine::VirtualMachine()
     }
 }
 
-void VirtualMachine::set_runtime_ctx(RuntimeContext *ctx_) {
+void VirtualMachine::set_runtime_ctx(BackendContext *ctx_) {
     ctx = ctx_;
 }
 

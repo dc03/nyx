@@ -7,7 +7,7 @@
 #define TYPE_RESOLVER_HPP
 
 #include "AST/AST.hpp"
-#include "Frontend/CompileContext.hpp"
+#include "Frontend/FrontendContext.hpp"
 #include "Frontend/Module.hpp"
 #include "ScopedManager.hpp"
 
@@ -25,7 +25,7 @@ class TypeResolver final : Visitor {
         std::size_t stack_slot{};
     };
 
-    CompileContext *ctx{};
+    FrontendContext *ctx{};
 
     Module *current_module{};
     std::vector<TypeNode> *type_scratch_space{};
@@ -93,7 +93,7 @@ class TypeResolver final : Visitor {
 
   public:
     TypeResolver() noexcept = default;
-    TypeResolver(CompileContext *ctx, Module *module);
+    TypeResolver(FrontendContext *ctx, Module *module);
 
     void check(std::vector<StmtNode> &program);
 

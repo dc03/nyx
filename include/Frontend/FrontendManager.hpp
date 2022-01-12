@@ -7,15 +7,15 @@
 #define COMPILE_MANAGER_HPP
 
 #include "Backend/CodeGenerators/ByteCodeGenerator.hpp"
-#include "Frontend/CompileContext.hpp"
+#include "Frontend/FrontendContext.hpp"
 #include "Frontend/Parser/Parser.hpp"
 #include "Frontend/Parser/TypeResolver.hpp"
 #include "Frontend/Scanner/Scanner.hpp"
 
 #include <filesystem>
 
-class CompileManager {
-    CompileContext *ctx{};
+class FrontendManager {
+    FrontendContext *ctx{};
 
     Module module{};
 
@@ -24,8 +24,8 @@ class CompileManager {
     TypeResolver resolver{};
 
   public:
-    CompileManager() noexcept = default;
-    CompileManager(CompileContext *ctx, std::filesystem::path path, bool is_main, std::size_t module_depth = 0);
+    FrontendManager() noexcept = default;
+    FrontendManager(FrontendContext *ctx, std::filesystem::path path, bool is_main, std::size_t module_depth = 0);
 
     void parse_module();
     void check_module();

@@ -15,7 +15,7 @@ Scanner::Scanner() {
     }
 }
 
-Scanner::Scanner(CompileContext *ctx_, Module *module_, std::string_view source_) : Scanner() {
+Scanner::Scanner(FrontendContext *ctx_, Module *module_, std::string_view source_) : Scanner() {
     ctx = ctx_;
     module = module_;
     source = source_;

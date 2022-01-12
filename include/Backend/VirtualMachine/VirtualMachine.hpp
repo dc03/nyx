@@ -6,7 +6,7 @@
 #ifndef VIRTUAL_MACHINE_HPP
 #define VIRTUAL_MACHINE_HPP
 
-#include "Backend/RuntimeContext.hpp"
+#include "Backend/BackendContext.hpp"
 #include "Backend/RuntimeModule.hpp"
 #include "ColoredPrintHelper.hpp"
 #include "Natives.hpp"
@@ -53,7 +53,7 @@ class VirtualMachine {
     Chunk *current_chunk{};
     RuntimeModule *current_module{};
 
-    RuntimeContext *ctx{};
+    BackendContext *ctx{};
 
 #if !NO_TRACE_VM
     bool colors_enabled{};
@@ -81,7 +81,7 @@ class VirtualMachine {
     void initialize_modules();
     void teardown_modules();
 
-    friend class RuntimeManager;
+    friend class BackendManager;
 
   public:
     // TODO: add proper config for this
@@ -91,7 +91,7 @@ class VirtualMachine {
     VirtualMachine(const VirtualMachine &) = delete;
     VirtualMachine &operator=(const VirtualMachine &) = delete;
 
-    void set_runtime_ctx(RuntimeContext *ctx_);
+    void set_runtime_ctx(BackendContext *ctx_);
     void set_function_module_info(RuntimeModule *module, std::size_t index);
 
     void run_function(RuntimeFunction &function);

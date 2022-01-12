@@ -16,7 +16,7 @@
 
 class CLIConfig;
 
-struct RuntimeContext {
+struct BackendContext {
     RuntimeModule *main{};
 
     std::vector<RuntimeModule> compiled_modules{};

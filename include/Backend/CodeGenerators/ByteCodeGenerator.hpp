@@ -7,11 +7,11 @@
 #define BYTE_CODE_GENERATOR_HPP
 
 #include "AST/AST.hpp"
-#include "Backend/RuntimeContext.hpp"
+#include "Backend/BackendContext.hpp"
 #include "Backend/RuntimeModule.hpp"
 #include "Backend/VirtualMachine/Chunk.hpp"
 #include "Backend/VirtualMachine/Natives.hpp"
-#include "Frontend/CompileContext.hpp"
+#include "Frontend/FrontendContext.hpp"
 #include "Frontend/Module.hpp"
 
 #include <stack>
@@ -20,8 +20,8 @@
 class ByteCodeGenerator final : Visitor {
     static constexpr const char *aggregate_destructor_prefix = "__destruct_";
 
-    CompileContext *compile_ctx{};
-    RuntimeContext *runtime_ctx{};
+    FrontendContext *compile_ctx{};
+    BackendContext *runtime_ctx{};
 
     Chunk *current_chunk{nullptr};
     Module *current_module{nullptr};
@@ -81,8 +81,8 @@ class ByteCodeGenerator final : Visitor {
   public:
     ByteCodeGenerator();
 
-    void set_compile_ctx(CompileContext *compile_ctx_);
-    void set_runtime_ctx(RuntimeContext *runtime_ctx_);
+    void set_compile_ctx(FrontendContext *compile_ctx_);
+    void set_runtime_ctx(BackendContext *runtime_ctx_);
 
     RuntimeModule compile(Module &module);
 

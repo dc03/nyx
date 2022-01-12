@@ -8,7 +8,7 @@
 
 #include "AST/AST.hpp"
 #include "AST/Token.hpp"
-#include "Frontend/CompileContext.hpp"
+#include "Frontend/FrontendContext.hpp"
 #include "Frontend/Module.hpp"
 #include "Frontend/Scanner/Scanner.hpp"
 #include "ScopedManager.hpp"
@@ -49,7 +49,7 @@ class Parser {
         ParsePrecedence::of precedence{};
     };
 
-    CompileContext *ctx{};
+    FrontendContext *ctx{};
 
     Scanner *scanner{};
     Token current_token{};
@@ -101,7 +101,7 @@ class Parser {
 
   public:
     Parser() noexcept = default;
-    Parser(CompileContext *ctx, Scanner *scanner, Module *module, std::size_t current_depth);
+    Parser(FrontendContext *ctx, Scanner *scanner, Module *module, std::size_t current_depth);
 
     std::vector<StmtNode> program();
 

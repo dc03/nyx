@@ -1,19 +1,19 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 #include "AST/ASTPrinter.hpp"
-#include "Backend/RuntimeManager.hpp"
+#include "Backend/BackendManager.hpp"
 #include "CLIConfigParser.hpp"
 #include "ErrorLogger/ErrorLogger.hpp"
-#include "Frontend/CompileManager.hpp"
+#include "Frontend/FrontendManager.hpp"
 
 #include <cxxopts.hpp>
 #include <iostream>
 
 void run(const char *const main_module, const CLIConfig *compile_config, const CLIConfig *runtime_config) {
-    CompileContext compile_ctx{};
+    FrontendContext compile_ctx{};
     compile_ctx.set_config(compile_config);
 
-    CompileManager compile_manager{&compile_ctx, main_module, true, 0};
+    FrontendManager compile_manager{&compile_ctx, main_module, true, 0};
 
     compile_manager.parse_module();
     compile_manager.check_module();
@@ -30,10 +30,10 @@ void run(const char *const main_module, const CLIConfig *compile_config, const C
     }
 
     if (not compile_config->contains(CHECK) && not compile_ctx.logger.had_error()) {
-        RuntimeContext runtime_ctx{};
+        BackendContext runtime_ctx{};
         runtime_ctx.set_config(runtime_config);
 
-        RuntimeManager runtime_manager{&runtime_ctx};
+        BackendManager runtime_manager{&runtime_ctx};
 
         for (auto &module : compile_ctx.parsed_modules) {
             std::cout << module.first.name << " -> depth: " << module.second << "\n";

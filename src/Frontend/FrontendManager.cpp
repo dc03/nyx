@@ -1,13 +1,14 @@
 /* Copyright (C) 2021  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Frontend/CompileManager.hpp"
+#include "Frontend/FrontendManager.hpp"
 
 #include <filesystem>
 #include <fstream>
 
 namespace fs = std::filesystem;
 
-CompileManager::CompileManager(CompileContext *ctx, fs::path path, bool is_main, std::size_t module_depth) : ctx{ctx} {
+FrontendManager::FrontendManager(FrontendContext *ctx, fs::path path, bool is_main, std::size_t module_depth)
+    : ctx{ctx} {
     if (is_main) {
         ctx->main_parent_path = fs::absolute(path).parent_path();
     } else {
@@ -48,26 +49,26 @@ CompileManager::CompileManager(CompileContext *ctx, fs::path path, bool is_main,
     resolver = TypeResolver{ctx, &module};
 }
 
-void CompileManager::parse_module() {
+void FrontendManager::parse_module() {
     module.statements = parser.program();
 }
 
-void CompileManager::check_module() {
+void FrontendManager::check_module() {
     resolver.check(module.statements);
 }
 
-std::string &CompileManager::module_name() {
+std::string &FrontendManager::module_name() {
     return module.name;
 }
 
-fs::path CompileManager::module_path() const {
+fs::path FrontendManager::module_path() const {
     return module.full_path.parent_path();
 }
 
-Module &CompileManager::get_module() {
+Module &FrontendManager::get_module() {
     return module;
 }
 
-Module CompileManager::move_module() {
+Module FrontendManager::move_module() {
     return std::move(module);
 }

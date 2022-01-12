@@ -6,12 +6,12 @@
 #ifndef RUNTIME_MANAGER_HPP
 #define RUNTIME_MANAGER_HPP
 
+#include "Backend/BackendContext.hpp"
 #include "Backend/CodeGenerators/ByteCodeGenerator.hpp"
-#include "Backend/RuntimeContext.hpp"
 #include "Backend/VirtualMachine/VirtualMachine.hpp"
 
-class RuntimeManager {
-    RuntimeContext *ctx{};
+class BackendManager {
+    BackendContext *ctx{};
 
     RuntimeModule main{};
 
@@ -19,10 +19,10 @@ class RuntimeManager {
     VirtualMachine vm{};
 
   public:
-    RuntimeManager() = default;
-    explicit RuntimeManager(RuntimeContext *ctx);
+    BackendManager() = default;
+    explicit BackendManager(BackendContext *ctx);
 
-    void compile(CompileContext *compile_ctx);
+    void compile(FrontendContext *compile_ctx);
     void disassemble();
     void run();
 };
