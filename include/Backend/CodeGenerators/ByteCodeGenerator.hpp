@@ -1,6 +1,6 @@
 #pragma once
 
-/* Copyright (C) 2021  Dhruv Chawla */
+/* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
 
 #ifndef BYTE_CODE_GENERATOR_HPP
