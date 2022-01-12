@@ -170,9 +170,8 @@ void VirtualMachine::run_function(RuntimeFunction &function) {
     current_chunk = &function.code;
     ip = &function.code.bytes[0];
 
-    while (frame_top > function_frame) {
-        step();
-    }
+    while (frame_top > function_frame && step() != ExecutionState::FINISHED)
+        ;
 
 #if !NO_TRACE_VM
     if (debug_print_module_init) {
