@@ -811,5 +811,9 @@ const HashedString &VirtualMachine::store_string(std::string str) {
     return cache.insert(std::move(str));
 }
 
+void VirtualMachine::remove_string(const HashedString *str) {
+    cache.remove(*str);
+}
+
 #undef arith_binary_op
 #undef comp_binary_op

@@ -98,6 +98,7 @@ class VirtualMachine {
     void run(RuntimeModule &module);
     ExecutionState step();
     [[nodiscard]] const HashedString &store_string(std::string str);
+    void remove_string(const HashedString *str);
 };
 
 #endif
