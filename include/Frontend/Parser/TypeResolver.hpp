@@ -59,6 +59,7 @@ class TypeResolver final : Visitor {
 
     void resolve_and_replace_if_typeof(TypeNode &type);
     void infer_list_type(ListExpr *of, ListType *from);
+    void infer_list_repeat_type(ListRepeatExpr *of, ListType *from);
     void infer_tuple_type(TupleExpr *of, TupleType *from);
     bool are_equivalent_primitives(QualifiedTypeInfo first, QualifiedTypeInfo second);
     bool are_equivalent_types(QualifiedTypeInfo first, QualifiedTypeInfo second);
@@ -106,6 +107,7 @@ class TypeResolver final : Visitor {
     ExprVisitorType visit(IndexExpr &expr) override final;
     ExprVisitorType visit(ListExpr &expr) override final;
     ExprVisitorType visit(ListAssignExpr &expr) override final;
+    ExprVisitorType visit(ListRepeatExpr &expr) override final;
     ExprVisitorType visit(LiteralExpr &expr) override final;
     ExprVisitorType visit(LogicalExpr &expr) override final;
     ExprVisitorType visit(MoveExpr &expr) override final;

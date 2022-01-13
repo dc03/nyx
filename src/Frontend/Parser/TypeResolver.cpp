@@ -277,6 +277,35 @@ void TypeResolver::infer_list_type(ListExpr *of, ListType *from) {
     }
 }
 
+void TypeResolver::infer_list_repeat_type(ListRepeatExpr *of, ListType *from) {
+    if (not are_equivalent_primitives(of->type.get(), from)) {
+        return; // The two lists need to store the same types
+    } else if (from->is_ref) {
+        return; // Cannot make a reference to a ListRepeatExpr
+    }
+
+    auto &of_expr = std::get<ExprNode>(of->expr);
+
+    of->type->contained->is_const = of->type->contained->is_const || from->contained->is_const;
+    of->type->is_const = of->type->is_const || from->is_const;
+    // Infer const-ness
+
+    // Copy the non-trivial type contained in the list
+    if (not from->contained->is_ref && of_expr->synthesized_attrs.is_lvalue &&
+        is_nontrivial_type(from->contained->primitive)) {
+        std::get<RequiresCopy>(of->expr) = true;
+    } else if (from->contained->is_ref &&
+               (of_expr->synthesized_attrs.is_lvalue || of_expr->synthesized_attrs.info->is_ref)) {
+        of->type->contained->is_ref = true;
+    }
+
+    if (from->contained->primitive == Type::INT && of_expr->synthesized_attrs.info->primitive == Type::FLOAT) {
+        std::get<NumericConversionType>(of->expr) = NumericConversionType::FLOAT_TO_INT;
+    } else if (from->contained->primitive == Type::FLOAT && of_expr->synthesized_attrs.info->primitive == Type::INT) {
+        std::get<NumericConversionType>(of->expr) = NumericConversionType::INT_TO_FLOAT;
+    }
+}
+
 void TypeResolver::infer_tuple_type(TupleExpr *of, TupleType *from) {
     // Cannot make a reference to a TupleExpr
     if (from->is_ref) {
@@ -1022,6 +1051,41 @@ ExprVisitorType TypeResolver::visit(ListAssignExpr &expr) {
     return expr.synthesized_attrs = {contained.info, expr.synthesized_attrs.token, false};
 }
 
+ExprVisitorType TypeResolver::visit(ListRepeatExpr &expr) {
+    std::get<ExprNode>(expr.expr)->inherited_attrs.parent = &expr;
+    std::get<ExprNode>(expr.quantity)->inherited_attrs.parent = &expr;
+
+    ExprSynthesizedAttrs element = resolve(std::get<ExprNode>(expr.expr).get());
+    ExprSynthesizedAttrs quantity = resolve(std::get<ExprNode>(expr.quantity).get());
+
+    expr.type.reset(allocate_node(
+        ListType, Type::LIST, true, false, TypeNode{copy_type(std::get<ExprNode>(expr.expr)->synthesized_attrs.info)}));
+
+    TypeNode int_type{allocate_node(PrimitiveType, Type::INT, false, false)};
+    if (not convertible_to(int_type.get(), quantity.info, quantity.is_lvalue, quantity.token, false)) {
+        error({"Cannot convert type of quantity to int"}, quantity.token);
+        note({"The type of the quantity is '", stringify(quantity.info), "'"});
+        throw TypeException{"Cannot convert type of quantity to int"};
+    }
+
+    if (quantity.info->primitive == Type::FLOAT) {
+        std::get<NumericConversionType>(expr.quantity) = NumericConversionType::FLOAT_TO_INT;
+    }
+
+    // By default, the list type is non-ref so a non-trivial l-value given as the element will get copied
+    if (is_nontrivial_type(element.info) && element.is_lvalue) {
+        std::get<RequiresCopy>(expr.expr) = true;
+    }
+
+    if (not element.info->is_ref) {
+        expr.type->contained->is_const = false;
+    }
+
+    // As expr.quantity will always have to be either float or int, the RequiresCopy field in it is ignored
+
+    return expr.synthesized_attrs = {expr.type.get(), expr.bracket};
+}
+
 ExprVisitorType TypeResolver::visit(LiteralExpr &expr) {
     switch (expr.value.index()) {
         case LiteralValue::tag::INT:
@@ -1605,9 +1669,16 @@ StmtVisitorType TypeResolver::visit(VarStmt &stmt) {
     // Infer some more information about the type of the list expression from the type of the variable if needed
     //  If a variable is defined as `var x: [ref int] = [a, b, c]`, then the list needs to be inferred as a list of
     //  [ref int], not as [int]
-    if (stmt.initializer->type_tag() == NodeType::ListExpr && stmt.type->primitive == Type::LIST) {
-        infer_list_type(dynamic_cast<ListExpr *>(stmt.initializer.get()), dynamic_cast<ListType *>(stmt.type.get()));
-        initializer = stmt.initializer->synthesized_attrs;
+    if (stmt.type->primitive == Type::LIST) {
+        if (stmt.initializer->type_tag() == NodeType::ListExpr) {
+            infer_list_type(
+                dynamic_cast<ListExpr *>(stmt.initializer.get()), dynamic_cast<ListType *>(stmt.type.get()));
+            initializer = stmt.initializer->synthesized_attrs;
+        } else if (stmt.initializer->type_tag() == NodeType::ListRepeatExpr) {
+            infer_list_repeat_type(
+                dynamic_cast<ListRepeatExpr *>(stmt.initializer.get()), dynamic_cast<ListType *>(stmt.type.get()));
+            initializer = stmt.initializer->synthesized_attrs;
+        }
     } else if (stmt.initializer->type_tag() == NodeType::TupleExpr && stmt.type->primitive == Type::TUPLE) {
         infer_tuple_type(dynamic_cast<TupleExpr *>(stmt.initializer.get()), dynamic_cast<TupleType *>(stmt.type.get()));
     }
