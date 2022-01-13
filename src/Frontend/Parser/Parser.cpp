@@ -912,7 +912,11 @@ StmtNode Parser::block_statement() {
 
     while (not is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
         if (match(TokenType::VAR, TokenType::CONST, TokenType::REF)) {
-            statements.emplace_back(variable_declaration());
+            if (peek().type == TokenType::LEFT_BRACE) {
+                statements.emplace_back(vartuple_declaration());
+            } else {
+                statements.emplace_back(variable_declaration());
+            }
         } else {
             statements.emplace_back(statement());
         }
