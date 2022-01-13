@@ -1041,6 +1041,80 @@ ExprVisitorType ByteCodeGenerator::visit(ListAssignExpr &expr) {
     return {};
 }
 
+ExprVisitorType ByteCodeGenerator::visit(ListRepeatExpr &expr) {
+    auto &element = std::get<ExprNode>(expr.expr);
+    auto &quantity = std::get<ExprNode>(expr.quantity);
+
+    std::size_t line = quantity->synthesized_attrs.token.line;
+    std::size_t line2 = element->synthesized_attrs.token.line;
+
+    if (is_nontrivial_type(element->synthesized_attrs.info)) {
+        current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.bracket.line);
+        emit_operand(0);
+        compile(quantity.get());
+        emit_conversion(std::get<NumericConversionType>(expr.quantity), line);
+        current_chunk->emit_constant(Value{0}, expr.bracket.line);
+
+        // Generate a while-loop to fill in the list
+        std::size_t jump_begin = current_chunk->emit_instruction(Instruction::JUMP_FORWARD, line);
+        emit_operand(0);
+
+        std::size_t loop_begin = current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, line);
+        emit_operand(3);
+
+        compile(element.get());
+        current_chunk->emit_instruction(Instruction::APPEND_LIST, line);
+        current_chunk->emit_instruction(Instruction::POP, line);
+        current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, line);
+        emit_operand(1);
+        current_chunk->emit_constant(Value{1}, line);
+        current_chunk->emit_instruction(Instruction::IADD, line);
+        current_chunk->emit_instruction(Instruction::ASSIGN_FROM_TOP, line);
+        emit_operand(2);
+        current_chunk->emit_instruction(Instruction::POP, line);
+
+        std::size_t condition = current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, line2);
+        emit_operand(1);
+        current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, line2);
+        emit_operand(3);
+        current_chunk->emit_instruction(Instruction::LESSER, line);
+        std::size_t jump_back = current_chunk->emit_instruction(Instruction::POP_JUMP_BACK_IF_TRUE, line2);
+        emit_operand(0);
+
+        current_chunk->emit_instruction(Instruction::POP, line2);
+        current_chunk->emit_instruction(Instruction::POP, line2);
+
+        patch_jump(jump_back, jump_back - loop_begin + 1);
+        patch_jump(jump_begin, condition - jump_begin - 1);
+    } else {
+        current_chunk->emit_instruction(Instruction::MAKE_LIST, expr.bracket.line);
+        emit_operand(0);
+        current_chunk->emit_instruction(Instruction::PUSH_NULL, line);
+        current_chunk->emit_instruction(Instruction::PUSH_NULL, line);
+        current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, line);
+        emit_operand(3);
+        compile(quantity.get());
+        emit_conversion(std::get<NumericConversionType>(expr.quantity), line);
+        current_chunk->emit_string("%resize_list_trivial", line);
+        current_chunk->emit_instruction(Instruction::CALL_NATIVE, line);
+        current_chunk->emit_instruction(Instruction::POP, line);
+        current_chunk->emit_instruction(Instruction::POP, line);
+        current_chunk->emit_instruction(Instruction::POP, line);
+
+        current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, line2);
+        emit_operand(2);
+        compile(element.get());
+        emit_conversion(std::get<NumericConversionType>(expr.expr), line2);
+        current_chunk->emit_string("fill_trivial", line2);
+        current_chunk->emit_instruction(Instruction::CALL_NATIVE, line2);
+        current_chunk->emit_instruction(Instruction::POP, line);
+        current_chunk->emit_instruction(Instruction::POP, line);
+        current_chunk->emit_instruction(Instruction::POP, line);
+    }
+
+    return {};
+}
+
 ExprVisitorType ByteCodeGenerator::visit(LiteralExpr &expr) {
     switch (expr.value.index()) {
         case LiteralValue::tag::INT:
