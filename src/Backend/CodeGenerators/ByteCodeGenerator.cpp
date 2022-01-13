@@ -814,6 +814,12 @@ ExprVisitorType ByteCodeGenerator::visit(CallExpr &expr) {
             auto &arg = std::get<ExprNode>(*begin);
             if (is_nontrivial_type(arg->synthesized_attrs.info->primitive) && not arg->synthesized_attrs.is_lvalue &&
                 not arg->synthesized_attrs.info->is_ref) {
+                if (contains_destructible_type(arg->synthesized_attrs.info)) {
+                    if (not aggregate_destructor_already_exists(arg->synthesized_attrs.info)) {
+                        generate_aggregate_destructor(arg->synthesized_attrs.info);
+                    }
+                    emit_aggregate_destructor_call(arg->synthesized_attrs.info);
+                }
                 current_chunk->emit_instruction(Instruction::POP_LIST, arg->synthesized_attrs.token.line);
             } else if (arg->synthesized_attrs.info->primitive == Type::STRING) {
                 current_chunk->emit_instruction(Instruction::POP_STRING, arg->synthesized_attrs.token.line);
