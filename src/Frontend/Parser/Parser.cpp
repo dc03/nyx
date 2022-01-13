@@ -463,11 +463,26 @@ ExprNode Parser::grouping(bool) {
 ExprNode Parser::list(bool) {
     Token bracket = current_token;
     std::vector<ListExpr::ElementType> elements{};
+    std::size_t maybeListRepeat = true;
+
     if (peek().type != TokenType::RIGHT_INDEX) {
         do {
-            elements.emplace_back(assignment(), NumericConversionType::NONE, false);
+            ExprNode expr = assignment();
+
+            if (maybeListRepeat && match(TokenType::SEMICOLON)) {
+                ExprNode quantity = assignment();
+                consume("Expected ']' after list expression", peek(), TokenType::RIGHT_INDEX);
+
+                return ExprNode{allocate_node(ListRepeatExpr, std::move(bracket),
+                    {std::move(expr), NumericConversionType::NONE, false},
+                    {std::move(quantity), NumericConversionType::NONE, false}, nullptr)};
+            }
+
+            maybeListRepeat = false;
+            elements.emplace_back(std::move(expr), NumericConversionType::NONE, false);
         } while (match(TokenType::COMMA) && peek().type != TokenType::RIGHT_INDEX);
     }
+
     match(TokenType::COMMA); // Match trailing comma
     consume("Expected ']' after list expression", peek(), TokenType::RIGHT_INDEX);
     return ExprNode{allocate_node(ListExpr, std::move(bracket), std::move(elements), nullptr)};
