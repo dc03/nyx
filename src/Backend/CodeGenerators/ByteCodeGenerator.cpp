@@ -328,6 +328,35 @@ void ByteCodeGenerator::emit_destructor_call(ClassStmt *class_, std::size_t line
     current_chunk->emit_instruction(Instruction::CALL_FUNCTION, line);
 }
 
+void ByteCodeGenerator::make_ref_to(ExprNode &value) {
+    if (value->type_tag() == NodeType::VariableExpr) {
+        if (dynamic_cast<VariableExpr *>(value.get())->type == IdentifierType::LOCAL) {
+            current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, value->synthesized_attrs.token.line);
+        } else {
+            current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, value->synthesized_attrs.token.line);
+        }
+        emit_stack_slot(value->synthesized_attrs.stack_slot);
+    } else if (value->type_tag() == NodeType::IndexExpr) {
+        IndexExpr *list = dynamic_cast<IndexExpr *>(value.get());
+        compile(list->object.get());
+        compile(list->index.get());
+        current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, value->synthesized_attrs.token.line);
+    } else if (value->type_tag() == NodeType::GetExpr) {
+        auto *get = dynamic_cast<GetExpr *>(value.get());
+        compile(get->object.get());
+        if (get->object->synthesized_attrs.info->primitive == Type::TUPLE) {
+            Value::IntType index = std::stoi(get->name.lexeme);
+            current_chunk->emit_constant(Value{index}, get->name.line);
+        } else if (get->object->synthesized_attrs.info->primitive == Type::CLASS) {
+            current_chunk->emit_constant(
+                Value{get_member_index(get_class(get->object), get->name.lexeme)}, get->name.line);
+        }
+        current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, value->synthesized_attrs.token.line);
+    } else {
+        unreachable();
+    }
+}
+
 bool ByteCodeGenerator::requires_copy(ExprNode &what, TypeNode &type) {
     return not type->is_ref && (what->synthesized_attrs.is_lvalue || what->synthesized_attrs.info->is_ref);
 }
@@ -754,39 +783,7 @@ ExprVisitorType ByteCodeGenerator::visit(CallExpr &expr) {
                 compile_vartuple(
                     std::get<IdentifierTuple>(param.first).tuple, dynamic_cast<TupleType &>(*param.second));
             } else if (param.second->is_ref && not value->synthesized_attrs.info->is_ref) {
-                if (value->type_tag() == NodeType::VariableExpr) {
-                    if (dynamic_cast<VariableExpr *>(value.get())->type == IdentifierType::LOCAL) {
-                        current_chunk->emit_instruction(
-                            Instruction::MAKE_REF_TO_LOCAL, value->synthesized_attrs.token.line);
-                    } else {
-                        current_chunk->emit_instruction(
-                            Instruction::MAKE_REF_TO_GLOBAL, value->synthesized_attrs.token.line);
-                    }
-                    emit_stack_slot(value->synthesized_attrs.stack_slot);
-                } else if (value->type_tag() == NodeType::IndexExpr) {
-                    IndexExpr *list = dynamic_cast<IndexExpr *>(value.get());
-                    compile(list->object.get());
-                    compile(list->index.get());
-                    current_chunk->emit_instruction(
-                        Instruction::MAKE_REF_TO_INDEX, value->synthesized_attrs.token.line);
-                } else if (value->type_tag() == NodeType::GetExpr) {
-                    auto *get = dynamic_cast<GetExpr *>(value.get());
-                    compile(get->object.get());
-                    if (get->object->synthesized_attrs.info->primitive == Type::TUPLE) {
-                        Value::IntType index = std::stoi(get->name.lexeme);
-                        current_chunk->emit_constant(Value{index}, get->name.line);
-                    } else if (get->object->synthesized_attrs.info->primitive == Type::CLASS) {
-                        current_chunk->emit_constant(
-                            Value{get_member_index(get_class(get->object), get->name.lexeme)}, get->name.line);
-                    }
-                    current_chunk->emit_instruction(
-                        Instruction::MAKE_REF_TO_INDEX, value->synthesized_attrs.token.line);
-                } else {
-                    current_chunk->emit_instruction(
-                        Instruction::MAKE_REF_TO_LOCAL, value->synthesized_attrs.token.line);
-                    // This is a fallback, but I don't think it would ever be triggered
-                    emit_stack_slot(value->synthesized_attrs.stack_slot);
-                }
+                make_ref_to(value);
             } else if (not param.second->is_ref && value->synthesized_attrs.info->is_ref) {
                 compile(value.get());
                 current_chunk->emit_instruction(Instruction::DEREF, value->synthesized_attrs.token.line);
@@ -953,15 +950,7 @@ ExprVisitorType ByteCodeGenerator::visit(ListExpr &expr) {
             }
         } else if (element_expr->synthesized_attrs.is_lvalue) {
             // Type is a reference type
-            if (element_expr->type_tag() == NodeType::VariableExpr) {
-                auto *bound_var = dynamic_cast<VariableExpr *>(element_expr.get());
-                if (bound_var->type == IdentifierType::LOCAL) {
-                    current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, bound_var->name.line);
-                } else if (bound_var->type == IdentifierType::GLOBAL) {
-                    current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, bound_var->name.line);
-                }
-                emit_stack_slot(bound_var->synthesized_attrs.stack_slot);
-            }
+            make_ref_to(element_expr);
         } else {
             compile(element_expr.get()); // A reference not binding to an lvalue
             emit_conversion(std::get<NumericConversionType>(element), element_expr->synthesized_attrs.token.line);
@@ -1637,31 +1626,8 @@ StmtVisitorType ByteCodeGenerator::visit(SwitchStmt &stmt) {
 StmtVisitorType ByteCodeGenerator::visit(TypeStmt &stmt) {}
 
 StmtVisitorType ByteCodeGenerator::visit(VarStmt &stmt) {
-    if (stmt.type->is_ref && not stmt.initializer->synthesized_attrs.info->is_ref &&
-        stmt.initializer->type_tag() == NodeType::VariableExpr) {
-        if (dynamic_cast<VariableExpr *>(stmt.initializer.get())->type == IdentifierType::LOCAL) {
-            current_chunk->emit_instruction(Instruction::MAKE_REF_TO_LOCAL, stmt.name.line);
-        } else {
-            current_chunk->emit_instruction(Instruction::MAKE_REF_TO_GLOBAL, stmt.name.line);
-        }
-        emit_stack_slot(stmt.initializer->synthesized_attrs.stack_slot);
-    } else if (stmt.type->is_ref && not stmt.initializer->synthesized_attrs.info->is_ref) {
-        if (stmt.initializer->type_tag() == NodeType::IndexExpr) {
-            auto *list = dynamic_cast<IndexExpr *>(stmt.initializer.get());
-            compile(list->object.get());
-            compile(list->index.get());
-        } else if (stmt.initializer->type_tag() == NodeType::GetExpr) {
-            auto *get = dynamic_cast<GetExpr *>(stmt.initializer.get());
-            compile(get->object.get());
-            if (get->object->synthesized_attrs.info->primitive == Type::TUPLE) {
-                Value::IntType index = std::stoi(get->name.lexeme);
-                current_chunk->emit_constant(Value{index}, get->name.line);
-            } else if (get->object->synthesized_attrs.info->primitive == Type::CLASS) {
-                current_chunk->emit_constant(
-                    Value{get_member_index(get_class(get->object), get->name.lexeme)}, get->name.line);
-            }
-        }
-        current_chunk->emit_instruction(Instruction::MAKE_REF_TO_INDEX, stmt.name.line);
+    if (stmt.type->is_ref && not stmt.initializer->synthesized_attrs.info->is_ref) {
+        make_ref_to(stmt.initializer);
     } else {
         compile(stmt.initializer.get());
         if (stmt.initializer->synthesized_attrs.info->is_ref && not stmt.type->is_ref &&

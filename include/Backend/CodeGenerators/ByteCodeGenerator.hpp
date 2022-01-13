@@ -57,6 +57,8 @@ class ByteCodeGenerator final : Visitor {
     void emit_stack_slot(std::size_t value);
     void emit_destructor_call(ClassStmt *class_, std::size_t line);
 
+    void make_ref_to(ExprNode &value);
+
     bool requires_copy(ExprNode &what, TypeNode &type);
 
     void add_vartuple_to_scope(IdentifierTuple::TupleType &tuple);
