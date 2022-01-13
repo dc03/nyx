@@ -25,6 +25,7 @@ struct Native {
 #define NATIVE_ARGUMENT_CHECKER_DEFINITION                                                                             \
     [](std::vector<CallExpr::ArgumentType> & arguments) -> std::pair<bool, std::string_view>
 #define NATIVE_ARGN_PRIMITIVE(n) std::get<ExprNode>(arguments[n])->synthesized_attrs.info->primitive
+#define NATIVE_ARGN_TYPE(n)      std::get<ExprNode>(arguments[n])->synthesized_attrs.info
 
 class NativeWrapper {
   public:

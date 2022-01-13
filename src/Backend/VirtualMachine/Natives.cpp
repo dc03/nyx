@@ -17,6 +17,8 @@ Value native_float(VirtualMachine &vm, Value *args);
 Value native_string(VirtualMachine &vm, Value *args);
 Value native_readline(VirtualMachine &vm, Value *args);
 Value native_size(VirtualMachine &vm, Value *args);
+Value native_fill_trivial(VirtualMachine &vm, Value *args);
+Value native_resize_list_trivial(VirtualMachine &vm, Value *args);
 
 NativeWrappers native_wrappers{};
 
@@ -193,6 +195,49 @@ NativeWrapper size_{
         return {true, ""};
     }
 };
+
+NativeWrapper fill_trivial {
+    native_fill_trivial,
+    "fill_trivial",
+    TypeNode{allocate_node(PrimitiveType, Type::NULL_, false, false)},
+    2,
+    NATIVE_ARGUMENT_CHECKER_DEFINITION {
+        if (arguments.size() != 2) {
+            return {false, "arity incorrect, should be 2"};
+        }
+
+        auto *list = NATIVE_ARGN_TYPE(0);
+        auto *value = NATIVE_ARGN_TYPE(1);
+
+        if (list->primitive != Type::LIST) {
+            return {false, "type of the first argument has to be a list type"};
+        }
+
+        auto *list_type = dynamic_cast<ListType*>(list);
+        if (list_type->contained->is_ref) {
+            return {false, "cannot fill list of references"};
+        } else if (is_nontrivial_type(list_type->contained->primitive) || is_nontrivial_type(value->primitive)) {
+            return {false, "cannot call function with arguments having non-trivial types"};
+        } else if (list_type->contained->primitive != value->primitive) {
+            return {false, "type of value must match contained type of list"};
+        }
+
+        return {true, ""};
+    }
+};
+
+NativeWrapper resize_list_trivial {
+    native_resize_list_trivial,
+    "%resize_list_trivial",
+    TypeNode{allocate_node(PrimitiveType, Type::NULL_, false, false)},
+    2,
+    NATIVE_ARGUMENT_CHECKER_DEFINITION {
+        // Note that we don't need pretty type checking here because this function is not user-callable yet
+        assert(NATIVE_ARGN_PRIMITIVE(0) == Type::LIST && "Expect list type");
+        assert(NATIVE_ARGN_PRIMITIVE(1) == Type::INT && "Expect int type");
+        return {true, ""};
+    }
+};
 // clang-format on
 
 Value native_print(VirtualMachine &vm, Value *args) {
@@ -303,4 +348,39 @@ Value native_size(VirtualMachine &vm, Value *args) {
         return native_string(vm, arg.w_ref);
     }
     unreachable();
+}
+
+Value native_fill_trivial(VirtualMachine &vm, Value *args) {
+    Value &list = args[0];
+    Value *value = &args[1];
+
+    if (value->tag == Value::Tag::REF) {
+        value = value->w_ref;
+    }
+
+    if (value->tag == Value::Tag::STRING) {
+        std::for_each(list.w_list->begin(), list.w_list->end(), [&vm](const Value &v) { vm.remove_string(v.w_str); });
+        for (auto &e : *list.w_list) {
+            e = Value{&vm.store_string(value->w_str->str)};
+        }
+    } else {
+        std::fill(list.w_list->begin(), list.w_list->end(), *value);
+    }
+    return Value{nullptr};
+}
+
+Value native_resize_list_trivial(VirtualMachine &vm, Value *args) {
+    Value &list = args[0];
+    Value *size = &args[1];
+
+    if (size->tag == Value::Tag::REF) {
+        size = size->w_ref;
+    }
+
+    if (not list.w_list->empty() && (*list.w_list)[0].tag == Value::Tag::STRING) {
+        for (auto i = static_cast<std::size_t>(size->w_int); i < list.w_list->size(); i++) {
+            vm.remove_string((*list.w_list)[i].w_str);
+        }
+    }
+    list.w_list->resize(size->w_int);
 }
