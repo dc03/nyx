@@ -28,14 +28,14 @@ void ByteCodeGenerator::set_runtime_ctx(BackendContext *runtime_ctx_) {
         if (list->contained->primitive == Type::LIST || list->contained->primitive == Type::TUPLE) {
             return contains_destructible_type(list->contained.get());
         } else {
-            return list->contained->primitive == Type::CLASS;
+            return list->contained->primitive == Type::CLASS && not list->contained->is_ref;
         }
     } else if (type->primitive == Type::TUPLE) {
         auto *tuple = dynamic_cast<const TupleType *>(type);
 
         bool has_destructible = false;
         for (auto &type_ : tuple->types) {
-            if (type_->primitive == Type::CLASS) {
+            if (type_->primitive == Type::CLASS && not type_->is_ref) {
                 has_destructible = true;
             } else if (type_->primitive == Type::LIST || type_->primitive == Type::TUPLE) {
                 has_destructible = has_destructible || contains_destructible_type(type_.get());
