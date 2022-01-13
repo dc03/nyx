@@ -1098,8 +1098,12 @@ ExprVisitorType ByteCodeGenerator::visit(ListRepeatExpr &expr) {
 
         current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, line2);
         emit_operand(2);
-        compile(element.get());
-        emit_conversion(std::get<NumericConversionType>(expr.expr), line2);
+        if (expr.type->contained->is_ref && element->synthesized_attrs.is_lvalue) {
+            make_ref_to(element);
+        } else {
+            compile(element.get());
+            emit_conversion(std::get<NumericConversionType>(expr.expr), line2);
+        }
         current_chunk->emit_string("fill_trivial", line2);
         current_chunk->emit_instruction(Instruction::CALL_NATIVE, line2);
         current_chunk->emit_instruction(Instruction::POP, line);
