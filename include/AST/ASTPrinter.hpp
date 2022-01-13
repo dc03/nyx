@@ -33,6 +33,7 @@ class ASTPrinter final : Visitor {
     ExprVisitorType visit(IndexExpr &expr) override final;
     ExprVisitorType visit(ListExpr &expr) override final;
     ExprVisitorType visit(ListAssignExpr &expr) override final;
+    ExprVisitorType visit(ListRepeatExpr &expr) override final;
     ExprVisitorType visit(LiteralExpr &expr) override final;
     ExprVisitorType visit(LogicalExpr &expr) override final;
     ExprVisitorType visit(MoveExpr &expr) override final;

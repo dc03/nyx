@@ -38,6 +38,7 @@ struct GroupingExpr;
 struct IndexExpr;
 struct ListExpr;
 struct ListAssignExpr;
+struct ListRepeatExpr;
 struct LiteralExpr;
 struct LogicalExpr;
 struct MoveExpr;
@@ -85,6 +86,7 @@ struct Visitor {
     virtual ExprVisitorType visit(IndexExpr &expr) = 0;
     virtual ExprVisitorType visit(ListExpr &expr) = 0;
     virtual ExprVisitorType visit(ListAssignExpr &expr) = 0;
+    virtual ExprVisitorType visit(ListRepeatExpr &expr) = 0;
     virtual ExprVisitorType visit(LiteralExpr &expr) = 0;
     virtual ExprVisitorType visit(LogicalExpr &expr) = 0;
     virtual ExprVisitorType visit(MoveExpr &expr) = 0;
@@ -129,6 +131,7 @@ enum class NodeType {
     IndexExpr,
     ListExpr,
     ListAssignExpr,
+    ListRepeatExpr,
     LiteralExpr,
     LogicalExpr,
     MoveExpr,
@@ -345,6 +348,24 @@ struct ListAssignExpr final : public Expr {
           value{std::move(value)},
           conversion_type{conversion_type},
           requires_copy{requires_copy} {}
+
+    ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct ListRepeatExpr final : public Expr {
+    Token bracket{};
+    ListExpr::ElementType expr{};
+    ListExpr::ElementType quantity{};
+    std::unique_ptr<ListType> type{};
+
+    std::string_view string_tag() override final { return "ListRepeatExpr"; }
+
+    NodeType type_tag() override final { return NodeType::ListRepeatExpr; }
+
+    ListRepeatExpr() = default;
+    ListRepeatExpr(
+        Token bracket, ListExpr::ElementType expr, ListExpr::ElementType quantity, std::unique_ptr<ListType> type)
+        : bracket{std::move(bracket)}, expr{std::move(expr)}, quantity{std::move(quantity)}, type{std::move(type)} {}
 
     ExprVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

@@ -179,8 +179,8 @@ if __name__ == '__main__':
         # Base class and alias declarations complete
 
         Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'List', 'ListAssign',
-                            'Literal', 'Logical', 'Move', 'ScopeAccess', 'ScopeName', 'Set', 'Super', 'Ternary', 'This',
-                            'Tuple', 'Unary', 'Variable']
+                            'ListRepeat', 'Literal', 'Logical', 'Move', 'ScopeAccess', 'ScopeName', 'Set', 'Super',
+                            'Ternary', 'This', 'Tuple', 'Unary', 'Variable']
         Stmts: List[str] = ['Block', 'Break', 'Class', 'Continue', 'Expression', 'Function',
                             'If', 'Return', 'Switch', 'Type', 'Var', 'VarTuple', 'While']
         Types: List[str] = ['Primitive', 'UserDefined', 'List', 'Tuple', 'Typeof']
@@ -266,6 +266,12 @@ if __name__ == '__main__':
                           'requires_copy{requires_copy}',
                           'IndexExpr list, ExprNode value, NumericConversionType conversion_type, RequiresCopy '
                           'requires_copy')
+
+        declare_expr_type('ListRepeat',
+                          'bracket{std::move(bracket)}, expr{std::move(expr)}, quantity{std::move(quantity)}, '
+                          'type{std::move(type)}',
+                          'Token bracket, ListExpr::ElementType expr, ListExpr::ElementType quantity, '
+                          'std::unique_ptr<ListType> type')
 
         declare_expr_type('Literal',
                           'value{std::move(value)}, type{std::move(type)}',

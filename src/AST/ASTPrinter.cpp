@@ -284,6 +284,28 @@ ExprVisitorType ASTPrinter::visit(ListAssignExpr &expr) {
     return {};
 }
 
+ExprVisitorType ASTPrinter::visit(ListRepeatExpr &expr) {
+    print_tabs(current_depth);
+    print_token(expr.bracket) << '\n';
+    current_depth++;
+    print_tabs(current_depth);
+    std::cout << "^^^ element vvv\n";
+    print(std::get<ExprNode>(expr.expr).get());
+    print_tabs(current_depth);
+    std::cout << "Conv:";
+    print_conversion_type(std::get<NumericConversionType>(expr.expr))
+        << "::Copy:" << std::boolalpha << std::get<RequiresCopy>(expr.expr) << std::noboolalpha << '\n';
+    print_tabs(current_depth);
+
+    std::cout << "^^^ quantity vvv\n";
+    print(std::get<ExprNode>(expr.quantity).get());
+    print_tabs(current_depth);
+    std::cout << "Conv:";
+    print_conversion_type(std::get<NumericConversionType>(expr.quantity))
+        << "::Copy:" << std::boolalpha << std::get<RequiresCopy>(expr.quantity) << std::noboolalpha << '\n';
+    return {};
+}
+
 ExprVisitorType ASTPrinter::visit(LiteralExpr &expr) {
     print_tabs(current_depth);
     print_token(expr.synthesized_attrs.token) << "::Idx:" << expr.value.index() << '\n';
