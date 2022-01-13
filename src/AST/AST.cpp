@@ -133,7 +133,7 @@ bool is_trivial_type(Type type) {
 }
 
 bool is_trivial_type(BaseType *node) {
-    return is_trivial_type(node->primitive);
+    return is_trivial_type(node->primitive) || node->is_ref;
 }
 
 bool is_nontrivial_type(Type type) {
