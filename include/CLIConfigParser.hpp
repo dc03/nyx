@@ -34,6 +34,14 @@ class ParseResult;
             OptionType::QuantityTag::SINGLE_VALUE, OptionType::ValueTypeTag::STRING_VALUE, "Syntax features"           \
     }
 
+#define CONSTANT_FOLDING "fold-constants"
+
+#define OPTIMIZATION_FLAG(name, description, default_)                                                                 \
+    {                                                                                                                  \
+        name, {}, description " (supported: off, on; default: " default_ ")", OptionType::QuantityTag::SINGLE_VALUE,   \
+            OptionType::ValueTypeTag::STRING_VALUE, "Optimization"                                                     \
+    }
+
 #define NO_COLORIZE_OUTPUT "no-colorize-output"
 
 #define DISASSEMBLE_CODE "disassemble-code"

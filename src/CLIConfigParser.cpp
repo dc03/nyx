@@ -24,7 +24,8 @@ const CLIConfigParser::Options CLIConfigParser::compile_options{
     LANGUAGE_FEATURE_FLAG(IMPLICIT_FLOAT_INT, "Warning/error about implicit conversion between float and int", "warn"),
     LANGUAGE_FEATURE_FLAG(COMMA_OPERATOR, "Warning/error about the usage of comma operator", "error"),
     LANGUAGE_FEATURE_FLAG(TERNARY_OPERATOR, "Warning/error about the usage of ternary operator", "error"),
-    LANGUAGE_FEATURE_FLAG(ASSIGNMENT_EXPRESSION, "Warning/error for when variable assignments not used as standalone statements ", "error")
+    LANGUAGE_FEATURE_FLAG(ASSIGNMENT_EXPRESSION, "Warning/error for when variable assignments not used as standalone statements ", "error"),
+    OPTIMIZATION_FLAG(CONSTANT_FOLDING, "Simplify expressions containing constant values (such as '5 + 6') into their computed values ('11')", "on"),
 };
 
 const CLIConfigParser::Options CLIConfigParser::runtime_options{
