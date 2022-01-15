@@ -99,6 +99,8 @@ class Parser {
     void error(const std::vector<std::string> &message, const Token &where) const noexcept;
     void note(const std::vector<std::string> &message) const noexcept;
 
+    ExprNode compute_literal_binary_expr(LiteralExpr &left, const Token &oper, LiteralExpr &right);
+
   public:
     Parser() noexcept = default;
     Parser(FrontendContext *ctx, Scanner *scanner, Module *module, std::size_t current_depth);
