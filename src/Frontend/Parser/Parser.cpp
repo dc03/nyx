@@ -338,6 +338,17 @@ ExprNode Parser::binary(bool, ExprNode left) {
     Token oper = current_token;
     ExprNode right = parse_precedence(
         ParsePrecedence::of{static_cast<int>(ParsePrecedence::of(get_rule(current_token.type).precedence)) + 1});
+
+    if (not ctx->config->contains(CONSTANT_FOLDING) || ctx->config->get<std::string>(CONSTANT_FOLDING) == "on") {
+        if (left->type_tag() == NodeType::LiteralExpr && right->type_tag() == NodeType::LiteralExpr) {
+            if (auto ret = compute_literal_binary_expr(
+                    *dynamic_cast<LiteralExpr *>(left.get()), oper, *dynamic_cast<LiteralExpr *>(right.get()));
+                ret) {
+                return ret;
+            }
+        }
+    }
+
     auto *node = allocate_node(BinaryExpr, std::move(left), std::move(right));
     node->synthesized_attrs.token = std::move(oper);
     return ExprNode{node};
