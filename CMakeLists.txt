@@ -12,7 +12,8 @@ add_executable(nyx src/nyx.cpp src/ErrorLogger/ErrorLogger.cpp src/Frontend/Pars
         src/Backend/VirtualMachine/Chunk.cpp src/Backend/CodeGenerators/ByteCodeGenerator.cpp src/Backend/VirtualMachine/VirtualMachine.cpp
         src/Backend/VirtualMachine/Disassembler.cpp src/Backend/VirtualMachine/Natives.cpp src/AST/ASTPrinter.cpp
         src/Backend/VirtualMachine/Value.cpp src/Backend/VirtualMachine/StringCacher.cpp src/Frontend/FrontendManager.cpp
-        src/Backend/BackendManager.cpp src/Frontend/FrontendContext.cpp src/Backend/BackendContext.cpp src/CLIConfigParser.cpp)
+        src/Backend/BackendManager.cpp src/Frontend/FrontendContext.cpp src/Backend/BackendContext.cpp src/CLIConfigParser.cpp
+        src/Frontend/Parser/Optimization/ConstantFolding.cpp)
 
 add_executable(nyxVM src/Backend/VirtualMachine/Chunk.cpp src/Backend/VirtualMachine/Value.cpp src/Backend/VirtualMachine/VirtualMachine.cpp
         src/Backend/VirtualMachine/VMMain.cpp src/ErrorLogger/ErrorLogger.cpp src/Backend/VirtualMachine/Disassembler.cpp
