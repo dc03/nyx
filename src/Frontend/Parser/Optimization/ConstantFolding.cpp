@@ -46,12 +46,14 @@ ExprNode Parser::compute_literal_binary_expr(LiteralExpr &left, const Token &ope
         case TokenType::MODULO:
             if (right.value.is_int() && right.value.to_int() <= 0) {
                 error({"Modulo using negative or zero value"}, right.synthesized_attrs.token);
+                return nullptr;
             } else {
                 return int_binary_operation<std::modulus<>>(left, right);
             }
         case TokenType::SLASH:
             if (right.value.is_numeric() && right.value.to_numeric() == 0.0) {
                 error({"Division by zero"}, right.synthesized_attrs.token);
+                return nullptr;
             } else {
                 return first_not_null(int_binary_operation<std::divides<>>(left, right),
                     numeric_binary_operation<std::divides<>>(left, right));
