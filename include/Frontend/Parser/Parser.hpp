@@ -106,6 +106,7 @@ class Parser {
     ExprNode compute_literal_unary_expr(LiteralExpr &value, const Token &oper);
     ExprNode compute_literal_ternary_expr(
         LiteralExpr &cond, LiteralExpr &middle, LiteralExpr &right, const Token &oper);
+    ExprNode compute_literal_logical_expr(LiteralExpr &left, LiteralExpr &right, const Token &oper);
 
   public:
     Parser() noexcept = default;

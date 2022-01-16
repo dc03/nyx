@@ -342,6 +342,16 @@ ExprNode Parser::assignment() {
 ExprNode Parser::and_(bool, ExprNode left) {
     Token oper = current_token;
     ExprNode right = parse_precedence(ParsePrecedence::of::LOGIC_AND);
+
+    if (has_optimization_flag(CONSTANT_FOLDING, OptimizationFlag::DEFAULT_ON) &&
+        all_are(NodeType::LiteralExpr, left->type_tag(), right->type_tag())) {
+        if (auto ret = compute_literal_logical_expr(
+                dynamic_cast<LiteralExpr &>(*left), dynamic_cast<LiteralExpr &>(*right), oper);
+            ret) {
+            return ret;
+        }
+    }
+
     auto *node = allocate_node(LogicalExpr, std::move(left), std::move(right));
     node->synthesized_attrs.token = std::move(oper);
     return ExprNode{node};
@@ -472,6 +482,16 @@ ExprNode Parser::index(bool can_assign, ExprNode object) {
 ExprNode Parser::or_(bool, ExprNode left) {
     Token oper = current_token;
     ExprNode right = parse_precedence(ParsePrecedence::of::LOGIC_OR);
+
+    if (has_optimization_flag(CONSTANT_FOLDING, OptimizationFlag::DEFAULT_ON) &&
+        all_are(NodeType::LiteralExpr, left->type_tag(), right->type_tag())) {
+        if (auto ret = compute_literal_logical_expr(
+                dynamic_cast<LiteralExpr &>(*left), dynamic_cast<LiteralExpr &>(*right), oper);
+            ret) {
+            return ret;
+        }
+    }
+
     auto *node = allocate_node(LogicalExpr, std::move(left), std::move(right));
     node->synthesized_attrs.token = std::move(oper);
     return ExprNode{node};

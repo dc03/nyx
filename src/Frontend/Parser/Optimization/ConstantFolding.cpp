@@ -104,3 +104,17 @@ ExprNode Parser::compute_literal_unary_expr(LiteralExpr &value, const Token &ope
         default: unreachable();
     }
 }
+
+ExprNode Parser::compute_literal_logical_expr(LiteralExpr &left, LiteralExpr &right, const Token &oper) {
+    switch (oper.type) {
+        case TokenType::AND:
+            return ExprNode{
+                allocate_node(LiteralExpr, LiteralValue{check_literal(left.value) && check_literal(right.value)},
+                    TypeNode{allocate_node(PrimitiveType, Type::BOOL, true, false)})};
+        case TokenType::OR:
+            return ExprNode{
+                allocate_node(LiteralExpr, LiteralValue{check_literal(left.value) || check_literal(right.value)},
+                    TypeNode{allocate_node(PrimitiveType, Type::BOOL, true, false)})};
+        default: unreachable();
+    }
+}
