@@ -393,11 +393,24 @@ ExprNode Parser::call(bool, ExprNode function) {
 ExprNode Parser::comma(bool, ExprNode left) {
     FEATURE_FLAG_DEFAULT_ERROR_SINGLE_MSG(COMMA_OPERATOR, "Usage of comma operator", current_token)
 
-    std::vector<ExprNode> exprs{};
-    exprs.emplace_back(std::move(left));
+    std::vector<ExprNode> temp{};
+    temp.emplace_back(std::move(left));
     do {
-        exprs.emplace_back(assignment());
+        temp.emplace_back(assignment());
     } while (match(TokenType::COMMA));
+
+    // We can safely ignore literal values in comma operator as they cause no side effects and are thus
+    // computationally unnecessary
+    std::vector<ExprNode> exprs{};
+    for (std::size_t i = 0; i < temp.size() - 1; i++) {
+        if (not has_optimization_flag(CONSTANT_FOLDING, OptimizationFlag::DEFAULT_ON) ||
+            temp[i]->type_tag() != NodeType::LiteralExpr) {
+            exprs.emplace_back(std::move(temp[i]));
+        }
+    }
+    // The last value is what the comma operator computes to thus it is always needed regardless of it being literal or
+    // not
+    exprs.emplace_back(std::move(temp.back()));
 
     return ExprNode{allocate_node(CommaExpr, std::move(exprs))};
 }
