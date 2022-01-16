@@ -6,7 +6,7 @@
 
 nyx is a simple, interpreted language written in C++.
 
-```rs
+```kt
 /*
  * Class to implement a wrapper around a tuple
  */
