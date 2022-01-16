@@ -200,7 +200,9 @@ bool Scanner::is_valid_eol(const Token &token) {
         case TokenType::STRING_VALUE:
         case TokenType::IDENTIFIER:
         case TokenType::RIGHT_PAREN:
-        case TokenType::RIGHT_INDEX: return true;
+        case TokenType::RIGHT_INDEX:
+        case TokenType::TRUE:
+        case TokenType::FALSE: return true;
         default: return false;
     }
 }
