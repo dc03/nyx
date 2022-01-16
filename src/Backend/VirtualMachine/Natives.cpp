@@ -383,4 +383,5 @@ Value native_resize_list_trivial(VirtualMachine &vm, Value *args) {
         }
     }
     list.w_list->resize(size->w_int);
+    return Value{nullptr};
 }
