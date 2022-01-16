@@ -480,6 +480,12 @@ ExprNode Parser::or_(bool, ExprNode left) {
 ExprNode Parser::grouping(bool) {
     ExprNode expr = expression();
     consume("Expected ')' after parenthesized expression", TokenType::RIGHT_PAREN);
+
+    if (has_optimization_flag(CONSTANT_FOLDING, OptimizationFlag::DEFAULT_ON) &&
+        expr->type_tag() == NodeType::LiteralExpr) {
+        return expr;
+    }
+
     return ExprNode{allocate_node(GroupingExpr, std::move(expr), nullptr)};
 }
 
