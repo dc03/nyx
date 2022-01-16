@@ -7,6 +7,7 @@
 #define CONSTANT_BINARY_EXPR_FOLDING_HPP
 
 #include "AST/AST.hpp"
+#include "Frontend/Parser/Optimization/Utilities.hpp"
 
 #include <functional>
 
@@ -56,24 +57,6 @@ template <typename U>
 ExprNode null_binary_operation(LiteralExpr &left, LiteralExpr &right, Type computed_type = Type::BOOL) {
     return generic_binary_operation_same_pmf<U>(
         left, right, &LiteralValue::is_null, &LiteralValue::to_null, computed_type);
-}
-
-template <typename T, typename... Args>
-T first_not_null(T &&value, Args &&...args) {
-    if (value) {
-        return std::forward<T>(value);
-    } else {
-        return first_not_null(std::forward<Args>(args)...);
-    }
-}
-
-template <typename T>
-T first_not_null(T &&value) {
-    if (value) {
-        return std::forward<T>(value);
-    } else {
-        return nullptr;
-    }
 }
 
 template <typename U>
