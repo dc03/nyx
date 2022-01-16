@@ -592,6 +592,16 @@ ExprNode Parser::ternary(bool, ExprNode left) {
     ExprNode middle = parse_precedence(ParsePrecedence::of::LOGIC_OR);
     consume("Expected colon in ternary expression", TokenType::COLON);
     ExprNode right = parse_precedence(ParsePrecedence::of::TERNARY);
+
+    if (has_optimization_flag(CONSTANT_FOLDING, OptimizationFlag::DEFAULT_ON) &&
+        all_are(NodeType::LiteralExpr, left->type_tag(), middle->type_tag(), right->type_tag())) {
+        if (auto ret = compute_literal_ternary_expr(dynamic_cast<LiteralExpr &>(*left),
+                dynamic_cast<LiteralExpr &>(*middle), dynamic_cast<LiteralExpr &>(*right), question);
+            ret) {
+            return ret;
+        }
+    }
+
     auto *node = allocate_node(TernaryExpr, std::move(left), std::move(middle), std::move(right));
     node->synthesized_attrs.token = std::move(question);
     return ExprNode{node};

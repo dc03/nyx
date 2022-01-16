@@ -2,6 +2,7 @@
 /* See LICENSE at project root for license details */
 #include "Common.hpp"
 #include "Frontend/Parser/Optimization/ConstantBinaryExprFolding.hpp"
+#include "Frontend/Parser/Optimization/ConstantTernaryExprFolding.hpp"
 #include "Frontend/Parser/Parser.hpp"
 
 struct right_shift {
@@ -64,5 +65,14 @@ ExprNode Parser::compute_literal_binary_expr(LiteralExpr &left, const Token &ope
         case TokenType::DOT_DOT:
         case TokenType::DOT_DOT_EQUAL: return nullptr;
         default: unreachable();
+    }
+}
+
+ExprNode Parser::compute_literal_ternary_expr(
+    LiteralExpr &cond, LiteralExpr &middle, LiteralExpr &right, const Token &oper) {
+    if (oper.type == TokenType::QUESTION) {
+        return conditional_operation(cond, middle, right);
+    } else {
+        unreachable();
     }
 }
