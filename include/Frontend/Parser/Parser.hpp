@@ -99,7 +99,13 @@ class Parser {
     void error(const std::vector<std::string> &message, const Token &where) const noexcept;
     void note(const std::vector<std::string> &message) const noexcept;
 
+    enum OptimizationFlag { DEFAULT_OFF, DEFAULT_ON };
+
+    [[nodiscard]] bool has_optimization_flag(const std::string &flag, OptimizationFlag default_) const noexcept;
     ExprNode compute_literal_binary_expr(LiteralExpr &left, const Token &oper, LiteralExpr &right);
+    ExprNode compute_literal_unary_expr(LiteralExpr &value, const Token &oper);
+    ExprNode compute_literal_ternary_expr(
+        LiteralExpr &cond, LiteralExpr &middle, LiteralExpr &right, const Token &question);
 
   public:
     Parser() noexcept = default;

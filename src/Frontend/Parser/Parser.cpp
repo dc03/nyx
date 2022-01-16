@@ -235,6 +235,19 @@ void Parser::recursively_change_module_depth(std::pair<Module, std::size_t> &mod
     }
 }
 
+bool Parser::has_optimization_flag(const std::string &flag, OptimizationFlag default_) const noexcept {
+    if (default_ == OptimizationFlag::DEFAULT_OFF) {
+        return ctx->config->contains(flag) && ctx->config->get<std::string>(flag) == "off";
+    } else {
+        return not ctx->config->contains(flag) || ctx->config->get<std::string>(flag) == "on";
+    }
+}
+
+template <typename T, typename... Args>
+bool all_are(T &&value, Args &&...args) {
+    return ((std::forward<T>(value) == std::forward<Args>(args)) && ...);
+}
+
 IdentifierTuple Parser::ident_tuple() {
     IdentifierTuple::TupleType result{};
     while (peek().type != TokenType::RIGHT_BRACE) {
@@ -339,13 +352,12 @@ ExprNode Parser::binary(bool, ExprNode left) {
     ExprNode right = parse_precedence(
         ParsePrecedence::of{static_cast<int>(ParsePrecedence::of(get_rule(current_token.type).precedence)) + 1});
 
-    if (not ctx->config->contains(CONSTANT_FOLDING) || ctx->config->get<std::string>(CONSTANT_FOLDING) == "on") {
-        if (left->type_tag() == NodeType::LiteralExpr && right->type_tag() == NodeType::LiteralExpr) {
-            if (auto ret = compute_literal_binary_expr(
-                    *dynamic_cast<LiteralExpr *>(left.get()), oper, *dynamic_cast<LiteralExpr *>(right.get()));
-                ret) {
-                return ret;
-            }
+    if (has_optimization_flag(CONSTANT_FOLDING, OptimizationFlag::DEFAULT_ON) &&
+        all_are(NodeType::LiteralExpr, left->type_tag(), right->type_tag())) {
+        if (auto ret = compute_literal_binary_expr(
+                dynamic_cast<LiteralExpr &>(*left), oper, dynamic_cast<LiteralExpr &>(*right));
+            ret) {
+            return ret;
         }
     }
 
