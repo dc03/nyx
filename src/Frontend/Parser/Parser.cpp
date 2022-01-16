@@ -629,6 +629,14 @@ ExprNode Parser::tuple(bool) {
 ExprNode Parser::unary(bool) {
     Token oper = current_token;
     ExprNode expr = parse_precedence(get_rule(current_token.type).precedence);
+
+    if (has_optimization_flag(CONSTANT_FOLDING, OptimizationFlag::DEFAULT_ON) &&
+        expr->type_tag() == NodeType::LiteralExpr) {
+        if (auto ret = compute_literal_unary_expr(dynamic_cast<LiteralExpr &>(*expr), oper); ret) {
+            return ret;
+        }
+    }
+
     auto *node = allocate_node(UnaryExpr, std::move(oper), std::move(expr));
     node->synthesized_attrs.token = node->oper;
     return ExprNode{node};

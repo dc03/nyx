@@ -3,6 +3,7 @@
 #include "Common.hpp"
 #include "Frontend/Parser/Optimization/ConstantBinaryExprFolding.hpp"
 #include "Frontend/Parser/Optimization/ConstantTernaryExprFolding.hpp"
+#include "Frontend/Parser/Optimization/ConstantUnaryExprFolding.hpp"
 #include "Frontend/Parser/Parser.hpp"
 
 struct right_shift {
@@ -17,6 +18,10 @@ struct left_shift {
     constexpr auto operator()(T &&left, U &&right) const -> decltype(std::forward<T>(left) << std::forward<U>(right)) {
         return left << right;
     }
+};
+
+struct string_logical_not {
+    bool operator()(const std::string &v) { return not v.empty(); }
 };
 
 ExprNode Parser::compute_literal_binary_expr(LiteralExpr &left, const Token &oper, LiteralExpr &right) {
@@ -74,5 +79,28 @@ ExprNode Parser::compute_literal_ternary_expr(
         return conditional_operation(cond, middle, right);
     } else {
         unreachable();
+    }
+}
+
+ExprNode Parser::compute_literal_unary_expr(LiteralExpr &value, const Token &oper) {
+    switch (oper.type) {
+        case TokenType::MINUS:
+            return first_not_null(
+                int_unary_operation<std::negate<>>(value), float_unary_operation<std::negate<>>(value));
+        case TokenType::PLUS:
+            if (value.value.is_numeric()) {
+                return ExprNode{allocate_node(LiteralExpr, value.value, std::move(value.type))};
+            } else {
+                return nullptr;
+            }
+        case TokenType::NOT:
+            return first_not_null(int_unary_operation<std::logical_not<>>(value, Type::BOOL),
+                float_unary_operation<std::logical_not<>>(value, Type::BOOL),
+                string_unary_operation<string_logical_not>(value, Type::BOOL),
+                boolean_unary_operation<std::logical_not<>>(value, Type::BOOL));
+        case TokenType::BIT_NOT: return int_unary_operation<std::bit_not<>>(value);
+        case TokenType::PLUS_PLUS:
+        case TokenType::MINUS_MINUS: return nullptr;
+        default: unreachable();
     }
 }
