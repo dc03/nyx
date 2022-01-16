@@ -19,6 +19,7 @@ Value native_readline(VirtualMachine &vm, Value *args);
 Value native_size(VirtualMachine &vm, Value *args);
 Value native_fill_trivial(VirtualMachine &vm, Value *args);
 Value native_resize_list_trivial(VirtualMachine &vm, Value *args);
+Value native_println(VirtualMachine &vm, Value *args);
 
 NativeWrappers native_wrappers{};
 
@@ -238,6 +239,25 @@ NativeWrapper resize_list_trivial {
         return {true, ""};
     }
 };
+
+NativeWrapper println {
+    native_println,
+    "println",
+    TypeNode{allocate_node(PrimitiveType, Type::NULL_, false, false)},
+    1,
+    NATIVE_ARGUMENT_CHECKER_DEFINITION {
+        if (arguments.size() != 1) {
+            return {false, "arity incorrect, should be 1"};
+        }
+
+        if (not is_in(NATIVE_ARGN_PRIMITIVE(0), Type::INT, Type::FLOAT,
+                Type::STRING, Type::BOOL, Type::FUNCTION, Type::NULL_, Type::LIST, Type::TUPLE)) {
+            return {false, "incorrect argument type"};
+        }
+
+        return {true, ""};
+    }
+};
 // clang-format on
 
 Value native_print(VirtualMachine &vm, Value *args) {
@@ -383,5 +403,11 @@ Value native_resize_list_trivial(VirtualMachine &vm, Value *args) {
         }
     }
     list.w_list->resize(size->w_int);
+    return Value{nullptr};
+}
+
+Value native_println(VirtualMachine &vm, Value *args) {
+    native_print(vm, args);
+    std::cout << '\n';
     return Value{nullptr};
 }
