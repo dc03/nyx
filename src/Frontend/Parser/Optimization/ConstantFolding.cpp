@@ -21,7 +21,7 @@ struct left_shift {
 };
 
 struct string_logical_not {
-    bool operator()(const std::string &v) { return not v.empty(); }
+    bool operator()(const std::string &v) { return v.empty(); }
 };
 
 ExprNode Parser::compute_literal_binary_expr(LiteralExpr &left, const Token &oper, LiteralExpr &right) {
