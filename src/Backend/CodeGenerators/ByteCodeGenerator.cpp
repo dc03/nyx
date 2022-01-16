@@ -1120,7 +1120,7 @@ ExprVisitorType ByteCodeGenerator::visit(LiteralExpr &expr) {
             current_chunk->emit_constant(Value{expr.value.to_int()}, expr.synthesized_attrs.token.line);
             break;
         case LiteralValue::tag::DOUBLE:
-            current_chunk->emit_constant(Value{expr.value.to_double()}, expr.synthesized_attrs.token.line);
+            current_chunk->emit_constant(Value{expr.value.to_float()}, expr.synthesized_attrs.token.line);
             break;
         case LiteralValue::tag::STRING:
             current_chunk->emit_string(expr.value.to_string(), expr.synthesized_attrs.token.line);

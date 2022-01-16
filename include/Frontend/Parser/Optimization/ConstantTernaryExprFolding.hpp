@@ -15,8 +15,8 @@
 bool check_literal(LiteralValue &value) {
     if (value.is_int()) {
         return value.to_int() != 0;
-    } else if (value.is_double()) {
-        return value.to_double() != 0.0;
+    } else if (value.is_float()) {
+        return value.to_float() != 0.0;
     } else if (value.is_string()) {
         return not value.to_string().empty();
     } else if (value.is_bool()) {
@@ -48,7 +48,7 @@ ExprNode int_conditional_operation(TERNARY_PARAMETERS) {
 }
 
 ExprNode float_conditional_operation(TERNARY_PARAMETERS) {
-    return generic_conditional_operation_same_pmf(TERNARY_ARGS, &LiteralValue::is_double, Type::FLOAT);
+    return generic_conditional_operation_same_pmf(TERNARY_ARGS, &LiteralValue::is_float, Type::FLOAT);
 }
 
 ExprNode string_conditional_oepration(TERNARY_PARAMETERS) {

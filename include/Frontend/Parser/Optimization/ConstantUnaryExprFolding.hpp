@@ -27,7 +27,7 @@ ExprNode int_unary_operation(LiteralExpr &value, Type computed_type = Type::INT)
 
 template <typename U>
 ExprNode float_unary_operation(LiteralExpr &value, Type computed_type = Type::FLOAT) {
-    return generic_unary_operation<U>(value, &LiteralValue::is_double, &LiteralValue::to_double, computed_type);
+    return generic_unary_operation<U>(value, &LiteralValue::is_float, &LiteralValue::to_float, computed_type);
 }
 
 template <typename U>
