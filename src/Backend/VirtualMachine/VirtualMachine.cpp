@@ -1,12 +1,12 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Backend/VirtualMachine/VirtualMachine.hpp"
+#include "nyx/Backend/VirtualMachine/VirtualMachine.hpp"
 
-#include "Backend/VirtualMachine/Disassembler.hpp"
-#include "Backend/VirtualMachine/Instructions.hpp"
-#include "Backend/VirtualMachine/StringCacher.hpp"
-#include "CLIConfigParser.hpp"
-#include "ErrorLogger/ErrorLogger.hpp"
+#include "nyx/Backend/VirtualMachine/Disassembler.hpp"
+#include "nyx/Backend/VirtualMachine/Instructions.hpp"
+#include "nyx/Backend/VirtualMachine/StringCacher.hpp"
+#include "nyx/CLIConfigParser.hpp"
+#include "nyx/ErrorLogger/ErrorLogger.hpp"
 
 #include <cmath>
 #include <iostream>

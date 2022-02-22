@@ -6,11 +6,11 @@
 #ifndef VIRTUAL_MACHINE_HPP
 #define VIRTUAL_MACHINE_HPP
 
-#include "Backend/BackendContext.hpp"
-#include "Backend/RuntimeModule.hpp"
-#include "ColoredPrintHelper.hpp"
 #include "Natives.hpp"
 #include "Value.hpp"
+#include "nyx/Backend/BackendContext.hpp"
+#include "nyx/Backend/RuntimeModule.hpp"
+#include "nyx/ColoredPrintHelper.hpp"
 
 #include <memory>
 #include <unordered_map>

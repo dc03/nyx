@@ -6,8 +6,8 @@
 #ifndef VALUE_HPP
 #define VALUE_HPP
 
-#include "Backend/RuntimeModule.hpp"
 #include "StringCacher.hpp"
+#include "nyx/Backend/RuntimeModule.hpp"
 
 #include <cstdint>
 #include <string>

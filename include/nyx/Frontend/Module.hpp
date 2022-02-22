@@ -6,7 +6,7 @@
 #ifndef MODULE_HPP
 #define MODULE_HPP
 
-#include "AST/AST.hpp"
+#include "nyx/AST/AST.hpp"
 
 #include <filesystem>
 #include <string>

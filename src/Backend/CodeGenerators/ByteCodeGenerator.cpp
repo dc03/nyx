@@ -1,10 +1,10 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Backend/CodeGenerators/ByteCodeGenerator.hpp"
+#include "nyx/Backend/CodeGenerators/ByteCodeGenerator.hpp"
 
-#include "Backend/VirtualMachine/Value.hpp"
-#include "Common.hpp"
-#include "ErrorLogger/ErrorLogger.hpp"
+#include "nyx/Backend/VirtualMachine/Value.hpp"
+#include "nyx/Common.hpp"
+#include "nyx/ErrorLogger/ErrorLogger.hpp"
 
 #include <algorithm>
 

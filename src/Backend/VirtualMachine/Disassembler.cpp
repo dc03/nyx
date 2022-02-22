@@ -1,10 +1,10 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Backend/VirtualMachine/Disassembler.hpp"
+#include "nyx/Backend/VirtualMachine/Disassembler.hpp"
 
-#include "Backend/VirtualMachine/Value.hpp"
-#include "ColoredPrintHelper.hpp"
-#include "Common.hpp"
+#include "nyx/Backend/VirtualMachine/Value.hpp"
+#include "nyx/ColoredPrintHelper.hpp"
+#include "nyx/Common.hpp"
 
 #include <iomanip>
 #include <iostream>

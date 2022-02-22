@@ -6,8 +6,8 @@
 #ifndef CONSTANT_TERNARY_EXPR_FOLDING_HPP
 #define CONSTANT_TERNARY_EXPR_FOLDING_HPP
 
-#include "AST/AST.hpp"
 #include "Utilities.hpp"
+#include "nyx/AST/AST.hpp"
 
 #define TERNARY_PARAMETERS LiteralExpr &cond, LiteralExpr &middle, LiteralExpr &right
 #define TERNARY_ARGS       cond, middle, right

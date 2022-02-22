@@ -1,10 +1,10 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "AST/ASTPrinter.hpp"
-#include "Backend/BackendManager.hpp"
-#include "CLIConfigParser.hpp"
-#include "ErrorLogger/ErrorLogger.hpp"
-#include "Frontend/FrontendManager.hpp"
+#include "nyx/AST/ASTPrinter.hpp"
+#include "nyx/Backend/BackendManager.hpp"
+#include "nyx/CLIConfigParser.hpp"
+#include "nyx/ErrorLogger/ErrorLogger.hpp"
+#include "nyx/Frontend/FrontendManager.hpp"
 
 #include <cxxopts.hpp>
 #include <iostream>

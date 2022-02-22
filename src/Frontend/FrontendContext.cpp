@@ -1,8 +1,8 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Frontend/FrontendContext.hpp"
+#include "nyx/Frontend/FrontendContext.hpp"
 
-#include "CLIConfigParser.hpp"
+#include "nyx/CLIConfigParser.hpp"
 
 #include <algorithm>
 

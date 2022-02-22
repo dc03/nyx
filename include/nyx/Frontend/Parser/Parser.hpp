@@ -6,12 +6,12 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
-#include "AST/AST.hpp"
-#include "AST/Token.hpp"
-#include "Frontend/FrontendContext.hpp"
-#include "Frontend/Module.hpp"
-#include "Frontend/Scanner/Scanner.hpp"
 #include "ScopedManager.hpp"
+#include "nyx/AST/AST.hpp"
+#include "nyx/AST/Token.hpp"
+#include "nyx/Frontend/FrontendContext.hpp"
+#include "nyx/Frontend/Module.hpp"
+#include "nyx/Frontend/Scanner/Scanner.hpp"
 
 #include <string_view>
 #include <vector>

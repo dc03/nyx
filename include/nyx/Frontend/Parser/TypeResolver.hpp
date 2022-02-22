@@ -6,10 +6,10 @@
 #ifndef TYPE_RESOLVER_HPP
 #define TYPE_RESOLVER_HPP
 
-#include "AST/AST.hpp"
-#include "Frontend/FrontendContext.hpp"
-#include "Frontend/Module.hpp"
 #include "ScopedManager.hpp"
+#include "nyx/AST/AST.hpp"
+#include "nyx/Frontend/FrontendContext.hpp"
+#include "nyx/Frontend/Module.hpp"
 
 #include <string_view>
 #include <tuple>

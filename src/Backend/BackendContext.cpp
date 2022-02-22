@@ -1,9 +1,9 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Backend/BackendContext.hpp"
+#include "nyx/Backend/BackendContext.hpp"
 
-#include "Backend/VirtualMachine/Value.hpp"
-#include "CLIConfigParser.hpp"
+#include "nyx/Backend/VirtualMachine/Value.hpp"
+#include "nyx/CLIConfigParser.hpp"
 // Really weird compile errors without this include
 // Basically, `Chunk` in `RuntimeModule` only forward declares `Value`, but does not include `Value` header file, so
 // trying to access the `std::vector<RuntimeModule>` in any manner fails because it is made up of an incomplete type

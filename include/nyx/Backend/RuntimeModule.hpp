@@ -6,8 +6,8 @@
 #ifndef RUNTIME_MODULE_HPP
 #define RUNTIME_MODULE_HPP
 
-#include "AST/AST.hpp"
-#include "Backend/VirtualMachine/Chunk.hpp"
+#include "nyx/AST/AST.hpp"
+#include "nyx/Backend/VirtualMachine/Chunk.hpp"
 
 #include <filesystem>
 #include <string>

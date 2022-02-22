@@ -1,10 +1,10 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Common.hpp"
-#include "Frontend/Parser/Optimization/ConstantBinaryExprFolding.hpp"
-#include "Frontend/Parser/Optimization/ConstantTernaryExprFolding.hpp"
-#include "Frontend/Parser/Optimization/ConstantUnaryExprFolding.hpp"
-#include "Frontend/Parser/Parser.hpp"
+#include "nyx/Common.hpp"
+#include "nyx/Frontend/Parser/Optimization/ConstantBinaryExprFolding.hpp"
+#include "nyx/Frontend/Parser/Optimization/ConstantTernaryExprFolding.hpp"
+#include "nyx/Frontend/Parser/Optimization/ConstantUnaryExprFolding.hpp"
+#include "nyx/Frontend/Parser/Parser.hpp"
 
 struct right_shift {
     template <typename T, typename U>

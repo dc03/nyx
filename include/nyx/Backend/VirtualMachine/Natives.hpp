@@ -6,8 +6,8 @@
 #ifndef NATIVES_HPP
 #define NATIVES_HPP
 
-#include "AST/VisitorTypes.hpp"
 #include "Value.hpp"
+#include "nyx/AST/VisitorTypes.hpp"
 
 #include <string>
 #include <vector>

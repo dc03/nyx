@@ -6,8 +6,8 @@
 #ifndef BACKEND_CONTEXT_HPP
 #define BACKEND_CONTEXT_HPP
 
-#include "ErrorLogger/ErrorLogger.hpp"
 #include "RuntimeModule.hpp"
+#include "nyx/ErrorLogger/ErrorLogger.hpp"
 
 #include <filesystem>
 #include <string_view>

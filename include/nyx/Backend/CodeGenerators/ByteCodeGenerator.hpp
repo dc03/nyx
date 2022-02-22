@@ -6,13 +6,13 @@
 #ifndef BYTE_CODE_GENERATOR_HPP
 #define BYTE_CODE_GENERATOR_HPP
 
-#include "AST/AST.hpp"
-#include "Backend/BackendContext.hpp"
-#include "Backend/RuntimeModule.hpp"
-#include "Backend/VirtualMachine/Chunk.hpp"
-#include "Backend/VirtualMachine/Natives.hpp"
-#include "Frontend/FrontendContext.hpp"
-#include "Frontend/Module.hpp"
+#include "nyx/AST/AST.hpp"
+#include "nyx/Backend/BackendContext.hpp"
+#include "nyx/Backend/RuntimeModule.hpp"
+#include "nyx/Backend/VirtualMachine/Chunk.hpp"
+#include "nyx/Backend/VirtualMachine/Natives.hpp"
+#include "nyx/Frontend/FrontendContext.hpp"
+#include "nyx/Frontend/Module.hpp"
 
 #include <stack>
 #include <string_view>

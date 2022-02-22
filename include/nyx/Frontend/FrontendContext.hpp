@@ -6,8 +6,8 @@
 #ifndef FRONTEND_CONTEXT_HPP
 #define FRONTEND_CONTEXT_HPP
 
-#include "ErrorLogger/ErrorLogger.hpp"
-#include "Frontend/Module.hpp"
+#include "Module.hpp"
+#include "nyx/ErrorLogger/ErrorLogger.hpp"
 
 #include <filesystem>
 #include <unordered_map>

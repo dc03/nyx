@@ -6,10 +6,10 @@
 #ifndef SCANNER_HPP
 #define SCANNER_HPP
 
-#include "AST/Token.hpp"
-#include "AST/TokenTypes.hpp"
-#include "Frontend/FrontendContext.hpp"
 #include "Trie.hpp"
+#include "nyx/AST/Token.hpp"
+#include "nyx/AST/TokenTypes.hpp"
+#include "nyx/Frontend/FrontendContext.hpp"
 
 #include <string_view>
 #include <unordered_map>

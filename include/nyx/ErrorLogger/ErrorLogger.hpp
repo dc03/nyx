@@ -6,8 +6,8 @@
 #ifndef ERROR_LOGGER_HPP
 #define ERROR_LOGGER_HPP
 
-#include "AST/Token.hpp"
-#include "ColoredPrintHelper.hpp"
+#include "nyx/AST/Token.hpp"
+#include "nyx/ColoredPrintHelper.hpp"
 
 #include <string>
 #include <string_view>

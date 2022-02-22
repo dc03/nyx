@@ -6,11 +6,11 @@
 #ifndef FRONTEND_MANAGER_HPP
 #define FRONTEND_MANAGER_HPP
 
-#include "Backend/CodeGenerators/ByteCodeGenerator.hpp"
-#include "Frontend/FrontendContext.hpp"
-#include "Frontend/Parser/Parser.hpp"
-#include "Frontend/Parser/TypeResolver.hpp"
-#include "Frontend/Scanner/Scanner.hpp"
+#include "FrontendContext.hpp"
+#include "nyx/Backend/CodeGenerators/ByteCodeGenerator.hpp"
+#include "nyx/Frontend/Parser/Parser.hpp"
+#include "nyx/Frontend/Parser/TypeResolver.hpp"
+#include "nyx/Frontend/Scanner/Scanner.hpp"
 
 #include <filesystem>
 

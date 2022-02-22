@@ -1,6 +1,6 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Frontend/FrontendManager.hpp"
+#include "nyx/Frontend/FrontendManager.hpp"
 
 #include <filesystem>
 #include <fstream>

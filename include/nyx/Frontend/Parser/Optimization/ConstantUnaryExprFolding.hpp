@@ -6,8 +6,8 @@
 #ifndef CONSTANT_UNARY_EXPR_FOLDING_HPP
 #define CONSTANT_UNARY_EXPR_FOLDING_HPP
 
-#include "AST/AST.hpp"
-#include "Frontend/Parser/Optimization/Utilities.hpp"
+#include "Utilities.hpp"
+#include "nyx/AST/AST.hpp"
 
 #include <functional>
 

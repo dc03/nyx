@@ -1,6 +1,6 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "AST/ASTPrinter.hpp"
+#include "nyx/AST/ASTPrinter.hpp"
 
 #include <algorithm>
 #include <iostream>

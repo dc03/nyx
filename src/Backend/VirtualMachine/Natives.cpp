@@ -1,10 +1,10 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Backend/VirtualMachine/Natives.hpp"
+#include "nyx/Backend/VirtualMachine/Natives.hpp"
 
-#include "Backend/RuntimeModule.hpp"
-#include "Backend/VirtualMachine/VirtualMachine.hpp"
-#include "Common.hpp"
+#include "nyx/Backend/RuntimeModule.hpp"
+#include "nyx/Backend/VirtualMachine/VirtualMachine.hpp"
+#include "nyx/Common.hpp"
 
 #include <algorithm>
 #include <array>

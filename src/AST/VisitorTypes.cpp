@@ -1,7 +1,7 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "AST/AST.hpp"
-#include "Common.hpp"
+#include "nyx/AST/AST.hpp"
+#include "nyx/Common.hpp"
 
 LiteralValue::LiteralValue(int value) : value{value} {}
 LiteralValue::LiteralValue(bool value) : value{value} {}

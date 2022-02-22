@@ -6,8 +6,8 @@
 #ifndef AST_TYPES_HPP
 #define AST_TYPES_HPP
 
-#include "AST/LiteralValue.hpp"
-#include "AST/Token.hpp"
+#include "LiteralValue.hpp"
+#include "Token.hpp"
 
 #include <memory>
 #include <string>

@@ -6,7 +6,7 @@
 #ifndef AST_DUMPER_HPP
 #define AST_DUMPER_HPP
 
-#include "AST/AST.hpp"
+#include "AST.hpp"
 
 #include <vector>
 

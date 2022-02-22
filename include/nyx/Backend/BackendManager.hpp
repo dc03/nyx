@@ -6,9 +6,9 @@
 #ifndef BACKEND_MANAGER_HPP
 #define BACKEND_MANAGER_HPP
 
-#include "Backend/BackendContext.hpp"
-#include "Backend/CodeGenerators/ByteCodeGenerator.hpp"
-#include "Backend/VirtualMachine/VirtualMachine.hpp"
+#include "BackendContext.hpp"
+#include "nyx/Backend/CodeGenerators/ByteCodeGenerator.hpp"
+#include "nyx/Backend/VirtualMachine/VirtualMachine.hpp"
 
 class BackendManager {
     BackendContext *ctx{};

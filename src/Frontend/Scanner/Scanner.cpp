@@ -1,9 +1,9 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Frontend/Scanner/Scanner.hpp"
+#include "nyx/Frontend/Scanner/Scanner.hpp"
 
-#include "Common.hpp"
-#include "ErrorLogger/ErrorLogger.hpp"
+#include "nyx/Common.hpp"
+#include "nyx/ErrorLogger/ErrorLogger.hpp"
 
 #include <algorithm>
 #include <cassert>

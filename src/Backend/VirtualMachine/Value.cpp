@@ -1,8 +1,8 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Backend/VirtualMachine/Value.hpp"
+#include "nyx/Backend/VirtualMachine/Value.hpp"
 
-#include "Common.hpp"
+#include "nyx/Common.hpp"
 
 #include <algorithm>
 #include <cstring>

@@ -1,10 +1,10 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Backend/BackendManager.hpp"
+#include "nyx/Backend/BackendManager.hpp"
 
-#include "Backend/VirtualMachine/Disassembler.hpp"
-#include "CLIConfigParser.hpp"
-#include "Common.hpp"
+#include "nyx/Backend/VirtualMachine/Disassembler.hpp"
+#include "nyx/CLIConfigParser.hpp"
+#include "nyx/Common.hpp"
 
 #include <algorithm>
 

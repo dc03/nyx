@@ -1,6 +1,6 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Backend/VirtualMachine/StringCacher.hpp"
+#include "nyx/Backend/VirtualMachine/StringCacher.hpp"
 
 #include <algorithm>
 

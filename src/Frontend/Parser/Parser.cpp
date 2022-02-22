@@ -1,15 +1,15 @@
 /* Copyright (C) 2020-2022  Dhruv Chawla */
 /* See LICENSE at project root for license details */
-#include "Frontend/Parser/Parser.hpp"
+#include "nyx/Frontend/Parser/Parser.hpp"
 
-#include "Backend/VirtualMachine/Value.hpp"
-#include "CLIConfigParser.hpp"
-#include "Common.hpp"
-#include "ErrorLogger/ErrorLogger.hpp"
-#include "Frontend/FrontendManager.hpp"
-#include "Frontend/Parser/FeatureFlagError.hpp"
-#include "Frontend/Parser/TypeResolver.hpp"
-#include "Frontend/Scanner/Scanner.hpp"
+#include "nyx/Backend/VirtualMachine/Value.hpp"
+#include "nyx/CLIConfigParser.hpp"
+#include "nyx/Common.hpp"
+#include "nyx/ErrorLogger/ErrorLogger.hpp"
+#include "nyx/Frontend/FrontendManager.hpp"
+#include "nyx/Frontend/Parser/FeatureFlagError.hpp"
+#include "nyx/Frontend/Parser/TypeResolver.hpp"
+#include "nyx/Frontend/Scanner/Scanner.hpp"
 
 #include <algorithm>
 #include <array>

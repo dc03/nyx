@@ -6,10 +6,10 @@
 #ifndef DISASSEMBLER_HPP
 #define DISASSEMBLER_HPP
 
-#include "Backend/BackendContext.hpp"
-#include "Backend/RuntimeModule.hpp"
 #include "Chunk.hpp"
 #include "Instructions.hpp"
+#include "nyx/Backend/BackendContext.hpp"
+#include "nyx/Backend/RuntimeModule.hpp"
 
 #include <string_view>
 

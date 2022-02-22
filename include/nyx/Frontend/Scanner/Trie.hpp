@@ -6,7 +6,7 @@
 #ifndef TRIE_HPP
 #define TRIE_HPP
 
-#include "AST/TokenTypes.hpp"
+#include "nyx/AST/TokenTypes.hpp"
 
 #include <memory>
 #include <string_view>
