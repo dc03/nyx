@@ -7,7 +7,7 @@ project(nyx VERSION 0.0.7)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_executable(nyx src/nyx.cpp src/ErrorLogger/ErrorLogger.cpp src/Frontend/Parser/TypeResolver.cpp src/AST/VisitorTypes.cpp
+add_executable(nyx-bin src/nyx.cpp src/ErrorLogger/ErrorLogger.cpp src/Frontend/Parser/TypeResolver.cpp src/AST/VisitorTypes.cpp
         src/Frontend/Parser/Parser.cpp src/Frontend/Scanner/Scanner.cpp src/Frontend/Scanner/Trie.cpp src/AST/AST.cpp
         src/Backend/VirtualMachine/Chunk.cpp src/Backend/CodeGenerators/ByteCodeGenerator.cpp src/Backend/VirtualMachine/VirtualMachine.cpp
         src/Backend/VirtualMachine/Disassembler.cpp src/Backend/VirtualMachine/Natives.cpp src/AST/ASTPrinter.cpp
@@ -17,10 +17,21 @@ add_executable(nyx src/nyx.cpp src/ErrorLogger/ErrorLogger.cpp src/Frontend/Pars
 
 add_executable(nyxVM src/Backend/VirtualMachine/Chunk.cpp src/Backend/VirtualMachine/Value.cpp src/Backend/VirtualMachine/VirtualMachine.cpp
         src/Backend/VirtualMachine/VMMain.cpp src/ErrorLogger/ErrorLogger.cpp src/Backend/VirtualMachine/Disassembler.cpp
-        src/Backend/VirtualMachine/Natives.cpp src/Backend/VirtualMachine/StringCacher.cpp src/Backend/BackendContext.cpp src/CLIConfigParser.cpp)
+        src/Backend/VirtualMachine/Natives.cpp src/Backend/VirtualMachine/StringCacher.cpp src/Backend/BackendContext.cpp src/CLIConfigParser.cpp
+        src/AST/AST.cpp)
+
+target_include_directories(nyx-bin PUBLIC include)
+target_include_directories(nyxVM PUBLIC include)
+
+add_library(nyx src/nyx.cpp src/ErrorLogger/ErrorLogger.cpp src/Frontend/Parser/TypeResolver.cpp src/AST/VisitorTypes.cpp
+        src/Frontend/Parser/Parser.cpp src/Frontend/Scanner/Scanner.cpp src/Frontend/Scanner/Trie.cpp src/AST/AST.cpp
+        src/Backend/VirtualMachine/Chunk.cpp src/Backend/CodeGenerators/ByteCodeGenerator.cpp src/Backend/VirtualMachine/VirtualMachine.cpp
+        src/Backend/VirtualMachine/Disassembler.cpp src/Backend/VirtualMachine/Natives.cpp src/AST/ASTPrinter.cpp
+        src/Backend/VirtualMachine/Value.cpp src/Backend/VirtualMachine/StringCacher.cpp src/Frontend/FrontendManager.cpp
+        src/Backend/BackendManager.cpp src/Frontend/FrontendContext.cpp src/Backend/BackendContext.cpp src/CLIConfigParser.cpp
+        src/Frontend/Parser/Optimization/ConstantFolding.cpp)
 
 target_include_directories(nyx PUBLIC include)
-target_include_directories(nyxVM PUBLIC include)
 
 if (MSVC)
     target_compile_options(nyx PRIVATE /W4)
@@ -71,5 +82,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(TERMCOLOR)
 FetchContent_GetProperties(TERMCOLOR)
 
-target_link_libraries(nyx PRIVATE cxxopts termcolor)
+target_link_libraries(nyx-bin PRIVATE cxxopts termcolor)
+target_link_libraries(nyx PUBLIC cxxopts termcolor)
 target_link_libraries(nyxVM PRIVATE cxxopts termcolor)
+
+set_target_properties(nyx-bin
+        PROPERTIES OUTPUT_NAME nyx)
