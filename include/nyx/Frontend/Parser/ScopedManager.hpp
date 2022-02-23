@@ -6,6 +6,8 @@
 #ifndef SCOPED_MANAGER_HPP
 #define SCOPED_MANAGER_HPP
 
+#include <utility>
+
 template <typename T>
 class ScopedManager {
     T &managed;
