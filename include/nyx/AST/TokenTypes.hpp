@@ -74,6 +74,8 @@ enum class TokenType {
     STRING_VALUE,
     INT_VALUE,
     FLOAT_VALUE,
+    SINGLELINE_COMMENT,
+    MULTILINE_COMMENT,
 
     // Keywords
     /* AND, */ BOOL,
