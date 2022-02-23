@@ -75,7 +75,7 @@ params         ::= (IDENTIFIER|ident_tuple ":" TYPE)*
 fn             ::= "fn" "~"? IDENTIFIER "(" params ")" "->" TYPE block
 
 type_decl      ::= "type" IDENTIFIER "=" TYPE EOL
-class          ::= "class" IDENTIFIER "{" (("private"|"public"|"protected")(var|fn))* "}"
+class          ::= "class" IDENTIFIER "{" ((("private"|"public"|"protected")(var|fn))|comment)* "}"
 
 statement      ::= expr_stmt
                  | for
@@ -86,6 +86,7 @@ statement      ::= expr_stmt
                  | continue
                  | return
                  | block
+                 | comment
 
 expr_stmt      ::= expression EOL
 for            ::= "for" "(" (var|expr_stmt|";") expression? ";" expression? ")" block
@@ -96,5 +97,12 @@ break          ::= "break" EOL
 continue       ::= "continue" EOL
 return         ::= "return" expression? EOL
 block          ::= "{" (var|statement)* "}"
+
+CHAR           ::= " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+comment        ::= single_comment
+                 | multi_comment
+single_comment ::= "//" CHAR* "\n"
+multi_comment  ::= "/*" (CHAR*|multi_comment) "*/"
+
 
 program        ::= declaration* EOF
