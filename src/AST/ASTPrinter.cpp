@@ -457,12 +457,12 @@ StmtVisitorType ASTPrinter::visit(ClassStmt &stmt) {
     for (auto &member : stmt.members) {
         print_tabs(current_depth);
         print_access_specifier(member.second) << '\n';
-        print(member.first.get());
+        print(member.first);
     }
     for (auto &method : stmt.methods) {
         print_tabs(current_depth);
         print_access_specifier(method.second) << '\n';
-        print(method.first.get());
+        print(method.first);
     }
     current_depth--;
 }
@@ -612,6 +612,18 @@ StmtVisitorType ASTPrinter::visit(WhileStmt &stmt) {
     std::cout << "Body:\n";
     print(stmt.body.get());
     current_depth--;
+}
+
+StmtVisitorType ASTPrinter::visit(SingleLineCommentStmt &stmt) {
+    print_tabs(current_depth);
+    print_token(stmt.contents) << '\n';
+}
+
+StmtVisitorType ASTPrinter::visit(MultiLineCommentStmt &stmt) {
+    print_tabs(current_depth);
+    print_token(stmt.contents) << '\n';
+    print_tabs(current_depth);
+    std::cout << "Lines: " << stmt.lines << '\n';
 }
 
 BaseTypeVisitorType ASTPrinter::visit(PrimitiveType &type) {

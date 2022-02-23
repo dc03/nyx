@@ -736,7 +736,7 @@ ExprVisitorType TypeResolver::visit(CallExpr &expr) {
             auto *method = find_method(class_, get->name.lexeme);
 
             if (method != nullptr) {
-                called = method->first.get();
+                called = method->first;
                 ExprNode &object = get->object;
 
                 expr.args.insert(expr.args.begin(), {std::move(object), NumericConversionType::NONE, false});
@@ -843,13 +843,13 @@ ExprVisitorType TypeResolver::resolve_class_access(ExprVisitorType &object, cons
     auto *method = find_method(accessed_type, name.lexeme);
     if (method != nullptr) {
         if ((method->second == VisibilityType::PUBLIC) || (in_class && current_class->name == accessed_type->name)) {
-            return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method->first.get(), name};
+            return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method->first, name};
         } else if (method->second == VisibilityType::PROTECTED) {
             error({"Cannot access protected method outside class"}, name);
         } else if (method->second == VisibilityType::PRIVATE) {
             error({"Cannot access private method outside class"}, name);
         }
-        return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method->first.get(), name};
+        return {make_new_type<PrimitiveType>(Type::FUNCTION, true, false), method->first, name};
     }
 
     error({"No such attribute exists in the class"}, name);
@@ -1143,7 +1143,7 @@ ExprVisitorType TypeResolver::visit(ScopeAccessExpr &expr) {
             auto *method = find_method(left.class_, expr.name.lexeme);
             if (method != nullptr) {
                 return expr.synthesized_attrs = {make_new_type<PrimitiveType>(Type::FUNCTION, true, false),
-                           method->first.get(), left.class_, expr.synthesized_attrs.token, false,
+                           method->first, left.class_, expr.synthesized_attrs.token, false,
                            ExprSynthesizedAttrs::ScopeAccessType::CLASS_METHOD};
             }
 
@@ -1436,7 +1436,9 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
         StmtNode return_stmt{allocate_node(ReturnStmt, stmt.name, nullptr, 0, stmt.ctor)};
         dynamic_cast<BlockStmt *>(stmt.ctor->body.get())->stmts.emplace_back(std::move(return_stmt));
 
-        stmt.methods.emplace_back(std::unique_ptr<FunctionStmt>{stmt.ctor}, VisibilityType::PUBLIC);
+        std::unique_ptr<FunctionStmt> ctor{stmt.ctor};
+        stmt.methods.emplace_back(ctor.get(), VisibilityType::PUBLIC);
+        stmt.stmts.emplace_back(std::move(ctor));
     }
 
     // Creation of the implicit destructor
@@ -1449,15 +1451,17 @@ StmtVisitorType TypeResolver::visit(ClassStmt &stmt) {
         StmtNode return_stmt{allocate_node(ReturnStmt, stmt.name, nullptr, 0, stmt.dtor)};
         dynamic_cast<BlockStmt *>(stmt.dtor->body.get())->stmts.emplace_back(std::move(return_stmt));
 
-        stmt.methods.emplace_back(std::unique_ptr<FunctionStmt>{stmt.dtor}, VisibilityType::PUBLIC);
+        std::unique_ptr<FunctionStmt> dtor{stmt.dtor};
+        stmt.methods.emplace_back(dtor.get(), VisibilityType::PUBLIC);
+        stmt.stmts.emplace_back(std::move(dtor));
     }
 
     for (auto &member_decl : stmt.members) {
-        resolve(member_decl.first.get());
+        resolve(member_decl.first);
     }
 
     for (auto &method_decl : stmt.methods) {
-        resolve(method_decl.first.get());
+        resolve(method_decl.first);
     }
 }
 
@@ -1772,6 +1776,14 @@ StmtVisitorType TypeResolver::visit(WhileStmt &stmt) {
     }
 
     resolve(stmt.body.get());
+}
+
+StmtVisitorType TypeResolver::visit(SingleLineCommentStmt &stmt) {
+    // Do nothing
+}
+
+StmtVisitorType TypeResolver::visit(MultiLineCommentStmt &stmt) {
+    // Do nothing
 }
 
 BaseTypeVisitorType TypeResolver::visit(PrimitiveType &type) {

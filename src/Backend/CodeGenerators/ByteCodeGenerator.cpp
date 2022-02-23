@@ -434,7 +434,7 @@ void ByteCodeGenerator::make_instance(ClassStmt *class_) {
         current_chunk->emit_instruction(Instruction::ACCESS_FROM_TOP, member.first->name.line);
         emit_operand(1);
         current_chunk->emit_constant(Value{static_cast<Value::IntType>(i)}, member.first->name.line);
-        compile(member.first.get());
+        compile(member.first);
         current_chunk->emit_instruction(Instruction::ASSIGN_LIST, member.first->name.line);
         current_chunk->emit_instruction(Instruction::POP, member.first->name.line);
 
@@ -1435,7 +1435,7 @@ StmtVisitorType ByteCodeGenerator::visit(BreakStmt &stmt) {
 
 StmtVisitorType ByteCodeGenerator::visit(ClassStmt &stmt) {
     for (auto &method : stmt.methods) {
-        compile(method.first.get());
+        compile(method.first);
     }
 }
 
@@ -1739,6 +1739,14 @@ StmtVisitorType ByteCodeGenerator::visit(WhileStmt &stmt) {
 
     continue_stmts.pop();
     break_stmts.pop();
+}
+
+StmtVisitorType ByteCodeGenerator::visit(SingleLineCommentStmt &stmt) {
+    // Do nothing
+}
+
+StmtVisitorType ByteCodeGenerator::visit(MultiLineCommentStmt &stmt) {
+    // Do nothing
 }
 
 BaseTypeVisitorType ByteCodeGenerator::visit(PrimitiveType &type) {

@@ -134,6 +134,8 @@ class TypeResolver final : Visitor {
     StmtVisitorType visit(VarStmt &stmt) override final;
     StmtVisitorType visit(VarTupleStmt &stmt) override final;
     StmtVisitorType visit(WhileStmt &stmt) override final;
+    StmtVisitorType visit(SingleLineCommentStmt &stmt) override final;
+    StmtVisitorType visit(MultiLineCommentStmt &stmt) override final;
 
     BaseTypeVisitorType visit(PrimitiveType &type) override final;
     BaseTypeVisitorType visit(UserDefinedType &type) override final;
