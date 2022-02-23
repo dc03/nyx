@@ -215,16 +215,28 @@ bool Parser::match(Args... args) {
 template <typename... Args>
 void Parser::consume(const std::string_view message, Args... args) {
     if (not match(args...)) {
-        error({std::string{message}}, peek());
-        throw ParseException{peek(), message};
+        if (peek().type == TokenType::SINGLELINE_COMMENT || peek().type == TokenType::MULTILINE_COMMENT) {
+            warning({"Skipping comment"}, peek());
+            advance();
+            consume(message, args...);
+        } else {
+            error({std::string{message}}, peek());
+            throw ParseException{peek(), message};
+        }
     }
 }
 
 template <typename... Args>
 void Parser::consume(std::string_view message, const Token &where, Args... args) {
     if (not match(args...)) {
-        error({std::string{message}}, where);
-        throw ParseException{where, message};
+        if (peek().type == TokenType::SINGLELINE_COMMENT || peek().type == TokenType::MULTILINE_COMMENT) {
+            warning({"Skipping comment"}, peek());
+            advance();
+            consume(message, args...);
+        } else {
+            error({std::string{message}}, where);
+            throw ParseException{where, message};
+        }
     }
 }
 
@@ -408,8 +420,8 @@ ExprNode Parser::comma(bool, ExprNode left) {
             exprs.emplace_back(std::move(temp[i]));
         }
     }
-    // The last value is what the comma operator computes to thus it is always needed regardless of it being literal or
-    // not
+    // The last value is what the comma operator computes to thus it is always needed regardless of it being literal
+    // or not
     exprs.emplace_back(std::move(temp.back()));
 
     return ExprNode{allocate_node(CommaExpr, std::move(exprs))};
@@ -739,6 +751,7 @@ StmtNode Parser::class_declaration() {
     Token name = current_token;
     FunctionStmt *ctor{nullptr};
     FunctionStmt *dtor{nullptr};
+    std::vector<StmtNode> stmts{};
     std::vector<ClassStmt::MemberType> members{};
     std::vector<ClassStmt::MethodType> methods{};
     std::unordered_map<std::string_view, std::size_t> member_map{};
@@ -750,6 +763,18 @@ StmtNode Parser::class_declaration() {
     ScopedManager class_manager{in_class, true};
 
     while (not is_at_end() && peek().type != TokenType::RIGHT_BRACE) {
+        if (match(TokenType::SINGLELINE_COMMENT)) {
+            StmtNode comment{allocate_node(SingleLineCommentStmt, current_token)};
+            match(TokenType::END_OF_LINE);
+            stmts.emplace_back(std::move(comment));
+            continue;
+        } else if (match(TokenType::MULTILINE_COMMENT)) {
+            StmtNode comment{allocate_node(MultiLineCommentStmt, current_token,
+                static_cast<size_t>(std::count(current_token.lexeme.begin(), current_token.lexeme.end(), '\n')))};
+            match(TokenType::END_OF_LINE);
+            stmts.emplace_back(std::move(comment));
+            continue;
+        }
         consume("Expected 'public', 'private' or 'protected' modifier before member declaration", TokenType::PRIVATE,
             TokenType::PUBLIC, TokenType::PROTECTED);
 
@@ -767,7 +792,8 @@ StmtNode Parser::class_declaration() {
             try {
                 std::unique_ptr<VarStmt> member{dynamic_cast<VarStmt *>(variable_declaration().release())};
                 member_map[member->name.lexeme] = members.size();
-                members.emplace_back(std::move(member), visibility);
+                members.emplace_back(member.get(), visibility);
+                stmts.emplace_back(std::move(member));
             } catch (...) { synchronize(); }
         } else if (match(TokenType::FN)) {
             try {
@@ -795,7 +821,8 @@ StmtNode Parser::class_declaration() {
                     }
                 }
                 method_map[method->name.lexeme] = methods.size();
-                methods.emplace_back(std::move(method), visibility);
+                methods.emplace_back(method.get(), visibility);
+                stmts.emplace_back(std::move(method));
             } catch (...) { synchronize(); }
         } else {
             throw_parse_error("Expected either member or method declaration in class");
@@ -803,7 +830,7 @@ StmtNode Parser::class_declaration() {
     }
 
     consume("Expected '}' at the end of class declaration", TokenType::RIGHT_BRACE);
-    auto *class_definition = allocate_node(ClassStmt, std::move(name), ctor, dtor, std::move(members),
+    auto *class_definition = allocate_node(ClassStmt, std::move(name), ctor, dtor, std::move(stmts), std::move(members),
         std::move(methods), std::move(member_map), std::move(method_map), current_module->full_path);
     current_module->classes[class_definition->name.lexeme] = class_definition;
 
@@ -981,6 +1008,15 @@ StmtNode Parser::statement() {
         return switch_statement();
     } else if (match(TokenType::WHILE)) {
         return while_statement();
+    } else if (match(TokenType::SINGLELINE_COMMENT)) {
+        StmtNode comment{allocate_node(SingleLineCommentStmt, current_token)};
+        match(TokenType::END_OF_LINE);
+        return comment;
+    } else if (match(TokenType::MULTILINE_COMMENT)) {
+        StmtNode comment{allocate_node(MultiLineCommentStmt, current_token,
+            static_cast<size_t>(std::count(current_token.lexeme.begin(), current_token.lexeme.end(), '\n')))};
+        match(TokenType::END_OF_LINE);
+        return comment;
     } else {
         return expression_statement();
     }
