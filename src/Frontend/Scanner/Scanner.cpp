@@ -159,19 +159,20 @@ Token Scanner::scan_string() {
     return make_token(TokenType::STRING_VALUE, lexeme);
 }
 
-void Scanner::skip_comment() {
+Token Scanner::singleline_comment() {
     while (not is_at_end() && peek() != '\n') {
         advance();
     }
+    return make_token(TokenType::SINGLELINE_COMMENT, current_token_lexeme());
 }
 
-void Scanner::skip_multiline_comment() {
+Token Scanner::multiline_comment() {
     while (not is_at_end() && (peek() != '*' || peek_next() != '/')) {
         if (match('/')) {
             if (match('*')) {
-                skip_multiline_comment(); // Skip the nested comment
+                multiline_comment(); // Skip the nested comment
             } else if (match('/')) {
-                skip_comment();
+                singleline_comment();
             }
         } else {
             if (peek() == '\n') {
@@ -189,6 +190,8 @@ void Scanner::skip_multiline_comment() {
 
     advance(); // Skip the '*'
     advance(); // Skip the '//'
+
+    return make_token(TokenType::MULTILINE_COMMENT, current_token_lexeme());
 }
 
 bool Scanner::is_valid_eol(const Token &token) {
@@ -202,7 +205,9 @@ bool Scanner::is_valid_eol(const Token &token) {
         case TokenType::RIGHT_PAREN:
         case TokenType::RIGHT_INDEX:
         case TokenType::TRUE:
-        case TokenType::FALSE: return true;
+        case TokenType::FALSE:
+        case TokenType::SINGLELINE_COMMENT:
+        case TokenType::MULTILINE_COMMENT: return true;
         default: return false;
     }
 }
@@ -379,13 +384,9 @@ Token Scanner::scan_next() {
                 return scan_identifier_or_keyword();
             } else if (next == '/') {
                 if (match('/')) {
-                    skip_comment();
-                    current_token_start = current_token_end;
-                    return scan_next();
+                    return singleline_comment();
                 } else if (match('*')) {
-                    skip_multiline_comment();
-                    current_token_start = current_token_end;
-                    return scan_next();
+                    return multiline_comment();
                 } else if (match('=')) {
                     return make_token(TokenType::SLASH_EQUAL, current_token_lexeme());
                 } else {

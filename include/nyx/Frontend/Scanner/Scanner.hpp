@@ -84,8 +84,8 @@ class Scanner {
     Token scan_identifier_or_keyword();
     Token scan_string();
 
-    void skip_comment();
-    void skip_multiline_comment();
+    Token singleline_comment();
+    Token multiline_comment();
 
     bool is_valid_eol(const Token &token);
 
