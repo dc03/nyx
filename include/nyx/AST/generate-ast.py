@@ -182,7 +182,8 @@ if __name__ == '__main__':
                             'ListRepeat', 'Literal', 'Logical', 'Move', 'ScopeAccess', 'ScopeName', 'Set', 'Super',
                             'Ternary', 'This', 'Tuple', 'Unary', 'Variable']
         Stmts: List[str] = ['Block', 'Break', 'Class', 'Continue', 'Expression', 'Function',
-                            'If', 'Return', 'Switch', 'Type', 'Var', 'VarTuple', 'While']
+                            'If', 'Return', 'Switch', 'Type', 'Var', 'VarTuple', 'While', 'SingleLineComment',
+                            'MultiLineComment']
         Types: List[str] = ['Primitive', 'UserDefined', 'List', 'Tuple', 'Typeof']
 
         Exprs: List[str] = [x + 'Expr' for x in Exprs]
@@ -343,15 +344,16 @@ if __name__ == '__main__':
         file.write('};\n\n')
 
         declare_stmt_type('Class',
-                          'name{std::move(name)}, ctor{ctor}, dtor{dtor}, members{std::move(members)}, methods{'
-                          'std::move(methods)}, member_map{std::move(member_map)}, method_map{std::move(method_map)}, '
-                          'module_path{std::move(module_path)}',
-                          'Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<MemberType> members, '
-                          'std::vector<MethodType> methods, std::unordered_map<std::string_view,std::size_t>'
-                          'member_map, std::unordered_map<std::string_view,std::size_t> method_map, '
+                          'name{std::move(name)}, ctor{ctor}, dtor{dtor}, stmts{std::move(stmts)}, members{std::move('
+                          'members)}, methods{std::move(methods)}, member_map{std::move(member_map)},'
+                          'method_map{std::move(method_map)}, module_path{std::move(module_path)}',
+                          'Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<StmtNode> stmts, '
+                          'std::vector<MemberType> members, std::vector<MethodType> methods, '
+                          'std::unordered_map<std::string_view,std::size_t> member_map, '
+                          'std::unordered_map<std::string_view,std::size_t> method_map, '
                           'std::filesystem::path module_path',
-                          ['using MemberType = std::pair<std::unique_ptr<VarStmt>,VisibilityType>',
-                           'using MethodType = std::pair<std::unique_ptr<FunctionStmt>,VisibilityType>'])
+                          ['using MemberType = std::pair<VarStmt*,VisibilityType>',
+                           'using MethodType = std::pair<FunctionStmt*,VisibilityType>'])
 
         declare_stmt_type('Continue',
                           'keyword{std::move(keyword)}',
@@ -414,6 +416,14 @@ if __name__ == '__main__':
                           'keyword{std::move(keyword)}, condition{std::move(condition)}, body{std::move(body)}, '
                           'increment{std::move(increment)}',
                           'Token keyword, ExprNode condition, StmtNode body, StmtNode increment')
+
+        declare_stmt_type('SingleLineComment',
+                          'contents{std::move(contents)}',
+                          'Token contents')
+
+        declare_stmt_type('MultiLineComment',
+                          'contents{std::move(contents)}, lines{lines}',
+                          'Token contents, std::size_t lines')
 
         file.write('// End of statement node definitions\n\n')
 

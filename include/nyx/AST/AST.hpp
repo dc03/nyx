@@ -67,6 +67,8 @@ struct TypeStmt;
 struct VarStmt;
 struct VarTupleStmt;
 struct WhileStmt;
+struct SingleLineCommentStmt;
+struct MultiLineCommentStmt;
 
 // Type nodes
 
@@ -113,6 +115,8 @@ struct Visitor {
     virtual StmtVisitorType visit(VarStmt &stmt) = 0;
     virtual StmtVisitorType visit(VarTupleStmt &stmt) = 0;
     virtual StmtVisitorType visit(WhileStmt &stmt) = 0;
+    virtual StmtVisitorType visit(SingleLineCommentStmt &stmt) = 0;
+    virtual StmtVisitorType visit(MultiLineCommentStmt &stmt) = 0;
 
     virtual BaseTypeVisitorType visit(PrimitiveType &basetype) = 0;
     virtual BaseTypeVisitorType visit(UserDefinedType &basetype) = 0;
@@ -158,6 +162,8 @@ enum class NodeType {
     VarStmt,
     VarTupleStmt,
     WhileStmt,
+    SingleLineCommentStmt,
+    MultiLineCommentStmt,
 
     PrimitiveType,
     UserDefinedType,
@@ -586,12 +592,13 @@ struct BreakStmt final : public Stmt {
 enum class VisibilityType { PRIVATE, PROTECTED, PUBLIC };
 
 struct ClassStmt final : public Stmt {
-    using MemberType = std::pair<std::unique_ptr<VarStmt>, VisibilityType>;
-    using MethodType = std::pair<std::unique_ptr<FunctionStmt>, VisibilityType>;
+    using MemberType = std::pair<VarStmt *, VisibilityType>;
+    using MethodType = std::pair<FunctionStmt *, VisibilityType>;
 
     Token name{};
     FunctionStmt *ctor{};
     FunctionStmt *dtor{};
+    std::vector<StmtNode> stmts{};
     std::vector<MemberType> members{};
     std::vector<MethodType> methods{};
     std::unordered_map<std::string_view, std::size_t> member_map{};
@@ -603,12 +610,14 @@ struct ClassStmt final : public Stmt {
     NodeType type_tag() override final { return NodeType::ClassStmt; }
 
     ClassStmt() = default;
-    ClassStmt(Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<MemberType> members,
-        std::vector<MethodType> methods, std::unordered_map<std::string_view, std::size_t> member_map,
+    ClassStmt(Token name, FunctionStmt *ctor, FunctionStmt *dtor, std::vector<StmtNode> stmts,
+        std::vector<MemberType> members, std::vector<MethodType> methods,
+        std::unordered_map<std::string_view, std::size_t> member_map,
         std::unordered_map<std::string_view, std::size_t> method_map, std::filesystem::path module_path)
         : name{std::move(name)},
           ctor{ctor},
           dtor{dtor},
+          stmts{std::move(stmts)},
           members{std::move(members)},
           methods{std::move(methods)},
           member_map{std::move(member_map)},
@@ -814,6 +823,33 @@ struct WhileStmt final : public Stmt {
           condition{std::move(condition)},
           body{std::move(body)},
           increment{std::move(increment)} {}
+
+    StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct SingleLineCommentStmt final : public Stmt {
+    Token contents{};
+
+    std::string_view string_tag() override final { return "SingleLineCommentStmt"; }
+
+    NodeType type_tag() override final { return NodeType::SingleLineCommentStmt; }
+
+    SingleLineCommentStmt() = default;
+    explicit SingleLineCommentStmt(Token contents) : contents{std::move(contents)} {}
+
+    StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
+};
+
+struct MultiLineCommentStmt final : public Stmt {
+    Token contents{};
+    std::size_t lines{};
+
+    std::string_view string_tag() override final { return "MultiLineCommentStmt"; }
+
+    NodeType type_tag() override final { return NodeType::MultiLineCommentStmt; }
+
+    MultiLineCommentStmt() = default;
+    MultiLineCommentStmt(Token contents, std::size_t lines) : contents{std::move(contents)}, lines{lines} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
