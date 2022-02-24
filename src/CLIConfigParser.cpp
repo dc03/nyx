@@ -58,21 +58,28 @@ void CLIConfigParser::add_options(cxxopts::Options &options, const Options &valu
     }
 }
 
+void check_single_option(cxxopts::ParseResult &result, const CLIConfigParser::OptionType &option, std::string arg) {
+    if (std::find(option.values.begin(), option.values.end(), arg) == option.values.end()) {
+        throw std::invalid_argument{
+            "Error: incorrect argument '" + arg + "' to option '" + option.name + "', permitted values are: '" +
+            std::accumulate(option.values.begin() + 1, option.values.end(), option.values[0],
+                [](const std::string &one, const std::string &two) { return one + "," + two; }) +
+            "'"};
+    }
+}
+
 void CLIConfigParser::validate_args(cxxopts::ParseResult &result, const Options &values) {
     for (auto &option : values) {
         if (not option.values.empty() && option.quantity == OptionType::QuantityTag::MULTI_VALUE &&
             result.count(option.name) > 0) {
             std::vector<std::string> args = result[option.name].as<std::vector<std::string>>();
             for (std::string &arg : args) {
-                if (std::find(option.values.begin(), option.values.end(), arg) == option.values.end()) {
-                    throw std::invalid_argument{
-                        "Error: incorrect argument '" + arg + "' to option '" + option.name +
-                        "', permitted values are: '" +
-                        std::accumulate(option.values.begin() + 1, option.values.end(), option.values[0],
-                            [](const std::string &one, const std::string &two) { return one + "," + two; }) +
-                        "'"};
-                }
+                check_single_option(result, option, arg);
             }
+        } else if (not option.values.empty() && option.quantity == OptionType::QuantityTag::SINGLE_VALUE &&
+                   result.count(option.name) > 0) {
+            std::string arg = result[option.name].as<std::string>();
+            check_single_option(result, option, arg);
         }
     }
 }
