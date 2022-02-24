@@ -1,4 +1,4 @@
-#include "Backend/VirtualMachine/VirtualMachine.hpp"
+#include "nyx/Backend/VirtualMachine/VirtualMachine.hpp"
 
 #include <cxxopts.hpp>
 
