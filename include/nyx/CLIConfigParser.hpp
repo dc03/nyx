@@ -19,6 +19,11 @@ class ParseResult;
 } // namespace cxxopts
 
 // Options
+#define COMPILE_OPTION      "Compile"
+#define RUNTIME_OPTION      "Runtime"
+#define SYNTAX_OPTION       "Syntax features"
+#define OPTIMIZATION_OPTION "Optimization"
+
 #define MAIN     "main"
 #define CHECK    "check"
 #define DUMP_AST "dump-ast"
@@ -31,7 +36,7 @@ class ParseResult;
 #define LANGUAGE_FEATURE_FLAG(name, description, default_)                                                             \
     {                                                                                                                  \
         name, {"warn", "error", "none"}, description " (supported: warn, error, none; default: " default_ ")",         \
-            OptionType::QuantityTag::SINGLE_VALUE, OptionType::ValueTypeTag::STRING_VALUE, "Syntax features"           \
+            OptionType::QuantityTag::SINGLE_VALUE, OptionType::ValueTypeTag::STRING_VALUE, SYNTAX_OPTION               \
     }
 
 #define CONSTANT_FOLDING "fold-constants"
@@ -39,7 +44,7 @@ class ParseResult;
 #define OPTIMIZATION_FLAG(name, description, default_)                                                                 \
     {                                                                                                                  \
         name, {}, description " (supported: off, on; default: " default_ ")", OptionType::QuantityTag::SINGLE_VALUE,   \
-            OptionType::ValueTypeTag::STRING_VALUE, "Optimization"                                                     \
+            OptionType::ValueTypeTag::STRING_VALUE, OPTIMIZATION_OPTION                                                \
     }
 
 #define NO_COLORIZE_OUTPUT "no-colorize-output"
@@ -103,15 +108,38 @@ class CLIConfigParser {
     CLIConfig compile_config{};
     CLIConfig runtime_config{};
 
-    static const Options compile_options;
+    cxxopts::Options &options;
+
+    enum EnabledTag {
+        BASIC_ENABLED = 0b00001,
+        LANG_FEAT_ENABLED = 0b00010,
+        OPTIMIZATION_ENABLED = 0b00100,
+        RUNTIME_ENABLED = 0b01000,
+        SPECIAL_ENABLED = 0b10000
+    };
+
+    static const Options basic_options;
+    static const Options language_feature_options;
+    static const Options optimization_options;
     static const Options runtime_options;
+    std::uint8_t enabled_options{};
+
+    std::unordered_map<Options *, std::string_view> special_options{};
 
     void add_options(cxxopts::Options &options, const Options &values);
     void validate_args(cxxopts::ParseResult &result, const Options &values);
     void store_options(cxxopts::ParseResult &result, const Options &values, CLIConfig &into);
 
   public:
-    CLIConfigParser(int argc, char **argv);
+    CLIConfigParser(int argc, char **argv, cxxopts::Options &options);
+
+    void add_basic_options() noexcept;
+    void add_language_feature_options() noexcept;
+    void add_optimization_options() noexcept;
+    void add_runtime_options() noexcept;
+    void add_special_options(Options *opts, std::string_view type);
+
+    void parse_options();
 
     [[nodiscard]] const CLIConfig *get_compile_config() const noexcept;
     [[nodiscard]] const CLIConfig *get_runtime_config() const noexcept;

@@ -49,7 +49,13 @@ void run(const char *const main_module, const CLIConfig *compile_config, const C
 
 int main(int argc, char *argv[]) {
     try {
-        CLIConfigParser parser{argc, argv};
+        cxxopts::Options options{argv[0], "A small and simple interpreted language"};
+        CLIConfigParser parser{argc, argv, options};
+        parser.add_basic_options();
+        parser.add_language_feature_options();
+        parser.add_optimization_options();
+        parser.add_runtime_options();
+        parser.parse_options();
 
         const CLIConfig *compile_config = parser.get_compile_config();
         const CLIConfig *runtime_config = parser.get_runtime_config();
