@@ -1103,8 +1103,17 @@ StmtNode Parser::for_statement() {
     ScopedManager loop_manager{in_loop, true};
 
     consume("Expected '{' after for-loop header", TokenType::LEFT_BRACE);
+
+    StmtNode body = block_statement();
+
+    if (ctx->config->contains(I_REALLY_KNOW_WHAT_IM_DOING_PLEASE_DONT_DESGUAR_THE_FOR_LOOP) &&
+        ctx->config->get<std::string>(I_REALLY_KNOW_WHAT_IM_DOING_PLEASE_DONT_DESGUAR_THE_FOR_LOOP) == "on") {
+        return StmtNode{allocate_node(ForStmt, std::move(initializer), std::move(condition), std::move(increment),
+            std::move(body), std::move(keyword))};
+    }
+
     StmtNode desugared_loop = StmtNode{
-        allocate_node(WhileStmt, std::move(keyword), std::move(condition), block_statement(), std::move(increment))};
+        allocate_node(WhileStmt, std::move(keyword), std::move(condition), std::move(body), std::move(increment))};
     // The increment is only created for for-loops, so that the `continue` statement works properly.
 
     auto *loop = allocate_node(BlockStmt, {});
