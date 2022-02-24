@@ -16,21 +16,17 @@ set(SOURCES src/ErrorLogger/ErrorLogger.cpp src/Frontend/Parser/TypeResolver.cpp
         src/Frontend/Parser/Optimization/ConstantFolding.cpp)
 
 add_executable(nyx-bin ${SOURCES} src/nyx.cpp)
-
-add_executable(nyxVM src/Backend/VirtualMachine/Chunk.cpp src/Backend/VirtualMachine/Value.cpp src/Backend/VirtualMachine/VirtualMachine.cpp
-        src/Backend/VirtualMachine/VMMain.cpp src/ErrorLogger/ErrorLogger.cpp src/Backend/VirtualMachine/Disassembler.cpp
-        src/Backend/VirtualMachine/Natives.cpp src/Backend/VirtualMachine/StringCacher.cpp src/Backend/BackendContext.cpp src/CLIConfigParser.cpp
-        src/AST/AST.cpp)
+add_executable(nyx-fmt ${SOURCES} src/nyx-fmt.cpp src/NyxFormatter.cpp)
 
 target_include_directories(nyx-bin PUBLIC include)
-target_include_directories(nyxVM PUBLIC include)
+target_include_directories(nyx-fmt PUBLIC include)
 
 if (MSVC)
     target_compile_options(nyx-bin PRIVATE /W4)
-    target_compile_options(nyxVM PRIVATE /W4)
+    target_compile_options(nyx-fmt PRIVATE /W4)
 else()
     target_compile_options(nyx-bin PRIVATE -Wall -Wextra -pedantic)
-    target_compile_options(nyxVM PRIVATE -Wall -Wextra -pedantic)
+    target_compile_options(nyx-fmt PRIVATE -Wall -Wextra -pedantic)
 endif()
 
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
@@ -44,12 +40,12 @@ else(${CMAKE_BUILD_TYPE} MATCHES "Release")
     check_ipo_supported(RESULT supported OUTPUT error)
 
     target_compile_definitions(nyx-bin PRIVATE NO_TRACE_VM)
-    target_compile_definitions(nyxVM PRIVATE NO_TRACE_VM)
+    target_compile_definitions(nyx-fmt PRIVATE NO_TRACE_VM)
 
     if(supported)
         message(STATUS "IPO / LTO enabled")
         set_property(TARGET nyx-bin PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-        set_property(TARGET nyxVM PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+        set_property(TARGET nyx-fmt PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     else()
         message(STATUS "IPO / LTO not supported: <${error}>")
     endif()
@@ -75,7 +71,7 @@ FetchContent_MakeAvailable(TERMCOLOR)
 FetchContent_GetProperties(TERMCOLOR)
 
 target_link_libraries(nyx-bin PRIVATE cxxopts termcolor)
-target_link_libraries(nyxVM PRIVATE cxxopts termcolor)
+target_link_libraries(nyx-fmt PRIVATE cxxopts termcolor)
 
 # Set up nyx library for including in other projects
 
