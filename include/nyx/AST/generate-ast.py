@@ -181,7 +181,7 @@ if __name__ == '__main__':
         Exprs: List[str] = ['Assign', 'Binary', 'Call', 'Comma', 'Get', 'Grouping', 'Index', 'List', 'ListAssign',
                             'ListRepeat', 'Literal', 'Logical', 'Move', 'ScopeAccess', 'ScopeName', 'Set', 'Super',
                             'Ternary', 'This', 'Tuple', 'Unary', 'Variable']
-        Stmts: List[str] = ['Block', 'Break', 'Class', 'Continue', 'Expression', 'Function',
+        Stmts: List[str] = ['Block', 'Break', 'Class', 'Continue', 'Expression', 'For', 'Function',
                             'If', 'Return', 'Switch', 'Type', 'Var', 'VarTuple', 'While', 'SingleLineComment',
                             'MultiLineComment']
         Types: List[str] = ['Primitive', 'UserDefined', 'List', 'Tuple', 'Typeof']
@@ -370,6 +370,11 @@ if __name__ == '__main__':
         tab(file, 1).write('enum Contained { IDENT_TUPLE = 0, DECL_DETAILS = 1 };\n\n')
         tab(file, 1).write('TupleType tuple;\n')
         file.write('};\n\n')
+
+        declare_stmt_type('For',
+                          'initializer{std::move(initializer)}, condition{std::move(condition)}, '
+                          'increment{std::move(increment)}, body{std::move(body)}, keyword{std::move(keyword)}',
+                          'StmtNode initializer, ExprNode condition, StmtNode increment, StmtNode body, Token keyword')
 
         declare_stmt_type('Function',
                           'name{std::move(name)}, return_type{std::move(return_type)}, params{std::move(params)}, '

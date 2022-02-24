@@ -59,6 +59,7 @@ struct BreakStmt;
 struct ClassStmt;
 struct ContinueStmt;
 struct ExpressionStmt;
+struct ForStmt;
 struct FunctionStmt;
 struct IfStmt;
 struct ReturnStmt;
@@ -107,6 +108,7 @@ struct Visitor {
     virtual StmtVisitorType visit(ClassStmt &stmt) = 0;
     virtual StmtVisitorType visit(ContinueStmt &stmt) = 0;
     virtual StmtVisitorType visit(ExpressionStmt &stmt) = 0;
+    virtual StmtVisitorType visit(ForStmt &stmt) = 0;
     virtual StmtVisitorType visit(FunctionStmt &stmt) = 0;
     virtual StmtVisitorType visit(IfStmt &stmt) = 0;
     virtual StmtVisitorType visit(ReturnStmt &stmt) = 0;
@@ -154,6 +156,7 @@ enum class NodeType {
     ClassStmt,
     ContinueStmt,
     ExpressionStmt,
+    ForStmt,
     FunctionStmt,
     IfStmt,
     ReturnStmt,
@@ -659,6 +662,28 @@ struct IdentifierTuple {
     enum Contained { IDENT_TUPLE = 0, DECL_DETAILS = 1 };
 
     TupleType tuple;
+};
+
+struct ForStmt final : public Stmt {
+    StmtNode initializer{};
+    ExprNode condition{};
+    StmtNode increment{};
+    StmtNode body{};
+    Token keyword{};
+
+    std::string_view string_tag() override final { return "ForStmt"; }
+
+    NodeType type_tag() override final { return NodeType::ForStmt; }
+
+    ForStmt() = default;
+    ForStmt(StmtNode initializer, ExprNode condition, StmtNode increment, StmtNode body, Token keyword)
+        : initializer{std::move(initializer)},
+          condition{std::move(condition)},
+          increment{std::move(increment)},
+          body{std::move(body)},
+          keyword{std::move(keyword)} {}
+
+    StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
 
 struct FunctionStmt final : public Stmt {
