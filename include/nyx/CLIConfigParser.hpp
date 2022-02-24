@@ -33,6 +33,10 @@ class ParseResult;
 #define TERNARY_OPERATOR      "ternary-operator"
 #define ASSIGNMENT_EXPRESSION "assignment-expr"
 
+#define I_REALLY_KNOW_WHAT_IM_DOING_PLEASE_DONT_DESGUAR_THE_FOR_LOOP                                                   \
+    "i-really-know-what-im-doing-please-dont-desugar-the-for-loop"
+#define I_AM_THE_CODE_FORMATTER_DONT_COMPLAIN_ABOUT_FOR_LOOP "i-am-the-code-formatter-dont-complain-about-for-loop"
+
 #define LANGUAGE_FEATURE_FLAG(name, description, default_)                                                             \
     {                                                                                                                  \
         name, {"warn", "error", "none"}, description " (supported: warn, error, none; default: " default_ ")",         \
