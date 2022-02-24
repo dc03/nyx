@@ -1473,6 +1473,12 @@ StmtVisitorType TypeResolver::visit(ExpressionStmt &stmt) {
     resolve(stmt.expr.get());
 }
 
+StmtVisitorType TypeResolver::visit(ForStmt &stmt) {
+    if (not ctx->config->contains(I_AM_THE_CODE_FORMATTER_DONT_COMPLAIN_ABOUT_FOR_LOOP)) {
+        ctx->logger.warning(current_module, {"Ignoring for-stmt"}, stmt.keyword);
+    }
+}
+
 StmtVisitorType TypeResolver::visit(FunctionStmt &stmt) {
     ScopedScopeManager manager{*this};
     ScopedManager function_manager{in_function, true};

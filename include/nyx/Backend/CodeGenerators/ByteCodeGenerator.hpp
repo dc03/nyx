@@ -116,6 +116,7 @@ class ByteCodeGenerator final : Visitor {
     StmtVisitorType visit(ClassStmt &stmt) override final;
     StmtVisitorType visit(ContinueStmt &stmt) override final;
     StmtVisitorType visit(ExpressionStmt &stmt) override final;
+    StmtVisitorType visit(ForStmt &stmt) override final;
     StmtVisitorType visit(FunctionStmt &stmt) override final;
     StmtVisitorType visit(IfStmt &stmt) override final;
     StmtVisitorType visit(ReturnStmt &stmt) override final;

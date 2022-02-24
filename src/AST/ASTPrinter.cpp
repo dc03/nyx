@@ -478,6 +478,28 @@ StmtVisitorType ASTPrinter::visit(ExpressionStmt &stmt) {
     current_depth--;
 }
 
+StmtVisitorType ASTPrinter::visit(ForStmt &stmt) {
+    print_tabs(current_depth);
+    print_token(stmt.keyword) << '\n';
+    current_depth++;
+    if (stmt.initializer != nullptr) {
+        print_tabs(current_depth);
+        std::cout << "^^^ initializer vvv\n";
+        print(stmt.initializer.get());
+    }
+    if (stmt.condition != nullptr) {
+        print_tabs(current_depth);
+        std::cout << "^^^ condition vvv\n";
+        print(stmt.condition.get());
+    }
+    if (stmt.increment != nullptr) {
+        print_tabs(current_depth);
+        std::cout << "^^^ increment vvv\n";
+        print(stmt.increment.get());
+    }
+    current_depth--;
+}
+
 StmtVisitorType ASTPrinter::visit(FunctionStmt &stmt) {
     print_tabs(current_depth);
     print_token(stmt.name) << '\n';

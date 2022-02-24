@@ -1456,6 +1456,10 @@ StmtVisitorType ByteCodeGenerator::visit(ExpressionStmt &stmt) {
     }
 }
 
+StmtVisitorType ByteCodeGenerator::visit(ForStmt &stmt) {
+    compile_ctx->logger.warning(current_module, {"Ignoring for-stmt"}, stmt.keyword);
+}
+
 StmtVisitorType ByteCodeGenerator::visit(FunctionStmt &stmt) {
     begin_scope();
     RuntimeFunction function{};
