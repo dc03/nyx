@@ -268,7 +268,7 @@ ExprVisitorType NyxFormatter::visit(TupleExpr &expr) {
 }
 
 ExprVisitorType NyxFormatter::visit(UnaryExpr &expr) {
-    out << expr.oper.lexeme;
+    out << expr.oper.lexeme << ' ';
     format(expr.right.get());
     return {};
 }
@@ -472,22 +472,17 @@ StmtVisitorType NyxFormatter::visit(SwitchStmt &stmt) {
     } else {
         out << " ";
     }
-    out << "{";
+    out << "{\n";
     indent++;
-    std::size_t i = 1;
     for (auto &case_ : stmt.cases) {
         print_indent(indent);
         format(case_.first.get());
         out << " -> ";
         format(case_.second.get());
         out << ";\n";
-        if (i < stmt.cases.size()) {
-            out << '\n';
-        }
-        i++;
     }
     if (stmt.default_case != nullptr) {
-        out << "default -> ";
+        print_indent(indent) << "default -> ";
         format(stmt.default_case.get());
         out << ";\n";
     }
