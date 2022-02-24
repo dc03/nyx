@@ -7,7 +7,7 @@ project(nyx VERSION 0.0.7)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set(SOURCES src/nyx.cpp src/ErrorLogger/ErrorLogger.cpp src/Frontend/Parser/TypeResolver.cpp src/AST/VisitorTypes.cpp
+set(SOURCES src/ErrorLogger/ErrorLogger.cpp src/Frontend/Parser/TypeResolver.cpp src/AST/VisitorTypes.cpp
         src/Frontend/Parser/Parser.cpp src/Frontend/Scanner/Scanner.cpp src/Frontend/Scanner/Trie.cpp src/AST/AST.cpp
         src/Backend/VirtualMachine/Chunk.cpp src/Backend/CodeGenerators/ByteCodeGenerator.cpp src/Backend/VirtualMachine/VirtualMachine.cpp
         src/Backend/VirtualMachine/Disassembler.cpp src/Backend/VirtualMachine/Natives.cpp src/AST/ASTPrinter.cpp
@@ -15,7 +15,7 @@ set(SOURCES src/nyx.cpp src/ErrorLogger/ErrorLogger.cpp src/Frontend/Parser/Type
         src/Backend/BackendManager.cpp src/Frontend/FrontendContext.cpp src/Backend/BackendContext.cpp src/CLIConfigParser.cpp
         src/Frontend/Parser/Optimization/ConstantFolding.cpp)
 
-add_executable(nyx-bin ${SOURCES})
+add_executable(nyx-bin ${SOURCES} src/nyx.cpp)
 
 add_executable(nyxVM src/Backend/VirtualMachine/Chunk.cpp src/Backend/VirtualMachine/Value.cpp src/Backend/VirtualMachine/VirtualMachine.cpp
         src/Backend/VirtualMachine/VMMain.cpp src/ErrorLogger/ErrorLogger.cpp src/Backend/VirtualMachine/Disassembler.cpp
