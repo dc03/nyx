@@ -765,6 +765,7 @@ struct VarStmt final : public Stmt {
     ExprNode initializer{};
     NumericConversionType conversion_type{};
     RequiresCopy requires_copy{};
+    bool originally_typeless{};
 
     std::string_view string_tag() override final { return "VarStmt"; }
 
@@ -772,13 +773,14 @@ struct VarStmt final : public Stmt {
 
     VarStmt() = default;
     VarStmt(Token keyword, Token name, TypeNode type, ExprNode initializer, NumericConversionType conversion_type,
-        RequiresCopy requires_copy)
+        RequiresCopy requires_copy, bool originally_typeless)
         : keyword{std::move(keyword)},
           name{std::move(name)},
           type{std::move(type)},
           initializer{std::move(initializer)},
           conversion_type{conversion_type},
-          requires_copy{requires_copy} {}
+          requires_copy{requires_copy},
+          originally_typeless{originally_typeless} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };
@@ -791,18 +793,21 @@ struct VarTupleStmt final : public Stmt {
     ExprNode initializer{};
     Token token{};
     Token keyword{};
+    bool originally_typeless{};
 
     std::string_view string_tag() override final { return "VarTupleStmt"; }
 
     NodeType type_tag() override final { return NodeType::VarTupleStmt; }
 
     VarTupleStmt() = default;
-    VarTupleStmt(IdentifierTuple names, TypeNode type, ExprNode initializer, Token token, Token keyword)
+    VarTupleStmt(IdentifierTuple names, TypeNode type, ExprNode initializer, Token token, Token keyword,
+        bool originally_typeless)
         : names{std::move(names)},
           type{std::move(type)},
           initializer{std::move(initializer)},
           token{std::move(token)},
-          keyword{std::move(keyword)} {}
+          keyword{std::move(keyword)},
+          originally_typeless{originally_typeless} {}
 
     StmtVisitorType accept(Visitor &visitor) override final { return visitor.visit(*this); }
 };

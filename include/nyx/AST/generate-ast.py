@@ -402,14 +402,17 @@ if __name__ == '__main__':
 
         declare_stmt_type('Var',
                           'keyword{std::move(keyword)}, name{std::move(name)}, type{std::move(type)}, initializer{'
-                          'std::move(initializer)}, conversion_type{conversion_type}, requires_copy{requires_copy}',
+                          'std::move(initializer)}, conversion_type{conversion_type}, requires_copy{requires_copy}, '
+                          'originally_typeless{originally_typeless}',
                           'Token keyword, Token name, TypeNode type, ExprNode initializer, NumericConversionType '
-                          'conversion_type, RequiresCopy requires_copy')
+                          'conversion_type, RequiresCopy requires_copy, bool originally_typeless')
 
         declare_stmt_type('VarTuple',
                           'names{std::move(names)}, type{std::move(type)}, initializer{std::move(initializer)},'
-                          'token{std::move(token)}, keyword{std::move(keyword)}',
-                          'IdentifierTuple names, TypeNode type, ExprNode initializer, Token token, Token keyword',
+                          'token{std::move(token)}, keyword{std::move(keyword)}, '
+                          'originally_typeless{originally_typeless}',
+                          'IdentifierTuple names, TypeNode type, ExprNode initializer, Token token, Token keyword, '
+                          'bool originally_typeless',
                           ['friend struct IdentifierTuple'])
 
         declare_stmt_type('While',
