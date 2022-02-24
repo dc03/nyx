@@ -44,6 +44,11 @@ void NyxFormatter::print_vartuple(IdentifierTuple &tuple) {
     out << "}";
 }
 
+bool config_contains(const std::vector<std::string> &args, std::string_view val) {
+    return std::find(args.begin(), args.end(), val) != args.end() ||
+           std::find(args.begin(), args.end(), "all") != args.end();
+}
+
 void NyxFormatter::format(Module &module) {
     for (auto &stmt : module.statements) {
         if (stmt != nullptr) {
@@ -296,7 +301,15 @@ StmtVisitorType NyxFormatter::visit(BreakStmt &stmt) {
 }
 
 StmtVisitorType NyxFormatter::visit(ClassStmt &stmt) {
-    out << "class " << stmt.name.lexeme << " {\n";
+    out << "class " << stmt.name.lexeme;
+    if (ctx->config->contains(BRACE_NEXT_LINE) &&
+        config_contains(ctx->config->get<std::vector<std::string>>(BRACE_NEXT_LINE), "class")) {
+        out << '\n';
+        print_indent(indent);
+    } else {
+        out << ' ';
+    }
+    out << "{\n";
     indent++;
     for (auto &member : stmt.members) {
         print_indent(indent);
@@ -356,7 +369,13 @@ StmtVisitorType NyxFormatter::visit(ForStmt &stmt) {
     }
     out << ')';
     if (stmt.body->type_tag() == NodeType::BlockStmt) {
-        out << ' ';
+        if (ctx->config->contains(BRACE_NEXT_LINE) &&
+            config_contains(ctx->config->get<std::vector<std::string>>(BRACE_NEXT_LINE), "for")) {
+            out << '\n';
+            print_indent(indent);
+        } else {
+            out << " ";
+        }
         format(stmt.body.get());
     } else {
         out << '\n';
@@ -381,7 +400,13 @@ StmtVisitorType NyxFormatter::visit(FunctionStmt &stmt) {
     }
     out << ") -> ";
     format(stmt.return_type.get());
-    out << " ";
+    if (ctx->config->contains(BRACE_NEXT_LINE) &&
+        config_contains(ctx->config->get<std::vector<std::string>>(BRACE_NEXT_LINE), "function")) {
+        out << '\n';
+        print_indent(indent);
+    } else {
+        out << " ";
+    }
     format(stmt.body.get());
 }
 
@@ -389,7 +414,13 @@ StmtVisitorType NyxFormatter::visit(IfStmt &stmt) {
     out << "if ";
     format(stmt.condition.get());
     if (stmt.thenBranch->type_tag() == NodeType::BlockStmt) {
-        out << ' ';
+        if (ctx->config->contains(BRACE_NEXT_LINE) &&
+            config_contains(ctx->config->get<std::vector<std::string>>(BRACE_NEXT_LINE), "if")) {
+            out << '\n';
+            print_indent(indent);
+        } else {
+            out << " ";
+        }
         format(stmt.thenBranch.get());
     } else {
         out << '\n';
@@ -406,8 +437,16 @@ StmtVisitorType NyxFormatter::visit(IfStmt &stmt) {
             out << '\n';
             print_indent(indent) << "else";
         }
-        if (stmt.elseBranch->type_tag() == NodeType::IfStmt || stmt.elseBranch->type_tag() == NodeType::BlockStmt) {
+        if (stmt.elseBranch->type_tag() == NodeType::IfStmt) {
             out << ' ';
+        } else if (stmt.elseBranch->type_tag() == NodeType::BlockStmt) {
+            if (ctx->config->contains(BRACE_NEXT_LINE) &&
+                config_contains(ctx->config->get<std::vector<std::string>>(BRACE_NEXT_LINE), "if")) {
+                out << '\n';
+                print_indent(indent);
+            } else {
+                out << " ";
+            }
         } else {
             out << '\n';
         }
@@ -426,7 +465,14 @@ StmtVisitorType NyxFormatter::visit(ReturnStmt &stmt) {
 StmtVisitorType NyxFormatter::visit(SwitchStmt &stmt) {
     out << "switch ";
     format(stmt.condition.get());
-    out << " {";
+    if (ctx->config->contains(BRACE_NEXT_LINE) &&
+        config_contains(ctx->config->get<std::vector<std::string>>(BRACE_NEXT_LINE), "switch")) {
+        out << '\n';
+        print_indent(indent);
+    } else {
+        out << " ";
+    }
+    out << "{";
     indent++;
     std::size_t i = 1;
     for (auto &case_ : stmt.cases) {
@@ -493,8 +539,15 @@ StmtVisitorType NyxFormatter::visit(VarTupleStmt &stmt) {
 StmtVisitorType NyxFormatter::visit(WhileStmt &stmt) {
     out << "while ";
     format(stmt.condition.get());
+    if (ctx->config->contains(BRACE_NEXT_LINE) &&
+        config_contains(ctx->config->get<std::vector<std::string>>(BRACE_NEXT_LINE), "while")) {
+        out << '\n';
+        print_indent(indent);
+    } else {
+        out << " ";
+    }
     if (stmt.increment != nullptr) {
-        out << " {\n";
+        out << "{\n";
         indent++;
     }
     if (stmt.body->type_tag() == NodeType::BlockStmt) {

@@ -55,6 +55,10 @@ int main(int argc, char *argv[]) {
                 CLIConfigParser::OptionType::ValueTypeTag::STRING_VALUE, "Formatter"},
             {COLLAPSE_SINGLE_LINE_BLOCK, {"yes", "no"}, "Collapse blocks containing a single statement into a single line (supported: yes, no; default: no)",
                 CLIConfigParser::OptionType::QuantityTag::SINGLE_VALUE,
+                CLIConfigParser::OptionType::ValueTypeTag::STRING_VALUE, "Formatter"},
+            {BRACE_NEXT_LINE, {"all", "class", "for", "function", "if", "switch", "while"},
+                "Put braces after the statement on the next line (supported: all, class, for, function, if, switch, while)",
+                CLIConfigParser::OptionType::QuantityTag::MULTI_VALUE,
                 CLIConfigParser::OptionType::ValueTypeTag::STRING_VALUE, "Formatter"}};
         // clang-format on
 

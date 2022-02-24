@@ -13,6 +13,7 @@
 #define USE_TABS                   "use-tabs"
 #define TAB_SIZE                   "tab-size"
 #define COLLAPSE_SINGLE_LINE_BLOCK "collapse-single-line-block"
+#define BRACE_NEXT_LINE            "brace-next-line"
 
 class NyxFormatter : public Visitor {
     std::ostream &out;
