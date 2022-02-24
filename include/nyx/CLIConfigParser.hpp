@@ -144,6 +144,18 @@ class CLIConfigParser {
     [[nodiscard]] const CLIConfig *get_compile_config() const noexcept;
     [[nodiscard]] const CLIConfig *get_runtime_config() const noexcept;
 
+    template <typename T>
+    void set_option(std::string_view type, const std::string &key, T &&value) {
+        if (type == COMPILE_OPTION || type == SYNTAX_OPTION || type == OPTIMIZATION_OPTION) {
+            compile_config.config[key] = std::forward<T>(value);
+        } else if (type == RUNTIME_OPTION) {
+            runtime_config.config[key] = std::forward<T>(value);
+        } else {
+            throw std::invalid_argument{"Unknown type for option; expected one of '" COMPILE_OPTION "', '" SYNTAX_OPTION
+                                        "', '" OPTIMIZATION_OPTION "', '" RUNTIME_OPTION "'"};
+        }
+    }
+
     [[nodiscard]] bool is_empty() const noexcept;
     [[nodiscard]] bool is_help() const noexcept;
     [[nodiscard]] const std::string &get_help() const noexcept;
