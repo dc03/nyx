@@ -968,8 +968,9 @@ StmtNode Parser::variable_declaration() {
     ExprNode initializer = expression();
     consume("Expected ';' or newline after variable initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
 
+    bool originally_typeless = var_type == nullptr;
     auto *variable = allocate_node(VarStmt, std::move(keyword), std::move(name), std::move(var_type),
-        std::move(initializer), NumericConversionType::NONE, false);
+        std::move(initializer), NumericConversionType::NONE, false, originally_typeless);
     return StmtNode{variable};
 }
 
@@ -987,8 +988,9 @@ StmtNode Parser::vartuple_declaration() {
 
     consume("Expected ';' or newline after var-tuple initializer", TokenType::SEMICOLON, TokenType::END_OF_LINE);
 
+    bool originally_typeless = var_types == nullptr;
     return StmtNode{allocate_node(VarTupleStmt, std::move(tuple), std::move(var_types), std::move(initializer),
-        std::move(token), std::move(keyword))};
+        std::move(token), std::move(keyword), originally_typeless)};
 }
 
 StmtNode Parser::statement() {
